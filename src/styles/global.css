@@ -1,0 +1,3 @@
+/* Global styles are defined in ../styles.css. This file re-exports them so
+ * spec-mandated imports of "styles/global.css" resolve correctly. */
+@import "../styles.css";
