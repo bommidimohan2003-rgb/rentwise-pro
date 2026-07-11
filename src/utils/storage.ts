@@ -19,13 +19,15 @@ export const storage = {
 };
 
 export const STORAGE_KEYS = {
-  users: "techrent:users",
-  currentUser: "techrent:currentUser",
-  wishlist: "techrent:wishlist",
-  notifications: "techrent:notifications",
-  messages: "techrent:messages",
-  orders: "techrent:orders",
-  theme: "techrent:theme",
-  otp: "techrent:otp",
-  otpEmail: "techrent:otpEmail",
+  users: "payent:users",
+  currentUser: "payent:currentUser",
+  wishlist: "payent:wishlist",
+  notifications: "payent:notifications",
+  messages: "payent:messages",
+  orders: "payent:orders",
+  theme: "payent:theme",
+  otp: "payent:otp",
+  otpEmail: "payent:otpEmail",
+  customProducts: "payent:customProducts",
+  pendingUser: "payent:pendingUser",
 } as const;

@@ -5,9 +5,30 @@ import { Button } from "@/components/common/Button";
 import type { Message } from "@/types";
 
 const conversations: Message[] = [
-  { id: "m1", from: "Alex Morgan", avatar: "https://i.pravatar.cc/100?img=12", preview: "Sure, pickup at 3pm works!", time: "2m", unread: true },
-  { id: "m2", from: "Priya Shah", avatar: "https://i.pravatar.cc/100?img=32", preview: "MacBook is fully charged and ready.", time: "1h", unread: true },
-  { id: "m3", from: "Leo Chen", avatar: "https://i.pravatar.cc/100?img=45", preview: "The drone comes with 3 batteries.", time: "yesterday", unread: false },
+  {
+    id: "m1",
+    from: "Alex Morgan",
+    avatar: "https://i.pravatar.cc/100?img=12",
+    preview: "Sure, pickup at 3pm works!",
+    time: "2m",
+    unread: true,
+  },
+  {
+    id: "m2",
+    from: "Priya Shah",
+    avatar: "https://i.pravatar.cc/100?img=32",
+    preview: "MacBook is fully charged and ready.",
+    time: "1h",
+    unread: true,
+  },
+  {
+    id: "m3",
+    from: "Leo Chen",
+    avatar: "https://i.pravatar.cc/100?img=45",
+    preview: "The drone comes with 3 batteries.",
+    time: "yesterday",
+    unread: false,
+  },
 ];
 
 export default function Messages() {
@@ -30,7 +51,9 @@ export default function Messages() {
   return (
     <MainLayout>
       <section className="mx-auto max-w-6xl px-4 md:px-6 py-10">
-        <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3"><MessageSquare className="h-7 w-7" /> Messages</h1>
+        <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
+          <MessageSquare className="h-7 w-7" /> Messages
+        </h1>
         <div className="mt-8 grid md:grid-cols-[300px_1fr] gap-4 card-premium overflow-hidden h-[70vh]">
           <div className="border-r border-border overflow-y-auto">
             {conversations.map((c) => (
@@ -59,7 +82,9 @@ export default function Messages() {
             <div className="flex-1 overflow-y-auto p-6 space-y-3">
               {thread.map((m, i) => (
                 <div key={i} className={`flex ${m.me ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${m.me ? "btn-gradient" : "bg-secondary"}`}>
+                  <div
+                    className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${m.me ? "btn-gradient" : "bg-secondary"}`}
+                  >
                     {m.text}
                   </div>
                 </div>
@@ -78,7 +103,9 @@ export default function Messages() {
                 placeholder="Type a message..."
                 className="flex-1 h-11 px-4 rounded-xl border border-border bg-card outline-none focus:border-primary"
               />
-              <Button type="submit" size="icon" aria-label="Send"><Send className="h-4 w-4" /></Button>
+              <Button type="submit" size="icon" aria-label="Send">
+                <Send className="h-4 w-4" />
+              </Button>
             </form>
           </div>
         </div>

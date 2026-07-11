@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Home from "@/pages/Home";
+import { getSeoMetadata } from "@/utils/seo";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "TechRent — Rent premium tech gear" },
-      { name: "description", content: "Peer-to-peer marketplace to rent cameras, drones, laptops, and consoles. Insured. Delivered fast." },
-      { property: "og:title", content: "TechRent — Rent premium tech gear" },
-      { property: "og:description", content: "Rent flagship tech gear from verified lenders. Insured and delivered fast." },
-    ],
-  }),
+  head: () =>
+    getSeoMetadata({
+      title: "Payent — Rent premium tech gear",
+      description:
+        "Peer-to-peer marketplace to rent cameras, drones, laptops, and consoles. Insured. Delivered fast.",
+      path: "/",
+    }),
   component: Home,
 });

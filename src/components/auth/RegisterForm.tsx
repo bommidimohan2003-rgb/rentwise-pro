@@ -7,6 +7,9 @@ import { z } from "zod";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { useAuth } from "@/hooks/useAuth";
+import { STORAGE_KEYS, storage } from "@/utils/storage";
+import { toast } from "sonner";
+import type { User as UserType } from "@/types";
 
 const schema = z
   .object({
@@ -47,27 +50,68 @@ export function RegisterForm() {
   const labels = ["Weak", "Fair", "Good", "Strong", "Excellent"];
 
   const onSubmit = (data: FormValues) => {
-    const res = registerUser({
+    // Check if email already registered
+    const users = storage.get<UserType[]>(STORAGE_KEYS.users, []);
+    if (users.some((u) => u.email === data.email)) {
+      return setError("Email already registered");
+    }
+
+    const newUser: UserType = {
+      id: crypto.randomUUID(),
       fullName: data.fullName,
       email: data.email,
       phone: data.phone,
       password: data.password,
-    });
-    if (!res.ok) return setError(res.error ?? "Unable to register");
-    navigate({ to: "/login" });
+      createdAt: new Date().toISOString(),
+    };
+
+    // Save user to pending state
+    storage.set(STORAGE_KEYS.pendingUser, newUser);
+
+    // Generate OTP
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    storage.set(STORAGE_KEYS.otp, otp);
+    storage.set(STORAGE_KEYS.otpEmail, data.email);
+
+    toast.success("Verification code sent!");
+    toast.info(`[Demo Mode] OTP: ${otp}`, { duration: 10000 });
+    navigate({ to: "/otp" });
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Input label="Full name" placeholder="Jane Doe" icon={<User className="h-4 w-4" />} error={errors.fullName?.message} {...register("fullName")} />
-      <Input label="Email" type="email" placeholder="you@work.com" icon={<Mail className="h-4 w-4" />} error={errors.email?.message} {...register("email")} />
-      <Input label="Phone" placeholder="+1 555 123 4567" icon={<Phone className="h-4 w-4" />} error={errors.phone?.message} {...register("phone")} />
+      <Input
+        label="Full name"
+        placeholder="Jane Doe"
+        icon={<User className="h-4 w-4" />}
+        error={errors.fullName?.message}
+        {...register("fullName")}
+      />
+      <Input
+        label="Email"
+        type="email"
+        placeholder="you@work.com"
+        icon={<Mail className="h-4 w-4" />}
+        error={errors.email?.message}
+        {...register("email")}
+      />
+      <Input
+        label="Phone"
+        placeholder="+1 555 123 4567"
+        icon={<Phone className="h-4 w-4" />}
+        error={errors.phone?.message}
+        {...register("phone")}
+      />
       <Input
         label="Password"
         type={showPw ? "text" : "password"}
         icon={<Lock className="h-4 w-4" />}
         rightAdornment={
-          <button type="button" onClick={() => setShowPw((v) => !v)} className="p-1 text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            onClick={() => setShowPw((v) => !v)}
+            className="p-1 text-muted-foreground hover:text-foreground"
+          >
             {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         }
@@ -82,7 +126,11 @@ export function RegisterForm() {
               style={{
                 width: `${(level / 4) * 100}%`,
                 backgroundColor:
-                  level < 2 ? "oklch(0.65 0.22 27)" : level < 3 ? "oklch(0.75 0.18 60)" : "oklch(0.65 0.2 145)",
+                  level < 2
+                    ? "oklch(0.65 0.22 27)"
+                    : level < 3
+                      ? "oklch(0.75 0.18 60)"
+                      : "oklch(0.65 0.2 145)",
               }}
             />
           </div>
@@ -99,7 +147,15 @@ export function RegisterForm() {
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" className="mt-1" {...register("terms")} />
         <span className="text-muted-foreground">
-          I agree to the <a href="#" className="text-primary hover:underline">Terms</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>.
+          I agree to the{" "}
+          <a href="#" className="text-primary hover:underline">
+            Terms
+          </a>{" "}
+          and{" "}
+          <a href="#" className="text-primary hover:underline">
+            Privacy Policy
+          </a>
+          .
         </span>
       </label>
       {errors.terms && <p className="text-xs text-destructive">{errors.terms.message}</p>}

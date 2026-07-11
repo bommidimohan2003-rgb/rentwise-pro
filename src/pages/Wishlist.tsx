@@ -21,13 +21,17 @@ export default function Wishlist() {
 
         {items.length ? (
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {items.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+            {items.map((p, i) => (
+              <ProductCard key={p.id} product={p} index={i} />
+            ))}
           </div>
         ) : (
           <div className="mt-10 card-premium p-16 text-center">
             <Heart className="h-10 w-10 mx-auto text-muted-foreground" />
             <p className="mt-4 text-muted-foreground">Your wishlist is empty.</p>
-            <Button className="mt-6" onClick={() => navigate({ to: "/categories" })}>Browse marketplace</Button>
+            <Button className="mt-6" onClick={() => navigate({ to: "/categories" })}>
+              Browse marketplace
+            </Button>
           </div>
         )}
       </section>

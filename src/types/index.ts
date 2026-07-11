@@ -32,6 +32,7 @@ export interface Category {
   icon: string;
   count: number;
   color: string;
+  image?: string;
 }
 
 export interface Order {

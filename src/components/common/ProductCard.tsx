@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import type { Product } from "@/types";
 import { Rating } from "./Rating";
 import { useWishlist } from "@/hooks/useWishlist";
-import { cn } from "@/utils/cn";
+import { cn } from "@/lib/utils";
 
 export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
   const { has, toggle } = useWishlist();
@@ -33,7 +33,9 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           className="absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full glass hover:scale-110 transition-transform"
           aria-label="Wishlist"
         >
-          <Heart className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-foreground")} />
+          <Heart
+            className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-foreground")}
+          />
         </button>
         {!product.available && (
           <div className="absolute top-3 left-3 rounded-full bg-destructive/90 text-white text-xs px-3 py-1 font-medium">
@@ -51,7 +53,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
         </div>
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div>
-            <span className="text-xl font-bold">${product.price}</span>
+            <span className="text-xl font-bold">₹{product.price}</span>
             <span className="text-xs text-muted-foreground"> /day</span>
           </div>
           <Link

@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Messages from "@/pages/Messages";
+import { getSeoMetadata } from "@/utils/seo";
 
 export const Route = createFileRoute("/messages")({
-  head: () => ({ meta: [{ title: "Messages · TechRent" }] }),
+  head: () =>
+    getSeoMetadata({
+      title: "Inbox Messages | Payent",
+      description:
+        "Chat with verified lenders and renters to coordinate gear handoffs and details.",
+      path: "/messages",
+    }),
   component: Messages,
 });

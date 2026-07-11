@@ -9,7 +9,9 @@ export function Categories() {
       <div className="flex items-end justify-between mb-10">
         <div>
           <h2 className="text-3xl md:text-4xl font-bold">Browse categories</h2>
-          <p className="mt-2 text-muted-foreground">Explore trending gear across popular categories.</p>
+          <p className="mt-2 text-muted-foreground">
+            Explore trending gear across popular categories.
+          </p>
         </div>
         <Link to="/categories" className="text-sm font-medium text-primary hover:underline">
           View all →
@@ -29,13 +31,29 @@ export function Categories() {
               <Link
                 to="/categories"
                 search={{ cat: c.id } as never}
-                className="card-premium p-5 block group"
+                className="relative overflow-hidden h-[160px] rounded-2xl group flex flex-col justify-end p-5 border border-border/40 shadow-sm"
               >
-                <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${c.color} grid place-items-center mb-4`}>
-                  <Icon className="h-5 w-5 text-white" />
+                {/* Category background image */}
+                {c.image && (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                    style={{ backgroundImage: `url(${c.image})` }}
+                  />
+                )}
+
+                {/* Gradient dark overlay for readable text */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent transition-opacity duration-300 group-hover:via-black/50" />
+
+                {/* Floating icon badge */}
+                <div className="absolute top-4 right-4 h-9 w-9 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 grid place-items-center transition-transform duration-300 group-hover:rotate-6">
+                  <Icon className="h-4 w-4 text-white" />
                 </div>
-                <h3 className="font-semibold">{c.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{c.count} listings</p>
+
+                {/* Content */}
+                <div className="relative z-10">
+                  <h3 className="font-bold text-white text-lg tracking-wide">{c.name}</h3>
+                  <p className="text-xs text-white/70 font-medium mt-0.5">{c.count} listings</p>
+                </div>
               </Link>
             </motion.div>
           );

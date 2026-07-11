@@ -11,13 +11,14 @@ import {
   Sun,
   User as UserIcon,
   X,
-  Zap,
 } from "lucide-react";
+import { LogoIcon } from "@/components/common/LogoIcon";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
-import { cn } from "@/utils/cn";
+import { cn } from "@/lib/utils";
+import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { Button } from "@/components/common/Button";
 
 const links = [
@@ -35,6 +36,15 @@ export function Navbar() {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const handleGetStarted = () => {
+    const users = storage.get<any[]>(STORAGE_KEYS.users, []);
+    if (users.length > 0) {
+      navigate({ to: "/login" });
+    } else {
+      navigate({ to: "/register" });
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -58,9 +68,9 @@ export function Navbar() {
             whileHover={{ rotate: 12, scale: 1.1 }}
             className="grid h-9 w-9 place-items-center rounded-xl btn-gradient"
           >
-            <Zap className="h-4 w-4 text-white" />
+            <LogoIcon className="h-4 w-4 text-white" />
           </motion.span>
-          <span className="text-lg font-bold tracking-tight">TechRent</span>
+          <span className="text-lg font-bold tracking-tight">Payent</span>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1">
@@ -75,6 +85,12 @@ export function Navbar() {
               {l.label}
             </Link>
           ))}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-payent-help-chat"))}
+            className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-full hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+          >
+            Help
+          </button>
         </nav>
 
         <div className="flex items-center gap-1">
@@ -86,7 +102,12 @@ export function Navbar() {
           >
             <Search className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Wishlist" onClick={() => navigate({ to: "/wishlist" })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Wishlist"
+            onClick={() => navigate({ to: "/wishlist" })}
+          >
             <Heart className="h-4 w-4" />
           </Button>
           <Button
@@ -118,10 +139,7 @@ export function Navbar() {
             </div>
           ) : (
             <div className="hidden md:flex items-center gap-2 ml-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/login" })} leftIcon={<LogIn className="h-4 w-4" />}>
-                Login
-              </Button>
-              <Button size="sm" onClick={() => navigate({ to: "/register" })}>
+              <Button size="sm" onClick={handleGetStarted}>
                 Get Started
               </Button>
             </div>
@@ -157,23 +175,37 @@ export function Navbar() {
                   {l.label}
                 </Link>
               ))}
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  window.dispatchEvent(new CustomEvent("open-payent-help-chat"));
+                }}
+                className="px-4 py-3 text-left rounded-xl text-sm font-medium hover:bg-secondary cursor-pointer text-muted-foreground"
+              >
+                Help
+              </button>
               <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border mt-2">
                 {user ? (
                   <>
-                    <Button variant="outline" onClick={() => navigate({ to: "/dashboard" })} leftIcon={<LayoutDashboard className="h-4 w-4" />}>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate({ to: "/dashboard" })}
+                      leftIcon={<LayoutDashboard className="h-4 w-4" />}
+                    >
                       Dashboard
                     </Button>
-                    <Button variant="destructive" onClick={logout} leftIcon={<LogOut className="h-4 w-4" />}>
+                    <Button
+                      variant="destructive"
+                      onClick={logout}
+                      leftIcon={<LogOut className="h-4 w-4" />}
+                    >
                       Logout
                     </Button>
                   </>
                 ) : (
-                  <>
-                    <Button variant="outline" onClick={() => navigate({ to: "/login" })} leftIcon={<UserIcon className="h-4 w-4" />}>
-                      Login
-                    </Button>
-                    <Button onClick={() => navigate({ to: "/register" })}>Register</Button>
-                  </>
+                  <Button onClick={handleGetStarted} className="col-span-2">
+                    Get Started
+                  </Button>
                 )}
               </div>
             </nav>

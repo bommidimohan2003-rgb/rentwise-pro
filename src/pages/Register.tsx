@@ -13,7 +13,10 @@ export default function Register() {
             <RegisterForm />
           </div>
           <p className="mt-6 text-sm text-center text-muted-foreground">
-            Have an account? <Link to="/login" className="text-primary font-medium hover:underline">Login</Link>
+            Have an account?{" "}
+            <Link to="/login" className="text-primary font-medium hover:underline">
+              Login
+            </Link>
           </p>
         </div>
       </section>

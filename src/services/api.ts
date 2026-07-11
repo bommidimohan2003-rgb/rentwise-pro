@@ -7,7 +7,7 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
-    const user = window.localStorage.getItem("techrent:currentUser");
+    const user = window.localStorage.getItem("payent:currentUser");
     if (user) {
       try {
         const parsed = JSON.parse(user);

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Github, Instagram, Twitter, Youtube, Zap } from "lucide-react";
+import { Github, Instagram, Twitter, Youtube } from "lucide-react";
+import { LogoIcon } from "@/components/common/LogoIcon";
 
 const columns = [
   {
@@ -35,12 +36,13 @@ export function Footer() {
         <div className="lg:col-span-2 space-y-4">
           <Link to="/" className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-xl btn-gradient">
-              <Zap className="h-4 w-4 text-white" />
+              <LogoIcon className="h-4 w-4 text-white" />
             </span>
-            <span className="text-lg font-bold">TechRent</span>
+            <span className="text-lg font-bold">Payent</span>
           </Link>
           <p className="text-sm text-muted-foreground max-w-xs">
-            Rent premium tech gear from trusted lenders in your city. Delivered fast. Insured always.
+            Rent premium tech gear from trusted lenders in your city. Delivered fast. Insured
+            always.
           </p>
           <div className="flex gap-2">
             {[Twitter, Instagram, Youtube, Github].map((Icon, i) => (
@@ -71,7 +73,9 @@ export function Footer() {
       </div>
       <div className="border-t border-border">
         <div className="mx-auto max-w-7xl px-4 md:px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} TechRent Inc. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Payent Inc. All rights reserved.
+          </p>
           <div className="flex gap-6 text-xs text-muted-foreground">
             <a href="#">Privacy</a>
             <a href="#">Terms</a>

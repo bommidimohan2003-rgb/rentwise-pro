@@ -1,5 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { cn } from "@/utils/cn";
+import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "secondary" | "ghost" | "outline" | "destructive";
 type Size = "sm" | "md" | "lg" | "icon";
@@ -28,7 +28,17 @@ const sizes: Record<Size, string> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, variant = "primary", size = "md", loading, leftIcon, rightIcon, children, disabled, ...rest },
+  {
+    className,
+    variant = "primary",
+    size = "md",
+    loading,
+    leftIcon,
+    rightIcon,
+    children,
+    disabled,
+    ...rest
+  },
   ref,
 ) {
   return (

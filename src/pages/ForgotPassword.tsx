@@ -9,9 +9,14 @@ export default function ForgotPassword() {
         <div className="card-premium p-8">
           <h1 className="text-3xl font-bold">Reset password</h1>
           <p className="mt-1 text-sm text-muted-foreground">We'll email you a 6-digit code.</p>
-          <div className="mt-8"><Form /></div>
+          <div className="mt-8">
+            <Form />
+          </div>
           <p className="mt-6 text-sm text-center text-muted-foreground">
-            Remembered? <Link to="/login" className="text-primary font-medium hover:underline">Back to login</Link>
+            Remembered?{" "}
+            <Link to="/login" className="text-primary font-medium hover:underline">
+              Back to login
+            </Link>
           </p>
         </div>
       </section>

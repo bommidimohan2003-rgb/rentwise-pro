@@ -46,28 +46,73 @@ export default function Profile() {
           <h2 className="mt-4 font-semibold text-lg">{user?.fullName}</h2>
           <p className="text-sm text-muted-foreground">{user?.email}</p>
           <div className="mt-6 grid grid-cols-3 gap-2 text-center">
-            <div><div className="font-bold">12</div><div className="text-xs text-muted-foreground">Rentals</div></div>
-            <div><div className="font-bold">4.9</div><div className="text-xs text-muted-foreground">Rating</div></div>
-            <div><div className="font-bold">3</div><div className="text-xs text-muted-foreground">Listings</div></div>
+            <div>
+              <div className="font-bold">12</div>
+              <div className="text-xs text-muted-foreground">Rentals</div>
+            </div>
+            <div>
+              <div className="font-bold">4.9</div>
+              <div className="text-xs text-muted-foreground">Rating</div>
+            </div>
+            <div>
+              <div className="font-bold">3</div>
+              <div className="text-xs text-muted-foreground">Listings</div>
+            </div>
           </div>
         </div>
 
         <div className="card-premium p-6 lg:col-span-2 space-y-4">
           <h3 className="font-semibold text-lg">Edit profile</h3>
-          <Input label="Full name" icon={<UserIcon className="h-4 w-4" />} value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
-          <Input label="Email" icon={<Mail className="h-4 w-4" />} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <Input label="Phone" icon={<Phone className="h-4 w-4" />} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <Input
+            label="Full name"
+            icon={<UserIcon className="h-4 w-4" />}
+            value={form.fullName}
+            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+          />
+          <Input
+            label="Email"
+            icon={<Mail className="h-4 w-4" />}
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <Input
+            label="Phone"
+            icon={<Phone className="h-4 w-4" />}
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          />
           <Button onClick={save}>Save changes</Button>
         </div>
 
         <div className="card-premium p-6 lg:col-span-3 space-y-4">
           <h3 className="font-semibold text-lg">Change password</h3>
           <div className="grid md:grid-cols-3 gap-4">
-            <Input label="Current" type="password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
-            <Input label="New" type="password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
-            <Input label="Confirm" type="password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
+            <Input
+              label="Current"
+              type="password"
+              value={pw.current}
+              onChange={(e) => setPw({ ...pw, current: e.target.value })}
+            />
+            <Input
+              label="New"
+              type="password"
+              value={pw.next}
+              onChange={(e) => setPw({ ...pw, next: e.target.value })}
+            />
+            <Input
+              label="Confirm"
+              type="password"
+              value={pw.confirm}
+              onChange={(e) => setPw({ ...pw, confirm: e.target.value })}
+            />
           </div>
-          {pwMsg && <p className={`text-sm ${pwMsg.includes("✓") ? "text-emerald-600" : "text-destructive"}`}>{pwMsg}</p>}
+          {pwMsg && (
+            <p
+              className={`text-sm ${pwMsg.includes("✓") ? "text-emerald-600" : "text-destructive"}`}
+            >
+              {pwMsg}
+            </p>
+          )}
           <Button onClick={changePw}>Update password</Button>
         </div>
       </div>

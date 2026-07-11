@@ -1,5 +1,5 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
-import { cn } from "@/utils/cn";
+import { cn } from "@/lib/utils";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -20,11 +20,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {label}
         </label>
       )}
-      <div className={cn(
-        "flex items-center gap-2 rounded-xl border bg-card px-4 h-12 transition-colors",
-        "border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/40",
-        error && "border-destructive focus-within:ring-destructive/30",
-      )}>
+      <div
+        className={cn(
+          "flex items-center gap-2 rounded-xl border bg-card px-4 h-12 transition-colors",
+          "border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/40",
+          error && "border-destructive focus-within:ring-destructive/30",
+        )}
+      >
         {icon && <span className="text-muted-foreground">{icon}</span>}
         <input
           ref={ref}

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
+import { toast } from "sonner";
 
 const schema = z.object({ email: z.string().trim().email("Invalid email") });
 type FormValues = z.infer<typeof schema>;
@@ -22,8 +23,9 @@ export function ForgotPassword() {
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     storage.set(STORAGE_KEYS.otp, otp);
     storage.set(STORAGE_KEYS.otpEmail, data.email);
-    // eslint-disable-next-line no-console
-    console.info("[TechRent] OTP (demo):", otp);
+    console.info("[Payent] OTP (demo):", otp);
+    toast.success("Verification code sent!");
+    toast.info(`[Demo Mode] OTP: ${otp}`, { duration: 10000 });
     navigate({ to: "/otp" });
   };
 

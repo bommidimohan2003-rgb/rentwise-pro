@@ -2,7 +2,13 @@ import { Search } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
-export function SearchBar({ initial = "", compact = false }: { initial?: string; compact?: boolean }) {
+export function SearchBar({
+  initial = "",
+  compact = false,
+}: {
+  initial?: string;
+  compact?: boolean;
+}) {
   const [q, setQ] = useState(initial);
   const navigate = useNavigate();
 
@@ -23,10 +29,7 @@ export function SearchBar({ initial = "", compact = false }: { initial?: string;
         placeholder="Search cameras, drones, MacBooks..."
         className="flex-1 bg-transparent outline-none text-sm"
       />
-      <button
-        type="submit"
-        className="btn-gradient rounded-full px-5 h-9 text-sm font-medium"
-      >
+      <button type="submit" className="btn-gradient rounded-full px-5 h-9 text-sm font-medium">
         Search
       </button>
     </form>

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /checkout
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /profile
+Disallow: /otp
+
+Sitemap: https://payent.com/sitemap.xml

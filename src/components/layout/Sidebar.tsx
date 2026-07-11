@@ -1,6 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Bell, Heart, LayoutDashboard, MessageSquare, Package, Settings, ShoppingBag, User } from "lucide-react";
-import { cn } from "@/utils/cn";
+import {
+  Bell,
+  Heart,
+  LayoutDashboard,
+  MessageSquare,
+  Package,
+  Settings,
+  ShoppingBag,
+  User,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Overview" },
@@ -26,7 +35,9 @@ export function Sidebar() {
               to={it.to}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                active ? "btn-gradient text-white" : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                active
+                  ? "btn-gradient text-white"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
               )}
             >
               <it.icon className="h-4 w-4" />

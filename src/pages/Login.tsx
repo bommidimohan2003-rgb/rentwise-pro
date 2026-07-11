@@ -13,7 +13,10 @@ export default function Login() {
             <LoginForm />
           </div>
           <p className="mt-6 text-sm text-center text-muted-foreground">
-            Don't have an account? <Link to="/register" className="text-primary font-medium hover:underline">Sign up</Link>
+            Don't have an account?{" "}
+            <Link to="/register" className="text-primary font-medium hover:underline">
+              Sign up
+            </Link>
           </p>
         </div>
       </section>
