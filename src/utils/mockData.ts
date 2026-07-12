@@ -1,6 +1,26 @@
 import type { Category, Product, Review } from "@/types";
 import { STORAGE_KEYS, storage } from "./storage";
 
+import cameraImg from "@/assets/images/camera.png";
+import laptopImg from "@/assets/images/laptop.png";
+import droneImg from "@/assets/images/drone.png";
+import bikeImg from "@/assets/images/bike.png";
+import toolImg from "@/assets/images/tool.png";
+import powerbankImg from "@/assets/images/powerbank.png";
+
+// Specific product images
+import sonyA7Img from "@/assets/images/sony_a7.png";
+import macbookProImg from "@/assets/images/macbook_pro.png";
+import djiMavicImg from "@/assets/images/dji_mavic.png";
+import ankerPowerCoreImg from "@/assets/images/anker_powercore.png";
+import ambranePowerLitImg from "@/assets/images/ambrane_powerlit.png";
+import xiaomiMiBoostImg from "@/assets/images/xiaomi_mi_boost.png";
+import urbnPowerbankProdImg from "@/assets/images/urbn_powerbank_prod.png";
+import reClassic350Img from "@/assets/images/re_classic350.png";
+import trekMarlinImg from "@/assets/images/trek_marlin.png";
+import ktmDukeImg from "@/assets/images/ktm_duke.png";
+import hondaActivaImg from "@/assets/images/honda_activa.png";
+
 const stockImg = (seed: string) =>
   `https://images.unsplash.com/photo-${seed}?auto=format&fit=crop&w=1200&q=80`;
 
@@ -11,7 +31,7 @@ export const categories: Category[] = [
     icon: "Camera",
     count: 128,
     color: "from-rose-500 to-pink-500",
-    image: stockImg("1516035069371-29a1b244cc32"),
+    image: cameraImg,
   },
   {
     id: "laptops",
@@ -19,7 +39,7 @@ export const categories: Category[] = [
     icon: "Laptop",
     count: 96,
     color: "from-blue-500 to-indigo-500",
-    image: stockImg("1531297484001-80022131f5a1"),
+    image: laptopImg,
   },
   {
     id: "drones",
@@ -27,7 +47,7 @@ export const categories: Category[] = [
     icon: "Plane",
     count: 54,
     color: "from-emerald-500 to-teal-500",
-    image: stockImg("1527977966376-1c8408f9f108"),
+    image: droneImg,
   },
   {
     id: "bikes",
@@ -35,7 +55,7 @@ export const categories: Category[] = [
     icon: "Bike",
     count: 62,
     color: "from-teal-500 to-cyan-500",
-    image: stockImg("1485965120138-e538ac21d810"),
+    image: bikeImg,
   },
   {
     id: "tools",
@@ -43,7 +63,7 @@ export const categories: Category[] = [
     icon: "Hammer",
     count: 48,
     color: "from-purple-500 to-indigo-500",
-    image: stockImg("1504148455328-c376907d081c"),
+    image: toolImg,
   },
   {
     id: "powerbanks",
@@ -51,7 +71,7 @@ export const categories: Category[] = [
     icon: "Zap",
     count: 28,
     color: "from-amber-500 to-yellow-500",
-    image: stockImg("1609081219091-a3f2b4c10eb3"),
+    image: powerbankImg,
   },
 ];
 
@@ -62,7 +82,7 @@ const initialProducts: Product[] = [
     description:
       "Full-frame 33MP hybrid camera. Perfect for cinema-quality video and stills. Includes 28-70mm lens, batteries, and hard case.",
     price: 4500,
-    image: stockImg("1502920917128-1aa500764cbd"),
+    image: sonyA7Img,
     category: "cameras",
     rating: 4.9,
     reviews: 128,
@@ -74,7 +94,7 @@ const initialProducts: Product[] = [
     title: 'MacBook Pro 16" M3 Max',
     description: "Top-spec MacBook Pro with 64GB RAM and 2TB SSD. Ideal for editing and dev work.",
     price: 3500,
-    image: stockImg("1517336714731-489689fd1ca8"),
+    image: macbookProImg,
     category: "laptops",
     rating: 4.8,
     reviews: 92,
@@ -82,12 +102,64 @@ const initialProducts: Product[] = [
     owner: { name: "Priya Shah", avatar: "https://i.pravatar.cc/100?img=32", rating: 4.8 },
   },
   {
+    id: "p2_dell",
+    title: "Dell XPS 15 Touchscreen Laptop",
+    description:
+      'Premium Dell creator laptop featuring a stunning 15.6" OLED touchscreen display, Intel Core i9, 32GB RAM, and NVIDIA RTX 4060 graphics.',
+    price: 2800,
+    image: laptopImg,
+    category: "laptops",
+    rating: 4.7,
+    reviews: 45,
+    available: true,
+    owner: { name: "Sarah Connor", avatar: "https://i.pravatar.cc/100?img=25", rating: 4.8 },
+  },
+  {
+    id: "p2_lenovo",
+    title: "Lenovo ThinkPad X1 Carbon Laptop",
+    description:
+      "Ultimate lightweight business companion. Features Intel Core i7, 16GB RAM, 1TB SSD, and legendary ThinkPad durability and keyboard comfort.",
+    price: 2200,
+    image: laptopImg,
+    category: "laptops",
+    rating: 4.9,
+    reviews: 31,
+    available: true,
+    owner: { name: "David Miller", avatar: "https://i.pravatar.cc/100?img=18", rating: 4.9 },
+  },
+  {
+    id: "p2_asus",
+    title: "Asus ROG Zephyrus G14 Gaming Laptop",
+    description:
+      "High-performance ultraportable gaming beast. AMD Ryzen 9, NVIDIA RTX 4070, 16GB DDR5, and a blazing-fast 120Hz display.",
+    price: 3000,
+    image: macbookProImg,
+    category: "laptops",
+    rating: 4.8,
+    reviews: 27,
+    available: true,
+    owner: { name: "John Doe", avatar: "https://i.pravatar.cc/100?img=8", rating: 4.7 },
+  },
+  {
+    id: "p2_hp",
+    title: "HP Spectre x360 Convertible Laptop",
+    description:
+      "Premium 2-in-1 touchscreen convertible laptop. Intel Core i7, 16GB RAM, 512GB SSD. Easily flips into tablet mode, stylus pen included.",
+    price: 2400,
+    image: laptopImg,
+    category: "laptops",
+    rating: 4.6,
+    reviews: 19,
+    available: true,
+    owner: { name: "Lisa Ray", avatar: "https://i.pravatar.cc/100?img=35", rating: 4.6 },
+  },
+  {
     id: "p3",
     title: "DJI Mavic 3 Pro Drone",
     description:
       "Hasselblad triple-camera drone with 43-min flight time. Includes 3 batteries and ND filters.",
     price: 5000,
-    image: stockImg("1508614589041-895b88991e3e"),
+    image: djiMavicImg,
     category: "drones",
     rating: 5.0,
     reviews: 67,
@@ -100,7 +172,7 @@ const initialProducts: Product[] = [
     description:
       "Ultra-high capacity power bank with 140W two-way fast charging. Features a smart digital display showing charge level and output specs.",
     price: 250,
-    image: stockImg("1609592426611-c20e9d5aa3c3"),
+    image: ankerPowerCoreImg,
     category: "powerbanks",
     rating: 4.9,
     reviews: 114,
@@ -113,7 +185,7 @@ const initialProducts: Product[] = [
     description:
       "Massive 50000mAh battery backup. Supports 22.5W fast charging, triple outputs, and dual input modes. Rugged design with LED flashlight.",
     price: 350,
-    image: stockImg("1622445262438-e501d6365a6c"),
+    image: ambranePowerLitImg,
     category: "powerbanks",
     rating: 4.8,
     reviews: 95,
@@ -126,7 +198,7 @@ const initialProducts: Product[] = [
     description:
       "High-capacity power bank with 18W fast charge capability. Triple port output, dual input, and high-quality metallic finish.",
     price: 200,
-    image: stockImg("1609081219091-a3f2b4c10eb3"),
+    image: xiaomiMiBoostImg,
     category: "powerbanks",
     rating: 4.7,
     reviews: 63,
@@ -139,7 +211,7 @@ const initialProducts: Product[] = [
     description:
       "Pocket-sized 20000mAh external battery with 22.5W super-fast charging. Dual ports and carbon fiber texture finish.",
     price: 150,
-    image: stockImg("1619176974100-349c2f6d0f98"),
+    image: urbnPowerbankProdImg,
     category: "powerbanks",
     rating: 4.6,
     reviews: 42,
@@ -152,7 +224,7 @@ const initialProducts: Product[] = [
     description:
       "Iconic cruiser bike. Perfect for road trips and local rides. Insured, well maintained, includes helmet.",
     price: 1200,
-    image: stockImg("1558981806-ec440c9d6bbd"),
+    image: reClassic350Img,
     category: "bikes",
     rating: 4.9,
     reviews: 43,
@@ -165,7 +237,7 @@ const initialProducts: Product[] = [
     description:
       "High-performance mountain bike with front suspension, hydraulic disc brakes, and 1x10 drivetrain. Helmet included.",
     price: 500,
-    image: stockImg("1485965120138-e538ac21d810"),
+    image: trekMarlinImg,
     category: "bikes",
     rating: 4.7,
     reviews: 29,
@@ -178,7 +250,7 @@ const initialProducts: Product[] = [
     description:
       "Powerful 800W rotary hammer drill and drilling machine. Includes concrete/wood drill bits, side handle, and depth stop. Perfect for home improvement.",
     price: 350,
-    image: stockImg("1504148455328-c376907d081c"),
+    image: toolImg,
     category: "tools",
     rating: 4.8,
     reviews: 35,
@@ -191,7 +263,7 @@ const initialProducts: Product[] = [
     description:
       "Compact cordless drill/driver and drilling machine with 2 batteries and charger. High-speed transmission for fast drilling and fastening.",
     price: 450,
-    image: stockImg("1534224039826-cf7a8912e753"),
+    image: toolImg,
     category: "tools",
     rating: 4.6,
     reviews: 18,
@@ -204,7 +276,7 @@ const initialProducts: Product[] = [
     description:
       "High-performance sports motorcycle with 373cc liquid-cooled engine. Extreme agility, ABS, and standard riding gear included.",
     price: 1800,
-    image: stockImg("1599819811279-d5ad9cccf838"),
+    image: ktmDukeImg,
     category: "bikes",
     rating: 4.9,
     reviews: 57,
@@ -217,7 +289,7 @@ const initialProducts: Product[] = [
     description:
       "Comfortable, fuel-efficient city scooter. Easy automatic transmission. Comes with first-aid kit and helmet.",
     price: 400,
-    image: stockImg("1625244249117-640a3250269f"),
+    image: hondaActivaImg,
     category: "bikes",
     rating: 4.6,
     reviews: 82,
@@ -230,7 +302,7 @@ const initialProducts: Product[] = [
     description:
       "Premium alloy hybrid bicycle with Shimano 21-speed shifters and front suspension. Includes lock and helmet.",
     price: 250,
-    image: stockImg("1485965120138-e538ac21d810"),
+    image: bikeImg,
     category: "bikes",
     rating: 4.5,
     reviews: 14,
@@ -243,7 +315,7 @@ const initialProducts: Product[] = [
     description:
       "Flagship smart electric scooter with warp mode. Insured, GPS enabled, touch dashboard. Charger included.",
     price: 600,
-    image: stockImg("1568772585407-9361f9bf3a87"),
+    image: hondaActivaImg,
     category: "bikes",
     rating: 4.8,
     reviews: 31,
@@ -256,7 +328,7 @@ const initialProducts: Product[] = [
     description:
       "Heavy-duty electric grinder for metal cutting, grinding, and polishing. Safety guard and side handle included.",
     price: 300,
-    image: stockImg("1581166397012-111598428135"),
+    image: toolImg,
     category: "tools",
     rating: 4.7,
     reviews: 22,
@@ -269,7 +341,7 @@ const initialProducts: Product[] = [
     description:
       "High-precision circular saw for woodworking. Ergonomic design and powerful motor for clean, fast straight cuts.",
     price: 400,
-    image: stockImg("1586864387967-d02ef85d93e8"),
+    image: toolImg,
     category: "tools",
     rating: 4.8,
     reviews: 19,
@@ -282,7 +354,7 @@ const initialProducts: Product[] = [
     description:
       "Powerful intelligent cordless vacuum. Auto-adapts to different floor types. Complete set of accessories included.",
     price: 1000,
-    image: stockImg("1558317374-067fb5f30001"),
+    image: toolImg,
     category: "tools",
     rating: 4.9,
     reviews: 44,
@@ -295,7 +367,7 @@ const initialProducts: Product[] = [
     description:
       "Professional high-pressure washer for cleaning cars, patios, and walls. Water-cooled motor with adjustable nozzle spray.",
     price: 500,
-    image: stockImg("1589814030403-c5f9899a28bc"),
+    image: toolImg,
     category: "tools",
     rating: 4.7,
     reviews: 26,

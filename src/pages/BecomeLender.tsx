@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { products } from "@/utils/mockData";
 import { toast } from "sonner";
+import type { Product } from "@/types";
 
 const perks = [
   {
@@ -73,12 +74,18 @@ export default function BecomeLender() {
 
     // Default stock photos for categories in case user does not upload a custom image
     const stockCategoryImages: Record<string, string> = {
-      cameras: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
-      laptops: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=1200&q=80",
-      drones: "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?auto=format&fit=crop&w=1200&q=80",
-      bikes: "https://images.unsplash.com/photo-1485965120138-e538ac21d810?auto=format&fit=crop&w=1200&q=80",
-      tools: "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1200&q=80",
-      powerbanks: "https://images.unsplash.com/photo-1609081219091-a3f2b4c10eb3?auto=format&fit=crop&w=1200&q=80",
+      cameras:
+        "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
+      laptops:
+        "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=1200&q=80",
+      drones:
+        "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?auto=format&fit=crop&w=1200&q=80",
+      bikes:
+        "https://images.unsplash.com/photo-1485965120138-e538ac21d810?auto=format&fit=crop&w=1200&q=80",
+      tools:
+        "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1200&q=80",
+      powerbanks:
+        "https://images.unsplash.com/photo-1609081219091-a3f2b4c10eb3?auto=format&fit=crop&w=1200&q=80",
     };
 
     const newProduct = {
@@ -93,13 +100,15 @@ export default function BecomeLender() {
       available: true,
       owner: {
         name: user?.fullName || "Verified Lender",
-        avatar: user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80",
+        avatar:
+          user?.avatar ||
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80",
         rating: 5.0,
       },
     };
 
     // 1. Save to local storage list of custom products
-    const customList = storage.get<any[]>(STORAGE_KEYS.customProducts, []);
+    const customList = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
     storage.set(STORAGE_KEYS.customProducts, [newProduct, ...customList]);
 
     // 2. Add to active products array so it appears instantly in the catalog
@@ -164,9 +173,7 @@ export default function BecomeLender() {
             />
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">
-                  Category
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Category</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -218,7 +225,9 @@ export default function BecomeLender() {
               ) : (
                 <label className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary transition-colors cursor-pointer flex flex-col items-center justify-center bg-card">
                   <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">Click to upload a gadget image</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Click to upload a gadget image
+                  </p>
                   <input
                     type="file"
                     accept="image/*"

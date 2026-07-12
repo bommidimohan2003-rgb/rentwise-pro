@@ -152,25 +152,19 @@ export default function Checkout() {
 
     setIsProcessing(true);
 
-    // Simulate Payment processing delays for high fidelity
+    // Simulate Redirecting to payment portal
     setTimeout(() => {
-      const order: Order = {
-        id: crypto.randomUUID(),
-        productId: product.id,
-        productTitle: product.title,
-        productImage: product.image,
-        startDate: start,
-        endDate: end,
-        total: Math.round(total),
-        status: "active",
-        createdAt: new Date().toISOString(),
-      };
-      const list = storage.get<Order[]>(STORAGE_KEYS.orders, []);
-      storage.set(STORAGE_KEYS.orders, [order, ...list]);
-
       setIsProcessing(false);
-      setOpen(true);
-    }, 2000);
+      navigate({
+        to: "/payment",
+        search: {
+          id: product.id,
+          total: Math.round(total),
+          start,
+          end,
+        } as never,
+      });
+    }, 1200);
   };
 
   // Helper for countdown display
@@ -184,7 +178,9 @@ export default function Checkout() {
     <MainLayout>
       <section className="mx-auto max-w-5xl px-4 md:px-6 py-10">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Checkout</h1>
-        <p className="text-muted-foreground mt-1">Review dates and complete your payment securely.</p>
+        <p className="text-muted-foreground mt-1">
+          Review dates and complete your payment securely.
+        </p>
 
         <div className="mt-8 grid lg:grid-cols-[1fr_380px] gap-8">
           <div className="space-y-6">
@@ -264,7 +260,9 @@ export default function Checkout() {
 
                       <div className="flex justify-between items-end relative z-10 text-xs font-mono uppercase">
                         <div>
-                          <div className="text-[10px] text-white/60 tracking-tight">Card Holder</div>
+                          <div className="text-[10px] text-white/60 tracking-tight">
+                            Card Holder
+                          </div>
                           <div className="font-semibold truncate max-w-[180px]">
                             {cardName || "CARDHOLDER NAME"}
                           </div>
@@ -324,7 +322,9 @@ export default function Checkout() {
                       type="button"
                       onClick={() => setUpiType("id")}
                       className={`text-sm font-semibold flex items-center gap-1.5 transition-colors ${
-                        upiType === "id" ? "text-primary border-b-2 border-primary pb-2 -mb-4.5" : "text-muted-foreground"
+                        upiType === "id"
+                          ? "text-primary border-b-2 border-primary pb-2 -mb-4.5"
+                          : "text-muted-foreground"
                       }`}
                     >
                       <Smartphone className="h-4 w-4" /> UPI ID
@@ -333,7 +333,9 @@ export default function Checkout() {
                       type="button"
                       onClick={() => setUpiType("qr")}
                       className={`text-sm font-semibold flex items-center gap-1.5 transition-colors ${
-                        upiType === "qr" ? "text-primary border-b-2 border-primary pb-2 -mb-4.5" : "text-muted-foreground"
+                        upiType === "qr"
+                          ? "text-primary border-b-2 border-primary pb-2 -mb-4.5"
+                          : "text-muted-foreground"
                       }`}
                     >
                       <QrCode className="h-4 w-4" /> QR Code
@@ -375,14 +377,18 @@ export default function Checkout() {
 
                       {/* Mock UPI suggestions */}
                       <div className="pt-2">
-                        <label className="text-xs uppercase text-muted-foreground font-semibold">Popular handles</label>
+                        <label className="text-xs uppercase text-muted-foreground font-semibold">
+                          Popular handles
+                        </label>
                         <div className="flex flex-wrap gap-2 mt-1.5">
                           {["@okaxis", "@okicici", "@ybl", "@paytm"].map((handle) => (
                             <button
                               type="button"
                               key={handle}
                               onClick={() => {
-                                const base = upiId.includes("@") ? upiId.split("@")[0] : upiId || "user";
+                                const base = upiId.includes("@")
+                                  ? upiId.split("@")[0]
+                                  : upiId || "user";
                                 setUpiId(base + handle);
                                 setUpiVerified(false);
                               }}
@@ -419,14 +425,18 @@ export default function Checkout() {
                               <rect x="13" y="78" width="9" height="9" fill="black" />
 
                               {/* Tiny dots block simulation */}
-                              <path d="M 35 15 h 5 v 5 h -5 z M 45 5 h 10 v 5 h -10 z M 40 25 h 5 v 10 h -5 z M 55 20 h 5 v 5 h -5 z M 60 10 h 5 v 5 h -5 z M 55 35 h 10 v 5 h -10 z M 75 35 h 5 v 5 h -5 z M 90 35 h 5 v 5 h -5 z M 85 45 h 10 v 5 h -10 z M 70 50 h 10 v 5 h -10 z M 75 60 h 5 v 10 h -5 z M 90 70 h 10 v 5 h -10 z M 85 85 h 5 v 5 h -5 z M 60 75 h 5 v 5 h -5 z M 55 80 h 15 v 5 h -15 z M 35 70 h 10 v 5 h -10 z M 45 85 h 5 v 10 h -5 z M 35 90 h 5 v 5 h -5 z M 15 35 h 10 v 5 h -10 z M 25 45 h 5 v 5 h -5 z M 5 50 h 15 v 5 h -15 z M 10 60 h 10 v 5 h -10 z M 35 45 h 15 v 5 h -15 z M 50 50 h 5 v 10 h -5 z M 40 60 h 5 v 5 h -5 z" fill="black" />
+                              <path
+                                d="M 35 15 h 5 v 5 h -5 z M 45 5 h 10 v 5 h -10 z M 40 25 h 5 v 10 h -5 z M 55 20 h 5 v 5 h -5 z M 60 10 h 5 v 5 h -5 z M 55 35 h 10 v 5 h -10 z M 75 35 h 5 v 5 h -5 z M 90 35 h 5 v 5 h -5 z M 85 45 h 10 v 5 h -10 z M 70 50 h 10 v 5 h -10 z M 75 60 h 5 v 10 h -5 z M 90 70 h 10 v 5 h -10 z M 85 85 h 5 v 5 h -5 z M 60 75 h 5 v 5 h -5 z M 55 80 h 15 v 5 h -15 z M 35 70 h 10 v 5 h -10 z M 45 85 h 5 v 10 h -5 z M 35 90 h 5 v 5 h -5 z M 15 35 h 10 v 5 h -10 z M 25 45 h 5 v 5 h -5 z M 5 50 h 15 v 5 h -15 z M 10 60 h 10 v 5 h -10 z M 35 45 h 15 v 5 h -15 z M 50 50 h 5 v 10 h -5 z M 40 60 h 5 v 5 h -5 z"
+                                fill="black"
+                              />
                             </svg>
                             <div className="absolute inset-0 bg-black/5 pointer-events-none" />
                           </div>
 
                           <div className="space-y-1.5">
                             <p className="text-sm font-semibold flex items-center justify-center gap-1.5 text-primary">
-                              <Smartphone className="h-4.5 w-4.5 animate-bounce" /> Scan using any UPI App
+                              <Smartphone className="h-4.5 w-4.5 animate-bounce" /> Scan using any
+                              UPI App
                             </p>
                             <div className="text-xl font-bold font-mono tracking-wider">
                               {formatTime(qrCountdown)}
@@ -492,7 +502,11 @@ export default function Checkout() {
             <div>
               <h3 className="font-bold text-lg">Booking summary</h3>
               <div className="mt-4 flex gap-3">
-                <img src={product.image} alt="" className="h-16 w-16 rounded-xl object-cover border border-border" />
+                <img
+                  src={product.image}
+                  alt=""
+                  className="h-16 w-16 rounded-xl object-cover border border-border"
+                />
                 <div className="min-w-0">
                   <div className="font-semibold truncate text-sm">{product.title}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">
@@ -526,7 +540,9 @@ export default function Checkout() {
                   Apply
                 </Button>
               </div>
-              {applied && <p className="text-xs text-emerald-600 font-medium">10% discount applied! 🎉</p>}
+              {applied && (
+                <p className="text-xs text-emerald-600 font-medium">10% discount applied! 🎉</p>
+              )}
 
               <div className="flex justify-between mt-4">
                 <span className="text-muted-foreground">Subtotal</span>
@@ -548,18 +564,14 @@ export default function Checkout() {
               </div>
             </div>
 
-            <Button
-              size="lg"
-              className="w-full"
-              onClick={handlePay}
-              loading={isProcessing}
-            >
+            <Button size="lg" className="w-full" onClick={handlePay} loading={isProcessing}>
               {isProcessing ? "Processing..." : `Confirm & Pay ₹${total.toFixed(0)}`}
             </Button>
 
             {/* Secure Payment details */}
             <div className="flex items-center gap-2 justify-center text-[10px] text-muted-foreground mt-4 text-center">
-              <Check className="h-3 w-3 text-emerald-500 shrink-0" /> Secure 256-bit SSL encrypted payments.
+              <Check className="h-3 w-3 text-emerald-500 shrink-0" /> Secure 256-bit SSL encrypted
+              payments.
             </div>
           </aside>
         </div>
@@ -579,7 +591,8 @@ export default function Checkout() {
             </div>
             <h3 className="mt-4 font-bold text-xl text-foreground">Your rental is booked!</h3>
             <p className="mt-2 text-sm text-muted-foreground px-4">
-              We've processed your payment and sent a booking confirmation receipt to your email address.
+              We've processed your payment and sent a booking confirmation receipt to your email
+              address.
             </p>
             <div className="mt-6 flex flex-col gap-2">
               <Button

@@ -4,6 +4,7 @@ import { Button } from "@/components/common/Button";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { Info } from "lucide-react";
 import { toast } from "sonner";
+import type { User } from "@/types";
 
 export function OTPVerification() {
   const navigate = useNavigate();
@@ -47,20 +48,20 @@ export function OTPVerification() {
     const stored = storage.get<string>(STORAGE_KEYS.otp, "");
     if (code.length < 6) return setError("Enter all 6 digits");
     if (code !== stored) return setError("Invalid code");
-    
+
     storage.remove(STORAGE_KEYS.otp);
-    
+
     // Complete registration if a pending user exists
-    const pendingUser = storage.get<any>(STORAGE_KEYS.pendingUser, null);
+    const pendingUser = storage.get<User>(STORAGE_KEYS.pendingUser, null);
     if (pendingUser) {
-      const users = storage.get<any[]>(STORAGE_KEYS.users, []);
+      const users = storage.get<User[]>(STORAGE_KEYS.users, []);
       storage.set(STORAGE_KEYS.users, [...users, pendingUser]);
       storage.remove(STORAGE_KEYS.pendingUser);
       toast.success("Account created successfully! Please log in.");
     } else {
       toast.success("Verification successful! Please log in.");
     }
-    
+
     navigate({ to: "/login" });
   };
 
@@ -69,11 +70,11 @@ export function OTPVerification() {
     storage.set(STORAGE_KEYS.otp, otp);
     setOtpCode(otp);
     console.info("[Payent] New OTP:", otp);
-    
+
     setSeconds(60);
     setDigits(Array(6).fill(""));
     setError(null);
-    
+
     toast.success("New verification code sent!");
     toast.info(`[Demo Mode] New verification code: ${otp}`, {
       duration: 10000,
@@ -100,7 +101,8 @@ export function OTPVerification() {
         <div>
           <span className="font-semibold text-primary">Demo Verification Simulator</span>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            We sent an email with the code to <span className="font-semibold text-foreground">{email}</span>.
+            We sent an email with the code to{" "}
+            <span className="font-semibold text-foreground">{email}</span>.
           </p>
           <div className="mt-2.5 flex items-center gap-3">
             <div className="bg-card px-2.5 py-1 rounded-md border border-border font-mono text-sm font-extrabold tracking-wider text-primary">
@@ -142,13 +144,13 @@ export function OTPVerification() {
           />
         ))}
       </div>
-      
+
       {error && <p className="text-sm text-destructive font-medium">{error}</p>}
-      
+
       <Button className="w-full" onClick={verify}>
         Verify Code
       </Button>
-      
+
       <div className="text-center text-sm text-muted-foreground">
         {seconds > 0 ? (
           <>

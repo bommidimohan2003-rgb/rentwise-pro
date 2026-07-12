@@ -125,7 +125,11 @@ export default function Dashboard() {
             <div className="card-premium p-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">My Listings ({myListings.length})</h2>
-                <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/become-lender" })}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate({ to: "/become-lender" })}
+                >
                   Add gear
                 </Button>
               </div>
@@ -136,7 +140,9 @@ export default function Dashboard() {
                       <img src={p.image} alt="" className="h-12 w-12 rounded-lg object-cover" />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{p.title}</div>
-                        <div className="text-xs text-muted-foreground">₹{p.price}/day • {p.category}</div>
+                        <div className="text-xs text-muted-foreground">
+                          ₹{p.price}/day • {p.category}
+                        </div>
                       </div>
                     </div>
                   ))

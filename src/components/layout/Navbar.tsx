@@ -38,7 +38,7 @@ export function Navbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const handleGetStarted = () => {
-    const users = storage.get<any[]>(STORAGE_KEYS.users, []);
+    const users = storage.get<unknown[]>(STORAGE_KEYS.users, []);
     if (users.length > 0) {
       navigate({ to: "/login" });
     } else {

@@ -13,6 +13,7 @@ import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as OtpRouteImport } from './routes/otp'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -46,6 +47,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentRoute = PaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OtpRoute = OtpRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/orders': typeof OrdersRoute
   '/otp': typeof OtpRoute
+  '/payment': typeof PaymentRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/orders': typeof OrdersRoute
   '/otp': typeof OtpRoute
+  '/payment': typeof PaymentRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/orders': typeof OrdersRoute
   '/otp': typeof OtpRoute
+  '/payment': typeof PaymentRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/orders'
     | '/otp'
+    | '/payment'
     | '/profile'
     | '/register'
     | '/settings'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/orders'
     | '/otp'
+    | '/payment'
     | '/profile'
     | '/register'
     | '/settings'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/orders'
     | '/otp'
+    | '/payment'
     | '/profile'
     | '/register'
     | '/settings'
@@ -257,6 +269,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   OrdersRoute: typeof OrdersRoute
   OtpRoute: typeof OtpRoute
+  PaymentRoute: typeof PaymentRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   SettingsRoute: typeof SettingsRoute
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment': {
+      id: '/payment'
+      path: '/payment'
+      fullPath: '/payment'
+      preLoaderRoute: typeof PaymentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/otp': {
@@ -409,6 +429,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   OrdersRoute: OrdersRoute,
   OtpRoute: OtpRoute,
+  PaymentRoute: PaymentRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   SettingsRoute: SettingsRoute,
