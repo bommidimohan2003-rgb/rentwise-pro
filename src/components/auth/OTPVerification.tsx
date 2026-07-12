@@ -52,7 +52,7 @@ export function OTPVerification() {
     storage.remove(STORAGE_KEYS.otp);
 
     // Complete registration if a pending user exists
-    const pendingUser = storage.get<User>(STORAGE_KEYS.pendingUser, null);
+    const pendingUser = storage.get<User | null>(STORAGE_KEYS.pendingUser, null);
     if (pendingUser) {
       const users = storage.get<User[]>(STORAGE_KEYS.users, []);
       storage.set(STORAGE_KEYS.users, [...users, pendingUser]);
