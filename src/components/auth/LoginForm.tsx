@@ -27,8 +27,9 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { remember: true } });
 
-  const onSubmit = (data: FormValues) => {
-    const res = login(data.email, data.password);
+  const onSubmit = async (data: FormValues) => {
+    setError(null);
+    const res = await login(data.email, data.password);
     if (!res.ok) return setError(res.error ?? "Unable to login");
     navigate({ to: "/dashboard" });
   };

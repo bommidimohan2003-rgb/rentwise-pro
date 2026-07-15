@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Dashboard from "@/pages/Dashboard";
 import { getSeoMetadata } from "@/utils/seo";
+import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 
 export const Route = createFileRoute("/dashboard")({
   head: () =>
@@ -9,5 +10,9 @@ export const Route = createFileRoute("/dashboard")({
       description: "Overview of your listings, performance stats, earnings, and active rentals.",
       path: "/dashboard",
     }),
-  component: Dashboard,
+  component: () => (
+    <ProtectedRoute>
+      <Dashboard />
+    </ProtectedRoute>
+  ),
 });

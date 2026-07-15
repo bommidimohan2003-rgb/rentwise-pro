@@ -1,14 +1,26 @@
 import { Heart } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import type { Product } from "@/types";
 import { Rating } from "./Rating";
 import { useWishlist } from "@/hooks/useWishlist";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
-export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
+export function ProductCard({
+  product,
+  index = 0,
+  isReference = false,
+}: {
+  product: Product;
+  index?: number;
+  isReference?: boolean;
+}) {
   const { has, toggle } = useWishlist();
   const liked = has(product.id);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <motion.div
@@ -25,18 +37,25 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            toggle(product.id);
-          }}
-          className="absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full glass hover:scale-110 transition-transform"
-          aria-label="Wishlist"
-        >
-          <Heart
-            className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-foreground")}
-          />
-        </button>
+        {!isReference && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              if (!user) {
+                toast.error("Please log in to add items to your wishlist.");
+                navigate({ to: "/login" });
+                return;
+              }
+              toggle(product.id);
+            }}
+            className="absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full glass hover:scale-110 transition-transform"
+            aria-label="Wishlist"
+          >
+            <Heart
+              className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-foreground")}
+            />
+          </button>
+        )}
         {!product.available && (
           <div className="absolute top-3 left-3 rounded-full bg-destructive/90 text-white text-xs px-3 py-1 font-medium">
             Unavailable
@@ -56,13 +75,39 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             <span className="text-xl font-bold">₹{product.price}</span>
             <span className="text-xs text-muted-foreground"> /day</span>
           </div>
-          <Link
-            to="/product/$id"
-            params={{ id: product.id }}
-            className="btn-gradient rounded-full px-4 h-9 text-sm font-medium inline-flex items-center"
-          >
-            Rent
-          </Link>
+          {isReference ? (
+            <Link
+              to={user ? "/become-lender" : "/login"}
+              search={
+                user
+                  ? {
+                      title: product.title,
+                      category: product.category,
+                      price: product.price.toString(),
+                      description: product.description,
+                    }
+                  : undefined
+              }
+              onClick={(e) => {
+                if (!user) {
+                  e.preventDefault();
+                  toast.error("Please log in to list your gear.");
+                  navigate({ to: "/login" });
+                }
+              }}
+              className="border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-full px-4 h-9 text-sm font-medium inline-flex items-center transition-colors duration-200"
+            >
+              List Yours
+            </Link>
+          ) : (
+            <Link
+              to="/product/$id"
+              params={{ id: product.id }}
+              className="btn-gradient rounded-full px-4 h-9 text-sm font-medium inline-flex items-center"
+            >
+              Rent
+            </Link>
+          )}
         </div>
       </div>
     </motion.div>

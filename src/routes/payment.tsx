@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Payment from "@/pages/Payment";
 import { getSeoMetadata } from "@/utils/seo";
+import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 
 export const Route = createFileRoute("/payment")({
   head: () =>
@@ -15,5 +16,9 @@ export const Route = createFileRoute("/payment")({
     start: (s.start as string) ?? "",
     end: (s.end as string) ?? "",
   }),
-  component: Payment,
+  component: () => (
+    <ProtectedRoute>
+      <Payment />
+    </ProtectedRoute>
+  ),
 });

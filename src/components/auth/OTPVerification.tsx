@@ -1,19 +1,35 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/common/Button";
+import { Input } from "@/components/common/Input";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
-import { Info } from "lucide-react";
+import { api } from "@/utils/api";
+import { Info, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import type { User } from "@/types";
+
+interface PendingUser {
+  email: string;
+  phone: string;
+  password?: string;
+  fullName?: string;
+}
 
 export function OTPVerification() {
   const navigate = useNavigate();
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(60);
-  const [otpCode, setOtpCode] = useState(storage.get<string>(STORAGE_KEYS.otp, ""));
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const refs = useRef<Array<HTMLInputElement | null>>([]);
   const email = storage.get<string>(STORAGE_KEYS.otpEmail, "your email");
+
+  const pendingUser = storage.get<PendingUser | null>(STORAGE_KEYS.pendingUser, null);
+  const isResetFlow = !pendingUser;
+  const targetContact = isResetFlow ? email : pendingUser?.phone || "your phone number";
 
   // Timer countdown
   useEffect(() => {
@@ -22,17 +38,6 @@ export function OTPVerification() {
     return () => clearTimeout(t);
   }, [seconds]);
 
-  // Flash OTP in toast on mount so user sees it instantly
-  useEffect(() => {
-    const code = storage.get<string>(STORAGE_KEYS.otp, "");
-    if (code) {
-      toast.info(`[Demo Mode] Verification code: ${code}`, {
-        duration: 10000,
-        position: "top-center",
-      });
-    }
-  }, []);
-
   const change = (i: number, v: string) => {
     const val = v.replace(/\D/g, "").slice(-1);
     setDigits((prev) => {
@@ -40,82 +45,89 @@ export function OTPVerification() {
       next[i] = val;
       return next;
     });
+    setError(null); // Clear error on change
     if (val && i < 5) refs.current[i + 1]?.focus();
   };
 
-  const verify = () => {
+  const verify = async () => {
     const code = digits.join("");
-    const stored = storage.get<string>(STORAGE_KEYS.otp, "");
     if (code.length < 6) return setError("Enter all 6 digits");
-    if (code !== stored) return setError("Invalid code");
 
-    storage.remove(STORAGE_KEYS.otp);
-
-    // Complete registration if a pending user exists
-    const pendingUser = storage.get<User | null>(STORAGE_KEYS.pendingUser, null);
-    if (pendingUser) {
-      const users = storage.get<User[]>(STORAGE_KEYS.users, []);
-      storage.set(STORAGE_KEYS.users, [...users, pendingUser]);
-      storage.remove(STORAGE_KEYS.pendingUser);
-      toast.success("Account created successfully! Please log in.");
-    } else {
-      toast.success("Verification successful! Please log in.");
-    }
-
-    navigate({ to: "/login" });
-  };
-
-  const resend = () => {
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
-    storage.set(STORAGE_KEYS.otp, otp);
-    setOtpCode(otp);
-    console.info("[Payent] New OTP:", otp);
-
-    setSeconds(60);
-    setDigits(Array(6).fill(""));
     setError(null);
+    setLoading(true);
 
-    toast.success("New verification code sent!");
-    toast.info(`[Demo Mode] New verification code: ${otp}`, {
-      duration: 10000,
-      position: "top-center",
-    });
+    try {
+      if (isResetFlow) {
+        if (!newPassword) {
+          setLoading(false);
+          return setError("Enter a new password");
+        }
+        if (newPassword.length < 8) {
+          setLoading(false);
+          return setError("Password must be at least 8 characters");
+        }
+        if (newPassword !== confirmPassword) {
+          setLoading(false);
+          return setError("Passwords do not match");
+        }
+
+        await api.forgotPasswordReset(email, code, newPassword);
+        storage.remove(STORAGE_KEYS.otp);
+        storage.remove(STORAGE_KEYS.otpEmail);
+        toast.success("Password reset successful! Please log in.");
+      } else if (pendingUser) {
+        await api.registerVerify(
+          pendingUser.email,
+          pendingUser.phone,
+          code,
+          pendingUser.password || "",
+          pendingUser.fullName,
+        );
+        storage.remove(STORAGE_KEYS.otp);
+        storage.remove(STORAGE_KEYS.pendingUser);
+        storage.remove(STORAGE_KEYS.otpEmail);
+        toast.success("Registration successful! Please log in.");
+      }
+      navigate({ to: "/login" });
+    } catch (err) {
+      const error = err as { message?: string };
+      setError(error.message || "Verification failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAutofill = () => {
-    const code = storage.get<string>(STORAGE_KEYS.otp, "");
-    if (code) {
-      setDigits(code.split(""));
-      setError(null);
-      toast.success("Verification code auto-filled!");
-    } else {
-      toast.error("No active OTP code found. Please request a new one.");
+  const resend = async () => {
+    setError(null);
+    try {
+      if (isResetFlow) {
+        await api.forgotPasswordRequest(email);
+      } else if (pendingUser) {
+        await api.registerRequest(pendingUser.email, pendingUser.phone);
+      }
+      setSeconds(60);
+      setDigits(Array(6).fill(""));
+      toast.success("New verification code sent!");
+    } catch (err) {
+      const error = err as { message?: string };
+      toast.error(error.message || "Failed to resend code");
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Real-time frontend simulator box */}
+      {/* Real-time SMS Verification */}
       <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-sm flex gap-3 items-start">
         <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold text-primary">Demo Verification Simulator</span>
+          <span className="font-semibold text-primary">SMS Verification</span>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            We sent an email with the code to{" "}
-            <span className="font-semibold text-foreground">{email}</span>.
+            We sent a verification code via SMS to{" "}
+            <span className="font-semibold text-foreground">{targetContact}</span>.
           </p>
-          <div className="mt-2.5 flex items-center gap-3">
-            <div className="bg-card px-2.5 py-1 rounded-md border border-border font-mono text-sm font-extrabold tracking-wider text-primary">
-              {otpCode || "EXPIRED"}
-            </div>
-            <button
-              type="button"
-              onClick={handleAutofill}
-              className="text-xs font-bold text-primary hover:underline hover:text-primary/80 transition-colors"
-            >
-              Auto-fill OTP Code
-            </button>
-          </div>
+          <p className="text-muted-foreground text-xs mt-1.5 italic">
+            Check your mobile device for the SMS verification code from Twilio.
+          </p>
         </div>
       </div>
 
@@ -145,9 +157,38 @@ export function OTPVerification() {
         ))}
       </div>
 
+      {isResetFlow && (
+        <div className="space-y-4 pt-2 border-t border-border">
+          <h3 className="font-semibold text-foreground text-sm">Set your new password</h3>
+          <Input
+            label="New Password"
+            type={showPw ? "text" : "password"}
+            placeholder="••••••••"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            rightAdornment={
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                className="p-1 text-muted-foreground hover:text-foreground"
+              >
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            }
+          />
+          <Input
+            label="Confirm New Password"
+            type={showPw ? "text" : "password"}
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </div>
+      )}
+
       {error && <p className="text-sm text-destructive font-medium">{error}</p>}
 
-      <Button className="w-full" onClick={verify}>
+      <Button className="w-full" onClick={verify} loading={loading}>
         Verify Code
       </Button>
 

@@ -2,7 +2,7 @@ import { IndianRupee, Shield, Sparkles, Upload } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
@@ -33,14 +33,20 @@ const perks = [
 
 export default function BecomeLender() {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/become-lender" }) as {
+    title?: string;
+    category?: string;
+    price?: string;
+    description?: string;
+  };
   const { user } = useAuth();
   const [done, setDone] = useState(false);
 
   // Form State
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("cameras");
-  const [price, setPrice] = useState("");
-  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState(search.title || "");
+  const [category, setCategory] = useState(search.category || "cameras");
+  const [price, setPrice] = useState(search.price || "");
+  const [description, setDescription] = useState(search.description || "");
   const [image, setImage] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

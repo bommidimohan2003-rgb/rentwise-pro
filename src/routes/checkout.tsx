@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Checkout from "@/pages/Checkout";
 import { getSeoMetadata } from "@/utils/seo";
+import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 
 export const Route = createFileRoute("/checkout")({
   head: () =>
@@ -10,5 +11,9 @@ export const Route = createFileRoute("/checkout")({
       path: "/checkout",
     }),
   validateSearch: (s: Record<string, unknown>) => ({ id: (s.id as string) ?? undefined }),
-  component: Checkout,
+  component: () => (
+    <ProtectedRoute>
+      <Checkout />
+    </ProtectedRoute>
+  ),
 });

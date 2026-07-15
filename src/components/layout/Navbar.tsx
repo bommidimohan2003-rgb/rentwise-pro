@@ -20,6 +20,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { Button } from "@/components/common/Button";
+import { toast } from "sonner";
 
 const links = [
   { to: "/", label: "Home" },
@@ -106,7 +107,14 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             aria-label="Wishlist"
-            onClick={() => navigate({ to: "/wishlist" })}
+            onClick={() => {
+              if (!user) {
+                toast.error("Please log in to view your wishlist.");
+                navigate({ to: "/login" });
+              } else {
+                navigate({ to: "/wishlist" });
+              }
+            }}
           >
             <Heart className="h-4 w-4" />
           </Button>
@@ -114,7 +122,14 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             aria-label="Notifications"
-            onClick={() => navigate({ to: "/notifications" })}
+            onClick={() => {
+              if (!user) {
+                toast.error("Please log in to view your notifications.");
+                navigate({ to: "/login" });
+              } else {
+                navigate({ to: "/notifications" });
+              }
+            }}
           >
             <Bell className="h-4 w-4" />
           </Button>

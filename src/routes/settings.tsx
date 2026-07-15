@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Settings from "@/pages/Settings";
 import { getSeoMetadata } from "@/utils/seo";
+import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 
 export const Route = createFileRoute("/settings")({
   head: () =>
@@ -9,5 +10,9 @@ export const Route = createFileRoute("/settings")({
       description: "Manage your account credentials, notification options, and rental preferences.",
       path: "/settings",
     }),
-  component: Settings,
+  component: () => (
+    <ProtectedRoute>
+      <Settings />
+    </ProtectedRoute>
+  ),
 });

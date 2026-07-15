@@ -15,14 +15,14 @@ export default function Profile() {
 
   useEffect(() => {
     if (ready && !user) navigate({ to: "/login" });
-    if (user) setForm({ fullName: user.fullName, email: user.email, phone: user.phone });
+    if (user) setForm({ fullName: user.fullName, email: user.email, phone: user.phone ?? "" });
   }, [user, ready, navigate]);
 
   const save = () => user && updateUser(form);
 
   const changePw = () => {
     if (!user) return;
-    if (pw.current !== user.password) return setPwMsg("Current password is incorrect");
+    if (pw.current !== (user.password ?? "")) return setPwMsg("Current password is incorrect");
     if (pw.next.length < 8) return setPwMsg("Password must be 8+ chars");
     if (pw.next !== pw.confirm) return setPwMsg("Passwords don't match");
     updateUser({ password: pw.next });

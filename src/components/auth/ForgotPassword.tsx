@@ -7,6 +7,7 @@ import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { toast } from "sonner";
+import { api } from "@/utils/api";
 
 const schema = z.object({ email: z.string().trim().email("Invalid email") });
 type FormValues = z.infer<typeof schema>;
@@ -19,14 +20,18 @@ export function ForgotPassword() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
-  const onSubmit = (data: FormValues) => {
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
-    storage.set(STORAGE_KEYS.otp, otp);
-    storage.set(STORAGE_KEYS.otpEmail, data.email);
-    console.info("[Payent] OTP (demo):", otp);
-    toast.success("Verification code sent!");
-    toast.info(`[Demo Mode] OTP: ${otp}`, { duration: 10000 });
-    navigate({ to: "/otp" });
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await api.forgotPasswordRequest(data.email);
+      storage.set(STORAGE_KEYS.otpEmail, data.email);
+      storage.remove(STORAGE_KEYS.pendingUser); // Distinguish from sign up flow
+
+      toast.success("Password reset code sent via SMS!");
+      navigate({ to: "/otp" });
+    } catch (err) {
+      const error = err as { message?: string };
+      toast.error(error.message || "Failed to request password reset.");
+    }
   };
 
   return (

@@ -49,32 +49,25 @@ export function RegisterForm() {
   const level = useMemo(() => strength(pw), [pw]);
   const labels = ["Weak", "Fair", "Good", "Strong", "Excellent"];
 
-  const onSubmit = (data: FormValues) => {
-    // Check if email already registered
-    const users = storage.get<UserType[]>(STORAGE_KEYS.users, []);
-    if (users.some((u) => u.email === data.email)) {
-      return setError("Email already registered");
+  const onSubmit = async (data: FormValues) => {
+    setError(null);
+    const res = await registerUser(data.email, data.phone);
+    if (!res.ok) {
+      return setError(res.error ?? "Failed to initiate registration");
     }
 
-    const newUser: UserType = {
-      id: crypto.randomUUID(),
+    const pendingUser = {
       fullName: data.fullName,
       email: data.email,
       phone: data.phone,
       password: data.password,
-      createdAt: new Date().toISOString(),
     };
 
-    // Save user to pending state
-    storage.set(STORAGE_KEYS.pendingUser, newUser);
-
-    // Generate OTP
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
-    storage.set(STORAGE_KEYS.otp, otp);
+    // Save registration details to pending state to complete verification in OTP step
+    storage.set(STORAGE_KEYS.pendingUser, pendingUser);
     storage.set(STORAGE_KEYS.otpEmail, data.email);
 
-    toast.success("Verification code sent!");
-    toast.info(`[Demo Mode] OTP: ${otp}`, { duration: 10000 });
+    toast.success("Verification code sent via SMS!");
     navigate({ to: "/otp" });
   };
 

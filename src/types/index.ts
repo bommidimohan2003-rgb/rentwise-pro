@@ -2,10 +2,11 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
-  phone: string;
-  password: string;
+  phone?: string;
+  password?: string;
   avatar?: string;
-  createdAt: string;
+  role?: "user" | "admin";
+  createdAt?: string;
 }
 
 export interface Product {
