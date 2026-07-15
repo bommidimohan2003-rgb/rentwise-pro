@@ -7,8 +7,11 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { HelpChatbot } from "../components/common/HelpChatbot";
+import { api } from "../utils/api";
+import { products } from "../utils/mockData";
+import type { Product } from "../types";
 
 import appCss from "../styles.css?url";
 
@@ -140,6 +143,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    // Fetch custom products listed in the database and prepend them to the catalog
+    api
+      .getPublicCustomProducts()
+      .then((customProducts) => {
+        const existingIds = new Set(products.map((p) => p.id));
+        const filtered = (customProducts as Product[]).filter((p) => !existingIds.has(p.id));
+        products.unshift(...filtered);
+      })
+      .catch((err) => console.error("Failed to load public custom products:", err));
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

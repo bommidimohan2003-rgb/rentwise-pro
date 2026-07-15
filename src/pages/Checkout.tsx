@@ -7,6 +7,7 @@ import { Input } from "@/components/common/Input";
 import { Modal } from "@/components/common/Modal";
 import { products } from "@/utils/mockData";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
+import { api } from "@/utils/api";
 import type { Order } from "@/types";
 import { toast } from "sonner";
 
@@ -465,8 +466,14 @@ export default function Checkout() {
                                 status: "active",
                                 createdAt: new Date().toISOString(),
                               };
-                              const list = storage.get<Order[]>(STORAGE_KEYS.orders, []);
-                              storage.set(STORAGE_KEYS.orders, [order, ...list]);
+                              const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+                              if (token) {
+                                api
+                                  .createOrder(token, order)
+                                  .catch((err) =>
+                                    console.error("Failed to create order on backend:", err),
+                                  );
+                              }
                               setOpen(true);
                             }}
                             className="bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"

@@ -16,6 +16,7 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { products } from "@/utils/mockData";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
+import { api } from "@/utils/api";
 import type { Order } from "@/types";
 import { toast } from "sonner";
 
@@ -87,8 +88,12 @@ export default function Payment() {
       createdAt: new Date().toISOString(),
     };
 
-    const existingOrders = storage.get<Order[]>(STORAGE_KEYS.orders, []);
-    storage.set(STORAGE_KEYS.orders, [order, ...existingOrders]);
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (token) {
+      api
+        .createOrder(token, order)
+        .catch((err) => console.error("Failed to create order on backend:", err));
+    }
 
     toast.success("Payment Completed Successfully! 🎉");
 

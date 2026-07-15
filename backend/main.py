@@ -16,7 +16,19 @@ from database import (
     update_user_password,
     save_otp,
     get_otp,
-    delete_otp
+    delete_otp,
+    get_wishlist,
+    toggle_wishlist,
+    get_orders,
+    create_order,
+    cancel_order,
+    get_custom_products,
+    get_all_custom_products,
+    create_custom_product,
+    get_notifications,
+    create_notification,
+    mark_notifications_read,
+    execute_query
 )
 from auth import (
     hash_password,
@@ -259,6 +271,209 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
         "fullName": user["full_name"],
         "role": user["role"]
     }
+
+# Schemas and Routes for database persistence
+class WishlistToggleSchema(BaseModel):
+    product_id: str
+
+class OrderSchema(BaseModel):
+    id: str
+    productId: str
+    productTitle: str
+    productImage: str
+    startDate: str
+    endDate: str
+    total: int
+    status: str
+
+class ProductOwnerSchema(BaseModel):
+    name: str
+    avatar: str
+    rating: Optional[float] = 5.0
+
+class CustomProductSchema(BaseModel):
+    id: str
+    title: str
+    description: str
+    price: int
+    image: str
+    category: str
+    rating: Optional[float] = 5.0
+    reviews: Optional[int] = 0
+    available: Optional[bool] = True
+    owner: ProductOwnerSchema
+
+@app.get("/api/wishlist")
+def fetch_wishlist(email: str = Depends(get_current_user_email)):
+    return get_wishlist(email)
+
+@app.post("/api/wishlist/toggle")
+def toggle_wishlist_item(data: WishlistToggleSchema, email: str = Depends(get_current_user_email)):
+    toggle_wishlist(email, data.product_id)
+    return {"success": True}
+
+@app.get("/api/orders")
+def fetch_orders(email: str = Depends(get_current_user_email)):
+    orders = get_orders(email)
+    # If empty, seed initial demo orders for the user
+    if not orders:
+        demo_orders = [
+            {
+                "id": "o0",
+                "productId": "p1",
+                "productTitle": "Sony Alpha 7 IV",
+                "productImage": "https://images.unsplash.com/photo-1610448721566-47369c768e70?auto=format&fit=crop&w=1200&q=80",
+                "startDate": "Mar 12",
+                "endDate": "Mar 18",
+                "total": 12000,
+                "status": "active",
+                "created_at": datetime.utcnow().isoformat()
+            },
+            {
+                "id": "o1",
+                "productId": "p2",
+                "productTitle": "DJI Mavic 3 Pro",
+                "productImage": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1200&q=80",
+                "startDate": "Mar 12",
+                "endDate": "Mar 18",
+                "total": 15000,
+                "status": "pending",
+                "created_at": datetime.utcnow().isoformat()
+            }
+        ]
+        for o in demo_orders:
+            execute_query("""
+                INSERT INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (o["id"], email, o["productId"], o["productTitle"], o["productImage"], o["startDate"], o["endDate"], o["total"], o["status"], o["created_at"]))
+        orders = get_orders(email)
+    
+    result = []
+    for o in orders:
+        result.append({
+            "id": o["id"],
+            "productId": o["product_id"],
+            "productTitle": o["product_title"],
+            "productImage": o["product_image"],
+            "startDate": o["start_date"],
+            "endDate": o["end_date"],
+            "total": o["total"],
+            "status": o["status"],
+            "createdAt": o["created_at"]
+        })
+    return result
+
+@app.post("/api/orders")
+def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
+    create_order(email, data.dict())
+    return {"success": True}
+
+@app.post("/api/orders/{id}/cancel")
+def cancel_user_order(id: str, email: str = Depends(get_current_user_email)):
+    cancel_order(id)
+    return {"success": True}
+
+@app.get("/api/products/custom")
+def fetch_user_listings(email: str = Depends(get_current_user_email)):
+    listings = get_custom_products(email)
+    result = []
+    for p in listings:
+        result.append({
+            "id": p["id"],
+            "title": p["title"],
+            "description": p["description"],
+            "price": p["price"],
+            "image": p["image"],
+            "category": p["category"],
+            "rating": float(p["rating"]),
+            "reviews": p["reviews"],
+            "available": bool(p["available"]),
+            "owner": {
+                "name": p["owner_name"],
+                "avatar": p["owner_avatar"],
+                "rating": float(p["owner_rating"])
+            }
+        })
+    return result
+
+@app.get("/api/products/custom/public")
+def fetch_public_listings():
+    listings = get_all_custom_products()
+    result = []
+    for p in listings:
+        result.append({
+            "id": p["id"],
+            "title": p["title"],
+            "description": p["description"],
+            "price": p["price"],
+            "image": p["image"],
+            "category": p["category"],
+            "rating": float(p["rating"]),
+            "reviews": p["reviews"],
+            "available": bool(p["available"]),
+            "owner": {
+                "name": p["owner_name"],
+                "avatar": p["owner_avatar"],
+                "rating": float(p["owner_rating"])
+            }
+        })
+    return result
+
+@app.post("/api/products/custom")
+def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_current_user_email)):
+    create_custom_product(email, data.dict())
+    return {"success": True}
+
+@app.get("/api/notifications")
+def fetch_notifications(email: str = Depends(get_current_user_email)):
+    notifications = get_notifications(email)
+    if not notifications:
+        demo_notifications = [
+            {
+                "id": "n1",
+                "title": "Booking confirmed",
+                "message": "Your Sony A7 IV rental starts tomorrow.",
+                "type": "success",
+                "read": False,
+                "createdAt": "2h ago"
+            },
+            {
+                "id": "n2",
+                "title": "New message from Alex",
+                "message": "Hey, are you around for pickup at 3pm?",
+                "type": "info",
+                "read": False,
+                "createdAt": "5h ago"
+            },
+            {
+                "id": "n3",
+                "title": "Return reminder",
+                "message": "DJI Mavic 3 due back in 2 days.",
+                "type": "warning",
+                "read": True,
+                "createdAt": "1d ago"
+            }
+        ]
+        for n in demo_notifications:
+            create_notification(email, n)
+        notifications = get_notifications(email)
+    
+    result = []
+    for n in notifications:
+        result.append({
+            "id": n["id"],
+            "title": n["title"],
+            "message": n["message"],
+            "type": n["type"],
+            "read": bool(n["is_read"]),
+            "createdAt": n["created_at"]
+        })
+    return result
+
+@app.post("/api/notifications/read")
+def read_all_notifications(email: str = Depends(get_current_user_email)):
+    mark_notifications_read(email)
+    return {"success": True}
 
 if __name__ == "__main__":
     import uvicorn

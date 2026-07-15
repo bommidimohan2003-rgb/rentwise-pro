@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
+import { api } from "@/utils/api";
+import { toast } from "sonner";
 import type { Notification } from "@/types";
 
 const seed: Notification[] = [
@@ -34,19 +36,25 @@ const seed: Notification[] = [
 
 export default function Notifications() {
   const [list, setList] = useState<Notification[]>([]);
+  const token = storage.get<string | null>(STORAGE_KEYS.token, null);
 
   useEffect(() => {
-    const stored = storage.get<Notification[]>(STORAGE_KEYS.notifications, []);
-    if (!stored.length) {
-      storage.set(STORAGE_KEYS.notifications, seed);
-      setList(seed);
-    } else setList(stored);
-  }, []);
+    if (!token) return;
+    api
+      .getNotifications(token)
+      .then(setList)
+      .catch((err) => console.error("Failed to load notifications:", err));
+  }, [token]);
 
   const markAll = () => {
-    const next = list.map((n) => ({ ...n, read: true }));
-    setList(next);
-    storage.set(STORAGE_KEYS.notifications, next);
+    if (!token) return;
+    api
+      .markNotificationsRead(token)
+      .then(() => {
+        setList((prev) => prev.map((n) => ({ ...n, read: true })));
+        toast.success("All notifications marked as read!");
+      })
+      .catch((err) => toast.error(err.message || "Failed to mark notifications as read."));
   };
 
   return (

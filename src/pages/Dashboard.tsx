@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 import { products } from "@/utils/mockData";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
+import { api } from "@/utils/api";
 import type { Order, Product, Notification } from "@/types";
 import { Button } from "@/components/common/Button";
 
@@ -17,45 +18,48 @@ export default function Dashboard() {
   const { ids } = useWishlist();
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [myListings, setMyListings] = useState<Product[]>([]);
+  const [alertsList, setAlertsList] = useState<Notification[]>([]);
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+
+  const token = storage.get<string | null>(STORAGE_KEYS.token, null);
 
   useEffect(() => {
     if (ready && !user) navigate({ to: "/login" });
   }, [ready, user, navigate]);
 
   useEffect(() => {
-    let list = storage.get<Order[]>(STORAGE_KEYS.orders, []);
-    if (!list.length) {
-      list = products.slice(0, 3).map((p, i) => ({
-        id: `demo-${i}`,
-        productId: p.id,
-        productTitle: p.title,
-        productImage: p.image,
-        startDate: "Mar 14",
-        endDate: "Mar 20",
-        total: p.price * 6,
-        status: (i === 0 ? "active" : i === 1 ? "pending" : "completed") as Order["status"],
-        createdAt: new Date().toISOString(),
-      }));
-      storage.set(STORAGE_KEYS.orders, list);
-    }
-    setOrders(list);
-  }, []);
+    if (!token) return;
+    api
+      .getOrders(token)
+      .then(setOrders)
+      .catch((err) => console.error("Failed to load orders:", err));
+
+    api
+      .getCustomProducts(token)
+      .then(setMyListings)
+      .catch((err) => console.error("Failed to load listings:", err));
+
+    api
+      .getNotifications(token)
+      .then(setAlertsList)
+      .catch((err) => console.error("Failed to load notifications:", err));
+  }, [token]);
 
   const handleCancelOrder = (orderId: string) => {
-    const updated = orders.map((o) => {
-      if (o.id === orderId) {
-        return { ...o, status: "cancelled" as const };
-      }
-      return o;
-    });
-    setOrders(updated);
-    storage.set(STORAGE_KEYS.orders, updated);
-    toast.success("Order cancelled successfully!");
+    if (!token) return;
+    api
+      .cancelOrder(token, orderId)
+      .then(() => {
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" as const } : o)),
+        );
+        toast.success("Order cancelled successfully!");
+      })
+      .catch((err) => toast.error(err.message || "Failed to cancel order."));
   };
 
   const wishlistItems = products.filter((p) => ids.includes(p.id)).slice(0, 3);
-  const myListings = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
 
   // Compute real-time dashboard details dynamically
   const activeRentalsCount = orders.filter(
@@ -65,7 +69,6 @@ export default function Dashboard() {
     .filter((o) => o.status !== "cancelled")
     .reduce((sum, o) => sum + o.total, 0);
   const savedItemsCount = ids.length;
-  const alertsList = storage.get<Notification[]>(STORAGE_KEYS.notifications, []);
   const alertsCount = alertsList.length || 3;
 
   const stats = [

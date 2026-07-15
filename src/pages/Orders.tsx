@@ -5,47 +5,33 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/common/Button";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
-import { products } from "@/utils/mockData";
+import { api } from "@/utils/api";
 import type { Order } from "@/types";
 
 export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+
   useEffect(() => {
-    const list = storage.get<Order[]>(STORAGE_KEYS.orders, []);
-    if (!list.length) {
-      const demo = products.slice(0, 4).map((p, i) => ({
-        id: `o${i}`,
-        productId: p.id,
-        productTitle: p.title,
-        productImage: p.image,
-        startDate: "Mar 12",
-        endDate: "Mar 18",
-        total: p.price * 6,
-        status: (i === 0
-          ? "active"
-          : i === 1
-            ? "pending"
-            : i === 2
-              ? "completed"
-              : "cancelled") as Order["status"],
-        createdAt: new Date().toISOString(),
-      }));
-      storage.set(STORAGE_KEYS.orders, demo);
-      setOrders(demo);
-    } else setOrders(list);
-  }, []);
+    if (!token) return;
+    api
+      .getOrders(token)
+      .then(setOrders)
+      .catch((err) => console.error("Failed to load orders:", err));
+  }, [token]);
 
   const handleCancelOrder = (orderId: string) => {
-    const updated = orders.map((o) => {
-      if (o.id === orderId) {
-        return { ...o, status: "cancelled" as const };
-      }
-      return o;
-    });
-    setOrders(updated);
-    storage.set(STORAGE_KEYS.orders, updated);
-    toast.success("Order cancelled successfully!");
+    if (!token) return;
+    api
+      .cancelOrder(token, orderId)
+      .then(() => {
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" as const } : o)),
+        );
+        toast.success("Order cancelled successfully!");
+      })
+      .catch((err) => toast.error(err.message || "Failed to cancel order."));
   };
 
   return (

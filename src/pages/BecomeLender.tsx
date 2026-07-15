@@ -4,11 +4,12 @@ import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { products } from "@/utils/mockData";
-import { toast } from "sonner";
+import { STORAGE_KEYS, storage } from "@/utils/storage";
+import { api } from "@/utils/api";
 import type { Product } from "@/types";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const perks = [
   {
@@ -113,18 +114,26 @@ export default function BecomeLender() {
       },
     };
 
-    // 1. Save to local storage list of custom products
-    const customList = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-    storage.set(STORAGE_KEYS.customProducts, [newProduct, ...customList]);
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (!token) {
+      toast.error("Please log in to submit a listing.");
+      return;
+    }
 
-    // 2. Add to active products array so it appears instantly in the catalog
-    products.unshift(newProduct);
-
-    setDone(true);
-    toast.success("Listing submitted successfully!");
-    setTimeout(() => {
-      navigate({ to: "/dashboard" });
-    }, 1200);
+    api
+      .createCustomProduct(token, newProduct)
+      .then(() => {
+        // Add to active products array so it appears instantly in the catalog
+        products.unshift(newProduct);
+        setDone(true);
+        toast.success("Listing submitted successfully!");
+        setTimeout(() => {
+          navigate({ to: "/dashboard" });
+        }, 1200);
+      })
+      .catch((err) => {
+        toast.error(err.message || "Failed to submit listing.");
+      });
   };
 
   return (
