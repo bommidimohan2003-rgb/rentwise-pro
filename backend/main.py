@@ -32,14 +32,7 @@ from database import (
     execute_query,
     get_db_connection,
     delete_custom_product,
-    toggle_custom_product_availability,
-    get_all_users,
-    update_user_role,
-    delete_user_by_admin,
-    get_all_orders_for_admin,
-    update_order_status_by_admin,
-    delete_order_by_admin,
-    delete_custom_product_by_admin
+    toggle_custom_product_availability
 )
 from auth import (
     hash_password,
@@ -537,136 +530,7 @@ def read_all_notifications(email: str = Depends(get_current_user_email)):
     mark_notifications_read(email)
     return {"success": True}
 
-# Security Dependency for Admin Role
-def get_current_admin_email(authorization: Optional[str] = Header(None)) -> str:
-    email = get_current_user_email(authorization)
-    user = get_user(email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access forbidden. Admin privileges required."
-        )
-    return email
 
-# Admin Schemas
-class AdminRoleUpdateSchema(BaseModel):
-    role: str
-
-class AdminOrderStatusSchema(BaseModel):
-    status: str
-
-# Admin Endpoints
-@app.get("/api/admin/stats")
-def admin_stats(admin_email: str = Depends(get_current_admin_email)):
-    users = get_all_users()
-    listings = get_all_custom_products()
-    orders = get_all_orders_for_admin()
-    
-    # Calculate total volume (revenue)
-    total_revenue = sum(o["total"] for o in orders if o["status"] != "cancelled")
-    
-    return {
-        "totalUsers": len(users),
-        "totalListings": len(listings),
-        "totalOrders": len(orders),
-        "totalRevenue": total_revenue
-    }
-
-@app.get("/api/admin/users")
-def admin_users(admin_email: str = Depends(get_current_admin_email)):
-    users = get_all_users()
-    return [
-        {
-            "email": u["email"],
-            "phone": u["phone"],
-            "fullName": u["full_name"],
-            "role": u["role"],
-            "createdAt": u["created_at"]
-        } for u in users
-    ]
-
-@app.put("/api/admin/users/{email}/role")
-def admin_update_user_role(email: str, data: AdminRoleUpdateSchema, admin_email: str = Depends(get_current_admin_email)):
-    if data.role not in ["user", "admin"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid role. Must be 'user' or 'admin'."
-        )
-    if email == admin_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You cannot change your own admin role."
-        )
-    update_user_role(email, data.role)
-    return {"success": True}
-
-@app.delete("/api/admin/users/{email}")
-def admin_delete_user(email: str, admin_email: str = Depends(get_current_admin_email)):
-    if email == admin_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You cannot delete your own admin account."
-        )
-    delete_user_by_admin(email)
-    return {"success": True}
-
-@app.get("/api/admin/listings")
-def admin_listings(admin_email: str = Depends(get_current_admin_email)):
-    products = get_all_custom_products()
-    return [
-        {
-            "id": p["id"],
-            "userEmail": p["user_email"],
-            "title": p["title"],
-            "description": p["description"],
-            "price": p["price"],
-            "image": p["image"],
-            "category": p["category"],
-            "rating": float(p["rating"]),
-            "reviews": p["reviews"],
-            "available": bool(p["available"]),
-            "ownerName": p["owner_name"],
-            "createdAt": p["created_at"]
-        } for p in products
-    ]
-
-@app.delete("/api/admin/listings/{id}")
-def admin_delete_listing(id: str, admin_email: str = Depends(get_current_admin_email)):
-    delete_custom_product_by_admin(id)
-    return {"success": True}
-
-@app.get("/api/admin/orders")
-def admin_orders(admin_email: str = Depends(get_current_admin_email)):
-    orders = get_all_orders_for_admin()
-    return [
-        {
-            "id": o["id"],
-            "userEmail": o["user_email"],
-            "productId": o["product_id"],
-            "productTitle": o["product_title"],
-            "productImage": o["product_image"],
-            "startDate": o["start_date"],
-            "endDate": o["end_date"],
-            "total": o["total"],
-            "status": o["status"],
-            "createdAt": o["created_at"]
-        } for o in orders
-    ]
-
-@app.put("/api/admin/orders/{id}/status")
-def admin_update_order_status(id: str, data: AdminOrderStatusSchema, admin_email: str = Depends(get_current_admin_email)):
-    if data.status not in ["pending", "active", "completed", "cancelled"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid status."
-        )
-    update_order_status_by_admin(id, data.status)
-    return {"success": True}
-
-@app.delete("/api/admin/orders/{id}")
-def admin_delete_order(id: str, admin_email: str = Depends(get_current_admin_email)):
-    delete_order_by_admin(id)
-    return {"success": True}
 
 if __name__ == "__main__":
     import uvicorn

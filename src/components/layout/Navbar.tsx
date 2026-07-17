@@ -139,14 +139,7 @@ export function Navbar() {
 
           {user ? (
             <div className="hidden md:flex items-center gap-2 ml-2">
-              {user.role === "admin" && (
-                <Link
-                  to="/admin"
-                  className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-purple-600 bg-purple-500/10 rounded-full hover:bg-purple-500/20 mr-1"
-                >
-                  Admin Portal
-                </Link>
-              )}
+
               <Link
                 to="/dashboard"
                 className="flex items-center gap-2 rounded-full pl-2 pr-4 h-10 hover:bg-secondary"
@@ -210,15 +203,7 @@ export function Navbar() {
               <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border mt-2">
                 {user ? (
                   <>
-                    {user.role === "admin" && (
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate({ to: "/admin" })}
-                        className="col-span-2 border-purple-500/30 text-purple-500 hover:bg-purple-500/10 mb-1"
-                      >
-                        Admin Portal
-                      </Button>
-                    )}
+
                     <Button
                       variant="outline"
                       onClick={() => navigate({ to: "/dashboard" })}

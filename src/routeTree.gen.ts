@@ -26,7 +26,6 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as BecomeLenderRouteImport } from './routes/become-lender'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
@@ -116,11 +115,6 @@ const BecomeLenderRoute = BecomeLenderRouteImport.update({
   path: '/become-lender',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -140,7 +134,6 @@ const ProductIdRoute = ProductIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/admin': typeof AdminRoute
   '/become-lender': typeof BecomeLenderRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
@@ -163,7 +156,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/admin': typeof AdminRoute
   '/become-lender': typeof BecomeLenderRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
@@ -187,7 +179,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/admin': typeof AdminRoute
   '/become-lender': typeof BecomeLenderRoute
   '/categories': typeof CategoriesRoute
   '/checkout': typeof CheckoutRoute
@@ -212,7 +203,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
-    | '/admin'
     | '/become-lender'
     | '/categories'
     | '/checkout'
@@ -235,7 +225,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
-    | '/admin'
     | '/become-lender'
     | '/categories'
     | '/checkout'
@@ -258,7 +247,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
-    | '/admin'
     | '/become-lender'
     | '/categories'
     | '/checkout'
@@ -282,7 +270,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  AdminRoute: typeof AdminRoute
   BecomeLenderRoute: typeof BecomeLenderRoute
   CategoriesRoute: typeof CategoriesRoute
   CheckoutRoute: typeof CheckoutRoute
@@ -424,13 +411,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BecomeLenderRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -458,7 +438,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  AdminRoute: AdminRoute,
   BecomeLenderRoute: BecomeLenderRoute,
   CategoriesRoute: CategoriesRoute,
   CheckoutRoute: CheckoutRoute,
