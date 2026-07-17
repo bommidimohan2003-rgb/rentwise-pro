@@ -1,7 +1,7 @@
 import { storage, STORAGE_KEYS } from "./storage";
 import type { Order, Product } from "@/types";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export const api = {
   async registerRequest(email: string, phone: string) {
