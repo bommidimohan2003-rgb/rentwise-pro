@@ -37,3 +37,4 @@ dist-ssr
 # Python Cache
 __pycache__/
 *.pyc
+.vercel
