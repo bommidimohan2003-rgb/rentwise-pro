@@ -219,4 +219,37 @@ export const api = {
     if (!res.ok) throw new Error("Failed to mark notifications as read");
     return res.json();
   },
+
+  async getLenderOrders(token: string) {
+    const res = await fetch(`${API_BASE}/api/lender/orders`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error("Failed to fetch lender orders");
+    return res.json();
+  },
+
+  async deleteCustomProduct(token: string, productId: string) {
+    const res = await fetch(`${API_BASE}/api/products/custom/${productId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error("Failed to delete custom product");
+    return res.json();
+  },
+
+  async toggleCustomProductAvailability(token: string, productId: string) {
+    const res = await fetch(`${API_BASE}/api/products/custom/${productId}/toggle-availability`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error("Failed to toggle custom product availability");
+    return res.json();
+  },
 };

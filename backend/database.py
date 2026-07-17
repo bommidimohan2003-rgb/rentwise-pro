@@ -77,7 +77,7 @@ def init_db():
             user_email VARCHAR(255),
             product_id VARCHAR(255),
             product_title VARCHAR(255),
-            product_image VARCHAR(1000),
+            product_image LONGTEXT,
             start_date VARCHAR(100),
             end_date VARCHAR(100),
             total INT,
@@ -94,7 +94,7 @@ def init_db():
             title VARCHAR(255),
             description TEXT,
             price INT,
-            image VARCHAR(1000),
+            image LONGTEXT,
             category VARCHAR(100),
             rating DECIMAL(3, 2),
             reviews INT,
@@ -118,6 +118,20 @@ def init_db():
             created_at VARCHAR(100)
         )
     """)
+
+    # Migrate existing databases that might have been initialized with VARCHAR(1000)
+    try:
+        execute_query("ALTER TABLE custom_products MODIFY COLUMN image LONGTEXT")
+        print("Migrated custom_products.image column to LONGTEXT.")
+    except Exception as e:
+        print(f"Failed to migrate custom_products.image: {e}")
+
+    try:
+        execute_query("ALTER TABLE orders MODIFY COLUMN product_image LONGTEXT")
+        print("Migrated orders.product_image column to LONGTEXT.")
+    except Exception as e:
+        print(f"Failed to migrate orders.product_image: {e}")
+
     print("MySQL database structures initialized.")
 
 def get_user(email: str):
@@ -276,3 +290,21 @@ def create_notification(email: str, n: dict):
 
 def mark_notifications_read(email: str):
     execute_query("UPDATE notifications SET is_read = TRUE WHERE user_email = %s", (email,))
+
+def delete_custom_product(product_id: str, email: str):
+    execute_query("DELETE FROM custom_products WHERE id = %s AND user_email = %s", (product_id, email))
+
+def toggle_custom_product_availability(product_id: str, email: str):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT available FROM custom_products WHERE id = %s AND user_email = %s", (product_id, email))
+            row = cursor.fetchone()
+            if row:
+                new_val = not bool(row["available"])
+                cursor.execute("UPDATE custom_products SET available = %s WHERE id = %s AND user_email = %s", (new_val, product_id, email))
+                conn.commit()
+                return new_val
+            return None
+    finally:
+        conn.close()

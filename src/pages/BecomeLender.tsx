@@ -20,7 +20,7 @@ const perks = [
   },
   {
     icon: Shield,
-    title: "₹5 Lakhs protection",
+    title: "",
     body: "Every rental fully insured against damage.",
     image: "1516321318423-f06f85e504b3",
   },

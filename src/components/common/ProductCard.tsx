@@ -11,11 +11,9 @@ import { toast } from "sonner";
 export function ProductCard({
   product,
   index = 0,
-  isReference = false,
 }: {
   product: Product;
   index?: number;
-  isReference?: boolean;
 }) {
   const { has, toggle } = useWishlist();
   const liked = has(product.id);
@@ -37,25 +35,23 @@ export function ProductCard({
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
-        {!isReference && (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              if (!user) {
-                toast.error("Please log in to add items to your wishlist.");
-                navigate({ to: "/login" });
-                return;
-              }
-              toggle(product.id);
-            }}
-            className="absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full glass hover:scale-110 transition-transform"
-            aria-label="Wishlist"
-          >
-            <Heart
-              className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-foreground")}
-            />
-          </button>
-        )}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            if (!user) {
+              toast.error("Please log in to add items to your wishlist.");
+              navigate({ to: "/login" });
+              return;
+            }
+            toggle(product.id);
+          }}
+          className="absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full glass hover:scale-110 transition-transform"
+          aria-label="Wishlist"
+        >
+          <Heart
+            className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-foreground")}
+          />
+        </button>
         {!product.available && (
           <div className="absolute top-3 left-3 rounded-full bg-destructive/90 text-white text-xs px-3 py-1 font-medium">
             Unavailable
@@ -70,12 +66,23 @@ export function ProductCard({
           <Rating value={product.rating} count={product.reviews} />
           <span className="text-xs text-muted-foreground capitalize">{product.category}</span>
         </div>
-        <div className="flex items-center justify-between pt-2 border-t border-border">
-          <div>
-            <span className="text-xl font-bold">₹{product.price}</span>
-            <span className="text-xs text-muted-foreground"> /day</span>
+        
+        <div className="flex flex-col gap-3 pt-3 border-t border-border">
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-muted-foreground font-medium">Rental price</span>
+            <div>
+              <span className="text-xl font-bold">₹{product.price}</span>
+              <span className="text-xs text-muted-foreground"> /day</span>
+            </div>
           </div>
-          {isReference ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              to="/product/$id"
+              params={{ id: product.id }}
+              className="btn-gradient rounded-xl h-9 text-xs font-semibold inline-flex items-center justify-center text-white"
+            >
+              Rent
+            </Link>
             <Link
               to={user ? "/become-lender" : "/login"}
               search={
@@ -95,19 +102,11 @@ export function ProductCard({
                   navigate({ to: "/login" });
                 }
               }}
-              className="border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-full px-4 h-9 text-sm font-medium inline-flex items-center transition-colors duration-200"
+              className="border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-xl h-9 text-xs font-semibold inline-flex items-center justify-center transition-colors duration-200"
             >
               List Yours
             </Link>
-          ) : (
-            <Link
-              to="/product/$id"
-              params={{ id: product.id }}
-              className="btn-gradient rounded-full px-4 h-9 text-sm font-medium inline-flex items-center"
-            >
-              Rent
-            </Link>
-          )}
+          </div>
         </div>
       </div>
     </motion.div>

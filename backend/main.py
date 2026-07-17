@@ -28,7 +28,10 @@ from database import (
     get_notifications,
     create_notification,
     mark_notifications_read,
-    execute_query
+    execute_query,
+    get_db_connection,
+    delete_custom_product,
+    toggle_custom_product_availability
 )
 from auth import (
     hash_password,
@@ -423,6 +426,57 @@ def fetch_public_listings():
 def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_current_user_email)):
     create_custom_product(email, data.dict())
     return {"success": True}
+
+@app.delete("/api/products/custom/{id}")
+def remove_custom_listing(id: str, email: str = Depends(get_current_user_email)):
+    delete_custom_product(id, email)
+    return {"success": True}
+
+@app.post("/api/products/custom/{id}/toggle-availability")
+def toggle_listing_availability(id: str, email: str = Depends(get_current_user_email)):
+    new_status = toggle_custom_product_availability(id, email)
+    if new_status is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Listing not found or you are not the owner."
+        )
+    return {"success": True, "available": new_status}
+
+@app.get("/api/lender/orders")
+def fetch_lender_orders(email: str = Depends(get_current_user_email)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT o.*, u.full_name AS renter_name, u.phone AS renter_phone, u.email AS renter_email
+                FROM orders o
+                JOIN custom_products cp ON o.product_id = cp.id
+                JOIN users u ON o.user_email = u.email
+                WHERE cp.user_email = %s
+                ORDER BY o.created_at DESC
+            """, (email,))
+            rows = cursor.fetchall()
+            result = []
+            for r in rows:
+                result.append({
+                    "id": r["id"],
+                    "productId": r["product_id"],
+                    "productTitle": r["product_title"],
+                    "productImage": r["product_image"],
+                    "startDate": r["start_date"],
+                    "endDate": r["end_date"],
+                    "total": r["total"],
+                    "status": r["status"],
+                    "createdAt": r["created_at"],
+                    "renter": {
+                        "name": r["renter_name"],
+                        "email": r["renter_email"],
+                        "phone": r["renter_phone"]
+                    }
+                })
+            return result
+    finally:
+        conn.close()
 
 @app.get("/api/notifications")
 def fetch_notifications(email: str = Depends(get_current_user_email)):

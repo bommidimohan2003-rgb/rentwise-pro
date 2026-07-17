@@ -179,7 +179,7 @@ export default function Categories() {
             {filtered.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
                 {filtered.map((p, i) => (
-                  <ProductCard key={p.id} product={p} index={i} isReference />
+                  <ProductCard key={p.id} product={p} index={i} />
                 ))}
               </div>
             ) : (

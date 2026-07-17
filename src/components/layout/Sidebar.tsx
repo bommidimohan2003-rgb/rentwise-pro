@@ -7,12 +7,14 @@ import {
   Package,
   Settings,
   ShoppingBag,
+  Store,
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Overview" },
+  { to: "/lender-portal", icon: Store, label: "Lender Portal" },
   { to: "/orders", icon: Package, label: "Orders" },
   { to: "/wishlist", icon: Heart, label: "Wishlist" },
   { to: "/notifications", icon: Bell, label: "Notifications" },

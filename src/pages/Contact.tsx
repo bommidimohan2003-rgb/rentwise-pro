@@ -53,7 +53,7 @@ export default function Contact() {
                 href="mailto:hi@payent.io"
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                hi@payent.io
+                bommidimohan2003@gmail.com
               </a>
             </div>
             <div className="card-premium p-6">
@@ -63,13 +63,13 @@ export default function Contact() {
                 href="tel:+15551234567"
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                +1 (555) 123-4567
+                +91 7989002612
               </a>
             </div>
             <div className="card-premium p-6">
               <MapPin className="h-5 w-5 text-primary" />
               <div className="mt-2 font-medium">Office</div>
-              <p className="text-sm text-muted-foreground">548 Market St, San Francisco</p>
+              <p className="text-sm text-muted-foreground"></p>
             </div>
           </aside>
         </div>
