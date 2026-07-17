@@ -1,0 +1,18 @@
+interface JsonLdProps {
+  schema: Record<string, unknown>;
+}
+
+export function JsonLd({ schema }: JsonLdProps) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          ...schema,
+        }),
+      }}
+    />
+  );
+}
+export default JsonLd;
