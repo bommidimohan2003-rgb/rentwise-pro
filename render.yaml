@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: rentwise-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    envVars:
+      - key: MYSQL_HOST
+        sync: false
+        placeholder: "Enter MySQL host (e.g. from Railway or Aiven)"
+      - key: MYSQL_PORT
+        value: "3306"
+      - key: MYSQL_USER
+        sync: false
+        placeholder: "Enter MySQL database username"
+      - key: MYSQL_PASSWORD
+        sync: false
+        placeholder: "Enter MySQL database password"
+      - key: MYSQL_DB
+        sync: false
+        placeholder: "Enter MySQL database name"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+        placeholder: "Twilio Account SID (Optional)"
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+        placeholder: "Twilio Auth Token (Optional)"
+      - key: TWILIO_VERIFY_SERVICE_SID
+        sync: false
+        placeholder: "Twilio Verify Service SID (Optional)"
