@@ -308,3 +308,36 @@ def toggle_custom_product_availability(product_id: str, email: str):
             return None
     finally:
         conn.close()
+
+def get_all_users():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT email, phone, full_name, role, created_at FROM users ORDER BY created_at DESC")
+            return cursor.fetchall()
+    finally:
+        conn.close()
+
+def update_user_role(email: str, role: str):
+    execute_query("UPDATE users SET role = %s WHERE email = %s", (role, email))
+
+def delete_user_by_admin(email: str):
+    execute_query("DELETE FROM users WHERE email = %s", (email,))
+
+def get_all_orders_for_admin():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM orders ORDER BY created_at DESC")
+            return cursor.fetchall()
+    finally:
+        conn.close()
+
+def update_order_status_by_admin(order_id: str, status: str):
+    execute_query("UPDATE orders SET status = %s WHERE id = %s", (status, order_id))
+
+def delete_order_by_admin(order_id: str):
+    execute_query("DELETE FROM orders WHERE id = %s", (order_id,))
+
+def delete_custom_product_by_admin(product_id: str):
+    execute_query("DELETE FROM custom_products WHERE id = %s", (product_id,))

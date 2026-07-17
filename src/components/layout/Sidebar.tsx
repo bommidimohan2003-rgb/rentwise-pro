@@ -9,8 +9,10 @@ import {
   ShoppingBag,
   Store,
   User,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 const items = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Overview" },
@@ -26,10 +28,17 @@ const items = [
 
 export function Sidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { user } = useAuth();
+
+  const sidebarItems = [
+    ...items,
+    ...(user?.role === "admin" ? [{ to: "/admin", icon: Shield, label: "Admin Portal" } as const] : []),
+  ];
+
   return (
     <aside className="hidden lg:block w-64 shrink-0 sticky top-20 h-fit">
       <nav className="card-premium p-3 space-y-1">
-        {items.map((it) => {
+        {sidebarItems.map((it) => {
           const active = pathname === it.to;
           return (
             <Link

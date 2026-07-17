@@ -252,4 +252,99 @@ export const api = {
     if (!res.ok) throw new Error("Failed to toggle custom product availability");
     return res.json();
   },
+
+  async adminGetStats(token: string) {
+    const res = await fetch(`${API_BASE}/api/admin/stats`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch admin stats");
+    return res.json();
+  },
+
+  async adminGetUsers(token: string) {
+    const res = await fetch(`${API_BASE}/api/admin/users`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch registered users");
+    return res.json();
+  },
+
+  async adminUpdateUserRole(token: string, email: string, role: string) {
+    const res = await fetch(`${API_BASE}/api/admin/users/${email}/role`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ role }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Failed to update user role");
+    }
+    return res.json();
+  },
+
+  async adminDeleteUser(token: string, email: string) {
+    const res = await fetch(`${API_BASE}/api/admin/users/${email}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Failed to delete user account");
+    }
+    return res.json();
+  },
+
+  async adminGetListings(token: string) {
+    const res = await fetch(`${API_BASE}/api/admin/listings`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch admin listings");
+    return res.json();
+  },
+
+  async adminDeleteListing(token: string, id: string) {
+    const res = await fetch(`${API_BASE}/api/admin/listings/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to delete listing");
+    return res.json();
+  },
+
+  async adminGetOrders(token: string) {
+    const res = await fetch(`${API_BASE}/api/admin/orders`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to fetch orders");
+    return res.json();
+  },
+
+  async adminUpdateOrderStatus(token: string, id: string, status: string) {
+    const res = await fetch(`${API_BASE}/api/admin/orders/${id}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error("Failed to update order status");
+    return res.json();
+  },
+
+  async adminDeleteOrder(token: string, id: string) {
+    const res = await fetch(`${API_BASE}/api/admin/orders/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Failed to delete order");
+    return res.json();
+  },
 };
