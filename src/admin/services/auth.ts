@@ -11,6 +11,10 @@ export const authService = {
 
   async logout(): Promise<void> {
     await adminApi.post("/auth/logout");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("payent:token");
+      localStorage.removeItem("payent:currentUser");
+    }
   },
 
   async getMe(): Promise<AdminUser> {

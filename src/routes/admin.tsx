@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Sidebar } from "@/admin/components/layout/Sidebar";
 import { Topbar } from "@/admin/components/layout/Topbar";
@@ -18,9 +18,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminLayout() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const isLoginPage = location.pathname === "/admin/login";
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -29,12 +27,10 @@ function AdminLayout() {
     setIsAuthenticated(loggedIn);
     setLoading(false);
 
-    if (!loggedIn && !isLoginPage) {
-      navigate({ to: "/admin/login" });
-    } else if (loggedIn && isLoginPage) {
-      navigate({ to: "/admin/dashboard" });
+    if (!loggedIn) {
+      navigate({ to: "/login" });
     }
-  }, [location.pathname, isLoginPage, navigate]);
+  }, [navigate]);
 
   if (loading) {
     return (
@@ -42,11 +38,6 @@ function AdminLayout() {
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
-  }
-
-  // The login page runs inside the router but does not render the surrounding dashboard shell
-  if (isLoginPage) {
-    return <Outlet />;
   }
 
   if (!isAuthenticated) {

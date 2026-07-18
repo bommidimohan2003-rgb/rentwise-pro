@@ -81,6 +81,10 @@ export function useAuth() {
   const logout = useCallback(() => {
     storage.remove(STORAGE_KEYS.token);
     storage.remove(STORAGE_KEYS.currentUser);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("payent:admin:token");
+      localStorage.removeItem("payent:admin:current_user");
+    }
     setUser(null);
   }, []);
 

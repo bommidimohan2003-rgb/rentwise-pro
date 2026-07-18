@@ -7,6 +7,9 @@ import { z } from "zod";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { useAuth } from "@/hooks/useAuth";
+import { authService } from "@/admin/services/auth";
+import { storage, STORAGE_KEYS } from "@/utils/storage";
+import type { User } from "@/types";
 
 const schema = z.object({
   email: z.string().trim().email("Invalid email"),
@@ -29,9 +32,59 @@ export function LoginForm() {
 
   const onSubmit = async (data: FormValues) => {
     setError(null);
+
+    // 1. First, check if logging in with mock admin credentials
+    if (data.email === "admin@payent.com" && data.password === "admin123") {
+      try {
+        const adminRes = await authService.login(data.email, data.password);
+        if (adminRes.success) {
+          // Set regular user storage session so the main site knows we are logged in as admin
+          storage.set(STORAGE_KEYS.token, adminRes.token);
+          const loggedUser: User = {
+            id: adminRes.user.email,
+            fullName: adminRes.user.fullName,
+            email: adminRes.user.email,
+            role: "admin",
+          };
+          storage.set(STORAGE_KEYS.currentUser, loggedUser);
+
+          // Dispatch profile update event for admin dashboard
+          window.dispatchEvent(new Event("payent:admin:profile-updated"));
+          navigate({ to: "/admin/dashboard" });
+          return;
+        }
+      } catch (err: unknown) {
+        console.error(err);
+        setError("Admin authentication failed.");
+        return;
+      }
+    }
+
+    // 2. Otherwise, login as a normal user (or a db-defined admin)
     const res = await login(data.email, data.password);
     if (!res.ok) return setError(res.error ?? "Unable to login");
-    navigate({ to: "/dashboard" });
+
+    // 3. Synchronously inspect storage to see if the logged-in user has the admin role
+    const currentUser = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
+    if (currentUser?.role === "admin") {
+      const userToken = storage.get<string | null>(STORAGE_KEYS.token, null);
+      localStorage.setItem("payent:admin:token", userToken || "mock-admin-token");
+      localStorage.setItem(
+        "payent:admin:current_user",
+        JSON.stringify({
+          id: currentUser.id,
+          fullName: currentUser.fullName,
+          email: currentUser.email,
+          role: "admin",
+          status: "active",
+          verified: true,
+        })
+      );
+      window.dispatchEvent(new Event("payent:admin:profile-updated"));
+      navigate({ to: "/admin/dashboard" });
+    } else {
+      navigate({ to: "/dashboard" });
+    }
   };
 
   return (

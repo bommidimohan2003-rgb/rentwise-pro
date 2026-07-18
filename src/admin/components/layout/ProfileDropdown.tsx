@@ -26,7 +26,7 @@ export function ProfileDropdown() {
     try {
       await authService.logout();
       setIsOpen(false);
-      navigate({ to: "/admin/login" });
+      navigate({ to: "/login" });
     } catch (err) {
       console.error("Logout failed:", err);
     }
