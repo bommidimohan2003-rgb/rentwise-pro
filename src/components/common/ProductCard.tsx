@@ -8,13 +8,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-export function ProductCard({
-  product,
-  index = 0,
-}: {
-  product: Product;
-  index?: number;
-}) {
+export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
   const { has, toggle } = useWishlist();
   const liked = has(product.id);
   const { user } = useAuth();
@@ -66,7 +60,7 @@ export function ProductCard({
           <Rating value={product.rating} count={product.reviews} />
           <span className="text-xs text-muted-foreground capitalize">{product.category}</span>
         </div>
-        
+
         <div className="flex flex-col gap-3 pt-3 border-t border-border">
           <div className="flex items-baseline justify-between">
             <span className="text-xs text-muted-foreground font-medium">Rental price</span>

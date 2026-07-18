@@ -72,9 +72,7 @@ export function HowItWorks() {
               <h3 className="font-bold text-xl mt-6 group-hover:text-primary transition-colors">
                 {st.title}
               </h3>
-              <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                {st.body}
-              </p>
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{st.body}</p>
             </div>
 
             {/* CTA Link */}

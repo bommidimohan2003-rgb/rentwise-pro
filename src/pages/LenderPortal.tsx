@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -48,7 +48,7 @@ export default function LenderPortal() {
     if (ready && !user) navigate({ to: "/login" });
   }, [ready, user, navigate]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
@@ -64,11 +64,11 @@ export default function LenderPortal() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchData();
-  }, [token]);
+  }, [fetchData]);
 
   const handleToggleAvailability = async (productId: string) => {
     if (!token) return;
@@ -82,8 +82,9 @@ export default function LenderPortal() {
           ? "Listing is now active and rentable!"
           : "Listing paused. It won't accept new bookings.",
       );
-    } catch (err: any) {
-      toast.error(err.message || "Failed to toggle availability.");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Failed to toggle availability.";
+      toast.error(errMsg);
     }
   };
 
@@ -94,8 +95,9 @@ export default function LenderPortal() {
       setListings((prev) => prev.filter((p) => p.id !== productId));
       toast.success("Listing deleted successfully.");
       setConfirmDeleteId(null);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete listing.");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Failed to delete listing.";
+      toast.error(errMsg);
     }
   };
 
@@ -137,7 +139,9 @@ export default function LenderPortal() {
             </div>
             <div>
               <div className="text-2xl font-bold">{listings.length}</div>
-              <div className="text-sm text-muted-foreground">Total Listings ({activeListingsCount} active)</div>
+              <div className="text-sm text-muted-foreground">
+                Total Listings ({activeListingsCount} active)
+              </div>
             </div>
           </motion.div>
 
@@ -259,7 +263,10 @@ export default function LenderPortal() {
                               {p.title}
                             </h3>
                             <p className="text-sm font-bold text-foreground mt-1">
-                              ₹{p.price} <span className="text-xs font-normal text-muted-foreground">/ day</span>
+                              ₹{p.price}{" "}
+                              <span className="text-xs font-normal text-muted-foreground">
+                                / day
+                              </span>
                             </p>
                           </div>
 

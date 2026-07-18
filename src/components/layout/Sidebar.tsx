@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Store,
   User,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,7 +30,12 @@ export function Sidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useAuth();
 
-  const sidebarItems = items;
+  const sidebarItems = [
+    ...items,
+    ...(user?.role === "superadmin" || user?.role === "admin"
+      ? [{ to: "/admin/dashboard", icon: Shield, label: "Admin Portal" } as const]
+      : []),
+  ];
 
   return (
     <aside className="hidden lg:block w-64 shrink-0 sticky top-20 h-fit">
