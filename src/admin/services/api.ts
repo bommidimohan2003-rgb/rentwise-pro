@@ -969,7 +969,7 @@ adminApi.interceptors.response.use(
               id: "a-5",
               type: "payment_success",
               title: "Payment Successful",
-              detail: "$360 transaction for Booking #b-1",
+              detail: "₹360 transaction for Booking #b-1",
               time: "2 hours ago",
               icon: "CreditCard",
             },

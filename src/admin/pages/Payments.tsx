@@ -127,7 +127,7 @@ export default function Payments() {
       key: "amount",
       label: "Charged Amount",
       sortable: true,
-      render: (row) => <span className="text-xs font-extrabold text-primary">${row.amount}</span>,
+      render: (row) => <span className="text-xs font-extrabold text-primary">₹{row.amount}</span>,
     },
     {
       key: "method",
@@ -325,7 +325,7 @@ export default function Payments() {
                 <div className="text-right">
                   <span className="text-muted-foreground font-semibold">Billed Total</span>
                   <p className="text-sm font-extrabold text-primary mt-0.5">
-                    ${selectedPayment.amount}
+                    ₹{selectedPayment.amount}
                   </p>
                 </div>
               </div>

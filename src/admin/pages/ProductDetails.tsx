@@ -281,7 +281,7 @@ export default function ProductDetails() {
                         <td className="py-3 text-muted-foreground">
                           {b.startDate} to {b.endDate}
                         </td>
-                        <td className="py-3 font-extrabold text-primary">${b.amount}</td>
+                        <td className="py-3 font-extrabold text-primary">₹{b.amount}</td>
                         <td className="py-3 text-right">
                           <span
                             className={cn(
@@ -316,7 +316,7 @@ export default function ProductDetails() {
             <div className="space-y-3.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground font-semibold">Price per Day</span>
-                <span className="font-extrabold text-primary text-sm">${product.price}</span>
+                <span className="font-extrabold text-primary text-sm">₹{product.price}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground font-semibold">Category</span>

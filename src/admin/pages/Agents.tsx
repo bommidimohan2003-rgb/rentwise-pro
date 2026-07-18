@@ -167,7 +167,7 @@ export default function Agents() {
       label: "Revenue",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-extrabold text-primary">${row.revenue.toLocaleString()}</span>
+        <span className="text-xs font-extrabold text-primary">₹{row.revenue.toLocaleString()}</span>
       ),
     },
     {
@@ -358,7 +358,7 @@ export default function Agents() {
                   Total Earnings
                 </span>
                 <span className="text-sm font-extrabold text-foreground mt-1 block">
-                  ${selectedAgent.revenue.toLocaleString()}
+                  ₹{selectedAgent.revenue.toLocaleString()}
                 </span>
               </div>
             </div>

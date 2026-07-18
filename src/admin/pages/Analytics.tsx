@@ -78,7 +78,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Average Lease Value"
-          value="$145.00"
+          value="₹145.00"
           change="+4.2%"
           trend="up"
           icon={DollarSign}
@@ -94,7 +94,7 @@ export default function Analytics() {
         />
         <StatsCard
           title="Customer Acq Cost (CAC)"
-          value="$22.50"
+          value="₹22.50"
           change="-6.4%"
           trend="up" // Representing improvement (costs down)
           icon={Users}

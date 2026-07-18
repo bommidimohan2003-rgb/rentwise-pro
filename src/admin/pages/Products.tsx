@@ -218,7 +218,7 @@ export default function Products() {
       key: "price",
       label: "Price (Day)",
       sortable: true,
-      render: (row) => <span className="text-xs font-extrabold text-primary">${row.price}</span>,
+      render: (row) => <span className="text-xs font-extrabold text-primary">₹{row.price}</span>,
     },
     {
       key: "status",
@@ -471,7 +471,7 @@ export default function Products() {
                     </div>
 
                     <div className="pt-3 border-t border-border/40 flex items-center justify-between mt-3 shrink-0">
-                      <span className="text-xs font-extrabold text-primary">${p.price}/day</span>
+                      <span className="text-xs font-extrabold text-primary">₹{p.price}/day</span>
                       <button
                         onClick={() =>
                           navigate({ to: "/admin/products/$id", params: { id: p.id } })

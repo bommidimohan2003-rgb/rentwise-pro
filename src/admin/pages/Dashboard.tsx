@@ -151,7 +151,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Revenue (Month)"
-          value={`$${stats?.monthlyRevenue?.toLocaleString()}`}
+          value={`₹${stats?.monthlyRevenue?.toLocaleString()}`}
           change="+12.5%"
           trend="up"
           icon={DollarSign}
@@ -337,7 +337,7 @@ export default function Dashboard() {
                       {p.rentals} rentals
                     </span>
                   </div>
-                  <span className="text-xs font-extrabold text-primary shrink-0">${p.revenue}</span>
+                  <span className="text-xs font-extrabold text-primary shrink-0">₹{p.revenue}</span>
                 </div>
               ))}
             </div>
