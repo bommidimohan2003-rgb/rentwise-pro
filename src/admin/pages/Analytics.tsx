@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, TrendingUp, DollarSign, Calendar, Users, ShoppingBag, Eye } from "lucide-react";
+import { BarChart3, TrendingUp, IndianRupee, Calendar, Users, ShoppingBag, Eye } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -81,7 +81,7 @@ export default function Analytics() {
           value="₹145.00"
           change="+4.2%"
           trend="up"
-          icon={DollarSign}
+          icon={IndianRupee}
           subtext="per lease contract"
         />
         <StatsCard

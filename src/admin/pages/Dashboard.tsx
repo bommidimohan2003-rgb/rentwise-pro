@@ -5,7 +5,7 @@ import {
   UserCheck,
   Package,
   Calendar,
-  DollarSign,
+  IndianRupee,
   AlertTriangle,
   Bell,
   Eye,
@@ -154,7 +154,7 @@ export default function Dashboard() {
           value={`₹${stats?.monthlyRevenue?.toLocaleString()}`}
           change="+12.5%"
           trend="up"
-          icon={DollarSign}
+          icon={IndianRupee}
           subtext="from last month"
         />
         <StatsCard

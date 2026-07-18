@@ -9,7 +9,7 @@ import {
   User as UserIcon,
   Shield,
   Activity,
-  DollarSign,
+  IndianRupee,
   Info,
   Power,
   PackageCheck,
@@ -167,7 +167,7 @@ export default function LenderPortal() {
             className="card-premium p-5 flex items-center gap-4"
           >
             <div className="h-12 w-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-              <DollarSign className="h-6 w-6" />
+              <IndianRupee className="h-6 w-6" />
             </div>
             <div>
               <div className="text-2xl font-bold">₹{totalEarnings.toLocaleString("en-IN")}</div>

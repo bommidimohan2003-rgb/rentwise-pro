@@ -7,7 +7,7 @@ import {
   CheckCircle,
   Trash2,
   Star,
-  DollarSign,
+  IndianRupee,
   Calendar,
   Package,
 } from "lucide-react";
@@ -353,7 +353,7 @@ export default function Agents() {
                 </span>
               </div>
               <div className="p-3.5 rounded-xl bg-secondary/45 border border-border/50 text-center">
-                <DollarSign className="h-4 w-4 text-green-500 mx-auto mb-1" />
+                <IndianRupee className="h-4 w-4 text-green-500 mx-auto mb-1" />
                 <span className="text-[10px] font-bold text-muted-foreground block">
                   Total Earnings
                 </span>
