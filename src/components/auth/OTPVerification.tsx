@@ -131,6 +131,16 @@ export function OTPVerification() {
         </div>
       </div>
 
+      {/* Demo Mode OTP Display */}
+      {(() => {
+        const generatedOtp = storage.get<string | null>(STORAGE_KEYS.otp, null);
+        return generatedOtp ? (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl p-3.5 text-xs font-semibold text-center select-all">
+            Demo Mode Verification Code: <span className="font-mono text-sm tracking-widest text-foreground bg-background px-2 py-0.5 rounded border border-border ml-1.5">{generatedOtp}</span>
+          </div>
+        ) : null;
+      })()}
+
       <div className="flex justify-between gap-2">
         {digits.map((d, i) => (
           <input
