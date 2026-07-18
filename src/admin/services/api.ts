@@ -757,7 +757,7 @@ adminApi.interceptors.response.use(
       // AUTH ENDPOINTS
       if (url === "/auth/login" && method === "POST") {
         const { email, password } = JSON.parse(config.data || "{}");
-        if (email === "admin@payent.com" && password === "admin123") {
+        if (email === "admin@payent.com" && (password === "admin123" || password === "admin@123")) {
           localStorage.setItem("payent:admin:token", "mock-admin-token");
           const users = getDB<AdminUser[]>("users", INITIAL_USERS);
           const adminProfile = users.find((u) => u.email === "admin@payent.com") || users[0];
@@ -785,7 +785,7 @@ adminApi.interceptors.response.use(
           return Promise.reject({
             response: {
               status: 401,
-              data: { message: "Invalid email or password. Use admin@payent.com / admin123" },
+              data: { message: "Invalid email or password. Use admin@payent.com / admin123 or admin@123" },
             },
           });
         }

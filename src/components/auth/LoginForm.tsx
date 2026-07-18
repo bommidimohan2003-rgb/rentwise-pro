@@ -34,7 +34,7 @@ export function LoginForm() {
     setError(null);
 
     // 1. First, check if logging in with mock admin credentials
-    if (data.email === "admin@payent.com" && data.password === "admin123") {
+    if (data.email === "admin@payent.com" && (data.password === "admin123" || data.password === "admin@123")) {
       try {
         const adminRes = await authService.login(data.email, data.password);
         if (adminRes.success) {
