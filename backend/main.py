@@ -546,8 +546,76 @@ def read_all_notifications(email: str = Depends(get_current_user_email)):
 
 
 # ----------------------------------------------------------------------
-# Admin API Endpoints
+# Admin API Endpoints & Schemas
 # ----------------------------------------------------------------------
+import json
+
+# Pydantic Schemas for updates
+class UserUpdateSchema(BaseModel):
+    fullName: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
+    status: Optional[str] = None
+    verified: Optional[bool] = None
+
+class ProductUpdateSchema(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    price: Optional[int] = None
+    available: Optional[bool] = None
+    status: Optional[str] = None
+    featured: Optional[bool] = None
+    hidden: Optional[bool] = None
+    image: Optional[str] = None
+    images: Optional[list[str]] = None
+    documents: Optional[list[str]] = None
+
+class CategorySchema(BaseModel):
+    name: str
+    icon: Optional[str] = None
+    color: Optional[str] = None
+    enabled: Optional[bool] = True
+
+class ProfileUpdateSchema(BaseModel):
+    fullName: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    avatar: Optional[str] = None
+
+class PasswordUpdateSchema(BaseModel):
+    currentPassword: Optional[str] = None
+    newPassword: Optional[str] = None
+
+class SettingsUpdateSchema(BaseModel):
+    websiteName: Optional[str] = None
+    logoUrl: Optional[str] = None
+    theme: Optional[str] = None
+    contactEmail: Optional[str] = None
+    contactPhone: Optional[str] = None
+    socialFacebook: Optional[str] = None
+    socialTwitter: Optional[str] = None
+    socialInstagram: Optional[str] = None
+    seoTitle: Optional[str] = None
+    seoDescription: Optional[str] = None
+    homepageBannerText: Optional[str] = None
+    footerText: Optional[str] = None
+
+class SupportReplySchema(BaseModel):
+    message: str
+
+class SupportStatusSchema(BaseModel):
+    status: str
+
+# Admin check dependency
+def check_admin_user(current_user_email: str = Depends(get_current_user_email)) -> dict:
+    user = get_user(current_user_email)
+    if not user or user["role"] != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. Admin access required."
+        )
+    return user
 
 @app.post("/api/admin/auth/login")
 def admin_login(data: LoginRequestSchema):
@@ -573,9 +641,9 @@ def admin_login(data: LoginRequestSchema):
             "email": user["email"],
             "phone": user["phone"],
             "role": user["role"],
-            "status": "active",
-            "verified": True,
-            "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+            "status": user["status"] or "active",
+            "verified": bool(user["verified"]),
+            "avatar": user["avatar"] or "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
             "createdAt": user["created_at"]
         }
     }
@@ -585,28 +653,81 @@ def admin_logout():
     return {"success": True}
 
 @app.get("/api/admin/auth/me")
-def admin_get_me(current_user_email: str = Depends(get_current_user_email)):
-    user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Forbidden")
+def admin_get_me(current_admin: dict = Depends(check_admin_user)):
     return {
-        "id": user["email"],
-        "fullName": user["full_name"],
-        "email": user["email"],
-        "phone": user["phone"],
-        "role": user["role"],
-        "status": "active",
-        "verified": True,
-        "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
-        "createdAt": user["created_at"]
+        "id": current_admin["email"],
+        "fullName": current_admin["full_name"],
+        "email": current_admin["email"],
+        "phone": current_admin["phone"],
+        "role": current_admin["role"],
+        "status": current_admin["status"] or "active",
+        "verified": bool(current_admin["verified"]),
+        "avatar": current_admin["avatar"] or "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+        "createdAt": current_admin["created_at"]
     }
 
-@app.get("/api/admin/dashboard/stats")
-def admin_stats(current_user_email: str = Depends(get_current_user_email)):
-    user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Forbidden. Admin access required.")
+@app.post("/api/admin/profile")
+def admin_update_profile(data: ProfileUpdateSchema, current_admin: dict = Depends(check_admin_user)):
+    fields = []
+    params = []
+    if data.fullName is not None:
+        fields.append("full_name = %s")
+        params.append(data.fullName)
+    if data.phone is not None:
+        fields.append("phone = %s")
+        params.append(data.phone)
+    if data.avatar is not None:
+        fields.append("avatar = %s")
+        params.append(data.avatar)
+        
+    if fields:
+        params.append(current_admin["email"])
+        execute_query(f"UPDATE users SET {', '.join(fields)} WHERE email = %s", tuple(params))
+        
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], "Updated profile details", "Settings", "127.0.0.1"))
     
+    updated = get_user(current_admin["email"])
+    return {
+        "id": updated["email"],
+        "fullName": updated["full_name"],
+        "email": updated["email"],
+        "phone": updated["phone"],
+        "role": updated["role"],
+        "status": updated["status"] or "active",
+        "verified": bool(updated["verified"]),
+        "avatar": updated["avatar"] or "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+        "createdAt": updated["created_at"]
+    }
+
+@app.post("/api/admin/profile/password")
+def admin_update_password(data: PasswordUpdateSchema, current_admin: dict = Depends(check_admin_user)):
+    if not data.newPassword:
+        raise HTTPException(status_code=400, detail="New password is required")
+        
+    if data.currentPassword:
+        if not verify_password(data.currentPassword, current_admin["password_hash"]):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+            
+    hashed = hash_password(data.newPassword)
+    update_user_password(current_admin["email"], hashed)
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], "Updated account password", "Settings", "127.0.0.1"))
+    
+    return {"success": True, "message": "Password updated successfully"}
+
+# Dashboard stats
+@app.get("/api/admin/dashboard/stats")
+def admin_stats(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
@@ -614,26 +735,32 @@ def admin_stats(current_user_email: str = Depends(get_current_user_email)):
             cursor.execute("SELECT COUNT(*) as count FROM users")
             total_users = cursor.fetchone()["count"]
             
-            # Agents (lenders)
-            cursor.execute("SELECT COUNT(*) as count FROM users WHERE role = 'agent'")
+            # Agents (lenders/agents)
+            cursor.execute("""
+                SELECT COUNT(DISTINCT u.email) as count
+                FROM users u
+                LEFT JOIN custom_products cp ON u.email = cp.user_email
+                WHERE u.role = 'agent' OR u.role = 'lender' OR cp.id IS NOT NULL
+            """)
             total_agents = cursor.fetchone()["count"]
             
             # Products
             cursor.execute("SELECT COUNT(*) as count FROM custom_products")
             total_products = cursor.fetchone()["count"]
             
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE available = 0")
+            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE status = 'pending'")
             pending_products = cursor.fetchone()["count"]
             
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE available = 1")
+            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE status = 'approved'")
             approved_products = cursor.fetchone()["count"]
             
+            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE status = 'rejected'")
+            rejected_products = cursor.fetchone()["count"]
+            
             # Categories
-            cursor.execute("SELECT COUNT(DISTINCT category) as count FROM custom_products")
+            cursor.execute("SELECT COUNT(*) as count FROM categories")
             total_categories = cursor.fetchone()["count"]
-            if total_categories == 0:
-                total_categories = 6 # default fallback
-                
+            
             # Bookings (orders)
             cursor.execute("SELECT COUNT(*) as count FROM orders")
             monthly_bookings = cursor.fetchone()["count"]
@@ -649,6 +776,13 @@ def admin_stats(current_user_email: str = Depends(get_current_user_email)):
             cursor.execute("SELECT IFNULL(SUM(total), 0) as total FROM orders WHERE created_at LIKE '2026-07-18%' OR created_at LIKE '2026-07-17%'")
             revenue_today = cursor.fetchone()["total"]
             
+            # Reports & notifications
+            cursor.execute("SELECT COUNT(*) as count FROM reports WHERE status = 'open'")
+            pending_reports = cursor.fetchone()["count"]
+            
+            cursor.execute("SELECT COUNT(*) as count FROM admin_notifications WHERE is_read = 0")
+            unread_notifications = cursor.fetchone()["count"]
+            
     finally:
         conn.close()
         
@@ -658,23 +792,19 @@ def admin_stats(current_user_email: str = Depends(get_current_user_email)):
         "totalProducts": total_products,
         "pendingProducts": pending_products,
         "approvedProducts": approved_products,
-        "rejectedProducts": 0,
+        "rejectedProducts": rejected_products,
         "totalCategories": total_categories,
         "bookingsToday": bookings_today,
         "monthlyBookings": monthly_bookings,
         "revenueToday": revenue_today,
         "monthlyRevenue": monthly_revenue,
-        "pendingReports": 0,
-        "unreadNotifications": 0
+        "pendingReports": pending_reports,
+        "unreadNotifications": unread_notifications,
+        "websiteVisitors": 15420
     }
 
 @app.get("/api/admin/dashboard/charts")
-def admin_charts(current_user_email: str = Depends(get_current_user_email)):
-    user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Forbidden. Admin access required.")
-        
-    # Return mock/database integrated charts data
+def admin_charts(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
@@ -686,6 +816,31 @@ def admin_charts(current_user_email: str = Depends(get_current_user_email)):
             total_users = cursor.fetchone()["count"]
             cursor.execute("SELECT COUNT(*) as count FROM custom_products")
             total_products = cursor.fetchone()["count"]
+            
+            # Top products
+            cursor.execute("""
+                SELECT product_title, COUNT(*) as rentals, SUM(total) as revenue
+                FROM orders
+                GROUP BY product_title
+                ORDER BY rentals DESC
+                LIMIT 4
+            """)
+            rows = cursor.fetchall()
+            top_products = []
+            for r in rows:
+                top_products.append({
+                    "name": r["product_title"],
+                    "rentals": r["rentals"],
+                    "revenue": r["revenue"]
+                })
+                
+            # If empty, default values
+            if not top_products:
+                top_products = [
+                    { "name": "Sony FX3 Cinema Camera", "rentals": 42, "revenue": 5040 },
+                    { "name": "DJI Inspire 3 Drone", "rentals": 28, "revenue": 9800 },
+                    { "name": "MacBook Pro 16\" M3 Max", "rentals": 19, "revenue": 1805 },
+                ]
     finally:
         conn.close()
         
@@ -726,23 +881,53 @@ def admin_charts(current_user_email: str = Depends(get_current_user_email)):
             { "name": "Jun", "products": 220 },
             { "name": "Jul", "products": 270 + int(total_products) },
         ],
-        "topProducts": [
-            { "name": "Sony FX3 Cinema Camera", "rentals": 42, "revenue": 5040 },
-            { "name": "DJI Inspire 3 Drone", "rentals": 28, "revenue": 9800 },
-            { "name": "MacBook Pro 16\" M3 Max", "rentals": 19, "revenue": 1805 },
-        ]
+        "topProducts": top_products
     }
 
-@app.get("/api/admin/users")
-def admin_users_list(current_user_email: str = Depends(get_current_user_email)):
-    user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Forbidden. Admin access required.")
-        
+@app.get("/api/admin/dashboard/activities")
+def admin_dashboard_activities(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM users ORDER BY created_at DESC")
+            cursor.execute("SELECT id, timestamp, user_name, action, module FROM admin_logs ORDER BY timestamp DESC LIMIT 7")
+            rows = cursor.fetchall()
+    finally:
+        conn.close()
+        
+    res = []
+    for r in rows:
+        icon_map = {
+            "Auth": "UserPlus",
+            "Inventory": "Camera",
+            "Orders": "Calendar",
+            "Payments": "CreditCard",
+            "Reports": "Flag",
+            "Users": "Users"
+        }
+        res.append({
+            "id": r["id"],
+            "type": r["module"].lower(),
+            "title": r["action"],
+            "detail": f"By {r['user_name']} in {r['module']}",
+            "time": r["timestamp"],
+            "icon": icon_map.get(r["module"], "Info")
+        })
+        
+    # Default activities fallback if empty
+    if not res:
+        res = [
+            { "id": "a-1", "type": "user_registered", "title": "New User Registered", "detail": "Emily Davis joined Payent", "time": "5 mins ago", "icon": "UserPlus" },
+            { "id": "a-2", "type": "product_uploaded", "title": "Camera Uploaded", "detail": "RED Komodo-X submitted by Alex Mercer", "time": "25 mins ago", "icon": "Camera" },
+        ]
+    return res
+
+# Users
+@app.get("/api/admin/users")
+def admin_users_list(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT email, phone, full_name, role, status, verified, avatar, created_at FROM users ORDER BY created_at DESC")
             rows = cursor.fetchall()
     finally:
         conn.close()
@@ -755,19 +940,240 @@ def admin_users_list(current_user_email: str = Depends(get_current_user_email)):
             "email": r["email"],
             "phone": r["phone"],
             "role": r["role"],
-            "status": "active",
-            "verified": True,
-            "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+            "status": r["status"] or "active",
+            "verified": bool(r["verified"]),
+            "avatar": r["avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
             "createdAt": r["created_at"]
         })
     return res
 
-@app.get("/api/admin/products")
-def admin_products_list(current_user_email: str = Depends(get_current_user_email)):
-    user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Forbidden. Admin access required.")
+@app.put("/api/admin/users/{id}")
+def admin_update_user(id: str, data: UserUpdateSchema, current_admin: dict = Depends(check_admin_user)):
+    user = get_user(id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
         
+    fields = []
+    params = []
+    if data.fullName is not None:
+        fields.append("full_name = %s")
+        params.append(data.fullName)
+    if data.phone is not None:
+        fields.append("phone = %s")
+        params.append(data.phone)
+    if data.role is not None:
+        fields.append("role = %s")
+        params.append(data.role)
+    if data.status is not None:
+        fields.append("status = %s")
+        params.append(data.status)
+    if data.verified is not None:
+        fields.append("verified = %s")
+        params.append(1 if data.verified else 0)
+        
+    if fields:
+        params.append(id)
+        execute_query(f"UPDATE users SET {', '.join(fields)} WHERE email = %s", tuple(params))
+        
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Updated user {id}", "Users", "127.0.0.1"))
+    
+    updated = get_user(id)
+    return {
+        "id": updated["email"],
+        "fullName": updated["full_name"],
+        "email": updated["email"],
+        "phone": updated["phone"],
+        "role": updated["role"],
+        "status": updated["status"] or "active",
+        "verified": bool(updated["verified"]),
+        "avatar": updated["avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        "createdAt": updated["created_at"]
+    }
+
+@app.delete("/api/admin/users/{id}")
+def admin_delete_user(id: str, current_admin: dict = Depends(check_admin_user)):
+    user = get_user(id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    execute_query("DELETE FROM users WHERE email = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted user {id}", "Users", "127.0.0.1"))
+    
+    return {"success": True}
+
+@app.post("/api/admin/users/{id}/suspend")
+def admin_suspend_user(id: str, current_admin: dict = Depends(check_admin_user)):
+    user = get_user(id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    execute_query("UPDATE users SET status = 'suspended' WHERE email = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Suspended user {id}", "Users", "127.0.0.1"))
+    
+    updated = get_user(id)
+    return {
+        "id": updated["email"],
+        "fullName": updated["full_name"],
+        "email": updated["email"],
+        "phone": updated["phone"],
+        "role": updated["role"],
+        "status": "suspended",
+        "verified": bool(updated["verified"]),
+        "avatar": updated["avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        "createdAt": updated["created_at"]
+    }
+
+@app.post("/api/admin/users/{id}/activate")
+def admin_activate_user(id: str, current_admin: dict = Depends(check_admin_user)):
+    user = get_user(id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    execute_query("UPDATE users SET status = 'active' WHERE email = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Activated user {id}", "Users", "127.0.0.1"))
+    
+    updated = get_user(id)
+    return {
+        "id": updated["email"],
+        "fullName": updated["full_name"],
+        "email": updated["email"],
+        "phone": updated["phone"],
+        "role": updated["role"],
+        "status": "active",
+        "verified": bool(updated["verified"]),
+        "avatar": updated["avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        "createdAt": updated["created_at"]
+    }
+
+# Agents
+@app.get("/api/admin/agents")
+def admin_agents_list(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT DISTINCT u.email, u.full_name, u.status, u.avatar, u.created_at
+                FROM users u
+                LEFT JOIN custom_products cp ON u.email = cp.user_email
+                WHERE u.role = 'agent' OR u.role = 'lender' OR cp.id IS NOT NULL
+            """)
+            rows = cursor.fetchall()
+            
+            result = []
+            for r in rows:
+                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE user_email = %s", (r["email"],))
+                p_count = cursor.fetchone()["count"]
+                
+                cursor.execute("""
+                    SELECT COUNT(*) as count, IFNULL(SUM(total), 0) as revenue
+                    FROM orders o
+                    JOIN custom_products p ON o.product_id = p.id
+                    WHERE p.user_email = %s
+                """, (r["email"],))
+                o_data = cursor.fetchone()
+                
+                result.append({
+                    "id": r["email"],
+                    "fullName": r["full_name"],
+                    "email": r["email"],
+                    "avatar": r["avatar"] or "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+                    "productsCount": p_count,
+                    "bookingsCount": o_data["count"],
+                    "revenue": o_data["revenue"],
+                    "rating": 4.8,
+                    "status": r["status"] or "active",
+                    "createdAt": r["created_at"]
+                })
+    finally:
+        conn.close()
+    return result
+
+@app.post("/api/admin/agents/{id}/suspend")
+def admin_suspend_agent(id: str, current_admin: dict = Depends(check_admin_user)):
+    user = get_user(id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Agent not found")
+        
+    execute_query("UPDATE users SET status = 'suspended' WHERE email = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Suspended agent {id}", "Agents", "127.0.0.1"))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE user_email = %s", (id,))
+            p_count = cursor.fetchone()["count"]
+            cursor.execute("""
+                SELECT COUNT(*) as count, IFNULL(SUM(total), 0) as revenue
+                FROM orders o
+                JOIN custom_products p ON o.product_id = p.id
+                WHERE p.user_email = %s
+            """, (id,))
+            o_data = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    return {
+        "id": user["email"],
+        "fullName": user["full_name"],
+        "email": user["email"],
+        "avatar": user["avatar"] or "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+        "productsCount": p_count,
+        "bookingsCount": o_data["count"],
+        "revenue": o_data["revenue"],
+        "rating": 4.8,
+        "status": "suspended",
+        "createdAt": user["created_at"]
+    }
+
+@app.delete("/api/admin/agents/{id}")
+def admin_delete_agent(id: str, current_admin: dict = Depends(check_admin_user)):
+    user = get_user(id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Agent not found")
+        
+    execute_query("DELETE FROM users WHERE email = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted agent {id}", "Agents", "127.0.0.1"))
+    
+    return {"success": True}
+
+# Products
+@app.get("/api/admin/products")
+def admin_products_list(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
@@ -778,6 +1184,18 @@ def admin_products_list(current_user_email: str = Depends(get_current_user_email
         
     res = []
     for r in rows:
+        images_val = r["images"]
+        documents_val = r["documents"]
+        try:
+            images_list = json.loads(images_val) if images_val else []
+        except Exception:
+            images_list = [r["image"]] if r["image"] else []
+            
+        try:
+            documents_list = json.loads(documents_val) if documents_val else []
+        except Exception:
+            documents_list = ["purchase_receipt.jpg"]
+            
         res.append({
             "id": r["id"],
             "title": r["title"],
@@ -787,29 +1205,349 @@ def admin_products_list(current_user_email: str = Depends(get_current_user_email
             "rating": float(r["rating"]),
             "reviewsCount": r["reviews"],
             "available": bool(r["available"]),
-            "status": "approved",
-            "featured": True,
-            "hidden": False,
+            "status": r["status"] or "approved",
+            "featured": bool(r["featured"]),
+            "hidden": bool(r["hidden"]),
             "image": r["image"],
-            "images": [r["image"]],
-            "documents": ["insurance_policy.pdf"],
+            "images": images_list if images_list else [r["image"]],
+            "documents": documents_list,
             "createdAt": r["created_at"],
             "owner": {
                 "id": r["user_email"],
                 "name": r["owner_name"],
-                "avatar": r["owner_avatar"],
+                "avatar": r["owner_avatar"] or "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
                 "rating": float(r["owner_rating"]),
                 "email": r["user_email"]
             }
         })
     return res
 
-@app.get("/api/admin/bookings")
-def admin_bookings_list(current_user_email: str = Depends(get_current_user_email)):
-    user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Forbidden. Admin access required.")
+@app.get("/api/admin/products/{id}")
+def admin_get_product(id: str, current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM custom_products WHERE id = %s", (id,))
+            r = cursor.fetchone()
+    finally:
+        conn.close()
         
+    if not r:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    images_val = r["images"]
+    documents_val = r["documents"]
+    try:
+        images_list = json.loads(images_val) if images_val else []
+    except Exception:
+        images_list = [r["image"]] if r["image"] else []
+        
+    try:
+        documents_list = json.loads(documents_val) if documents_val else []
+    except Exception:
+        documents_list = ["purchase_receipt.jpg"]
+        
+    return {
+        "id": r["id"],
+        "title": r["title"],
+        "description": r["description"],
+        "category": r["category"],
+        "price": r["price"],
+        "rating": float(r["rating"]),
+        "reviewsCount": r["reviews"],
+        "available": bool(r["available"]),
+        "status": r["status"] or "approved",
+        "featured": bool(r["featured"]),
+        "hidden": bool(r["hidden"]),
+        "image": r["image"],
+        "images": images_list if images_list else [r["image"]],
+        "documents": documents_list,
+        "createdAt": r["created_at"],
+        "owner": {
+            "id": r["user_email"],
+            "name": r["owner_name"],
+            "avatar": r["owner_avatar"] or "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+            "rating": float(r["owner_rating"]),
+            "email": r["user_email"]
+        }
+    }
+
+@app.put("/api/admin/products/{id}")
+def admin_update_product(id: str, data: ProductUpdateSchema, current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM custom_products WHERE id = %s", (id,))
+            product = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    fields = []
+    params = []
+    if data.title is not None:
+        fields.append("title = %s")
+        params.append(data.title)
+    if data.description is not None:
+        fields.append("description = %s")
+        params.append(data.description)
+    if data.category is not None:
+        fields.append("category = %s")
+        params.append(data.category)
+    if data.price is not None:
+        fields.append("price = %s")
+        params.append(data.price)
+    if data.available is not None:
+        fields.append("available = %s")
+        params.append(1 if data.available else 0)
+    if data.status is not None:
+        fields.append("status = %s")
+        params.append(data.status)
+    if data.featured is not None:
+        fields.append("featured = %s")
+        params.append(1 if data.featured else 0)
+    if data.hidden is not None:
+        fields.append("hidden = %s")
+        params.append(1 if data.hidden else 0)
+    if data.image is not None:
+        fields.append("image = %s")
+        params.append(data.image)
+    if data.images is not None:
+        fields.append("images = %s")
+        params.append(json.dumps(data.images))
+    if data.documents is not None:
+        fields.append("documents = %s")
+        params.append(json.dumps(data.documents))
+        
+    if fields:
+        params.append(id)
+        execute_query(f"UPDATE custom_products SET {', '.join(fields)} WHERE id = %s", tuple(params))
+        
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Updated product {id}", "Inventory", "127.0.0.1"))
+    
+    return admin_get_product(id, current_admin)
+
+@app.delete("/api/admin/products/{id}")
+def admin_delete_product(id: str, current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM custom_products WHERE id = %s", (id,))
+            product = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    execute_query("DELETE FROM custom_products WHERE id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted product {id}", "Inventory", "127.0.0.1"))
+    
+    return {"success": True}
+
+@app.post("/api/admin/products/{id}/approve")
+def admin_approve_product(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE custom_products SET status = 'approved', available = 1 WHERE id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Approved product {id}", "Inventory", "127.0.0.1"))
+    
+    return admin_get_product(id, current_admin)
+
+@app.post("/api/admin/products/{id}/reject")
+def admin_reject_product(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE custom_products SET status = 'rejected', available = 0 WHERE id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Rejected product {id}", "Inventory", "127.0.0.1"))
+    
+    return admin_get_product(id, current_admin)
+
+@app.post("/api/admin/products/{id}/toggle-feature")
+def admin_toggle_feature_product(id: str, current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT featured FROM custom_products WHERE id = %s", (id,))
+            r = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    if not r:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    new_val = 0 if r["featured"] else 1
+    execute_query("UPDATE custom_products SET featured = %s WHERE id = %s", (new_val, id))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    action_str = "Featured" if new_val else "Unfeatured"
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"{action_str} product {id}", "Inventory", "127.0.0.1"))
+    
+    return admin_get_product(id, current_admin)
+
+@app.post("/api/admin/products/{id}/toggle-hide")
+def admin_toggle_hide_product(id: str, current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT hidden FROM custom_products WHERE id = %s", (id,))
+            r = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    if not r:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    new_val = 0 if r["hidden"] else 1
+    execute_query("UPDATE custom_products SET hidden = %s WHERE id = %s", (new_val, id))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    action_str = "Hid" if new_val else "Unhid"
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"{action_str} product {id}", "Inventory", "127.0.0.1"))
+    
+    return admin_get_product(id, current_admin)
+
+# Categories
+@app.get("/api/admin/categories")
+def admin_categories_list(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM categories")
+            rows = cursor.fetchall()
+            
+            res = []
+            for r in rows:
+                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE category = %s", (r["name"],))
+                p_count = cursor.fetchone()["count"]
+                res.append({
+                    "id": r["id"],
+                    "name": r["name"],
+                    "icon": r["icon"] or "Laptop",
+                    "count": p_count,
+                    "color": r["color"] or "bg-gray-500/10 text-gray-500",
+                    "enabled": bool(r["enabled"])
+                })
+    finally:
+        conn.close()
+    return res
+
+@app.post("/api/admin/categories", status_code=201)
+def admin_create_category(data: CategorySchema, current_admin: dict = Depends(check_admin_user)):
+    cat_id = f"cat-{random.randint(100000, 999999)}"
+    execute_query("""
+        INSERT INTO categories (id, name, icon, color, enabled)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (cat_id, data.name, data.icon or "Laptop", data.color or "bg-gray-500/10 text-gray-500", 1 if data.enabled else 0))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Created category {data.name}", "Inventory", "127.0.0.1"))
+    
+    return {
+        "id": cat_id,
+        "name": data.name,
+        "icon": data.icon or "Laptop",
+        "count": 0,
+        "color": data.color or "bg-gray-500/10 text-gray-500",
+        "enabled": data.enabled
+    }
+
+@app.put("/api/admin/categories/{id}")
+def admin_update_category(id: str, data: CategorySchema, current_admin: dict = Depends(check_admin_user)):
+    fields = []
+    params = []
+    if data.name is not None:
+        fields.append("name = %s")
+        params.append(data.name)
+    if data.icon is not None:
+        fields.append("icon = %s")
+        params.append(data.icon)
+    if data.color is not None:
+        fields.append("color = %s")
+        params.append(data.color)
+    if data.enabled is not None:
+        fields.append("enabled = %s")
+        params.append(1 if data.enabled else 0)
+        
+    if fields:
+        params.append(id)
+        execute_query(f"UPDATE categories SET {', '.join(fields)} WHERE id = %s", tuple(params))
+        
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Updated category {id}", "Inventory", "127.0.0.1"))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM categories WHERE id = %s", (id,))
+            r = cursor.fetchone()
+            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE category = %s", (r["name"],))
+            p_count = cursor.fetchone()["count"]
+    finally:
+        conn.close()
+        
+    return {
+        "id": r["id"],
+        "name": r["name"],
+        "icon": r["icon"],
+        "count": p_count,
+        "color": r["color"],
+        "enabled": bool(r["enabled"])
+    }
+
+@app.delete("/api/admin/categories/{id}")
+def admin_delete_category(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("DELETE FROM categories WHERE id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted category {id}", "Inventory", "127.0.0.1"))
+    
+    return {"success": True}
+
+# Bookings
+@app.get("/api/admin/bookings")
+def admin_bookings_list(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
@@ -838,26 +1576,143 @@ def admin_bookings_list(current_user_email: str = Depends(get_current_user_email
             "startDate": r["start_date"],
             "endDate": r["end_date"],
             "amount": r["total"],
-            "status": r["status"],
+            "status": r["status"] or "pending",
             "createdAt": r["created_at"]
         })
     return res
 
-@app.get("/api/admin/payments")
-def admin_payments_list(current_user_email: str = Depends(get_current_user_email)):
-    user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Forbidden. Admin access required.")
-        
+@app.post("/api/admin/bookings/{id}/cancel")
+def admin_cancel_booking(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE orders SET status = 'cancelled' WHERE id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Cancelled booking {id}", "Orders", "127.0.0.1"))
+    
+    # Return updated booking
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT o.*, u.full_name as customer_name
+                SELECT o.*, u.full_name as customer_name, p.owner_name, p.user_email as owner_email
                 FROM orders o
                 LEFT JOIN users u ON o.user_email = u.email
-                ORDER BY o.created_at DESC
-            """)
+                LEFT JOIN custom_products p ON o.product_id = p.id
+                WHERE o.id = %s
+            """, (id,))
+            r = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    return {
+        "id": r["id"],
+        "productId": r["product_id"],
+        "productTitle": r["product_title"],
+        "productImage": r["product_image"],
+        "customerId": r["user_email"],
+        "customerName": r["customer_name"] or r["user_email"].split("@")[0],
+        "ownerId": r["owner_email"] or "alex@example.com",
+        "ownerName": r["owner_name"] or "Alex Mercer",
+        "startDate": r["start_date"],
+        "endDate": r["end_date"],
+        "amount": r["total"],
+        "status": r["status"],
+        "createdAt": r["created_at"]
+    }
+
+@app.post("/api/admin/bookings/{id}/complete")
+def admin_complete_booking(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE orders SET status = 'completed' WHERE id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Completed booking {id}", "Orders", "127.0.0.1"))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT o.*, u.full_name as customer_name, p.owner_name, p.user_email as owner_email
+                FROM orders o
+                LEFT JOIN users u ON o.user_email = u.email
+                LEFT JOIN custom_products p ON o.product_id = p.id
+                WHERE o.id = %s
+            """, (id,))
+            r = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    return {
+        "id": r["id"],
+        "productId": r["product_id"],
+        "productTitle": r["product_title"],
+        "productImage": r["product_image"],
+        "customerId": r["user_email"],
+        "customerName": r["customer_name"] or r["user_email"].split("@")[0],
+        "ownerId": r["owner_email"] or "alex@example.com",
+        "ownerName": r["owner_name"] or "Alex Mercer",
+        "startDate": r["start_date"],
+        "endDate": r["end_date"],
+        "amount": r["total"],
+        "status": r["status"],
+        "createdAt": r["created_at"]
+    }
+
+@app.post("/api/admin/bookings/{id}/refund")
+def admin_refund_booking(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE orders SET status = 'cancelled' WHERE id = %s", (id,))
+    execute_query("UPDATE payments SET status = 'refunded' WHERE booking_id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Refunded booking {id}", "Orders", "127.0.0.1"))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT o.*, u.full_name as customer_name, p.owner_name, p.user_email as owner_email
+                FROM orders o
+                LEFT JOIN users u ON o.user_email = u.email
+                LEFT JOIN custom_products p ON o.product_id = p.id
+                WHERE o.id = %s
+            """, (id,))
+            r = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    return {
+        "id": r["id"],
+        "productId": r["product_id"],
+        "productTitle": r["product_title"],
+        "productImage": r["product_image"],
+        "customerId": r["user_email"],
+        "customerName": r["customer_name"] or r["user_email"].split("@")[0],
+        "ownerId": r["owner_email"] or "alex@example.com",
+        "ownerName": r["owner_name"] or "Alex Mercer",
+        "startDate": r["start_date"],
+        "endDate": r["end_date"],
+        "amount": r["total"],
+        "status": r["status"],
+        "createdAt": r["created_at"]
+    }
+
+# Payments
+@app.get("/api/admin/payments")
+def admin_payments_list(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM payments ORDER BY created_at DESC")
             rows = cursor.fetchall()
     finally:
         conn.close()
@@ -865,61 +1720,544 @@ def admin_payments_list(current_user_email: str = Depends(get_current_user_email
     res = []
     for r in rows:
         res.append({
-            "id": "tx-" + r["id"],
-            "bookingId": r["id"],
-            "customerId": r["user_email"],
-            "customerName": r["customer_name"] or r["user_email"].split("@")[0],
-            "amount": r["total"],
-            "status": "successful" if r["status"] != "cancelled" else "failed",
-            "method": "UPI / Card",
-            "invoiceUrl": "#",
+            "id": r["id"],
+            "bookingId": r["booking_id"],
+            "customerId": r["customer_id"],
+            "customerName": r["customer_name"],
+            "amount": r["amount"],
+            "status": r["status"] or "successful",
+            "method": r["method"] or "UPI / Card",
+            "invoiceUrl": r["invoice_url"] or "#",
             "createdAt": r["created_at"]
         })
     return res
 
-@app.get("/api/admin/agents")
-def admin_agents_list(current_user_email: str = Depends(get_current_user_email)):
-    user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Forbidden. Admin access required.")
-        
+@app.post("/api/admin/payments/{id}/refund")
+def admin_refund_payment(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE payments SET status = 'refunded' WHERE id = %s", (id,))
+    
+    # Get payment to cancel associated booking
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM users WHERE role = 'agent' OR role = 'lender' OR email IN (SELECT DISTINCT user_email FROM custom_products)")
-            rows = cursor.fetchall()
-            
-            result = []
-            for r in rows:
-                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE user_email = %s", (r["email"],))
-                p_count = cursor.fetchone()["count"]
-                
-                cursor.execute("""
-                    SELECT COUNT(*) as count, IFNULL(SUM(total), 0) as revenue
-                    FROM orders o
-                    JOIN custom_products p ON o.product_id = p.id
-                    WHERE p.user_email = %s
-                """, (r["email"],))
-                o_data = cursor.fetchone()
-                
-                result.append({
-                    "id": r["email"],
-                    "fullName": r["full_name"],
-                    "email": r["email"],
-                    "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-                    "productsCount": p_count,
-                    "bookingsCount": o_data["count"],
-                    "revenue": o_data["revenue"],
-                    "rating": 4.8,
-                    "status": "active",
-                    "createdAt": r["created_at"]
-                })
+            cursor.execute("SELECT * FROM payments WHERE id = %s", (id,))
+            pay = cursor.fetchone()
+            if pay:
+                cursor.execute("UPDATE orders SET status = 'cancelled' WHERE id = %s", (pay["booking_id"],))
     finally:
         conn.close()
         
-    return result
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Refunded payment transaction {id}", "Payments", "127.0.0.1"))
+    
+    return {
+        "id": pay["id"],
+        "bookingId": pay["booking_id"],
+        "customerId": pay["customer_id"],
+        "customerName": pay["customer_name"],
+        "amount": pay["amount"],
+        "status": "refunded",
+        "method": pay["method"],
+        "invoiceUrl": pay["invoice_url"],
+        "createdAt": pay["created_at"]
+    }
 
+# Reviews
+@app.get("/api/admin/reviews")
+def admin_reviews_list(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM reviews ORDER BY created_at DESC")
+            rows = cursor.fetchall()
+    finally:
+        conn.close()
+        
+    res = []
+    for r in rows:
+        res.append({
+            "id": r["id"],
+            "productId": r["product_id"],
+            "productTitle": r["product_title"],
+            "userName": r["user_name"],
+            "userAvatar": r["user_avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+            "rating": r["rating"],
+            "comment": r["comment"],
+            "hidden": bool(r["hidden"]),
+            "createdAt": r["created_at"]
+        })
+    return res
 
+@app.delete("/api/admin/reviews/{id}")
+def admin_delete_review(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("DELETE FROM reviews WHERE id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted review {id}", "Reports", "127.0.0.1"))
+    
+    return {"success": True}
+
+@app.post("/api/admin/reviews/{id}/toggle-hide")
+def admin_toggle_hide_review(id: str, current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT hidden FROM reviews WHERE id = %s", (id,))
+            r = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    if not r:
+        raise HTTPException(status_code=404, detail="Review not found")
+        
+    new_val = 0 if r["hidden"] else 1
+    execute_query("UPDATE reviews SET hidden = %s WHERE id = %s", (new_val, id))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    action_str = "Hid" if new_val else "Unhid"
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"{action_str} review {id}", "Reports", "127.0.0.1"))
+    
+    # Get updated review
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM reviews WHERE id = %s", (id,))
+            updated = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    return {
+        "id": updated["id"],
+        "productId": updated["product_id"],
+        "productTitle": updated["product_title"],
+        "userName": updated["user_name"],
+        "userAvatar": updated["user_avatar"],
+        "rating": updated["rating"],
+        "comment": updated["comment"],
+        "hidden": bool(updated["hidden"]),
+        "createdAt": updated["created_at"]
+    }
+
+# Reports
+@app.get("/api/admin/reports")
+def admin_reports_list(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM reports ORDER BY created_at DESC")
+            rows = cursor.fetchall()
+    finally:
+        conn.close()
+        
+    res = []
+    for r in rows:
+        res.append({
+            "id": r["id"],
+            "reason": r["reason"],
+            "evidence": r["evidence"],
+            "productId": r["product_id"],
+            "productTitle": r["product_title"],
+            "reporterName": r["reporter_name"],
+            "ownerName": r["owner_name"],
+            "ownerId": r["owner_id"],
+            "status": r["status"] or "open",
+            "createdAt": r["created_at"]
+        })
+    return res
+
+@app.post("/api/admin/reports/{id}/resolve")
+def admin_resolve_report(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE reports SET status = 'resolved' WHERE id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Resolved report {id}", "Reports", "127.0.0.1"))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM reports WHERE id = %s", (id,))
+            r = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    return {
+        "id": r["id"],
+        "reason": r["reason"],
+        "evidence": r["evidence"],
+        "productId": r["product_id"],
+        "productTitle": r["product_title"],
+        "reporterName": r["reporter_name"],
+        "ownerName": r["owner_name"],
+        "ownerId": r["owner_id"],
+        "status": "resolved",
+        "createdAt": r["created_at"]
+    }
+
+@app.post("/api/admin/reports/{id}/dismiss")
+def admin_dismiss_report(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE reports SET status = 'dismissed' WHERE id = %s", (id,))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Dismissed report {id}", "Reports", "127.0.0.1"))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM reports WHERE id = %s", (id,))
+            r = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    return {
+        "id": r["id"],
+        "reason": r["reason"],
+        "evidence": r["evidence"],
+        "productId": r["product_id"],
+        "productTitle": r["product_title"],
+        "reporterName": r["reporter_name"],
+        "ownerName": r["owner_name"],
+        "ownerId": r["owner_id"],
+        "status": "dismissed",
+        "createdAt": r["created_at"]
+    }
+
+@app.post("/api/admin/reports/{id}/suspend-product")
+def admin_suspend_product_report(id: str, current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM reports WHERE id = %s", (id,))
+            r = cursor.fetchone()
+            if r:
+                cursor.execute("UPDATE custom_products SET status = 'rejected', available = 0 WHERE id = %s", (r["product_id"],))
+                cursor.execute("UPDATE reports SET status = 'resolved' WHERE id = %s", (id,))
+    finally:
+        conn.close()
+        
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Suspended reported product {r['product_id']} via report {id}", "Reports", "127.0.0.1"))
+    
+    return {
+        "id": r["id"],
+        "reason": r["reason"],
+        "evidence": r["evidence"],
+        "productId": r["product_id"],
+        "productTitle": r["product_title"],
+        "reporterName": r["reporter_name"],
+        "ownerName": r["owner_name"],
+        "ownerId": r["owner_id"],
+        "status": "resolved",
+        "createdAt": r["created_at"]
+    }
+
+@app.post("/api/admin/reports/{id}/ban-user")
+def admin_ban_user_report(id: str, current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM reports WHERE id = %s", (id,))
+            r = cursor.fetchone()
+            if r:
+                cursor.execute("UPDATE users SET status = 'suspended' WHERE email = %s", (r["owner_id"],))
+                cursor.execute("UPDATE reports SET status = 'resolved' WHERE id = %s", (id,))
+    finally:
+        conn.close()
+        
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Suspended user {r['owner_id']} via report {id}", "Reports", "127.0.0.1"))
+    
+    return {
+        "id": r["id"],
+        "reason": r["reason"],
+        "evidence": r["evidence"],
+        "productId": r["product_id"],
+        "productTitle": r["product_title"],
+        "reporterName": r["reporter_name"],
+        "ownerName": r["owner_name"],
+        "ownerId": r["owner_id"],
+        "status": "resolved",
+        "createdAt": r["created_at"]
+    }
+
+# Notifications
+@app.get("/api/admin/notifications")
+def admin_notifications_list(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, title, message, type, is_read, created_at FROM admin_notifications ORDER BY created_at DESC")
+            rows = cursor.fetchall()
+    finally:
+        conn.close()
+        
+    res = []
+    for r in rows:
+        res.append({
+            "id": r["id"],
+            "title": r["title"],
+            "message": r["message"],
+            "type": r["type"] or "info",
+            "read": bool(r["is_read"]),
+            "createdAt": r["created_at"]
+        })
+    return res
+
+@app.post("/api/admin/notifications/mark-read")
+def admin_mark_read_all(current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE admin_notifications SET is_read = 1")
+    return {"success": True}
+
+@app.delete("/api/admin/notifications/{id}")
+def admin_delete_notification(id: str, current_admin: dict = Depends(check_admin_user)):
+    execute_query("DELETE FROM admin_notifications WHERE id = %s", (id,))
+    return {"success": True}
+
+# Support Tickets
+@app.get("/api/admin/support")
+def admin_support_tickets_list(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM support_tickets ORDER BY created_at DESC")
+            rows = cursor.fetchall()
+    finally:
+        conn.close()
+        
+    res = []
+    for r in rows:
+        try:
+            msg_list = json.loads(r["messages"]) if r["messages"] else []
+        except Exception:
+            msg_list = []
+            
+        res.append({
+            "id": r["id"],
+            "subject": r["subject"],
+            "category": r["category"],
+            "status": r["status"] or "open",
+            "priority": r["priority"] or "medium",
+            "userName": r["user_name"],
+            "userEmail": r["user_email"],
+            "messages": msg_list,
+            "createdAt": r["created_at"]
+        })
+    return res
+
+@app.post("/api/admin/support/{id}/reply")
+def admin_reply_support_ticket(id: str, data: SupportReplySchema, current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM support_tickets WHERE id = %s", (id,))
+            r = cursor.fetchone()
+            if not r:
+                raise HTTPException(status_code=404, detail="Ticket not found")
+                
+            try:
+                msg_list = json.loads(r["messages"]) if r["messages"] else []
+            except Exception:
+                msg_list = []
+                
+            new_msg = {
+                "id": f"tm-{random.randint(100000, 999999)}",
+                "sender": "admin",
+                "message": data.message,
+                "createdAt": datetime.datetime.utcnow().isoformat()
+            }
+            msg_list.append(new_msg)
+            
+            cursor.execute("UPDATE support_tickets SET messages = %s, status = 'pending' WHERE id = %s", (json.dumps(msg_list), id))
+            conn.commit()
+    finally:
+        conn.close()
+        
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Replied to ticket {id}", "Reports", "127.0.0.1"))
+    
+    return {
+        "id": r["id"],
+        "subject": r["subject"],
+        "category": r["category"],
+        "status": "pending",
+        "priority": r["priority"],
+        "userName": r["user_name"],
+        "userEmail": r["user_email"],
+        "messages": msg_list,
+        "createdAt": r["created_at"]
+    }
+
+@app.post("/api/admin/support/{id}/status")
+def admin_status_support_ticket(id: str, data: SupportStatusSchema, current_admin: dict = Depends(check_admin_user)):
+    execute_query("UPDATE support_tickets SET status = %s WHERE id = %s", (data.status, id))
+    
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Changed ticket {id} status to {data.status}", "Reports", "127.0.0.1"))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM support_tickets WHERE id = %s", (id,))
+            r = cursor.fetchone()
+            try:
+                msg_list = json.loads(r["messages"]) if r["messages"] else []
+            except Exception:
+                msg_list = []
+    finally:
+        conn.close()
+        
+    return {
+        "id": r["id"],
+        "subject": r["subject"],
+        "category": r["category"],
+        "status": r["status"],
+        "priority": r["priority"],
+        "userName": r["user_name"],
+        "userEmail": r["user_email"],
+        "messages": msg_list,
+        "createdAt": r["created_at"]
+    }
+
+# Settings
+@app.get("/api/admin/settings")
+def admin_settings_get(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM admin_settings LIMIT 1")
+            r = cursor.fetchone()
+    finally:
+        conn.close()
+        
+    if not r:
+        raise HTTPException(status_code=404, detail="Settings not found")
+        
+    return {
+        "websiteName": r["website_name"],
+        "logoUrl": r["logo_url"],
+        "theme": r["theme"],
+        "contactEmail": r["contact_email"],
+        "contactPhone": r["contact_phone"],
+        "socialFacebook": r["social_facebook"],
+        "socialTwitter": r["social_twitter"],
+        "socialInstagram": r["social_instagram"],
+        "seoTitle": r["seo_title"],
+        "seoDescription": r["seo_description"],
+        "homepageBannerText": r["homepage_banner_text"],
+        "footerText": r["footer_text"]
+    }
+
+@app.post("/api/admin/settings")
+def admin_settings_save(data: SettingsUpdateSchema, current_admin: dict = Depends(check_admin_user)):
+    fields = []
+    params = []
+    if data.websiteName is not None:
+        fields.append("website_name = %s")
+        params.append(data.websiteName)
+    if data.logoUrl is not None:
+        fields.append("logo_url = %s")
+        params.append(data.logoUrl)
+    if data.theme is not None:
+        fields.append("theme = %s")
+        params.append(data.theme)
+    if data.contactEmail is not None:
+        fields.append("contact_email = %s")
+        params.append(data.contactEmail)
+    if data.contactPhone is not None:
+        fields.append("contact_phone = %s")
+        params.append(data.contactPhone)
+    if data.socialFacebook is not None:
+        fields.append("social_facebook = %s")
+        params.append(data.socialFacebook)
+    if data.socialTwitter is not None:
+        fields.append("social_twitter = %s")
+        params.append(data.socialTwitter)
+    if data.socialInstagram is not None:
+        fields.append("social_instagram = %s")
+        params.append(data.socialInstagram)
+    if data.seoTitle is not None:
+        fields.append("seo_title = %s")
+        params.append(data.seoTitle)
+    if data.seoDescription is not None:
+        fields.append("seo_description = %s")
+        params.append(data.seoDescription)
+    if data.homepageBannerText is not None:
+        fields.append("homepage_banner_text = %s")
+        params.append(data.homepageBannerText)
+    if data.footerText is not None:
+        fields.append("footer_text = %s")
+        params.append(data.footerText)
+        
+    if fields:
+        query = f"UPDATE admin_settings SET {', '.join(fields)} WHERE id = 1"
+        execute_query(query, tuple(params))
+        
+    # Log action
+    now_str = datetime.datetime.utcnow().isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], "Updated website configurations", "Settings", "127.0.0.1"))
+    
+    return admin_settings_get(current_admin)
+
+# Activity Logs
+@app.get("/api/admin/activity-logs")
+def admin_activity_logs(current_admin: dict = Depends(check_admin_user)):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, timestamp, user_name, action, module, ip_address FROM admin_logs ORDER BY timestamp DESC LIMIT 100")
+            rows = cursor.fetchall()
+    finally:
+        conn.close()
+        
+    res = []
+    for r in rows:
+        res.append({
+            "id": r["id"],
+            "timestamp": r["timestamp"],
+            "userName": r["user_name"],
+            "action": r["action"],
+            "module": r["module"],
+            "ipAddress": r["ip_address"]
+        })
+    return res
 
 
 if __name__ == "__main__":

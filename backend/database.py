@@ -39,6 +39,17 @@ def fetch_one(query: str, params: tuple = ()):
         conn.close()
 
 def init_db():
+    # Helper to safely add column if not exists
+    def add_column_safely(table: str, column_def: str):
+        try:
+            execute_query(f"ALTER TABLE {table} ADD COLUMN {column_def}")
+            print(f"Added column {column_def} to {table} successfully.")
+        except Exception as e:
+            if hasattr(e, 'args') and len(e.args) > 0 and e.args[0] == 1060:
+                pass  # Column already exists
+            else:
+                print(f"Notice: Altering {table} for {column_def} got: {e}")
+
     # Create users table
     execute_query("""
         CREATE TABLE IF NOT EXISTS users (
@@ -51,6 +62,11 @@ def init_db():
         )
     """)
     
+    # Safely alter users table for new fields
+    add_column_safely("users", "status VARCHAR(50) DEFAULT 'active'")
+    add_column_safely("users", "verified BOOLEAN DEFAULT TRUE")
+    add_column_safely("users", "avatar VARCHAR(1000) DEFAULT 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'")
+
     # Create OTPs table
     execute_query("""
         CREATE TABLE IF NOT EXISTS otps (
@@ -106,7 +122,14 @@ def init_db():
         )
     """)
 
-    # Create notifications table
+    # Safely alter custom_products table for new fields
+    add_column_safely("custom_products", "status VARCHAR(50) DEFAULT 'approved'")
+    add_column_safely("custom_products", "featured BOOLEAN DEFAULT FALSE")
+    add_column_safely("custom_products", "hidden BOOLEAN DEFAULT FALSE")
+    add_column_safely("custom_products", "images LONGTEXT")
+    add_column_safely("custom_products", "documents LONGTEXT")
+
+    # Create notifications table (user-facing)
     execute_query("""
         CREATE TABLE IF NOT EXISTS notifications (
             id VARCHAR(255) PRIMARY KEY,
@@ -115,6 +138,121 @@ def init_db():
             message VARCHAR(1000),
             type VARCHAR(50),
             is_read BOOLEAN,
+            created_at VARCHAR(100)
+        )
+    """)
+
+    # Create categories table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS categories (
+            id VARCHAR(255) PRIMARY KEY,
+            name VARCHAR(255) UNIQUE,
+            icon VARCHAR(100),
+            color VARCHAR(100),
+            enabled BOOLEAN DEFAULT TRUE
+        )
+    """)
+
+    # Create reviews table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id VARCHAR(255) PRIMARY KEY,
+            product_id VARCHAR(255),
+            product_title VARCHAR(255),
+            user_name VARCHAR(255),
+            user_avatar VARCHAR(1000),
+            rating INT,
+            comment TEXT,
+            hidden BOOLEAN DEFAULT FALSE,
+            created_at VARCHAR(100)
+        )
+    """)
+
+    # Create reports table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS reports (
+            id VARCHAR(255) PRIMARY KEY,
+            reason VARCHAR(1000),
+            evidence TEXT,
+            product_id VARCHAR(255),
+            product_title VARCHAR(255),
+            reporter_name VARCHAR(255),
+            owner_name VARCHAR(255),
+            owner_id VARCHAR(255),
+            status VARCHAR(50) DEFAULT 'open',
+            created_at VARCHAR(100)
+        )
+    """)
+
+    # Create admin_notifications table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS admin_notifications (
+            id VARCHAR(255) PRIMARY KEY,
+            title VARCHAR(255),
+            message VARCHAR(1000),
+            type VARCHAR(50),
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at VARCHAR(100)
+        )
+    """)
+
+    # Create support_tickets table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS support_tickets (
+            id VARCHAR(255) PRIMARY KEY,
+            subject VARCHAR(255),
+            category VARCHAR(255),
+            status VARCHAR(50) DEFAULT 'open',
+            priority VARCHAR(50) DEFAULT 'medium',
+            user_name VARCHAR(255),
+            user_email VARCHAR(255),
+            messages LONGTEXT,
+            created_at VARCHAR(100)
+        )
+    """)
+
+    # Create admin_settings table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS admin_settings (
+            id INT PRIMARY KEY,
+            website_name VARCHAR(255),
+            logo_url VARCHAR(1000),
+            theme VARCHAR(50),
+            contact_email VARCHAR(255),
+            contact_phone VARCHAR(255),
+            social_facebook VARCHAR(255),
+            social_twitter VARCHAR(255),
+            social_instagram VARCHAR(255),
+            seo_title VARCHAR(255),
+            seo_description TEXT,
+            homepage_banner_text TEXT,
+            footer_text TEXT
+        )
+    """)
+
+    # Create admin_logs table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS admin_logs (
+            id VARCHAR(255) PRIMARY KEY,
+            timestamp VARCHAR(100),
+            user_name VARCHAR(255),
+            action VARCHAR(255),
+            module VARCHAR(255),
+            ip_address VARCHAR(100)
+        )
+    """)
+
+    # Create payments table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS payments (
+            id VARCHAR(255) PRIMARY KEY,
+            booking_id VARCHAR(255),
+            customer_id VARCHAR(255),
+            customer_name VARCHAR(255),
+            amount INT,
+            status VARCHAR(50),
+            method VARCHAR(100),
+            invoice_url VARCHAR(1000),
             created_at VARCHAR(100)
         )
     """)
@@ -147,8 +285,8 @@ def init_db():
                 ("jessica@example.com", "+919876543214", hash_password("mohan@1234"), "Jessica Ross", "user", now_str),
             ]
             cursor.executemany(
-                "REPLACE INTO users (email, phone, password_hash, full_name, role, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
-                users_data
+                "REPLACE INTO users (email, phone, password_hash, full_name, role, created_at, status, verified, avatar) VALUES (%s, %s, %s, %s, %s, %s, 'active', 1, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150')",
+                [u[:6] for u in users_data]
             )
             print("Seeded initial users.")
 
@@ -162,7 +300,7 @@ def init_db():
                 ("p-6", "emily@example.com", "Sennheiser Ambeo VR Mic", "Ambisonics microphone designed for 3D spatial audio recording in VR/AR productions.", 40, "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=500", "Audio", 4.60, 11, True, "Emily Davis", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150", 4.50, now_str),
             ]
             cursor.executemany(
-                "REPLACE INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "REPLACE INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at, status, featured, hidden, images, documents) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'approved', 0, 0, '[]', '[]')",
                 products_data
             )
             print("Seeded initial products.")
@@ -178,6 +316,118 @@ def init_db():
                 orders_data
             )
             print("Seeded initial bookings.")
+
+            # Seed categories
+            cursor.execute("SELECT COUNT(*) as count FROM categories")
+            if cursor.fetchone()["count"] == 0:
+                categories_data = [
+                    ("cat-1", "Cameras", "Camera", "bg-blue-500/10 text-blue-500", True),
+                    ("cat-2", "Drones", "Plane", "bg-green-500/10 text-green-500", True),
+                    ("cat-3", "Laptops", "Laptop", "bg-purple-500/10 text-purple-500", True),
+                    ("cat-4", "Audio", "Mic", "bg-orange-500/10 text-orange-500", True),
+                    ("cat-5", "VR & AR", "Glasses", "bg-pink-500/10 text-pink-500", True),
+                ]
+                cursor.executemany(
+                    "INSERT INTO categories (id, name, icon, color, enabled) VALUES (%s, %s, %s, %s, %s)",
+                    categories_data
+                )
+                print("Seeded initial categories.")
+
+            # Seed payments
+            cursor.execute("SELECT COUNT(*) as count FROM payments")
+            if cursor.fetchone()["count"] == 0:
+                payments_data = [
+                    ("tx-1", "b-1", "michael@example.com", "Michael Chang", 360, "successful", "Credit Card", "#", now_str),
+                    ("tx-2", "b-2", "jessica@example.com", "Jessica Ross", 475, "successful", "PayPal", "#", now_str),
+                    ("tx-3", "b-3", "michael@example.com", "Michael Chang", 1400, "successful", "Credit Card", "#", now_str),
+                ]
+                cursor.executemany(
+                    "INSERT INTO payments (id, booking_id, customer_id, customer_name, amount, status, method, invoice_url, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    payments_data
+                )
+                print("Seeded initial payments.")
+
+            # Seed reviews
+            cursor.execute("SELECT COUNT(*) as count FROM reviews")
+            if cursor.fetchone()["count"] == 0:
+                reviews_data = [
+                    ("r-1", "p-1", "Sony FX3 Cinema Camera", "Michael Chang", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150", 5, "Excellent camera package! Alex was extremely helpful.", False, now_str),
+                    ("r-2", "p-3", "MacBook Pro 16\" M3 Max", "Jessica Ross", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150", 4, "Incredible tech, but quite heavy for long usage.", False, now_str),
+                ]
+                cursor.executemany(
+                    "INSERT INTO reviews (id, product_id, product_title, user_name, user_avatar, rating, comment, hidden, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    reviews_data
+                )
+                print("Seeded initial reviews.")
+
+            # Seed reports
+            cursor.execute("SELECT COUNT(*) as count FROM reports")
+            if cursor.fetchone()["count"] == 0:
+                reports_data = [
+                    ("rep-1", "Damaged battery package on delivery.", "The lens filter is cracked and the battery is bloated.", "p-2", "DJI Inspire 3 Drone", "Michael Chang", "Alex Mercer", "alex@example.com", "open", now_str),
+                ]
+                cursor.executemany(
+                    "INSERT INTO reports (id, reason, evidence, product_id, product_title, reporter_name, owner_name, owner_id, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    reports_data
+                )
+                print("Seeded initial reports.")
+
+            # Seed admin notifications
+            cursor.execute("SELECT COUNT(*) as count FROM admin_notifications")
+            if cursor.fetchone()["count"] == 0:
+                notifications_data = [
+                    ("n-1", "New listing request", "Alex Mercer requested approval for RED Komodo-X Starter Kit.", "warning", False, now_str),
+                    ("n-2", "Product Reported", "Michael Chang reported a damaged battery on DJI Inspire 3 Drone.", "error", False, now_str),
+                    ("n-3", "New registration", "Jessica Ross registered as a new customer.", "success", True, now_str),
+                ]
+                cursor.executemany(
+                    "INSERT INTO admin_notifications (id, title, message, type, is_read, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+                    notifications_data
+                )
+                print("Seeded initial admin notifications.")
+
+            # Seed support tickets
+            cursor.execute("SELECT COUNT(*) as count FROM support_tickets")
+            if cursor.fetchone()["count"] == 0:
+                import json
+                tickets_data = [
+                    ("t-1", "Payout Delay Issues", "Payouts", "open", "high", "Alex Mercer", "alex@example.com", json.dumps([
+                        {"id": "tm-1", "sender": "user", "message": "Hi support, my payout for the camera rental has been delayed for 3 days now. Can you please check?", "createdAt": now_str}
+                    ]), now_str),
+                    ("t-2", "Insurance Coverage Question", "Insurance", "resolved", "medium", "Emily Davis", "emily@example.com", json.dumps([
+                        {"id": "tm-2", "sender": "user", "message": "What does the liability cover if my laptop gets water damage?", "createdAt": now_str},
+                        {"id": "tm-3", "sender": "admin", "message": "Hello Emily! The Payent protection plan covers accidental water damage up to 90% of the replacement value minus a small deductible.", "createdAt": now_str}
+                    ]), now_str),
+                ]
+                cursor.executemany(
+                    "INSERT INTO support_tickets (id, subject, category, status, priority, user_name, user_email, messages, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    tickets_data
+                )
+                print("Seeded initial support tickets.")
+
+            # Seed admin settings
+            cursor.execute("SELECT COUNT(*) as count FROM admin_settings")
+            if cursor.fetchone()["count"] == 0:
+                cursor.execute("""
+                    INSERT INTO admin_settings (id, website_name, logo_url, theme, contact_email, contact_phone, social_facebook, social_twitter, social_instagram, seo_title, seo_description, homepage_banner_text, footer_text)
+                    VALUES (1, 'Payent', '/favicon.svg', 'dark', 'admin@payent.com', '+1 (800) 555-GEAR', 'https://facebook.com/payent', 'https://twitter.com/payent', 'https://instagram.com/payent', 'Payent — Premium Tech Gear Rental Marketplace', 'Rent professional video gear, cameras, laptops, drones, and consoles. Safe, secure, and fully insured.', 'Unlock premium gear at a fraction of the cost.', '© 2026 Payent Inc. All rights reserved.')
+                """)
+                print("Seeded initial admin settings.")
+
+            # Seed admin logs
+            cursor.execute("SELECT COUNT(*) as count FROM admin_logs")
+            if cursor.fetchone()["count"] == 0:
+                logs_data = [
+                    ("l-1", now_str, "Sarah Connor", "User Login", "Auth", "192.168.1.1"),
+                    ("l-2", now_str, "Sarah Connor", "Review Reported Listing", "Reports", "192.168.1.1"),
+                    ("l-3", now_str, "Alex Mercer", "Upload Product (RED Komodo)", "Inventory", "192.168.1.55"),
+                ]
+                cursor.executemany(
+                    "INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address) VALUES (%s, %s, %s, %s, %s, %s)",
+                    logs_data
+                )
+                print("Seeded initial admin logs.")
+
         conn.commit()
     finally:
         conn.close()
@@ -265,6 +515,27 @@ def create_order(email: str, order: dict):
         order["endDate"],
         order["total"],
         order["status"],
+        order.get("createdAt") or datetime.utcnow().isoformat()
+    ))
+
+    # Create matching payment transaction
+    tx_id = f"tx-{order['id']}"
+    user = get_user(email)
+    customer_name = user["full_name"] if user else email.split("@")[0]
+    
+    execute_query("""
+        INSERT INTO payments (id, booking_id, customer_id, customer_name, amount, status, method, invoice_url, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE status = VALUES(status)
+    """, (
+        tx_id,
+        order["id"],
+        email,
+        customer_name,
+        order["total"],
+        "successful" if order["status"] != "cancelled" else "failed",
+        "UPI / Card",
+        "#",
         order.get("createdAt") or datetime.utcnow().isoformat()
     ))
     return order

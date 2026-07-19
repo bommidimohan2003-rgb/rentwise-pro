@@ -737,10 +737,20 @@ adminApi.interceptors.request.use((config) => {
 });
 
 // Mock Interceptor logic
+let offlineMode = false;
+export const isOfflineMode = () => offlineMode;
+const setOfflineMode = (val: boolean) => {
+  if (offlineMode !== val) {
+    offlineMode = val;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("payent-admin-offline-change", { detail: val }));
+    }
+  }
+};
+
 adminApi.interceptors.response.use(
-  async (response) => {
-    // We simulate a network delay
-    await new Promise((resolve) => setTimeout(resolve, 400));
+  (response) => {
+    setOfflineMode(false);
     return response;
   },
   async (error) => {
@@ -749,19 +759,25 @@ adminApi.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Strip out baseURL
-    let urlPath = config.url;
-    if (urlPath.includes("/api/admin")) {
-      urlPath = urlPath.slice(urlPath.indexOf("/api/admin") + "/api/admin".length);
-    } else {
-      urlPath = urlPath.replace("/api/admin", "");
-    }
-    const url = urlPath.split("?")[0];
-    const method = config.method?.toUpperCase();
+    const isNetworkError = !error.response || error.code === "ERR_NETWORK" || error.message === "Network Error";
 
-    await new Promise((resolve) => setTimeout(resolve, 450));
+    if (isNetworkError) {
+      setOfflineMode(true);
+      console.warn("Admin API unreachable. Falling back to offline demo mode.", error);
 
-    try {
+      // Strip out baseURL
+      let urlPath = config.url;
+      if (urlPath.includes("/api/admin")) {
+        urlPath = urlPath.slice(urlPath.indexOf("/api/admin") + "/api/admin".length);
+      } else {
+        urlPath = urlPath.replace("/api/admin", "");
+      }
+      const url = urlPath.split("?")[0];
+      const method = config.method?.toUpperCase();
+
+      await new Promise((resolve) => setTimeout(resolve, 450));
+
+      try {
       // AUTH ENDPOINTS
       if (url === "/auth/login" && method === "POST") {
         const { email, password } = JSON.parse(config.data || "{}");
@@ -1564,5 +1580,8 @@ adminApi.interceptors.response.use(
         },
       });
     }
+    }
+
+    return Promise.reject(error);
   },
 );
