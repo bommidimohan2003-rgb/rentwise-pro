@@ -56,6 +56,12 @@ export function RegisterForm() {
   const level = useMemo(() => strength(pw), [pw]);
   const labels = ["Weak", "Fair", "Good", "Strong", "Excellent"];
 
+  const showAdminOption = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("admin") === "true";
+  }, []);
+
   const onSubmit = async (data: FormValues) => {
     setError(null);
     const res = await registerUser(data.email, data.phone);
@@ -68,7 +74,7 @@ export function RegisterForm() {
       email: data.email,
       phone: data.phone,
       password: data.password,
-      adminCode: data.isAdmin ? data.adminCode : undefined,
+      adminCode: (showAdminOption && data.isAdmin) ? data.adminCode : undefined,
     };
 
     // Save registration details to pending state to complete verification in OTP step
@@ -145,22 +151,24 @@ export function RegisterForm() {
         error={errors.confirm?.message}
         {...register("confirm")}
       />
-      <div className="space-y-4 pt-2 border-t border-border/40">
-        <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-          <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" {...register("isAdmin")} />
-          <span className="text-foreground">Register as site administrator</span>
-        </label>
-        
-        {watchIsAdmin && (
-          <Input
-            label="Admin Setup Code"
-            placeholder="Enter setup code"
-            icon={<Lock className="h-4 w-4" />}
-            error={errors.adminCode?.message}
-            {...register("adminCode")}
-          />
-        )}
-      </div>
+      {showAdminOption && (
+        <div className="space-y-4 pt-2 border-t border-border/40">
+          <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+            <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" {...register("isAdmin")} />
+            <span className="text-foreground">Register as site administrator</span>
+          </label>
+          
+          {watchIsAdmin && (
+            <Input
+              label="Admin Setup Code"
+              placeholder="Enter setup code"
+              icon={<Lock className="h-4 w-4" />}
+              error={errors.adminCode?.message}
+              {...register("adminCode")}
+            />
+          )}
+        </div>
+      )}
 
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" className="mt-1" {...register("terms")} />
