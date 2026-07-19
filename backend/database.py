@@ -274,11 +274,13 @@ def init_db():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
+            # Clean up legacy admin if it exists
+            cursor.execute("DELETE FROM users WHERE email = 'admin@payent.com'")
+            
             # Seed users
             from auth import hash_password
             now_str = datetime.utcnow().isoformat()
             users_data = [
-                ("admin@payent.com", "+919876543210", hash_password("admin@123"), "Sarah Connor", "admin", now_str),
                 ("alex@example.com", "+919876543211", hash_password("mohan@1234"), "Alex Mercer", "agent", now_str),
                 ("emily@example.com", "+919876543212", hash_password("mohan@1234"), "Emily Davis", "agent", now_str),
                 ("michael@example.com", "+919876543213", hash_password("mohan@1234"), "Michael Chang", "user", now_str),
@@ -410,7 +412,7 @@ def init_db():
             if cursor.fetchone()["count"] == 0:
                 cursor.execute("""
                     INSERT INTO admin_settings (id, website_name, logo_url, theme, contact_email, contact_phone, social_facebook, social_twitter, social_instagram, seo_title, seo_description, homepage_banner_text, footer_text)
-                    VALUES (1, 'Payent', '/favicon.svg', 'dark', 'admin@payent.com', '+1 (800) 555-GEAR', 'https://facebook.com/payent', 'https://twitter.com/payent', 'https://instagram.com/payent', 'Payent — Premium Tech Gear Rental Marketplace', 'Rent professional video gear, cameras, laptops, drones, and consoles. Safe, secure, and fully insured.', 'Unlock premium gear at a fraction of the cost.', '© 2026 Payent Inc. All rights reserved.')
+                    VALUES (1, 'Payent', '/favicon.svg', 'dark', 'support@payent.com', '+1 (800) 555-GEAR', 'https://facebook.com/payent', 'https://twitter.com/payent', 'https://instagram.com/payent', 'Payent — Premium Tech Gear Rental Marketplace', 'Rent professional video gear, cameras, laptops, drones, and consoles. Safe, secure, and fully insured.', 'Unlock premium gear at a fraction of the cost.', '© 2026 Payent Inc. All rights reserved.')
                 """)
                 print("Seeded initial admin settings.")
 

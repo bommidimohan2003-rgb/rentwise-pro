@@ -29,8 +29,8 @@ export default function Login() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "admin@payent.com",
-      password: "admin123",
+      email: "",
+      password: "",
       rememberMe: false,
     },
   });
@@ -102,7 +102,7 @@ export default function Login() {
                 <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                 <input
                   type="email"
-                  placeholder="admin@payent.com"
+                  placeholder="you@example.com"
                   {...register("email")}
                   className="w-full bg-secondary/50 text-foreground text-xs rounded-xl pl-10 pr-4 py-3.5 border border-border/80 focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
                 />

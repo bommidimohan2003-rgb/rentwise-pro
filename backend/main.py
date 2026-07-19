@@ -40,7 +40,7 @@ from auth import (
     create_access_token,
     decode_access_token
 )
-from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID
+from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID, ADMIN_SETUP_CODE
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -77,6 +77,7 @@ class RegisterVerifySchema(BaseModel):
     otp: str
     password: str
     full_name: Optional[str] = None
+    admin_code: Optional[str] = None
 
 class LoginRequestSchema(BaseModel):
     email: EmailStr
@@ -202,6 +203,17 @@ def register_verify(data: RegisterVerifySchema):
             detail="Email already registered."
         )
     
+    # Determine the role
+    role = "user"
+    if data.admin_code:
+        if data.admin_code == ADMIN_SETUP_CODE:
+            role = "admin"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid admin setup code."
+            )
+
     # Register the user
     hashed = hash_password(data.password)
     display_name = data.full_name or data.email.split("@")[0]
@@ -210,7 +222,7 @@ def register_verify(data: RegisterVerifySchema):
         phone=normalize_phone(data.phone),
         password_hash=hashed,
         full_name=display_name,
-        role="user"
+        role=role
     )
     
     # Clean up local OTP database entry

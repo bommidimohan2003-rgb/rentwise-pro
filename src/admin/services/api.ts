@@ -633,7 +633,7 @@ const INITIAL_SETTINGS: AdminSettings = {
   websiteName: "Payent",
   logoUrl: "/favicon.svg",
   theme: "dark",
-  contactEmail: "admin@payent.com",
+  contactEmail: "support@payent.com",
   contactPhone: "+1 (800) 555-GEAR",
   socialFacebook: "https://facebook.com/payent",
   socialTwitter: "https://twitter.com/payent",
@@ -781,10 +781,27 @@ adminApi.interceptors.response.use(
       // AUTH ENDPOINTS
       if (url === "/auth/login" && method === "POST") {
         const { email, password } = JSON.parse(config.data || "{}");
-        if (email === "admin@payent.com" && (password === "admin123" || password === "admin@123")) {
+        
+        // Check dynamically registered mock users in payent:users
+        const registeredUsers = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("payent:users") || "[]") : [];
+        const matchedUser = registeredUsers.find(
+          (u: any) => u.email === email && u.password === password && u.role === "admin"
+        );
+
+        if (matchedUser) {
+          const adminProfile: AdminUser = {
+            id: matchedUser.email,
+            fullName: matchedUser.fullName,
+            email: matchedUser.email,
+            phone: matchedUser.phone || "",
+            role: "admin",
+            status: "active",
+            verified: true,
+            avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+            createdAt: new Date().toISOString(),
+          };
+
           localStorage.setItem("payent:admin:token", "mock-admin-token");
-          const users = getDB<AdminUser[]>("users", INITIAL_USERS);
-          const adminProfile = users.find((u) => u.email === "admin@payent.com") || users[0];
           localStorage.setItem("payent:admin:current_user", JSON.stringify(adminProfile));
 
           // Log activity
@@ -793,7 +810,7 @@ adminApi.interceptors.response.use(
             id: `l-${Date.now()}`,
             timestamp: new Date().toISOString(),
             userName: adminProfile.fullName,
-            action: "Admin Login Success",
+            action: "Admin Login Success (Offline)",
             module: "Auth",
             ipAddress: "127.0.0.1",
           });
@@ -809,7 +826,7 @@ adminApi.interceptors.response.use(
           return Promise.reject({
             response: {
               status: 401,
-              data: { message: "Invalid email or password. Use admin@payent.com / admin123 or admin@123" },
+              data: { message: "Invalid email or password." },
             },
           });
         }

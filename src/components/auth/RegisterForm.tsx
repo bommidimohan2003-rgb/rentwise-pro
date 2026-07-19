@@ -19,8 +19,14 @@ const schema = z
     password: z.string().min(8, "At least 8 characters"),
     confirm: z.string(),
     terms: z.literal(true, { errorMap: () => ({ message: "Please accept the terms" }) }),
+    isAdmin: z.boolean().optional(),
+    adminCode: z.string().optional(),
   })
-  .refine((d) => d.password === d.confirm, { path: ["confirm"], message: "Passwords don't match" });
+  .refine((d) => d.password === d.confirm, { path: ["confirm"], message: "Passwords don't match" })
+  .refine((d) => !d.isAdmin || (d.adminCode && d.adminCode.trim().length > 0), {
+    path: ["adminCode"],
+    message: "Admin setup code is required",
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -46,6 +52,7 @@ export function RegisterForm() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   const pw = watch("password") ?? "";
+  const watchIsAdmin = watch("isAdmin") ?? false;
   const level = useMemo(() => strength(pw), [pw]);
   const labels = ["Weak", "Fair", "Good", "Strong", "Excellent"];
 
@@ -61,6 +68,7 @@ export function RegisterForm() {
       email: data.email,
       phone: data.phone,
       password: data.password,
+      adminCode: data.isAdmin ? data.adminCode : undefined,
     };
 
     // Save registration details to pending state to complete verification in OTP step
@@ -137,6 +145,23 @@ export function RegisterForm() {
         error={errors.confirm?.message}
         {...register("confirm")}
       />
+      <div className="space-y-4 pt-2 border-t border-border/40">
+        <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+          <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" {...register("isAdmin")} />
+          <span className="text-foreground">Register as site administrator</span>
+        </label>
+        
+        {watchIsAdmin && (
+          <Input
+            label="Admin Setup Code"
+            placeholder="Enter setup code"
+            icon={<Lock className="h-4 w-4" />}
+            error={errors.adminCode?.message}
+            {...register("adminCode")}
+          />
+        )}
+      </div>
+
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" className="mt-1" {...register("terms")} />
         <span className="text-muted-foreground">

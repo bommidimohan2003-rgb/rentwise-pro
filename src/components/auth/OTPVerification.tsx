@@ -12,6 +12,7 @@ interface PendingUser {
   phone: string;
   password?: string;
   fullName?: string;
+  adminCode?: string;
 }
 
 export function OTPVerification() {
@@ -82,6 +83,7 @@ export function OTPVerification() {
           code,
           pendingUser.password || "",
           pendingUser.fullName,
+          pendingUser.adminCode,
         );
         storage.remove(STORAGE_KEYS.otp);
         storage.remove(STORAGE_KEYS.pendingUser);

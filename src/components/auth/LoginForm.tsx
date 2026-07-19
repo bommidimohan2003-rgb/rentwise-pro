@@ -33,34 +33,6 @@ export function LoginForm() {
   const onSubmit = async (data: FormValues) => {
     setError(null);
 
-    // 1. First, check if logging in with mock admin credentials
-    if (data.email === "admin@payent.com" && (data.password === "admin123" || data.password === "admin@123")) {
-      try {
-        const adminRes = await authService.login(data.email, data.password);
-        if (adminRes.success) {
-          // Set regular user storage session so the main site knows we are logged in as admin
-          storage.set(STORAGE_KEYS.token, adminRes.token);
-          const loggedUser: User = {
-            id: adminRes.user.email,
-            fullName: adminRes.user.fullName,
-            email: adminRes.user.email,
-            role: "admin",
-          };
-          storage.set(STORAGE_KEYS.currentUser, loggedUser);
-
-          // Dispatch profile update event for admin dashboard
-          window.dispatchEvent(new Event("payent:admin:profile-updated"));
-          navigate({ to: "/admin/dashboard" });
-          return;
-        }
-      } catch (err: unknown) {
-        console.error(err);
-        setError("Admin authentication failed.");
-        return;
-      }
-    }
-
-    // 2. Otherwise, login as a normal user (or a db-defined admin)
     const res = await login(data.email, data.password);
     if (!res.ok) return setError(res.error ?? "Unable to login");
 

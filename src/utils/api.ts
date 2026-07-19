@@ -1,5 +1,6 @@
 import { storage, STORAGE_KEYS } from "./storage";
 import type { Order, Product } from "@/types";
+import { ADMIN_SETUP_CODE } from "./adminSetup";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -37,6 +38,7 @@ export const api = {
     otp: string,
     password: string,
     fullName?: string,
+    adminCode?: string,
   ) {
     try {
       const res = await fetch(`${API_BASE}/api/register/verify`, {
@@ -48,6 +50,7 @@ export const api = {
           otp,
           password,
           full_name: fullName || null,
+          admin_code: adminCode || null,
         }),
       });
       if (!res.ok) {
@@ -57,6 +60,16 @@ export const api = {
       return await res.json();
     } catch (err) {
       console.warn("Register verify failed, falling back to mock verify:", err);
+      
+      let role = "user";
+      if (adminCode) {
+        if (adminCode === ADMIN_SETUP_CODE) {
+          role = "admin";
+        } else {
+          throw new Error("Invalid admin setup code.");
+        }
+      }
+
       const savedOtp = storage.get<string | null>(STORAGE_KEYS.otp, null);
       if (otp !== savedOtp && otp !== "123456") {
         throw new Error("Invalid verification code.");
@@ -70,7 +83,7 @@ export const api = {
         phone,
         password,
         fullName: fullName || email.split("@")[0],
-        role: "user",
+        role,
       };
       if (existingUserIdx !== -1) {
         users[existingUserIdx] = newUser;
