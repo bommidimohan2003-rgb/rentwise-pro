@@ -721,8 +721,10 @@ initDB();
 // 4. Axios Client & Interceptors
 // ----------------------------------------------------------------------
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 export const adminApi = axios.create({
-  baseURL: "/api/admin",
+  baseURL: `${API_BASE}/api/admin`,
   timeout: 10000,
 });
 
@@ -748,7 +750,13 @@ adminApi.interceptors.response.use(
     }
 
     // Strip out baseURL
-    const url = config.url.replace("/api/admin", "").split("?")[0];
+    let urlPath = config.url;
+    if (urlPath.includes("/api/admin")) {
+      urlPath = urlPath.slice(urlPath.indexOf("/api/admin") + "/api/admin".length);
+    } else {
+      urlPath = urlPath.replace("/api/admin", "");
+    }
+    const url = urlPath.split("?")[0];
     const method = config.method?.toUpperCase();
 
     await new Promise((resolve) => setTimeout(resolve, 450));
