@@ -17,6 +17,8 @@ export function Testimonials() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.08 }}
+            data-reveal
+            style={{ transitionDelay: `${i * 90}ms` }}
             className="card-premium overflow-hidden group flex flex-col h-full"
           >
             {/* Portfolio cover photo */}

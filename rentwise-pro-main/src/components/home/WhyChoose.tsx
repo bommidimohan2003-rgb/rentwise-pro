@@ -43,6 +43,8 @@ export function WhyChoose() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.08 }}
+            data-reveal
+            style={{ transitionDelay: `${i * 80}ms` }}
             className="card-premium overflow-hidden group flex flex-col h-full"
           >
             <div className="relative h-32 w-full overflow-hidden bg-secondary">

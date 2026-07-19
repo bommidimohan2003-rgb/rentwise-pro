@@ -12,6 +12,8 @@ export function Stats() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.06 }}
+            data-reveal
+            style={{ transitionDelay: `${i * 80}ms` }}
             className="text-center"
           >
             <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">

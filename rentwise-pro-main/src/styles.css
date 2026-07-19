@@ -143,3 +143,236 @@
   }
   scrollbar-width: none;
 }
+
+@keyframes hero-entry {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes hero-bg-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes header-icon-bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes float-object {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--float-rotate-start));
+  }
+  50% {
+    transform: translate3d(0, -12px, 0) rotate(var(--float-rotate-end));
+  }
+}
+
+.hero-bg-media {
+  animation: hero-bg-zoom 20s ease-in-out infinite alternate;
+  transform-origin: center center;
+}
+
+.floating-object {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 20px 28px rgba(124, 58, 237, 0.24));
+  animation: float-object var(--float-duration, 7s) ease-in-out infinite;
+  transform-origin: center;
+}
+
+.floating-object__inner {
+  transition: transform 0.28s ease-out;
+  will-change: transform;
+}
+
+.floating-object img {
+  filter: drop-shadow(0 16px 30px rgba(37, 99, 235, 0.2)) drop-shadow(0 0 18px rgba(124, 58, 237, 0.28));
+}
+
+.floating-object--macbook {
+  opacity: 0.95;
+}
+
+.floating-object--camera {
+  opacity: 0.9;
+}
+
+.floating-object--laptop {
+  opacity: 0.82;
+}
+
+.floating-object--drone {
+  opacity: 0.76;
+}
+
+.floating-object--tool {
+  opacity: 0.88;
+}
+
+.floating-object--mobile-hidden {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .floating-object {
+    transform: scale(0.82);
+  }
+
+  .floating-object--mobile-hidden {
+    display: none;
+  }
+}
+
+.hero-anim-item {
+  opacity: 0;
+  animation: hero-entry 0.68s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hero-badge {
+  animation-delay: 0.1s;
+}
+
+.hero-headline {
+  animation-delay: 0.25s;
+}
+
+.hero-subtext {
+  animation-delay: 0.4s;
+}
+
+.hero-search-shell {
+  animation-delay: 0.55s;
+}
+
+.hero-actions {
+  animation-delay: 0.7s;
+}
+
+.hero-trust {
+  animation-delay: 0.85s;
+}
+
+.hero-cta {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px -16px oklch(0.55 0.22 275 / 0.65);
+}
+
+.hero-cta:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.hero-cta-arrow {
+  transition: transform 0.2s ease;
+}
+
+.hero-cta:hover .hero-cta-arrow {
+  transform: translateX(4px);
+}
+
+.search-bar-shell {
+  border: 1px solid color-mix(in oklch, var(--color-border) 70%, transparent);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.search-bar-shell:focus-within {
+  border-color: color-mix(in oklch, var(--color-primary) 62%, var(--color-border));
+  box-shadow:
+    0 0 0 4px color-mix(in oklch, var(--color-primary) 18%, transparent),
+    0 18px 45px -18px oklch(0.55 0.22 275 / 0.58);
+  transform: translateY(-1px);
+}
+
+.search-bar-shell .search-input::placeholder {
+  color: oklch(0.57 0.01 260);
+  transition: color 0.2s ease;
+}
+
+.search-bar-shell:focus-within .search-input::placeholder {
+  color: oklch(0.42 0.15 275);
+}
+
+.header-icon-btn {
+  transition: transform 0.2s ease;
+}
+
+.header-icon-btn:active {
+  animation: header-icon-bounce 0.24s ease;
+}
+
+.trust-badge {
+  transition:
+    transform 0.22s ease,
+    background-color 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.trust-badge:hover {
+  transform: scale(1.05);
+}
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .hero-anim-item,
+  .hero-bg-media,
+  .floating-object {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}

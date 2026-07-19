@@ -99,6 +99,7 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             aria-label="Search"
+            className="header-icon-btn"
             onClick={() => navigate({ to: "/categories" })}
           >
             <Search className="h-4 w-4" />
@@ -107,6 +108,7 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             aria-label="Wishlist"
+            className="header-icon-btn"
             onClick={() => {
               if (!user) {
                 toast.error("Please log in to view your wishlist.");
@@ -122,6 +124,7 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             aria-label="Notifications"
+            className="header-icon-btn"
             onClick={() => {
               if (!user) {
                 toast.error("Please log in to view your notifications.");
@@ -133,7 +136,13 @@ export function Navbar() {
           >
             <Bell className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={toggle}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle theme"
+            className="header-icon-btn"
+            onClick={toggle}
+          >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 

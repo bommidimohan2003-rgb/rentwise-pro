@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { SearchBar } from "@/components/common/SearchBar";
+import { cn } from "@/lib/utils";
 
 const rotating = ["Electronics", "Tools", "Gaming", "Furniture"];
 
@@ -20,7 +21,7 @@ export function Hero() {
     <section className="relative overflow-hidden">
       <div className="absolute inset-0">
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="hero-bg-media absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage:
               'url("https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1800&q=80")',
@@ -33,77 +34,50 @@ export function Hero() {
       <div className="relative mx-auto max-w-7xl px-4 pb-24 pt-12 md:px-6 md:pb-32 md:pt-14">
         <div className="relative min-h-[680px] overflow-hidden rounded-b-[40px] rounded-t-[32px] border border-white/15 bg-[#0f0a16]/70 px-4 py-12 shadow-[0_30px_100px_-40px_rgba(179,75,195,0.75)] md:px-8 md:py-16">
           <div className="relative z-10 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-md"
-            >
+            <div className="hero-anim-item hero-badge inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-md">
               <Sparkles className="h-3 w-3 text-pink-200" />
               Premium electronics and tools rental marketplace
-            </motion.div>
+            </div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="mx-auto mt-6 max-w-4xl text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-7xl"
-            >
+            <h1 className="hero-anim-item hero-headline mx-auto mt-6 max-w-4xl text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl md:text-7xl">
               Browse Electronics,
               <br />
               Tools & More on Rent
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mx-auto mt-5 max-w-2xl text-base text-white/85 md:text-lg"
-            >
+            <p className="hero-anim-item hero-subtext mx-auto mt-5 max-w-2xl text-base text-white/85 md:text-lg">
               Rent electronics, cameras, tools, gaming consoles, furniture, and more from trusted
               local lenders.
-            </motion.p>
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="mt-10 flex justify-center"
-            >
+            <div className="hero-anim-item hero-search-shell mt-10 flex justify-center">
               <div className="w-full max-w-3xl rounded-[24px] bg-white p-2 shadow-[0_20px_60px_-18px_rgba(70,9,89,0.65)]">
                 <SearchBar />
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              className="mt-6 flex flex-wrap items-center justify-center gap-3"
-            >
+            <div className="hero-anim-item hero-actions mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 to="/categories"
-                className="btn-gradient inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold"
+                className={cn(
+                  "btn-gradient hero-cta inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold",
+                )}
               >
-                Search Rentals <ArrowRight className="h-4 w-4" />
+                Search Rentals <ArrowRight className="hero-cta-arrow h-4 w-4" />
               </Link>
               <Link
                 to="/become-lender"
-                className="inline-flex h-12 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/20"
+                className="hero-cta inline-flex h-12 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/20"
               >
                 Become a Lender
               </Link>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }}
-              className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-white/80"
-            >
-              <span className="rounded-full bg-white/10 px-3 py-1">Verified users</span>
-              <span className="rounded-full bg-white/10 px-3 py-1">Same-day delivery</span>
-              <span className="rounded-full bg-white/10 px-3 py-1">Flexible pick-up</span>
-            </motion.div>
+            <div className="hero-anim-item hero-trust mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-white/80">
+              <span className="trust-badge rounded-full bg-white/10 px-3 py-1">Verified users</span>
+              <span className="trust-badge rounded-full bg-white/10 px-3 py-1">Same-day delivery</span>
+              <span className="trust-badge rounded-full bg-white/10 px-3 py-1">Flexible pick-up</span>
+            </div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}

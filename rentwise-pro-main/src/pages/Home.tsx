@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Hero } from "@/components/home/Hero";
 import { Stats } from "@/components/home/Stats";
 import { Categories } from "@/components/home/Categories";
@@ -7,6 +8,7 @@ import { Testimonials } from "@/components/home/Testimonials";
 import { NewsletterSection } from "@/components/NewsletterSection";
 import { MainLayout } from "@/layouts/MainLayout";
 import { JsonLd } from "@/components/common/JsonLd";
+import { initRevealObserver } from "@/lib/reveal";
 
 const orgSchema = {
   "@type": "Organization",
@@ -37,6 +39,10 @@ const websiteSchema = {
 };
 
 export default function Home() {
+  useEffect(() => {
+    initRevealObserver();
+  }, []);
+
   return (
     <MainLayout>
       <JsonLd schema={orgSchema} />

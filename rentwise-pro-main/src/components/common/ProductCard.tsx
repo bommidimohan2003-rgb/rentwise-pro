@@ -32,6 +32,8 @@ export function ProductCard({
       viewport={{ once: true }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
       onClick={() => selectProduct(selected ? null : product.id)}
+      data-reveal
+      style={{ transitionDelay: `${index * 80}ms` }}
       className={cn(
         "card-premium overflow-hidden group cursor-pointer transition-all duration-300",
         selected && "card-selected"

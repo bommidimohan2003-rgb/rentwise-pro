@@ -26,6 +26,8 @@ function CategoryCard({ category: c, index: i }: CategoryCardProps) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: i * 0.05 }}
+      data-reveal
+      style={{ transitionDelay: `${i * 80}ms` }}
     >
       <Link
         to="/categories"
