@@ -41,11 +41,20 @@ from auth import (
     decode_access_token
 )
 from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup Handler
+    init_db()
+    print("MySQL database initialized successfully.")
+    yield
 
 app = FastAPI(
     title="Payent Backend API",
     description="Backend API for Payent Peer-to-Peer Renting Platform",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS configuration
@@ -56,12 +65,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Startup Handler
-@app.on_event("startup")
-def startup_event():
-    init_db()
-    print("MySQL database initialized successfully.")
 
 # Pydantic Schemas
 class OTPRequestSchema(BaseModel):
