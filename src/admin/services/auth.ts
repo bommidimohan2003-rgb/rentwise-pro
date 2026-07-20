@@ -10,10 +10,16 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    await adminApi.post("/auth/logout");
+    try {
+      await adminApi.post("/auth/logout");
+    } catch (err) {
+      console.warn("Logout endpoint failed:", err);
+    }
     if (typeof window !== "undefined") {
       localStorage.removeItem("payent:token");
       localStorage.removeItem("payent:currentUser");
+      localStorage.removeItem("payent:admin:token");
+      localStorage.removeItem("payent:admin:current_user");
     }
   },
 
