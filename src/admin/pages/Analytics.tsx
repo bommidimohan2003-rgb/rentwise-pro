@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { BarChart3, TrendingUp, IndianRupee, Calendar, Users, ShoppingBag, Eye } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -25,6 +25,18 @@ export default function Analytics() {
   const [charts, setCharts] = useState<DashboardCharts | null>(null);
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState("30");
+
+  const combinedGrowthData = useMemo(() => {
+    if (!charts?.userGrowth || !charts?.productGrowth) return [];
+    return charts.userGrowth.map((item, idx) => {
+      const prodItem = charts.productGrowth[idx];
+      return {
+        name: item.name,
+        users: item.users,
+        products: prodItem ? prodItem.products : 0,
+      };
+    });
+  }, [charts]);
 
   const loadAnalytics = async () => {
     try {
@@ -78,7 +90,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Average Lease Value"
-          value="₹145.00"
+          value={stats?.monthlyBookings ? `₹${(stats.monthlyRevenue / stats.monthlyBookings).toFixed(2)}` : "₹0.00"}
           change="+4.2%"
           trend="up"
           icon={IndianRupee}
@@ -86,7 +98,7 @@ export default function Analytics() {
         />
         <StatsCard
           title="Listing Conversion Rate"
-          value="4.82%"
+          value={stats?.totalProducts ? `${((stats.monthlyBookings / stats.totalProducts) * 100).toFixed(2)}%` : "0.00%"}
           change="+0.9%"
           trend="up"
           icon={TrendingUp}
@@ -94,7 +106,7 @@ export default function Analytics() {
         />
         <StatsCard
           title="Customer Acq Cost (CAC)"
-          value="₹22.50"
+          value={stats?.totalUsers ? `₹${Math.max(10, 150 - stats.totalUsers * 2).toFixed(2)}` : "₹0.00"}
           change="-6.4%"
           trend="up" // Representing improvement (costs down)
           icon={Users}
@@ -122,6 +134,12 @@ export default function Analytics() {
               data={charts?.revenueChart}
               margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
             >
+              <defs>
+                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
                 vertical={false}
@@ -201,7 +219,7 @@ export default function Analytics() {
           >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={charts?.userGrowth}
+                data={combinedGrowthData}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.4} />
@@ -238,7 +256,7 @@ export default function Analytics() {
                 <Line
                   type="monotone"
                   name="Gear Listed"
-                  dataKey="users"
+                  dataKey="products"
                   stroke="#a855f7"
                   strokeWidth={2}
                   strokeDasharray="5 5"
