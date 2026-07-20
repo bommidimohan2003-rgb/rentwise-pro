@@ -59,7 +59,12 @@ export function RegisterForm() {
   const showAdminOption = useMemo(() => {
     if (typeof window === "undefined") return false;
     const params = new URLSearchParams(window.location.search);
-    return params.get("admin") === "true";
+    for (const [key, value] of params.entries()) {
+      if (key.trim().toLowerCase() === "admin" && value.trim().toLowerCase() === "true") {
+        return true;
+      }
+    }
+    return false;
   }, []);
 
   const onSubmit = async (data: FormValues) => {
