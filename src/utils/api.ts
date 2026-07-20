@@ -6,7 +6,7 @@ const isLocal = typeof window !== "undefined" && (
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
 );
-const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? "http://localhost:8000" : "https://rentwise-backend.onrender.com");
+const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? "http://127.0.0.1:8000" : "https://rentwise-backend.onrender.com");
 
 export const api = {
   async registerRequest(email: string, phone: string) {
