@@ -326,10 +326,7 @@ adminApi.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const config = error.config;
-    if (!config || !config.url) {
-      return Promise.reject(error);
-    }
+    return Promise.reject(error);
 
     const isNetworkError = !error.response || error.code === "ERR_NETWORK" || error.message === "Network Error";
 
