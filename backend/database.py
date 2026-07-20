@@ -274,50 +274,17 @@ def init_db():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # Clean up legacy admin if it exists
-            cursor.execute("DELETE FROM users WHERE email = 'admin@payent.com'")
-            
-            # Seed users
-            from auth import hash_password
-            now_str = datetime.utcnow().isoformat()
-            users_data = [
-                ("alex@example.com", "+919876543211", hash_password("mohan@1234"), "Alex Mercer", "agent", now_str),
-                ("emily@example.com", "+919876543212", hash_password("mohan@1234"), "Emily Davis", "agent", now_str),
-                ("michael@example.com", "+919876543213", hash_password("mohan@1234"), "Michael Chang", "user", now_str),
-                ("jessica@example.com", "+919876543214", hash_password("mohan@1234"), "Jessica Ross", "user", now_str),
-            ]
-            cursor.executemany(
-                "REPLACE INTO users (email, phone, password_hash, full_name, role, created_at, status, verified, avatar) VALUES (%s, %s, %s, %s, %s, %s, 'active', 1, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150')",
-                [u[:6] for u in users_data]
-            )
-            print("Seeded initial users.")
-
-            # Seed products
-            products_data = [
-                ("p-1", "alex@example.com", "Sony FX3 Cinema Camera", "Compact cinema camera with full-frame sensor, outstanding low-light capabilities.", 120, "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500", "Cameras", 4.90, 15, True, "Alex Mercer", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150", 4.80, now_str),
-                ("p-2", "alex@example.com", "DJI Inspire 3 Drone", "Professional cinema drone with 8K sensor, full-frame capability.", 350, "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=500", "Drones", 4.80, 9, True, "Alex Mercer", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150", 4.80, now_str),
-                ("p-3", "emily@example.com", "MacBook Pro 16\" M3 Max", "16-inch liquid retina XDR display, Apple M3 Max chip with 16-core CPU.", 95, "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500", "Computers", 4.70, 22, True, "Emily Davis", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150", 4.50, now_str),
-                ("p-4", "alex@example.com", "DJI Ronin 4D 4-Axis Stabilizer", "Next-gen camera stabilizer with integrated LiDAR range finder and wireless video transmission.", 180, "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=500", "Stabilizers", 4.90, 7, True, "Alex Mercer", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150", 4.80, now_str),
-                ("p-5", "emily@example.com", "RED V-Raptor 8K Camera", "High-performance cinema camera with 8K multi-format sensor and REDCODE RAW recording.", 450, "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=500", "Cameras", 5.00, 4, True, "Emily Davis", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150", 4.50, now_str),
-                ("p-6", "emily@example.com", "Sennheiser Ambeo VR Mic", "Ambisonics microphone designed for 3D spatial audio recording in VR/AR productions.", 40, "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=500", "Audio", 4.60, 11, True, "Emily Davis", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150", 4.50, now_str),
-            ]
-            cursor.executemany(
-                "REPLACE INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at, status, featured, hidden, images, documents) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'approved', 0, 0, '[]', '[]')",
-                products_data
-            )
-            print("Seeded initial products.")
-
-            # Seed orders (bookings)
-            orders_data = [
-                ("b-1", "michael@example.com", "p-1", "Sony FX3 Cinema Camera", "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500", "2026-07-10", "2026-07-13", 360, "completed", now_str),
-                ("b-2", "jessica@example.com", "p-3", "MacBook Pro 16\" M3 Max", "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500", "2026-07-20", "2026-07-25", 475, "pending", now_str),
-                ("b-3", "michael@example.com", "p-2", "DJI Inspire 3 Drone", "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=500", "2026-06-01", "2026-06-05", 1400, "completed", now_str),
-            ]
-            cursor.executemany(
-                "REPLACE INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                orders_data
-            )
-            print("Seeded initial bookings.")
+            # Purge mock users and their associated data
+            cursor.execute("DELETE FROM users WHERE email LIKE '%@example.com'")
+            cursor.execute("DELETE FROM custom_products WHERE user_email LIKE '%@example.com'")
+            cursor.execute("DELETE FROM orders WHERE user_email LIKE '%@example.com'")
+            cursor.execute("DELETE FROM payments WHERE customer_id LIKE '%@example.com'")
+            cursor.execute("DELETE FROM reviews WHERE user_name IN ('Michael Chang', 'Jessica Ross')")
+            cursor.execute("DELETE FROM reports WHERE owner_id LIKE '%@example.com' OR reporter_name = 'Michael Chang'")
+            cursor.execute("DELETE FROM admin_notifications WHERE message LIKE '%Alex Mercer%' OR message LIKE '%Michael Chang%' OR message LIKE '%Jessica Ross%'")
+            cursor.execute("DELETE FROM support_tickets WHERE user_email LIKE '%@example.com'")
+            cursor.execute("DELETE FROM admin_logs WHERE user_name IN ('Sarah Connor', 'Alex Mercer')")
+            print("Purged mock/fake data from database.")
 
             # Seed categories
             cursor.execute("SELECT COUNT(*) as count FROM categories")
@@ -335,78 +302,6 @@ def init_db():
                 )
                 print("Seeded initial categories.")
 
-            # Seed payments
-            cursor.execute("SELECT COUNT(*) as count FROM payments")
-            if cursor.fetchone()["count"] == 0:
-                payments_data = [
-                    ("tx-1", "b-1", "michael@example.com", "Michael Chang", 360, "successful", "Credit Card", "#", now_str),
-                    ("tx-2", "b-2", "jessica@example.com", "Jessica Ross", 475, "successful", "PayPal", "#", now_str),
-                    ("tx-3", "b-3", "michael@example.com", "Michael Chang", 1400, "successful", "Credit Card", "#", now_str),
-                ]
-                cursor.executemany(
-                    "INSERT INTO payments (id, booking_id, customer_id, customer_name, amount, status, method, invoice_url, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    payments_data
-                )
-                print("Seeded initial payments.")
-
-            # Seed reviews
-            cursor.execute("SELECT COUNT(*) as count FROM reviews")
-            if cursor.fetchone()["count"] == 0:
-                reviews_data = [
-                    ("r-1", "p-1", "Sony FX3 Cinema Camera", "Michael Chang", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150", 5, "Excellent camera package! Alex was extremely helpful.", False, now_str),
-                    ("r-2", "p-3", "MacBook Pro 16\" M3 Max", "Jessica Ross", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150", 4, "Incredible tech, but quite heavy for long usage.", False, now_str),
-                ]
-                cursor.executemany(
-                    "INSERT INTO reviews (id, product_id, product_title, user_name, user_avatar, rating, comment, hidden, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    reviews_data
-                )
-                print("Seeded initial reviews.")
-
-            # Seed reports
-            cursor.execute("SELECT COUNT(*) as count FROM reports")
-            if cursor.fetchone()["count"] == 0:
-                reports_data = [
-                    ("rep-1", "Damaged battery package on delivery.", "The lens filter is cracked and the battery is bloated.", "p-2", "DJI Inspire 3 Drone", "Michael Chang", "Alex Mercer", "alex@example.com", "open", now_str),
-                ]
-                cursor.executemany(
-                    "INSERT INTO reports (id, reason, evidence, product_id, product_title, reporter_name, owner_name, owner_id, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    reports_data
-                )
-                print("Seeded initial reports.")
-
-            # Seed admin notifications
-            cursor.execute("SELECT COUNT(*) as count FROM admin_notifications")
-            if cursor.fetchone()["count"] == 0:
-                notifications_data = [
-                    ("n-1", "New listing request", "Alex Mercer requested approval for RED Komodo-X Starter Kit.", "warning", False, now_str),
-                    ("n-2", "Product Reported", "Michael Chang reported a damaged battery on DJI Inspire 3 Drone.", "error", False, now_str),
-                    ("n-3", "New registration", "Jessica Ross registered as a new customer.", "success", True, now_str),
-                ]
-                cursor.executemany(
-                    "INSERT INTO admin_notifications (id, title, message, type, is_read, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
-                    notifications_data
-                )
-                print("Seeded initial admin notifications.")
-
-            # Seed support tickets
-            cursor.execute("SELECT COUNT(*) as count FROM support_tickets")
-            if cursor.fetchone()["count"] == 0:
-                import json
-                tickets_data = [
-                    ("t-1", "Payout Delay Issues", "Payouts", "open", "high", "Alex Mercer", "alex@example.com", json.dumps([
-                        {"id": "tm-1", "sender": "user", "message": "Hi support, my payout for the camera rental has been delayed for 3 days now. Can you please check?", "createdAt": now_str}
-                    ]), now_str),
-                    ("t-2", "Insurance Coverage Question", "Insurance", "resolved", "medium", "Emily Davis", "emily@example.com", json.dumps([
-                        {"id": "tm-2", "sender": "user", "message": "What does the liability cover if my laptop gets water damage?", "createdAt": now_str},
-                        {"id": "tm-3", "sender": "admin", "message": "Hello Emily! The Payent protection plan covers accidental water damage up to 90% of the replacement value minus a small deductible.", "createdAt": now_str}
-                    ]), now_str),
-                ]
-                cursor.executemany(
-                    "INSERT INTO support_tickets (id, subject, category, status, priority, user_name, user_email, messages, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    tickets_data
-                )
-                print("Seeded initial support tickets.")
-
             # Seed admin settings
             cursor.execute("SELECT COUNT(*) as count FROM admin_settings")
             if cursor.fetchone()["count"] == 0:
@@ -415,20 +310,6 @@ def init_db():
                     VALUES (1, 'Payent', '/favicon.svg', 'dark', 'support@payent.com', '+1 (800) 555-GEAR', 'https://facebook.com/payent', 'https://twitter.com/payent', 'https://instagram.com/payent', 'Payent — Premium Tech Gear Rental Marketplace', 'Rent professional video gear, cameras, laptops, drones, and consoles. Safe, secure, and fully insured.', 'Unlock premium gear at a fraction of the cost.', '© 2026 Payent Inc. All rights reserved.')
                 """)
                 print("Seeded initial admin settings.")
-
-            # Seed admin logs
-            cursor.execute("SELECT COUNT(*) as count FROM admin_logs")
-            if cursor.fetchone()["count"] == 0:
-                logs_data = [
-                    ("l-1", now_str, "Sarah Connor", "User Login", "Auth", "192.168.1.1"),
-                    ("l-2", now_str, "Sarah Connor", "Review Reported Listing", "Reports", "192.168.1.1"),
-                    ("l-3", now_str, "Alex Mercer", "Upload Product (RED Komodo)", "Inventory", "192.168.1.55"),
-                ]
-                cursor.executemany(
-                    "INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address) VALUES (%s, %s, %s, %s, %s, %s)",
-                    logs_data
-                )
-                print("Seeded initial admin logs.")
 
         conn.commit()
     finally:
