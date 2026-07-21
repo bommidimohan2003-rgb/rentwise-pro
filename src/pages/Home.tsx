@@ -1,10 +1,19 @@
 import { Hero } from "@/components/home/Hero";
 import { Stats } from "@/components/home/Stats";
+<<<<<<< HEAD
 import { Categories } from "@/components/home/Categories";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { WhyChoose } from "@/components/home/WhyChoose";
 import { Testimonials } from "@/components/home/Testimonials";
+=======
+import { Features } from "@/components/home/Features";
+import { Categories } from "@/components/home/Categories";
+import { HowItWorks } from "@/components/home/HowItWorks";
+import { WhyChoose } from "@/components/home/WhyChoose";
+import { Testimonials } from "@/components/home/Testimonials";
+import { CallToAction } from "@/components/home/CallToAction";
+>>>>>>> 0197521 (Redesign Payent frontend UI)
 import { Newsletter } from "@/components/home/Newsletter";
 import { MainLayout } from "@/layouts/MainLayout";
 import { JsonLd } from "@/components/common/JsonLd";
@@ -42,6 +51,7 @@ export default function Home() {
     <MainLayout>
       <JsonLd schema={orgSchema} />
       <JsonLd schema={websiteSchema} />
+<<<<<<< HEAD
       <Hero />
       <Stats />
       <Categories />
@@ -49,6 +59,25 @@ export default function Home() {
       <HowItWorks />
       <WhyChoose />
       <Testimonials />
+=======
+      {/* Full-screen animated hero with floating gadgets */}
+      <Hero />
+      {/* Animated counter stats */}
+      <Stats />
+      {/* Glassmorphism feature cards */}
+      <Features />
+      {/* Category cards grid */}
+      <Categories />
+      {/* 3-step how it works */}
+      <HowItWorks />
+      {/* Why choose us tiles */}
+      <WhyChoose />
+      {/* Testimonial review cards */}
+      <Testimonials />
+      {/* Large gradient CTA */}
+      <CallToAction />
+      {/* Newsletter signup */}
+>>>>>>> 0197521 (Redesign Payent frontend UI)
       <Newsletter />
     </MainLayout>
   );

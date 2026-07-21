@@ -131,6 +131,35 @@
     radial-gradient(60% 60% at 20% 10%, oklch(0.75 0.18 285 / 0.35), transparent 60%),
     radial-gradient(50% 50% at 90% 20%, oklch(0.78 0.16 40 / 0.35), transparent 60%),
     radial-gradient(60% 60% at 50% 100%, oklch(0.72 0.18 200 / 0.25), transparent 60%);
+<<<<<<< HEAD
+=======
+  background-size: 180% 180%;
+  animation: hero-gradient-drift 16s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes hero-gradient-drift {
+  0% {
+    background-position:
+      0% 0%,
+      100% 0%,
+      50% 100%;
+  }
+  50% {
+    background-position:
+      25% 25%,
+      75% 30%,
+      55% 75%;
+  }
+  100% {
+    background-position:
+      0% 0%,
+      100% 0%,
+      50% 100%;
+  }
+>>>>>>> 0197521 (Redesign Payent frontend UI)
 }
 
 @utility no-scrollbar {
