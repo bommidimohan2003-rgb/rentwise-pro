@@ -7,18 +7,10 @@ import {
   LogOut,
   Menu,
   Moon,
-<<<<<<< HEAD
-  Search,
-=======
->>>>>>> 0197521 (Redesign Payent frontend UI)
   Sun,
   User as UserIcon,
   X,
 } from "lucide-react";
-<<<<<<< HEAD
-import { LogoIcon } from "@/components/common/LogoIcon";
-=======
->>>>>>> 0197521 (Redesign Payent frontend UI)
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,11 +23,7 @@ import { toast } from "sonner";
 const links = [
   { to: "/", label: "Home" },
   { to: "/categories", label: "Categories" },
-<<<<<<< HEAD
-  { to: "/become-lender", label: "Become Lender" },
-=======
   { to: "/become-lender", label: "Become a Lender" },
->>>>>>> 0197521 (Redesign Payent frontend UI)
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ] as const;
@@ -48,11 +36,8 @@ export function Navbar() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-<<<<<<< HEAD
-=======
   const isHomePage = pathname === "/";
 
->>>>>>> 0197521 (Redesign Payent frontend UI)
   const handleGetStarted = () => {
     const users = storage.get<unknown[]>(STORAGE_KEYS.users, []);
     if (users.length > 0) {
@@ -63,11 +48,7 @@ export function Navbar() {
   };
 
   useEffect(() => {
-<<<<<<< HEAD
-    const onScroll = () => setScrolled(window.scrollY > 8);
-=======
     const onScroll = () => setScrolled(window.scrollY > 20);
->>>>>>> 0197521 (Redesign Payent frontend UI)
     onScroll();
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
@@ -75,8 +56,6 @@ export function Navbar() {
 
   useEffect(() => setOpen(false), [pathname]);
 
-<<<<<<< HEAD
-=======
   const navBg = isHomePage
     ? scrolled
       ? "rgba(10,1,24,0.85)"
@@ -85,27 +64,10 @@ export function Navbar() {
       ? undefined
       : undefined;
 
->>>>>>> 0197521 (Redesign Payent frontend UI)
   return (
     <header
       className={cn(
         "sticky top-0 z-50 w-full transition-all duration-300",
-<<<<<<< HEAD
-        scrolled ? "glass shadow-sm" : "bg-transparent",
-      )}
-    >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
-        <Link to="/" className="flex items-center gap-2 group">
-          <motion.span
-            whileHover={{ rotate: 12, scale: 1.1 }}
-            className="grid h-9 w-9 place-items-center rounded-xl btn-gradient"
-          >
-            <LogoIcon className="h-4 w-4 text-white" />
-          </motion.span>
-          <span className="text-lg font-bold tracking-tight">Payent</span>
-        </Link>
-
-=======
         scrolled ? "shadow-lg shadow-black/20" : "",
         !isHomePage && scrolled ? "glass" : "",
       )}
@@ -143,16 +105,11 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav */}
->>>>>>> 0197521 (Redesign Payent frontend UI)
         <nav className="hidden lg:flex items-center gap-1">
           {links.map((l) => (
             <Link
               key={l.to}
               to={l.to}
-<<<<<<< HEAD
-              className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-full hover:text-foreground hover:bg-secondary transition-colors"
-              activeProps={{ className: "!text-foreground !bg-secondary" }}
-=======
               id={`nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
               className={cn(
                 "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200",
@@ -165,7 +122,6 @@ export function Navbar() {
                   ? "!text-white !bg-white/10"
                   : "!text-foreground !bg-secondary",
               }}
->>>>>>> 0197521 (Redesign Payent frontend UI)
               activeOptions={{ exact: l.to === "/" }}
             >
               {l.label}
@@ -173,66 +129,17 @@ export function Navbar() {
           ))}
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("open-payent-help-chat"))}
-<<<<<<< HEAD
-            className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-full hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
-=======
             className={cn(
               "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 cursor-pointer",
               isHomePage
                 ? "text-slate-300 hover:text-white hover:bg-white/8"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary",
             )}
->>>>>>> 0197521 (Redesign Payent frontend UI)
           >
             Help
           </button>
         </nav>
 
-<<<<<<< HEAD
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Search"
-            onClick={() => navigate({ to: "/categories" })}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Wishlist"
-            onClick={() => {
-              if (!user) {
-                toast.error("Please log in to view your wishlist.");
-                navigate({ to: "/login" });
-              } else {
-                navigate({ to: "/wishlist" });
-              }
-            }}
-          >
-            <Heart className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Notifications"
-            onClick={() => {
-              if (!user) {
-                toast.error("Please log in to view your notifications.");
-                navigate({ to: "/login" });
-              } else {
-                navigate({ to: "/notifications" });
-              }
-            }}
-          >
-            <Bell className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={toggle}>
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-
-=======
         {/* Right side actions */}
         <div className="flex items-center gap-1">
           {/* Icon buttons */}
@@ -293,7 +200,6 @@ export function Navbar() {
           </button>
 
           {/* Auth button */}
->>>>>>> 0197521 (Redesign Payent frontend UI)
           {user ? (
             <div className="hidden md:flex items-center gap-2 ml-2">
               {(user.role === "superadmin" || user.role === "admin") && (
@@ -306,14 +212,6 @@ export function Navbar() {
               )}
               <Link
                 to="/dashboard"
-<<<<<<< HEAD
-                className="flex items-center gap-2 rounded-full pl-2 pr-4 h-10 hover:bg-secondary"
-              >
-                <div className="h-8 w-8 rounded-full btn-gradient grid place-items-center text-white text-xs font-bold">
-                  {user.fullName.charAt(0)}
-                </div>
-                <span className="text-sm font-medium">{user.fullName.split(" ")[0]}</span>
-=======
                 id="nav-dashboard"
                 className="flex items-center gap-2 rounded-full pl-2 pr-4 h-10 transition-all"
                 style={{
@@ -330,7 +228,6 @@ export function Navbar() {
                 <span className={cn("text-sm font-medium", isHomePage ? "text-slate-200" : "text-foreground")}>
                   {user.fullName.split(" ")[0]}
                 </span>
->>>>>>> 0197521 (Redesign Payent frontend UI)
               </Link>
               <Button variant="ghost" size="icon" aria-label="Logout" onClick={logout}>
                 <LogOut className="h-4 w-4" />
@@ -338,18 +235,6 @@ export function Navbar() {
             </div>
           ) : (
             <div className="hidden md:flex items-center gap-2 ml-2">
-<<<<<<< HEAD
-              <Button size="sm" onClick={handleGetStarted}>
-                Get Started
-              </Button>
-            </div>
-          )}
-
-          <button
-            className="lg:hidden ml-1 grid h-10 w-10 place-items-center rounded-full hover:bg-secondary"
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Menu"
-=======
               <motion.button
                 onClick={handleGetStarted}
                 id="nav-get-started"
@@ -380,43 +265,31 @@ export function Navbar() {
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
             id="nav-mobile-menu"
->>>>>>> 0197521 (Redesign Payent frontend UI)
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-<<<<<<< HEAD
-=======
       {/* Mobile drawer */}
->>>>>>> 0197521 (Redesign Payent frontend UI)
       <AnimatePresence>
         {open && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-<<<<<<< HEAD
-            className="lg:hidden glass border-t border-border overflow-hidden"
-=======
             className="lg:hidden overflow-hidden"
             style={{
               background: isHomePage ? "rgba(10,1,24,0.95)" : undefined,
               backdropFilter: "blur(20px)",
               borderTop: "1px solid rgba(255,255,255,0.06)",
             }}
->>>>>>> 0197521 (Redesign Payent frontend UI)
           >
             <nav className="flex flex-col p-4 gap-1">
               {links.map((l) => (
                 <Link
                   key={l.to}
                   to={l.to}
-<<<<<<< HEAD
-                  className="px-4 py-3 rounded-xl text-sm font-medium hover:bg-secondary"
-                  activeProps={{ className: "bg-secondary" }}
-=======
                   className={cn(
                     "px-4 py-3 rounded-xl text-sm font-medium transition-all",
                     isHomePage
@@ -424,7 +297,6 @@ export function Navbar() {
                       : "hover:bg-secondary text-muted-foreground",
                   )}
                   activeProps={{ className: isHomePage ? "!text-white !bg-white/10" : "bg-secondary" }}
->>>>>>> 0197521 (Redesign Payent frontend UI)
                   activeOptions={{ exact: l.to === "/" }}
                 >
                   {l.label}
@@ -435,13 +307,6 @@ export function Navbar() {
                   setOpen(false);
                   window.dispatchEvent(new CustomEvent("open-payent-help-chat"));
                 }}
-<<<<<<< HEAD
-                className="px-4 py-3 text-left rounded-xl text-sm font-medium hover:bg-secondary cursor-pointer text-muted-foreground"
-              >
-                Help
-              </button>
-              <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border mt-2">
-=======
                 className={cn(
                   "px-4 py-3 text-left rounded-xl text-sm font-medium cursor-pointer transition-all",
                   isHomePage
@@ -452,7 +317,6 @@ export function Navbar() {
                 Help
               </button>
               <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5 mt-2">
->>>>>>> 0197521 (Redesign Payent frontend UI)
                 {user ? (
                   <>
                     <Button
@@ -471,11 +335,6 @@ export function Navbar() {
                     </Button>
                   </>
                 ) : (
-<<<<<<< HEAD
-                  <Button onClick={handleGetStarted} className="col-span-2">
-                    Get Started
-                  </Button>
-=======
                   <button
                     onClick={handleGetStarted}
                     className="col-span-2 rounded-xl py-3 text-sm font-semibold text-white text-center"
@@ -486,7 +345,6 @@ export function Navbar() {
                       Get Started Free
                     </span>
                   </button>
->>>>>>> 0197521 (Redesign Payent frontend UI)
                 )}
               </div>
             </nav>

@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-
-=======
 # Payent Tech-Gear Rental Marketplace
 
 This repository contains the premium peer-to-peer tech gear rental platform, featuring a React 19 + Vite 8 frontend and a FastAPI + MySQL backend.
@@ -56,4 +53,3 @@ All user registrations via `/register` (including admin registration using `ADMI
    - Log in to the admin panel using `admin@payent.com` / `admin@123` or register a custom admin with your `ADMIN_SETUP_CODE`.
    - The Topbar should connect directly to the live server.
    - Stop the backend server to see the Topbar instantly reflect `⚠️ Offline Demo Mode`, fallback gracefully, and restore real-time state as soon as the server is booted back up.
->>>>>>> 0197521 (Redesign Payent frontend UI)
