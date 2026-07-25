@@ -10,6 +10,7 @@ import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { Order } from "@/types";
 import { toast } from "sonner";
+import { CelebrationFlourish } from "@/components/common/CelebrationFlourish";
 
 export default function Checkout() {
   const search = useSearch({ from: "/checkout" }) as { id?: string };
@@ -186,7 +187,7 @@ export default function Checkout() {
         <div className="mt-8 grid lg:grid-cols-[1fr_380px] gap-8">
           <div className="space-y-6">
             {/* Rental Dates Card */}
-            <div className="card-premium p-6">
+            <div className="spatial-card p-6">
               <h3 className="font-bold text-lg mb-4">Rental dates</h3>
               <div className="grid grid-cols-2 gap-4">
                 <Input
@@ -207,7 +208,7 @@ export default function Checkout() {
             </div>
 
             {/* Payment Method Selector Card */}
-            <div className="card-premium p-6">
+            <div className="spatial-card p-6">
               <h3 className="font-bold text-lg mb-4">Payment method</h3>
 
               {/* Tabs */}
@@ -505,7 +506,7 @@ export default function Checkout() {
           </div>
 
           {/* Booking Summary Sidebar */}
-          <aside className="card-premium p-6 h-fit space-y-6">
+          <aside className="spatial-float p-6 h-fit space-y-6 sticky top-24 shadow-xl">
             <div>
               <h3 className="font-bold text-lg">Booking summary</h3>
               <div className="mt-4 flex gap-3">
@@ -592,8 +593,11 @@ export default function Checkout() {
           }}
           title="Booking Confirmed"
         >
-          <div className="text-center py-6">
-            <div className="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 grid place-items-center">
+          <div className="text-center py-4 relative overflow-hidden">
+            {open && (
+              <CelebrationFlourish productImage={product.image} productTitle={product.title} />
+            )}
+            <div className="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 grid place-items-center relative z-10">
               <Check className="h-8 w-8 text-emerald-500" />
             </div>
             <h3 className="mt-4 font-bold text-xl text-foreground">Your rental is booked!</h3>

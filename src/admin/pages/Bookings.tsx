@@ -12,15 +12,17 @@ import {
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
 import { Modal } from "../components/layout/Modal";
-import { Loader } from "../components/layout/Loader";
 import { bookingsService } from "../services/bookings";
 import { AdminBooking } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
 
 export default function Bookings() {
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isSlow = useSlowConnection(loading);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,9 +36,11 @@ export default function Bookings() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await bookingsService.getBookings();
       setBookings(data);
     } catch {
+      setError("Failed to load bookings database.");
       toast.error("Failed to load bookings list.");
     } finally {
       setLoading(false);
@@ -296,9 +300,26 @@ export default function Bookings() {
         </select>
       </div>
 
+      {/* Slow Connection Indicator */}
+      {isSlow && <SlowConnectionIndicator message="Fetching rental records is taking a bit longer than expected..." />}
+
       {/* Grid table */}
       {loading ? (
-        <Loader message="Loading rentals register..." />
+        <LoadingState type="table" count={5} />
+      ) : error ? (
+        <ErrorState
+          title="Unable to load bookings"
+          error={error}
+          onRetry={fetchBookings}
+        />
+      ) : filteredBookings.length === 0 ? (
+        <NoSearchResults
+          query={search}
+          onClearFilters={() => {
+            setSearch("");
+            setStatusFilter("all");
+          }}
+        />
       ) : (
         <>
           <Table
@@ -307,8 +328,6 @@ export default function Bookings() {
             onSort={handleSort}
             sortKey={sortKey}
             sortOrder={sortOrder}
-            emptyTitle="No bookings found"
-            emptyDescription="Try revising search criteria or filters."
           />
           <Pagination
             currentPage={currentPage}

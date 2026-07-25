@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { Calendar, Check, Heart, Shield, Truck } from "lucide-react";
+import { Calendar, Check, Heart, Shield, Truck, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
@@ -8,6 +8,8 @@ import { products, reviews } from "@/utils/mockData";
 import { useWishlist } from "@/hooks/useWishlist";
 import { cn } from "@/lib/utils";
 import { JsonLd } from "@/components/common/JsonLd";
+import { PhotoDetailViewer } from "@/components/common/PhotoDetailViewer";
+import { ProductRotationViewer } from "@/components/common/ProductRotationViewer";
 
 export default function ProductDetails() {
   const { id } = useParams({ from: "/product/$id" });
@@ -41,7 +43,7 @@ export default function ProductDetails() {
     },
     offers: {
       "@type": "Offer",
-      priceCurrency: "USD",
+      priceCurrency: "INR",
       price: product.price,
       priceValidUntil: "2027-12-31",
       availability: product.available
@@ -86,24 +88,35 @@ export default function ProductDetails() {
     <MainLayout>
       <JsonLd schema={productSchema} />
       <JsonLd schema={breadcrumbSchema} />
-      <section className="mx-auto max-w-7xl px-4 md:px-6 py-10">
-        <div className="grid lg:grid-cols-2 gap-10">
-          <div>
-            <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-secondary">
-              <img
-                src={gallery[activeImg]}
-                alt={product.title}
-                className="h-full w-full object-cover"
+      <section className="mx-auto max-w-7xl px-4 md:px-6 py-10 space-y-12">
+        <div className="grid lg:grid-cols-12 gap-10 items-start">
+          {/* Left Column: Focal Photo Viewer / 360° Rotation Viewer & Gallery */}
+          <div className="lg:col-span-7 space-y-4 sticky top-24">
+            {product.rotationFrames && product.rotationFrames.length >= 2 ? (
+              <ProductRotationViewer
+                frames={product.rotationFrames}
+                productTitle={product.title}
               />
-            </div>
-            <div className="mt-4 grid grid-cols-4 gap-3">
+            ) : (
+              <PhotoDetailViewer
+                primaryImage={gallery[activeImg]}
+                productTitle={product.title}
+                onWishlistToggle={() => toggle(product.id)}
+                isWishlisted={has(product.id)}
+              />
+            )}
+
+            {/* Thumbnail Gallery */}
+            <div className="grid grid-cols-4 gap-3 pt-2">
               {gallery.map((g, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveImg(i)}
                   className={cn(
-                    "aspect-square rounded-xl overflow-hidden border-2 transition-all",
-                    activeImg === i ? "border-primary" : "border-transparent opacity-70",
+                    "aspect-square rounded-2xl overflow-hidden border-2 transition-all spatial-surface",
+                    activeImg === i
+                      ? "border-primary ring-2 ring-primary/30 scale-105"
+                      : "border-transparent opacity-60 hover:opacity-100"
                   )}
                 >
                   <img src={g} alt="" className="h-full w-full object-cover" />
@@ -112,105 +125,116 @@ export default function ProductDetails() {
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                {product.category}
-              </span>
-              <button
-                onClick={() => toggle(product.id)}
-                className="rounded-full p-2 border border-border"
-              >
-                <Heart
-                  className={cn("h-4 w-4", has(product.id) && "fill-rose-500 text-rose-500")}
-                />
-              </button>
-            </div>
-            <h1 className="mt-3 text-3xl md:text-4xl font-bold leading-tight">{product.title}</h1>
-            <div className="mt-4 flex items-center gap-4">
-              <Rating value={product.rating} count={product.reviews} />
-              {product.available ? (
-                <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                  <Check className="h-3 w-3" /> Available now
+          {/* Right Column: Floating Action Card & Details */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="spatial-float p-6 md:p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase font-extrabold tracking-wider text-primary px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                  {product.category}
                 </span>
-              ) : (
-                <span className="text-xs text-destructive font-medium">Unavailable</span>
-              )}
-            </div>
-            <p className="mt-6 text-muted-foreground leading-relaxed">{product.description}</p>
-
-            <div className="mt-6 flex items-center gap-3 p-4 rounded-2xl border border-border">
-              <img
-                src={product.owner.avatar}
-                alt={product.owner.name}
-                className="h-11 w-11 rounded-full"
-              />
-              <div className="flex-1">
-                <div className="text-sm font-medium">{product.owner.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  Owner · {product.owner.rating}★ · Responds in 1h
-                </div>
+                {product.available ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-bold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <Check className="h-3.5 w-3.5" /> Available Now
+                  </span>
+                ) : (
+                  <span className="text-xs text-destructive font-bold px-3 py-1 rounded-full bg-destructive/10 border border-destructive/20">
+                    Currently Booked
+                  </span>
+                )}
               </div>
-              <Button variant="outline" size="sm" onClick={() => navigate({ to: "/messages" })}>
-                Message
-              </Button>
-            </div>
 
-            <div className="mt-6 flex items-baseline gap-2">
-              <span className="text-4xl font-bold">₹{product.price}</span>
-              <span className="text-muted-foreground">/day</span>
-            </div>
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-tight text-foreground">
+                {product.title}
+              </h1>
 
-            <div className="mt-6 flex flex-col sm:flex-row gap-3">
-              <Button
-                size="lg"
-                className="flex-1"
-                leftIcon={<Calendar className="h-4 w-4" />}
-                onClick={() => navigate({ to: "/checkout", search: { id: product.id } as never })}
-                disabled={!product.available}
-              >
-                Rent now
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => toggle(product.id)}>
-                <Heart
-                  className={cn("h-4 w-4", has(product.id) && "fill-rose-500 text-rose-500")}
+              <div className="flex items-center gap-3">
+                <Rating value={product.rating} count={product.reviews} />
+              </div>
+
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {product.description}
+              </p>
+
+              {/* Owner Info Tile */}
+              <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-secondary/50 border border-border/60">
+                <img
+                  src={product.owner.avatar}
+                  alt={product.owner.name}
+                  className="h-12 w-12 rounded-full object-cover border border-primary/30"
                 />
-              </Button>
-            </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold text-foreground truncate">{product.owner.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Verified Lender · {product.owner.rating}★ · Responds in 1h
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<MessageSquare className="h-3.5 w-3.5" />}
+                  onClick={() => navigate({ to: "/messages" })}
+                  className="font-bold text-xs"
+                >
+                  Message
+                </Button>
+              </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-3">
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-secondary/60">
-                <Shield className="h-5 w-5 text-primary" />
-                <div>
-                  <div className="text-sm font-medium">Insured rental</div>
-                  <div className="text-xs text-muted-foreground">Damage covered</div>
+              {/* Pricing & Booking */}
+              <div className="pt-4 border-t border-border/60 space-y-4">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">₹{product.price}</span>
+                  <span className="text-sm text-muted-foreground font-semibold"> / day</span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    size="lg"
+                    className="flex-1 btn-gradient font-bold shadow-lg py-3.5"
+                    leftIcon={<Calendar className="h-4 w-4" />}
+                    onClick={() => navigate({ to: "/checkout", search: { id: product.id } as never })}
+                    disabled={!product.available}
+                  >
+                    Proceed to Booking
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-secondary/60">
-                <Truck className="h-5 w-5 text-primary" />
-                <div>
-                  <div className="text-sm font-medium">Free delivery</div>
-                  <div className="text-xs text-muted-foreground">On orders 3+ days</div>
+
+              {/* Insurance & Delivery Cards */}
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border/40">
+                  <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-bold text-foreground">100% Insured</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">Damage protection covered</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border/40">
+                  <Truck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-bold text-foreground">Express Delivery</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">Same-day pickup option</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold">Reviews</h2>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+        {/* Reviews Section */}
+        <div className="pt-10 border-t border-border/50">
+          <h2 className="text-xl md:text-2xl font-bold tracking-tight mb-6">Verified Customer Reviews</h2>
+          <div className="grid gap-5 md:grid-cols-3">
             {reviews.map((r) => (
-              <div key={r.id} className="card-premium p-5">
+              <div key={r.id} className="spatial-card p-5 space-y-3">
                 <div className="flex items-center gap-3">
-                  <img src={r.avatar} alt={r.user} className="h-9 w-9 rounded-full" />
+                  <img src={r.avatar} alt={r.user} className="h-10 w-10 rounded-full object-cover border border-border" />
                   <div>
-                    <div className="text-sm font-medium">{r.user}</div>
+                    <div className="text-sm font-bold text-foreground">{r.user}</div>
                     <Rating value={r.rating} />
                   </div>
                 </div>
-                <p className="mt-3 text-sm text-muted-foreground">{r.comment}</p>
-                <p className="mt-2 text-xs text-muted-foreground">{r.date}</p>
+                <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">{r.comment}</p>
+                <p className="text-[11px] font-semibold text-muted-foreground/70">{r.date}</p>
               </div>
             ))}
           </div>

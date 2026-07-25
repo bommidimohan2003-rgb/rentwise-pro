@@ -14,15 +14,17 @@ import {
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
 import { Modal } from "../components/layout/Modal";
-import { Loader } from "../components/layout/Loader";
 import { usersService } from "../services/users";
 import { AdminUser } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
 
 export default function Users() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isSlow = useSlowConnection(loading);
 
   // Search & Filters
   const [search, setSearch] = useState("");
@@ -53,10 +55,12 @@ export default function Users() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await usersService.getUsers();
       setUsers(data);
     } catch (err) {
       console.error(err);
+      setError("Failed to load users record from database.");
       toast.error("Failed to load users list.");
     } finally {
       setLoading(false);
@@ -433,9 +437,27 @@ export default function Users() {
         </select>
       </div>
 
-      {/* Main Table */}
+      {/* Slow Connection Indicator */}
+      {isSlow && <SlowConnectionIndicator message="Fetching user records is taking a bit longer than usual..." />}
+
+      {/* Main Table & States */}
       {loading ? (
-        <Loader message="Fetching users record..." />
+        <LoadingState type="table" count={5} />
+      ) : error ? (
+        <ErrorState
+          title="Unable to load user list"
+          error={error}
+          onRetry={fetchUsers}
+        />
+      ) : filteredUsers.length === 0 ? (
+        <NoSearchResults
+          query={search}
+          onClearFilters={() => {
+            setSearch("");
+            setRoleFilter("all");
+            setStatusFilter("all");
+          }}
+        />
       ) : (
         <>
           <Table
@@ -444,8 +466,6 @@ export default function Users() {
             onSort={handleSort}
             sortKey={sortKey}
             sortOrder={sortOrder}
-            emptyTitle="No users match your criteria"
-            emptyDescription="Try clearing your filters or testing another query."
           />
           <Pagination
             currentPage={currentPage}

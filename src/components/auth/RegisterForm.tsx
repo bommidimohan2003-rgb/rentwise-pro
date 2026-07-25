@@ -9,16 +9,15 @@ import { Input } from "@/components/common/Input";
 import { useAuth } from "@/hooks/useAuth";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { toast } from "sonner";
-import type { User as UserType } from "@/types";
 
 const schema = z
   .object({
-    fullName: z.string().trim().min(2, "Enter your name").max(100),
-    email: z.string().trim().email("Invalid email").max(255),
-    phone: z.string().trim().min(7, "Enter a valid phone").max(20),
-    password: z.string().min(8, "At least 8 characters"),
-    confirm: z.string(),
-    terms: z.literal(true, { errorMap: () => ({ message: "Please accept the terms" }) }),
+    fullName: z.string().trim().min(2, "Enter your full name (at least 2 letters)").max(100),
+    email: z.string().trim().min(1, "Email is required").email("Enter a valid email address").max(255),
+    phone: z.string().trim().min(7, "Enter a valid phone number (at least 7 digits)").max(20),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirm: z.string().min(1, "Please confirm your password"),
+    terms: z.literal(true, { errorMap: () => ({ message: "Please accept the Terms & Privacy Policy" }) }),
     isAdmin: z.boolean().optional(),
     adminCode: z.string().optional(),
   })
@@ -43,13 +42,18 @@ export function RegisterForm() {
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErrorState] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
     watch,
+    setError,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    mode: "onBlur",
+  });
 
   const pw = watch("password") ?? "";
   const watchIsAdmin = watch("isAdmin") ?? false;
@@ -68,10 +72,18 @@ export function RegisterForm() {
   }, []);
 
   const onSubmit = async (data: FormValues) => {
-    setError(null);
+    setErrorState(null);
     const res = await registerUser(data.email, data.phone);
     if (!res.ok) {
-      return setError(res.error ?? "Failed to initiate registration");
+      const msg = res.error ?? "Failed to initiate registration";
+      if (msg.toLowerCase().includes("email")) {
+        setError("email", { type: "server", message: msg });
+      } else if (msg.toLowerCase().includes("phone")) {
+        setError("phone", { type: "server", message: msg });
+      } else {
+        setErrorState(msg);
+      }
+      return;
     }
 
     const pendingUser = {
@@ -79,7 +91,7 @@ export function RegisterForm() {
       email: data.email,
       phone: data.phone,
       password: data.password,
-      adminCode: (showAdminOption && data.isAdmin) ? data.adminCode : undefined,
+      adminCode: showAdminOption && data.isAdmin ? data.adminCode : undefined,
     };
 
     // Save registration details to pending state to complete verification in OTP step
@@ -162,7 +174,7 @@ export function RegisterForm() {
             <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" {...register("isAdmin")} />
             <span className="text-foreground">Register as site administrator</span>
           </label>
-          
+
           {watchIsAdmin && (
             <Input
               label="Admin Setup Code"
@@ -175,24 +187,24 @@ export function RegisterForm() {
         </div>
       )}
 
-      <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" className="mt-1" {...register("terms")} />
+      <label className="flex items-start gap-2 text-sm cursor-pointer">
+        <input type="checkbox" className="mt-1 rounded border-border text-primary focus:ring-primary" {...register("terms")} />
         <span className="text-muted-foreground">
           I agree to the{" "}
-          <a href="#" className="text-primary hover:underline">
+          <a href="#" className="text-primary hover:underline font-semibold">
             Terms
           </a>{" "}
           and{" "}
-          <a href="#" className="text-primary hover:underline">
+          <a href="#" className="text-primary hover:underline font-semibold">
             Privacy Policy
           </a>
           .
         </span>
       </label>
-      {errors.terms && <p className="text-xs text-destructive">{errors.terms.message}</p>}
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit" className="w-full" loading={isSubmitting}>
-        Create account
+      {errors.terms && <p className="text-xs text-destructive font-medium">{errors.terms.message}</p>}
+      {error && <p className="text-sm text-destructive font-medium">{error}</p>}
+      <Button type="submit" className="w-full font-bold" loading={isSubmitting} disabled={isSubmitting}>
+        {isSubmitting ? "Creating account..." : "Create account"}
       </Button>
     </form>
   );

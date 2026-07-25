@@ -6,6 +6,8 @@ import { Footer } from "@/admin/components/layout/Footer";
 import { Breadcrumb } from "@/admin/components/layout/Breadcrumb";
 import { authService } from "@/admin/services/auth";
 import { getSeoMetadata } from "@/utils/seo";
+import { PermissionDenied } from "@/components/states/PermissionDenied";
+import { LoadingState } from "@/components/states/LoadingState";
 
 export const Route = createFileRoute("/admin")({
   head: () =>
@@ -21,27 +23,49 @@ function AdminLayout() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDenied, setIsDenied] = useState(false);
 
   useEffect(() => {
     const loggedIn = authService.isAuthenticated();
-    setIsAuthenticated(loggedIn);
-    setLoading(false);
+    const currentUser = authService.getCurrentUser();
 
     if (!loggedIn) {
+      setIsAuthenticated(false);
+      setLoading(false);
       navigate({ to: "/login" });
+      return;
     }
+
+    setIsAuthenticated(true);
+
+    // If user is authenticated but not an admin role, show PermissionDenied
+    if (currentUser && currentUser.role !== "admin") {
+      setIsDenied(true);
+    } else {
+      setIsDenied(false);
+    }
+
+    setLoading(false);
   }, [navigate]);
 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+        <LoadingState type="spinner" message="Validating admin authorization..." />
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
+    return null;
+  }
+
+  if (isDenied) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <PermissionDenied requiredRole="Administrator" />
+      </div>
+    );
   }
 
   return (

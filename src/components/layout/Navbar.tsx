@@ -202,7 +202,7 @@ export function Navbar() {
           {/* Auth button */}
           {user ? (
             <div className="hidden md:flex items-center gap-2 ml-2">
-              {(user.role === "superadmin" || user.role === "admin") && (
+              {user.role === "admin" && (
                 <Link
                   to="/admin/dashboard"
                   className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm"

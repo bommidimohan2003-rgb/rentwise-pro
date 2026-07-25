@@ -129,6 +129,9 @@ export const api = {
         },
       });
       if (!res.ok) {
+        if (res.status === 401 && typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("payent-session-expired", { detail: { loginPath: "/login" } }));
+        }
         const data = await res.json().catch(() => ({}));
         throw new Error(data.detail || "Failed to fetch user profile.");
       }

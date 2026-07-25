@@ -7,11 +7,14 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { HelpChatbot } from "../components/common/HelpChatbot";
 import { api } from "../utils/api";
 import { products } from "../utils/mockData";
 import type { Product } from "../types";
+import { Toaster } from "@/components/ui/sonner";
+import { NoInternetState } from "@/components/states/NoInternetState";
+import { SessionExpired } from "@/components/states/SessionExpired";
 
 import appCss from "../styles.css?url";
 
@@ -143,6 +146,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [sessionExpiredInfo, setSessionExpiredInfo] = useState<{
+    show: boolean;
+    loginUrl: "/login" | "/admin/login";
+  }>({ show: false, loginUrl: "/login" });
+  const [isOffline, setIsOffline] = useState(
+    typeof navigator !== "undefined" ? !navigator.onLine : false
+  );
 
   useEffect(() => {
     // Fetch custom products listed in the database and prepend them to the catalog
@@ -154,13 +164,47 @@ function RootComponent() {
         products.unshift(...filtered);
       })
       .catch((err) => console.error("Failed to load public custom products:", err));
+
+    // Global session expiration handler
+    const handleSessionExpired = (e: Event) => {
+      const customEv = e as CustomEvent<{ loginPath?: "/login" | "/admin/login" }>;
+      setSessionExpiredInfo({
+        show: true,
+        loginUrl: customEv.detail?.loginPath || "/login",
+      });
+    };
+
+    // Online/Offline handlers
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("payent-session-expired", handleSessionExpired);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("payent-session-expired", handleSessionExpired);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
+      {isOffline && <NoInternetState mode="banner" />}
+      
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+
+      {sessionExpiredInfo.show && (
+        <SessionExpired
+          loginUrl={sessionExpiredInfo.loginUrl}
+          onClose={() => setSessionExpiredInfo((prev) => ({ ...prev, show: false }))}
+        />
+      )}
+
       <HelpChatbot />
+      <Toaster position="bottom-right" richColors />
     </QueryClientProvider>
   );
 }

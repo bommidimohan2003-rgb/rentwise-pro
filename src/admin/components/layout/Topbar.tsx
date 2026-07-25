@@ -11,21 +11,20 @@ export function Topbar() {
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
-    // Set initial state
     setOffline(isOfflineMode());
 
-    const handler = (e: any) => {
+    const handler = (e: CustomEvent) => {
       setOffline(e.detail);
     };
 
-    window.addEventListener("payent-admin-offline-change", handler);
+    window.addEventListener("payent-admin-offline-change", handler as EventListener);
     return () => {
-      window.removeEventListener("payent-admin-offline-change", handler);
+      window.removeEventListener("payent-admin-offline-change", handler as EventListener);
     };
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-6 md:px-8 h-16 border-b border-border/40 bg-card/65 glass backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex items-center justify-between px-6 md:px-8 h-16 spatial-float border-b border-border/60 rounded-none shadow-sm backdrop-blur-md">
       {/* Left side: Space on desktop for spacing, padding on mobile */}
       <div className="flex items-center gap-4 pl-8 lg:pl-0">
         <SearchBar />
@@ -42,7 +41,7 @@ export function Topbar() {
         {/* Theme Toggle Button */}
         <button
           onClick={toggle}
-          className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all active:scale-95"
           title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
         >
           {theme === "dark" ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}

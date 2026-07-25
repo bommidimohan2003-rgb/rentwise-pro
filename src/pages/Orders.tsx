@@ -7,18 +7,38 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { Order } from "@/types";
+import { LoadingState, ErrorState, EmptyState } from "@/components/states";
+import { useNavigate } from "@tanstack/react-router";
 
 export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!token) return;
+  const fetchOrders = () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
     api
       .getOrders(token)
-      .then(setOrders)
-      .catch((err) => console.error("Failed to load orders:", err));
+      .then((data) => {
+        setOrders(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load orders:", err);
+        setError("Failed to fetch your active order history.");
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchOrders();
   }, [token]);
 
   const handleCancelOrder = (orderId: string) => {
@@ -37,54 +57,76 @@ export default function Orders() {
   return (
     <DashboardLayout>
       <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
-        <Package className="h-7 w-7" /> Orders
+        <Package className="h-7 w-7 text-primary" /> Orders
       </h1>
-      <p className="mt-2 text-muted-foreground">Track and manage all your rentals.</p>
-      <div className="mt-8 card-premium overflow-hidden">
-        <div className="hidden md:grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 border-b border-border text-xs uppercase text-muted-foreground">
-          <div>Item</div>
-          <div>Details</div>
-          <div>Dates</div>
-          <div>Total</div>
-          <div>Status</div>
-        </div>
-        {orders.map((o) => (
-          <div
-            key={o.id}
-            className="grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 items-center border-b border-border last:border-0"
-          >
-            <img src={o.productImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
-            <div className="font-medium">{o.productTitle}</div>
-            <div className="text-sm text-muted-foreground">
-              {o.startDate} – {o.endDate}
+      <p className="mt-2 text-muted-foreground">Track and manage all your gear rentals.</p>
+
+      <div className="mt-8">
+        {loading ? (
+          <LoadingState type="list" count={4} />
+        ) : error ? (
+          <ErrorState
+            title="Unable to load orders"
+            error={error}
+            onRetry={fetchOrders}
+          />
+        ) : orders.length === 0 ? (
+          <EmptyState
+            title="No orders yet"
+            description="You haven't booked any tech gear rentals yet. Explore the marketplace to find gear!"
+            icon={Package}
+            actionLabel="Browse Marketplace"
+            onAction={() => navigate({ to: "/categories" })}
+          />
+        ) : (
+          <div className="card-premium overflow-hidden">
+            <div className="hidden md:grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 border-b border-border text-xs uppercase text-muted-foreground">
+              <div>Item</div>
+              <div>Details</div>
+              <div>Dates</div>
+              <div>Total</div>
+              <div>Status</div>
             </div>
-            <div className="font-semibold">₹{o.total}</div>
-            <div className="flex flex-col gap-1 items-start">
-              <span
-                className={`text-xs px-2 py-1 rounded-full w-fit ${
-                  o.status === "active"
-                    ? "bg-emerald-500/10 text-emerald-600"
-                    : o.status === "pending"
-                      ? "bg-amber-500/10 text-amber-600"
-                      : o.status === "cancelled"
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-secondary text-muted-foreground"
-                }`}
+            {orders.map((o) => (
+              <div
+                key={o.id}
+                className="grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 items-center border-b border-border last:border-0"
               >
-                {o.status}
-              </span>
-              {(o.status === "active" || o.status === "pending") && (
-                <button
-                  onClick={() => setCancellingOrderId(o.id)}
-                  className="text-[10px] mt-1 text-destructive hover:underline font-semibold"
-                >
-                  Cancel Rental
-                </button>
-              )}
-            </div>
+                <img src={o.productImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                <div className="font-medium">{o.productTitle}</div>
+                <div className="text-sm text-muted-foreground">
+                  {o.startDate} – {o.endDate}
+                </div>
+                <div className="font-semibold">₹{o.total}</div>
+                <div className="flex flex-col gap-1 items-start">
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full w-fit ${
+                      o.status === "active"
+                        ? "bg-emerald-500/10 text-emerald-600"
+                        : o.status === "pending"
+                          ? "bg-amber-500/10 text-amber-600"
+                          : o.status === "cancelled"
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {o.status}
+                  </span>
+                  {(o.status === "active" || o.status === "pending") && (
+                    <button
+                      onClick={() => setCancellingOrderId(o.id)}
+                      className="text-[10px] mt-1 text-destructive hover:underline font-semibold"
+                    >
+                      Cancel Rental
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
+
       <AnimatePresence>
         {cancellingOrderId && (
           <div className="fixed inset-0 z-50 grid place-items-center p-4">

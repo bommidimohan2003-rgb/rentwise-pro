@@ -75,6 +75,35 @@ export const categories: Category[] = [
   },
 ];
 
+const sonyA7Frames: string[] = [
+  "https://images.unsplash.com/photo-1516035069371-29a6b244cc54?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1508898578281-774ac4893c0c?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1512756290469-ec264b7fbf97?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1510127034890-ba27508e9f1c?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1516035069371-29a6b244cc54?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1000&q=80",
+];
+
+const macbookProFrames: string[] = [
+  "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1000&q=80",
+];
+
+const djiMavicFrames: string[] = [
+  "https://images.unsplash.com/photo-1527977966376-1c8408f9f10c?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1521405924368-64c5b84bec60?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1527977966376-1c8408f9f10c?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1000&q=80",
+];
+
 const initialProducts: Product[] = [
   {
     id: "p1",
@@ -83,6 +112,7 @@ const initialProducts: Product[] = [
       "Full-frame 33MP hybrid camera. Perfect for cinema-quality video and stills. Includes 28-70mm lens, batteries, and hard case.",
     price: 4500,
     image: sonyA7Img,
+    rotationFrames: sonyA7Frames,
     category: "cameras",
     rating: 4.9,
     reviews: 128,
@@ -95,6 +125,7 @@ const initialProducts: Product[] = [
     description: "Top-spec MacBook Pro with 64GB RAM and 2TB SSD. Ideal for editing and dev work.",
     price: 3500,
     image: macbookProImg,
+    rotationFrames: macbookProFrames,
     category: "laptops",
     rating: 4.8,
     reviews: 92,
@@ -160,6 +191,7 @@ const initialProducts: Product[] = [
       "Hasselblad triple-camera drone with 43-min flight time. Includes 3 batteries and ND filters.",
     price: 5000,
     image: djiMavicImg,
+    rotationFrames: djiMavicFrames,
     category: "drones",
     rating: 5.0,
     reviews: 67,

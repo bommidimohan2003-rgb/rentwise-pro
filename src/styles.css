@@ -48,6 +48,14 @@
   --border: oklch(0.92 0.01 260);
   --input: oklch(0.94 0.01 260);
   --ring: oklch(0.6 0.2 275);
+
+  /* Spatial UI Elevation System Tokens */
+  --elevation-0-shadow: none;
+  --elevation-1-shadow: 0 2px 8px -2px oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.04);
+  --elevation-2-shadow: 0 12px 28px -6px oklch(0 0 0 / 0.09), 0 4px 12px -2px oklch(0 0 0 / 0.05);
+  --elevation-3-shadow: 0 20px 40px -10px oklch(0 0 0 / 0.15), 0 8px 20px -4px oklch(0 0 0 / 0.08);
+  --elevation-4-shadow: 0 32px 70px -14px oklch(0 0 0 / 0.22), 0 12px 28px -6px oklch(0 0 0 / 0.12);
+  --rim-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.7), inset 0 -1px 0 0 oklch(0 0 0 / 0.05);
 }
 
 .dark {
@@ -67,6 +75,13 @@
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.65 0.2 285);
+
+  /* Dark Mode Spatial Elevation Tokens */
+  --elevation-1-shadow: 0 2px 10px -2px oklch(0 0 0 / 0.4);
+  --elevation-2-shadow: 0 14px 32px -6px oklch(0 0 0 / 0.55), 0 4px 14px -2px oklch(0 0 0 / 0.3);
+  --elevation-3-shadow: 0 24px 48px -8px oklch(0 0 0 / 0.65), 0 8px 24px -4px oklch(0 0 0 / 0.4);
+  --elevation-4-shadow: 0 36px 80px -12px oklch(0 0 0 / 0.8), 0 16px 36px -6px oklch(0 0 0 / 0.5);
+  --rim-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.15), inset 0 -1px 0 0 oklch(0 0 0 / 0.4);
 }
 
 @layer base {
@@ -89,22 +104,85 @@
   }
 }
 
+/* Spatial UI Elevation Utilities */
+@utility spatial-surface {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-1-shadow), var(--rim-highlight);
+}
+
+@utility spatial-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-2-shadow), var(--rim-highlight);
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s ease;
+
+  &:hover {
+    transform: translateY(-5px) scale(1.008);
+    box-shadow: var(--elevation-3-shadow), var(--rim-highlight);
+    border-color: color-mix(in oklch, var(--color-primary) 45%, var(--color-border));
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.995);
+    box-shadow: var(--elevation-1-shadow), var(--rim-highlight);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: border-color 0.2s ease;
+    &:hover, &:active {
+      transform: none;
+    }
+  }
+}
+
+@utility spatial-float {
+  background: color-mix(in oklch, var(--color-card) 85%, transparent);
+  backdrop-filter: blur(16px) saturate(170%);
+  border: 1px solid color-mix(in oklch, var(--color-border) 70%, transparent);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--elevation-3-shadow), var(--rim-highlight);
+}
+
+@utility spatial-overlay {
+  background: color-mix(in oklch, var(--color-card) 92%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid color-mix(in oklch, var(--color-border) 80%, transparent);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--elevation-4-shadow), var(--rim-highlight);
+}
+
 @utility glass {
-  background: color-mix(in oklch, var(--color-background) 65%, transparent);
+  background: color-mix(in oklch, var(--color-background) 70%, transparent);
   backdrop-filter: blur(16px) saturate(160%);
   border: 1px solid color-mix(in oklch, var(--color-border) 60%, transparent);
+  box-shadow: var(--rim-highlight);
 }
 
 @utility btn-gradient {
   background-image: linear-gradient(135deg, oklch(0.6 0.22 275), oklch(0.65 0.2 320));
   color: white;
-  box-shadow: 0 10px 30px -10px oklch(0.55 0.22 275 / 0.5);
+  box-shadow: 0 10px 30px -10px oklch(0.55 0.22 275 / 0.5), inset 0 1px 0 0 oklch(1 0 0 / 0.3);
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 18px 40px -12px oklch(0.55 0.22 275 / 0.6);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 18px 40px -10px oklch(0.55 0.22 275 / 0.65), inset 0 1px 0 0 oklch(1 0 0 / 0.4);
+  }
+  &:active {
+    transform: translateY(0px) scale(0.98);
+    box-shadow: 0 6px 20px -8px oklch(0.55 0.22 275 / 0.4);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:hover, &:active {
+      transform: none;
+    }
   }
 }
 
@@ -112,17 +190,20 @@
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  box-shadow:
-    0 1px 2px oklch(0 0 0 / 0.04),
-    0 10px 30px -20px oklch(0 0 0 / 0.15);
+  box-shadow: var(--elevation-2-shadow), var(--rim-highlight);
   transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    border-color 0.25s ease;
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s ease;
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 30px 60px -30px oklch(0 0 0 / 0.25);
+    box-shadow: var(--elevation-3-shadow), var(--rim-highlight);
     border-color: color-mix(in oklch, var(--color-primary) 40%, var(--color-border));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:hover {
+      transform: none;
+    }
   }
 }
 

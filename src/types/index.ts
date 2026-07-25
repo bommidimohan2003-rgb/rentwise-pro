@@ -16,6 +16,7 @@ export interface Product {
   price: number;
   image: string;
   images?: string[];
+  rotationFrames?: string[];
   category: string;
   rating: number;
   reviews: number;

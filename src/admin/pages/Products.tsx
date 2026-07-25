@@ -14,16 +14,18 @@ import {
 } from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
-import { Loader } from "../components/layout/Loader";
 import { productsService } from "../services/products";
 import { AdminProduct } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
+import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
 
 export default function Products() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isSlow = useSlowConnection(loading);
 
   // Search & Filters from router search query if available
   const routerSearch = useSearch({ from: "/admin/products" }) as { search?: string };
@@ -47,10 +49,12 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await productsService.getProducts();
       setProducts(data);
     } catch (err) {
       console.error(err);
+      setError("Failed to fetch product catalog.");
       toast.error("Failed to load products list.");
     } finally {
       setLoading(false);
@@ -395,9 +399,27 @@ export default function Products() {
         </select>
       </div>
 
+      {/* Slow Connection Indicator */}
+      {isSlow && <SlowConnectionIndicator message="Product catalog is taking a bit longer to load..." />}
+
       {/* Products list body */}
       {loading ? (
-        <Loader message="Fetching product listings..." />
+        <LoadingState type={viewMode === "list" ? "table" : "grid"} count={6} />
+      ) : error ? (
+        <ErrorState
+          title="Unable to load products"
+          error={error}
+          onRetry={fetchProducts}
+        />
+      ) : filteredProducts.length === 0 ? (
+        <NoSearchResults
+          query={search}
+          onClearFilters={() => {
+            setSearch("");
+            setCategoryFilter("all");
+            setStatusFilter("all");
+          }}
+        />
       ) : viewMode === "list" ? (
         <>
           <Table
@@ -406,8 +428,6 @@ export default function Products() {
             onSort={handleSort}
             sortKey={sortKey}
             sortOrder={sortOrder}
-            emptyTitle="No listings found"
-            emptyDescription="Try modifying filters or loading new requests."
           />
           <Pagination
             currentPage={currentPage}
@@ -420,13 +440,8 @@ export default function Products() {
       ) : (
         /* Grid layout */
         <div className="space-y-6">
-          {filteredProducts.length === 0 ? (
-            <div className="py-20 text-center text-muted-foreground bg-card/45 border rounded-2xl">
-              No products found matching filters.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {paginatedProducts.map((p) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {paginatedProducts.map((p) => (
                 <div
                   key={p.id}
                   className="card-premium bg-card/60 flex flex-col h-[380px] overflow-hidden relative group/card"
@@ -486,7 +501,6 @@ export default function Products() {
                 </div>
               ))}
             </div>
-          )}
           <Pagination
             currentPage={currentPage}
             totalItems={filteredProducts.length}

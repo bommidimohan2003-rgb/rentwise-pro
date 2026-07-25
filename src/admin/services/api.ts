@@ -326,15 +326,28 @@ adminApi.interceptors.response.use(
     return response;
   },
   async (error) => {
-    return Promise.reject(error);
+    const status = error.response?.status;
+
+    // Handle 401 Unauthorized Session Expiration
+    if (status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("payent-session-expired", {
+          detail: { loginPath: "/admin/login" },
+        })
+      );
+    }
 
     const isNetworkError = !error.response || error.code === "ERR_NETWORK" || error.message === "Network Error";
 
     if (isNetworkError) {
       setOfflineMode(true);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("payent-network-offline"));
+      }
       console.warn("Admin API unreachable. Falling back to offline demo mode.", error);
 
-      // Strip out baseURL
+      const config = error.config;
+      if (!config) return Promise.reject(error);
       let urlPath = config.url;
       if (urlPath.includes("/api/admin")) {
         urlPath = urlPath.slice(urlPath.indexOf("/api/admin") + "/api/admin".length);

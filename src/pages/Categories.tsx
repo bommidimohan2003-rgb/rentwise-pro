@@ -6,6 +6,7 @@ import { categories, products } from "@/utils/mockData";
 import { Button } from "@/components/common/Button";
 import { cn } from "@/lib/utils";
 import { useSearch, useNavigate } from "@tanstack/react-router";
+import { NoSearchResults } from "@/components/states/NoSearchResults";
 
 type Sort = "featured" | "price_asc" | "price_desc" | "rating";
 
@@ -40,6 +41,12 @@ export default function Categories() {
         cat: newCat === "all" ? undefined : newCat,
       }),
     });
+  };
+
+  const handleResetFilters = () => {
+    setCat("all");
+    setQ("");
+    setMax(10000);
   };
 
   const filtered = useMemo(() => {
@@ -150,11 +157,7 @@ export default function Categories() {
                   variant="outline"
                   size="sm"
                   className="w-full"
-                  onClick={() => {
-                    setCat("all");
-                    setQ("");
-                    setMax(10000);
-                  }}
+                  onClick={handleResetFilters}
                 >
                   Reset
                 </Button>
@@ -183,9 +186,10 @@ export default function Categories() {
                 ))}
               </div>
             ) : (
-              <div className="card-premium p-12 text-center text-muted-foreground">
-                No products match your filters.
-              </div>
+              <NoSearchResults
+                query={q}
+                onClearFilters={handleResetFilters}
+              />
             )}
           </div>
         </div>

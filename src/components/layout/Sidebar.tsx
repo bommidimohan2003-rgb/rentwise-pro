@@ -32,7 +32,7 @@ export function Sidebar() {
 
   const sidebarItems = [
     ...items,
-    ...(user?.role === "superadmin" || user?.role === "admin"
+    ...(user?.role === "admin"
       ? [{ to: "/admin/dashboard", icon: Shield, label: "Admin Portal" } as const]
       : []),
   ];
