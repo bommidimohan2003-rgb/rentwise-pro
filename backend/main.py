@@ -66,6 +66,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def read_root():
+    return {
+        "status": "online",
+        "service": "Payent FastAPI Backend API",
+        "documentation": "/docs"
+    }
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "service": "Payent Backend",
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
+
 # Pydantic Schemas
 class OTPRequestSchema(BaseModel):
     email: EmailStr
