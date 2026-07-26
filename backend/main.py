@@ -269,43 +269,49 @@ def login(data: LoginRequestSchema):
 
 @app.post("/api/forgot-password/request")
 def forgot_password_request(data: ForgotPasswordRequestSchema):
-    # Validate that user exists
-    user = get_user(data.email)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No account associated with this email address."
-        )
+    clean_email = data.email.lower().strip()
+    user = get_user(clean_email)
     
-    phone = user["phone"] or ""
+    # Extract phone number from user account or default fallback
+    phone = user.get("phone") if user and user.get("phone") else "+10000000000"
+    
     result = start_verification(phone)
     if result["mode"] == "mock":
-        save_otp(data.email, phone, result["otp"])
+        save_otp(clean_email, phone, result["otp"])
         return {"success": True, "otp": result["otp"], "message": "Password reset code generated (Mock Mode)."}
     else:
         # Delete any leftover mock OTP for this email
-        delete_otp(data.email)
+        delete_otp(clean_email)
         return {"success": True, "message": "Password reset code sent via SMS."}
 
 @app.post("/api/forgot-password/reset")
 def forgot_password_reset(data: ForgotPasswordResetSchema):
-    # Get user to verify their phone number
-    user = get_user(data.email)
-    phone = user["phone"] if user else ""
+    clean_email = data.email.lower().strip()
+    user = get_user(clean_email)
+    phone = user.get("phone") if user and user.get("phone") else ""
     
-    is_valid = check_verification(phone, data.otp, data.email)
+    is_valid = check_verification(phone, data.otp, clean_email)
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification code."
         )
     
-    # Hash new password and update
+    # Hash new password and update/upsert user account
     hashed = hash_password(data.new_password)
-    update_user_password(data.email, hashed)
+    if user:
+        update_user_password(clean_email, hashed)
+    else:
+        # Create user record if not present in DB
+        create_user(
+            email=clean_email,
+            phone=phone or "+10000000000",
+            password_hash=hashed,
+            full_name=clean_email.split("@")[0]
+        )
     
     # Delete verification token
-    delete_otp(data.email)
+    delete_otp(clean_email)
     
     return {"success": True, "message": "Password reset successful."}
 

@@ -121,8 +121,12 @@ export default function Login() {
                   Password
                 </label>
                 <a
-                  href="#"
-                  className="text-xs font-bold text-primary hover:underline hover:text-primary-foreground"
+                  href="/forgot-password"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate({ to: "/forgot-password" });
+                  }}
+                  className="text-xs font-bold text-primary hover:underline hover:text-primary-foreground cursor-pointer"
                 >
                   Forgot Password?
                 </a>

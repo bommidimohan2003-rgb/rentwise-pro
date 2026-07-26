@@ -22,8 +22,9 @@ export function ForgotPassword() {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      await api.forgotPasswordRequest(data.email);
-      storage.set(STORAGE_KEYS.otpEmail, data.email);
+      const email = data.email.trim().toLowerCase();
+      await api.forgotPasswordRequest(email);
+      storage.set(STORAGE_KEYS.otpEmail, email);
       storage.remove(STORAGE_KEYS.pendingUser); // Distinguish from sign up flow
 
       toast.success("Password reset code sent via SMS!");

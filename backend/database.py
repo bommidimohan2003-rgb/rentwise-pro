@@ -318,16 +318,19 @@ def init_db():
     print("MySQL database structures initialized.")
 
 def get_user(email: str):
-    return fetch_one("SELECT * FROM users WHERE email = %s", (email,))
+    if not email:
+        return None
+    return fetch_one("SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (email.strip(),))
 
 def create_user(email: str, phone: str, password_hash: str, full_name: str, role: str = "user"):
     created_at = datetime.utcnow().isoformat()
+    clean_email = email.strip().lower()
     execute_query(
         "INSERT INTO users (email, phone, password_hash, full_name, role, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
-        (email, phone, password_hash, full_name, role, created_at)
+        (clean_email, phone, password_hash, full_name, role, created_at)
     )
     return {
-        "email": email,
+        "email": clean_email,
         "phone": phone,
         "fullName": full_name,
         "role": role,
@@ -335,20 +338,27 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
     }
 
 def update_user_password(email: str, password_hash: str):
-    execute_query("UPDATE users SET password_hash = %s WHERE email = %s", (password_hash, email))
+    if not email:
+        return
+    execute_query("UPDATE users SET password_hash = %s WHERE LOWER(email) = LOWER(%s)", (password_hash, email.strip()))
 
 def save_otp(email: str, phone: str, otp: str):
     created_at = datetime.utcnow().isoformat()
+    clean_email = email.strip().lower()
     execute_query(
         "REPLACE INTO otps (email, phone, otp, created_at) VALUES (%s, %s, %s, %s)",
-        (email, phone, otp, created_at)
+        (clean_email, phone, otp, created_at)
     )
 
 def get_otp(email: str):
-    return fetch_one("SELECT * FROM otps WHERE email = %s", (email,))
+    if not email:
+        return None
+    return fetch_one("SELECT * FROM otps WHERE LOWER(email) = LOWER(%s)", (email.strip(),))
 
 def delete_otp(email: str):
-    execute_query("DELETE FROM otps WHERE email = %s", (email,))
+    if not email:
+        return
+    execute_query("DELETE FROM otps WHERE LOWER(email) = LOWER(%s)", (email.strip(),))
 
 # Wishlist CRUD
 def get_wishlist(email: str):
