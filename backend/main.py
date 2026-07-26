@@ -46,8 +46,11 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup Handler
-    init_db()
-    print("MySQL database initialized successfully.")
+    try:
+        init_db()
+        print("MySQL database initialized successfully.")
+    except Exception as e:
+        print(f"Warning: Could not initialize MySQL database at startup: {e}")
     yield
 
 app = FastAPI(
