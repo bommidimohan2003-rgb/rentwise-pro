@@ -3,22 +3,34 @@ from datetime import datetime
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB
 
 def get_db_connection():
-    # Connect to MySQL Server first without database to ensure it exists
-    conn = pymysql.connect(
-        host=MYSQL_HOST,
-        port=MYSQL_PORT,
-        user=MYSQL_USER,
-        password=MYSQL_PASSWORD,
-        cursorclass=pymysql.cursors.DictCursor
-    )
+    # Attempt connecting directly to the specified database first (ideal for cloud MySQL like Railway/Aiven/PlanetScale)
     try:
-        with conn.cursor() as cursor:
-            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {MYSQL_DB}")
-        conn.select_db(MYSQL_DB)
-    except Exception as e:
-        conn.close()
-        raise e
-    return conn
+        return pymysql.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            database=MYSQL_DB,
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=10
+        )
+    except Exception:
+        # Fallback to connecting without database and creating database if it does not exist yet
+        conn = pymysql.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=10
+        )
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DB}`")
+            conn.select_db(MYSQL_DB)
+        except Exception:
+            pass
+        return conn
 
 def execute_query(query: str, params: tuple = ()):
     conn = get_db_connection()
