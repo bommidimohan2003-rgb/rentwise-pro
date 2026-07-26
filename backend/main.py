@@ -186,8 +186,11 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
 # Endpoints
 @app.post("/api/register/request")
 def register_request(data: OTPRequestSchema):
+    clean_email = data.email.lower().strip()
+    clean_phone = normalize_phone(data.phone)
+    
     # Check if user already exists
-    existing = get_user(data.email)
+    existing = get_user(clean_email)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -195,19 +198,22 @@ def register_request(data: OTPRequestSchema):
         )
     
     # Start Twilio Verify / Mock flow
-    result = start_verification(data.phone)
+    result = start_verification(clean_phone)
     if result["mode"] == "mock":
-        save_otp(data.email, normalize_phone(data.phone), result["otp"])
+        save_otp(clean_email, clean_phone, result["otp"])
         return {"success": True, "otp": result["otp"], "message": "Verification code generated (Mock Mode)."}
     else:
         # Delete any leftover mock OTP for this email
-        delete_otp(data.email)
+        delete_otp(clean_email)
         return {"success": True, "message": "Verification code sent via SMS."}
 
 @app.post("/api/register/verify")
 def register_verify(data: RegisterVerifySchema):
+    clean_email = data.email.lower().strip()
+    clean_phone = normalize_phone(data.phone)
+    
     # Verify the code
-    is_valid = check_verification(data.phone, data.otp, data.email)
+    is_valid = check_verification(clean_phone, data.otp, clean_email)
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -215,7 +221,7 @@ def register_verify(data: RegisterVerifySchema):
         )
     
     # Check if user already exists (double-check)
-    existing = get_user(data.email)
+    existing = get_user(clean_email)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -235,17 +241,17 @@ def register_verify(data: RegisterVerifySchema):
 
     # Register the user
     hashed = hash_password(data.password)
-    display_name = data.full_name or data.email.split("@")[0]
+    display_name = data.full_name or clean_email.split("@")[0]
     create_user(
-        email=data.email,
-        phone=normalize_phone(data.phone),
+        email=clean_email,
+        phone=clean_phone,
         password_hash=hashed,
         full_name=display_name,
         role=role
     )
     
     # Clean up local OTP database entry
-    delete_otp(data.email)
+    delete_otp(clean_email)
     
     return {"success": True, "message": "Account created successfully."}
 

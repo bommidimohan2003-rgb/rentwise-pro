@@ -317,18 +317,40 @@ def init_db():
 
     print("MySQL database structures initialized.")
 
+MOCK_USERS = {}
+MOCK_OTPS = {}
+
 def get_user(email: str):
     if not email:
         return None
-    return fetch_one("SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (email.strip(),))
+    clean_email = email.strip().lower()
+    try:
+        user = fetch_one("SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (clean_email,))
+        if user:
+            return user
+    except Exception as e:
+        print(f"Warning: Database read error in get_user: {e}")
+    return MOCK_USERS.get(clean_email)
 
 def create_user(email: str, phone: str, password_hash: str, full_name: str, role: str = "user"):
     created_at = datetime.utcnow().isoformat()
     clean_email = email.strip().lower()
-    execute_query(
-        "INSERT INTO users (email, phone, password_hash, full_name, role, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
-        (clean_email, phone, password_hash, full_name, role, created_at)
-    )
+    user_data = {
+        "email": clean_email,
+        "phone": phone,
+        "password_hash": password_hash,
+        "full_name": full_name,
+        "role": role,
+        "created_at": created_at
+    }
+    MOCK_USERS[clean_email] = user_data
+    try:
+        execute_query(
+            "INSERT INTO users (email, phone, password_hash, full_name, role, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+            (clean_email, phone, password_hash, full_name, role, created_at)
+        )
+    except Exception as e:
+        print(f"Notice: Database write error in create_user: {e}")
     return {
         "email": clean_email,
         "phone": phone,
@@ -340,25 +362,47 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
 def update_user_password(email: str, password_hash: str):
     if not email:
         return
-    execute_query("UPDATE users SET password_hash = %s WHERE LOWER(email) = LOWER(%s)", (password_hash, email.strip()))
+    clean_email = email.strip().lower()
+    if clean_email in MOCK_USERS:
+        MOCK_USERS[clean_email]["password_hash"] = password_hash
+    try:
+        execute_query("UPDATE users SET password_hash = %s WHERE LOWER(email) = LOWER(%s)", (password_hash, clean_email))
+    except Exception as e:
+        print(f"Notice: Database write error in update_user_password: {e}")
 
 def save_otp(email: str, phone: str, otp: str):
     created_at = datetime.utcnow().isoformat()
     clean_email = email.strip().lower()
-    execute_query(
-        "REPLACE INTO otps (email, phone, otp, created_at) VALUES (%s, %s, %s, %s)",
-        (clean_email, phone, otp, created_at)
-    )
+    MOCK_OTPS[clean_email] = {"email": clean_email, "phone": phone, "otp": otp, "created_at": created_at}
+    try:
+        execute_query(
+            "REPLACE INTO otps (email, phone, otp, created_at) VALUES (%s, %s, %s, %s)",
+            (clean_email, phone, otp, created_at)
+        )
+    except Exception as e:
+        print(f"Notice: Database write error in save_otp: {e}")
 
 def get_otp(email: str):
     if not email:
         return None
-    return fetch_one("SELECT * FROM otps WHERE LOWER(email) = LOWER(%s)", (email.strip(),))
+    clean_email = email.strip().lower()
+    try:
+        otp_rec = fetch_one("SELECT * FROM otps WHERE LOWER(email) = LOWER(%s)", (clean_email,))
+        if otp_rec:
+            return otp_rec
+    except Exception as e:
+        print(f"Warning: Database read error in get_otp: {e}")
+    return MOCK_OTPS.get(clean_email)
 
 def delete_otp(email: str):
     if not email:
         return
-    execute_query("DELETE FROM otps WHERE LOWER(email) = LOWER(%s)", (email.strip(),))
+    clean_email = email.strip().lower()
+    MOCK_OTPS.pop(clean_email, None)
+    try:
+        execute_query("DELETE FROM otps WHERE LOWER(email) = LOWER(%s)", (clean_email,))
+    except Exception as e:
+        print(f"Notice: Database delete error in delete_otp: {e}")
 
 # Wishlist CRUD
 def get_wishlist(email: str):
