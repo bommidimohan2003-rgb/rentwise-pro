@@ -154,6 +154,17 @@ export default function Dashboard() {
     }
   };
 
+  const handleResetAnalytics = async () => {
+    if (!confirm("Are you sure you want to reset total revenue, active listings, and analytics to 0?")) return;
+    try {
+      await notificationsService.resetAnalytics();
+      toast.success("Total revenue and active listings reset to 0.");
+      loadData();
+    } catch {
+      toast.error("Failed to reset analytics.");
+    }
+  };
+
   if (loading) {
     return <Loader message="Analyzing platform metrics..." size="lg" />;
   }
@@ -169,13 +180,21 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Action Button */}
-        <button
-          onClick={() => loadData()}
-          className="btn-gradient text-xs px-4 py-2.5 rounded-xl font-bold font-display cursor-pointer"
-        >
-          Refresh Data
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleResetAnalytics}
+            className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-all cursor-pointer"
+          >
+            Reset Analytics
+          </button>
+          <button
+            onClick={() => loadData()}
+            className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold font-display cursor-pointer"
+          >
+            Refresh Data
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards Grid */}

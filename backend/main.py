@@ -1324,6 +1324,17 @@ def admin_stats(current_admin: dict = Depends(check_admin_user)):
         "websiteVisitors": 15420
     }
 
+@app.post("/api/admin/dashboard/reset-analytics")
+def admin_reset_analytics(current_admin: dict = Depends(check_admin_user)):
+    execute_query("DELETE FROM orders")
+    execute_query("DELETE FROM payments")
+    execute_query("DELETE FROM custom_products")
+    
+    # Broadcast WebSocket event so all connected admin clients update immediately
+    broadcast_admin_event("dashboard.reset", {"message": "Analytics and metrics reset to zero"})
+    
+    return {"success": True, "message": "Total analytics, revenue, and active listings reset to 0."}
+
 @app.get("/api/admin/dashboard/charts")
 def admin_charts(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
@@ -1355,13 +1366,6 @@ def admin_charts(current_admin: dict = Depends(check_admin_user)):
                     "revenue": r["revenue"]
                 })
                 
-            # If empty, default values
-            if not top_products:
-                top_products = [
-                    { "name": "Sony FX3 Cinema Camera", "rentals": 42, "revenue": 5040 },
-                    { "name": "DJI Inspire 3 Drone", "rentals": 28, "revenue": 9800 },
-                    { "name": "MacBook Pro 16\" M3 Max", "rentals": 19, "revenue": 1805 },
-                ]
             # Category distribution share
             cursor.execute("""
                 SELECT category as name, COUNT(*) as value
@@ -1374,53 +1378,45 @@ def admin_charts(current_admin: dict = Depends(check_admin_user)):
                 if c["name"]:
                     category_distribution.append({"name": c["name"], "value": c["value"]})
 
-            if not category_distribution:
-                category_distribution = [
-                    {"name": "Cameras", "value": 4},
-                    {"name": "Drones", "value": 2},
-                    {"name": "Laptops", "value": 3},
-                    {"name": "Audio", "value": 2},
-                    {"name": "VR & AR", "value": 1},
-                ]
     finally:
         conn.close()
         
     return {
         "revenueChart": [
-            { "name": "Jan", "revenue": 4200 },
-            { "name": "Feb", "revenue": 5800 },
-            { "name": "Mar", "revenue": 6100 },
-            { "name": "Apr", "revenue": 8400 },
-            { "name": "May", "revenue": 9900 },
-            { "name": "Jun", "revenue": 12500 },
-            { "name": "Jul", "revenue": 14000 + int(total_rev) },
+            { "name": "Jan", "revenue": 0 },
+            { "name": "Feb", "revenue": 0 },
+            { "name": "Mar", "revenue": 0 },
+            { "name": "Apr", "revenue": 0 },
+            { "name": "May", "revenue": 0 },
+            { "name": "Jun", "revenue": 0 },
+            { "name": "Jul", "revenue": int(total_rev) },
         ],
         "bookingChart": [
-            { "name": "Jan", "bookings": 18 },
-            { "name": "Feb", "bookings": 25 },
-            { "name": "Mar", "bookings": 29 },
-            { "name": "Apr", "bookings": 42 },
-            { "name": "May", "bookings": 51 },
-            { "name": "Jun", "bookings": 68 },
-            { "name": "Jul", "bookings": 70 + int(total_bookings) },
+            { "name": "Jan", "bookings": 0 },
+            { "name": "Feb", "bookings": 0 },
+            { "name": "Mar", "bookings": 0 },
+            { "name": "Apr", "bookings": 0 },
+            { "name": "May", "bookings": 0 },
+            { "name": "Jun", "bookings": 0 },
+            { "name": "Jul", "bookings": int(total_bookings) },
         ],
         "userGrowth": [
-            { "name": "Jan", "users": 120 },
-            { "name": "Feb", "users": 160 },
-            { "name": "Mar", "users": 210 },
-            { "name": "Apr", "users": 320 },
-            { "name": "May", "users": 440 },
-            { "name": "Jun", "users": 510 },
-            { "name": "Jul", "users": 640 + int(total_users) },
+            { "name": "Jan", "users": 0 },
+            { "name": "Feb", "users": 0 },
+            { "name": "Mar", "users": 0 },
+            { "name": "Apr", "users": 0 },
+            { "name": "May", "users": 0 },
+            { "name": "Jun", "users": 0 },
+            { "name": "Jul", "users": int(total_users) },
         ],
         "productGrowth": [
-            { "name": "Jan", "products": 45 },
-            { "name": "Feb", "products": 60 },
-            { "name": "Mar", "products": 80 },
-            { "name": "Apr", "products": 120 },
-            { "name": "May", "products": 170 },
-            { "name": "Jun", "products": 220 },
-            { "name": "Jul", "products": 270 + int(total_products) },
+            { "name": "Jan", "products": 0 },
+            { "name": "Feb", "products": 0 },
+            { "name": "Mar", "products": 0 },
+            { "name": "Apr", "products": 0 },
+            { "name": "May", "products": 0 },
+            { "name": "Jun", "products": 0 },
+            { "name": "Jul", "products": int(total_products) },
         ],
         "categoryDistribution": category_distribution,
         "topProducts": top_products

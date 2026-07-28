@@ -307,79 +307,17 @@ def init_db():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # Purge test users and mock example users
+            # Purge mock/test data & reset analytics records for clean startup
             cursor.execute("DELETE FROM users WHERE email LIKE '%@example.com' OR email IN ('test_regular_user@payent.com', 'test_admin_user@payent.com', 'user_a_idor@payent.com', 'user_b_idor@payent.com', 'revocation_user@payent.com')")
-            cursor.execute("DELETE FROM custom_products WHERE user_email LIKE '%@example.com'")
-            cursor.execute("DELETE FROM orders WHERE user_email LIKE '%@example.com'")
-            cursor.execute("DELETE FROM payments WHERE customer_id LIKE '%@example.com'")
+            cursor.execute("DELETE FROM custom_products")
+            cursor.execute("DELETE FROM orders")
+            cursor.execute("DELETE FROM payments")
             cursor.execute("DELETE FROM reviews WHERE user_name IN ('Michael Chang', 'Jessica Ross')")
             cursor.execute("DELETE FROM reports WHERE owner_id LIKE '%@example.com' OR reporter_name = 'Michael Chang'")
             cursor.execute("DELETE FROM admin_notifications WHERE message LIKE '%Alex Mercer%' OR message LIKE '%Michael Chang%' OR message LIKE '%Jessica Ross%'")
             cursor.execute("DELETE FROM support_tickets WHERE user_email LIKE '%@example.com'")
             cursor.execute("DELETE FROM admin_logs WHERE user_name IN ('Sarah Connor', 'Alex Mercer')")
-            print("Purged mock/fake data from database.")
-
-            # Seed realistic users if empty
-            cursor.execute("SELECT COUNT(*) as count FROM users WHERE role != 'admin'")
-            if cursor.fetchone()["count"] == 0:
-                pass_hash = "$2b$12$K1V5WjJz3r.4x3x5y6z7u8v9w0a1b2c3d4e5f6g7h8i9j0k1l2m3"
-                now_str = datetime.utcnow().isoformat()
-                users_data = [
-                    ("arjun.sharma@payent.com", "+919820011223", pass_hash, "Arjun Sharma", "agent", "active", True, "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150", now_str),
-                    ("priya.patel@payent.com", "+919820044556", pass_hash, "Priya Patel", "agent", "active", True, "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150", now_str),
-                    ("vikram.aditya@payent.com", "+919820077889", pass_hash, "Vikram Aditya", "user", "active", True, "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150", now_str),
-                    ("ananya.rao@payent.com", "+919820099112", pass_hash, "Ananya Rao", "user", "active", True, "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150", now_str),
-                ]
-                cursor.executemany(
-                    "INSERT INTO users (email, phone, password_hash, full_name, role, status, verified, avatar, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    users_data
-                )
-                print("Seeded realistic users.")
-
-            # Seed realistic products if empty
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products")
-            if cursor.fetchone()["count"] == 0:
-                now_str = datetime.utcnow().isoformat()
-                products_data = [
-                    ("p-101", "arjun.sharma@payent.com", "Sony FX3 Cinema Line Full-Frame Camera", "Professional 4K 120fps cinema camera body with XLR handle kit.", 2499, "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80", "Cameras", 4.9, 18, True, "Arjun Sharma", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150", 4.9, now_str, "approved", True, False),
-                    ("p-102", "priya.patel@payent.com", "DJI Mavic 3 Pro Cine Premium Combo", "Triple-camera flagship drone with Apple ProRes support and 43-min flight time.", 3200, "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80", "Drones", 4.8, 12, True, "Priya Patel", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150", 4.8, now_str, "approved", True, False),
-                    ("p-103", "arjun.sharma@payent.com", "Apple MacBook Pro 16\" M3 Max (64GB RAM)", "Monster video editing laptop with Liquid Retina XDR display.", 1850, "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80", "Laptops", 4.9, 15, True, "Arjun Sharma", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150", 4.9, now_str, "approved", False, False),
-                    ("p-104", "priya.patel@payent.com", "Sennheiser MKH 416 Shotgun Microphone Kit", "Broadcast-quality moisture-resistant shotgun mic with boom pole & blimp.", 850, "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=800&q=80", "Audio", 4.7, 9, True, "Priya Patel", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150", 4.8, now_str, "approved", False, False),
-                    ("p-105", "vikram.aditya@payent.com", "Meta Quest 3 512GB VR Headset", "Next-gen mixed reality headset with dual Touch Plus controllers.", 990, "https://images.unsplash.com/photo-1622979135225-d2ba269bc1bd?auto=format&fit=crop&w=800&q=80", "VR & AR", 4.6, 7, True, "Vikram Aditya", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150", 4.6, now_str, "approved", False, False),
-                ]
-                cursor.executemany(
-                    "INSERT INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at, status, featured, hidden) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    products_data
-                )
-                print("Seeded realistic products.")
-
-            # Seed realistic orders if empty
-            cursor.execute("SELECT COUNT(*) as count FROM orders")
-            if cursor.fetchone()["count"] == 0:
-                orders_data = [
-                    ("ord-801", "ananya.rao@payent.com", "p-101", "Sony FX3 Cinema Line Full-Frame Camera", "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80", "2026-07-25", "2026-07-30", 12495, "active", "2026-07-25T10:00:00.000Z"),
-                    ("ord-802", "vikram.aditya@payent.com", "p-102", "DJI Mavic 3 Pro Cine Premium Combo", "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=800&q=80", "2026-07-20", "2026-07-23", 9600, "completed", "2026-07-20T14:30:00.000Z"),
-                    ("ord-803", "ananya.rao@payent.com", "p-103", "Apple MacBook Pro 16\" M3 Max (64GB RAM)", "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80", "2026-07-26", "2026-07-31", 9250, "active", "2026-07-26T09:15:00.000Z"),
-                ]
-                cursor.executemany(
-                    "INSERT INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    orders_data
-                )
-                print("Seeded realistic orders.")
-
-            # Seed realistic payments if empty
-            cursor.execute("SELECT COUNT(*) as count FROM payments")
-            if cursor.fetchone()["count"] == 0:
-                payments_data = [
-                    ("pay-801", "ord-801", "ananya.rao@payent.com", "Ananya Rao", 12495, "successful", "UPI / GPay", "#", "2026-07-25T10:00:00.000Z"),
-                    ("pay-802", "ord-802", "vikram.aditya@payent.com", "Vikram Aditya", 9600, "successful", "Credit Card", "#", "2026-07-20T14:30:00.000Z"),
-                    ("pay-803", "ord-803", "ananya.rao@payent.com", "Ananya Rao", 9250, "successful", "Net Banking", "#", "2026-07-26T09:15:00.000Z"),
-                ]
-                cursor.executemany(
-                    "INSERT INTO payments (id, booking_id, customer_id, customer_name, amount, status, method, invoice_url, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    payments_data
-                )
-                print("Seeded realistic payments.")
+            print("Purged all test listings, orders, payments, and reset total revenue and active listings to 0.")
 
             # Seed categories
             cursor.execute("SELECT COUNT(*) as count FROM categories")

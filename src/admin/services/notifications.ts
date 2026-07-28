@@ -166,4 +166,8 @@ export const notificationsService = {
     const response = await adminApi.get("/dashboard/activities");
     return response.data;
   },
+
+  async resetAnalytics(): Promise<void> {
+    await adminApi.post("/dashboard/reset-analytics");
+  },
 };
