@@ -2,61 +2,55 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import {
   ShieldCheck,
-  UserCheck,
-  Tag,
   Zap,
-  Headphones,
+  RotateCcw,
+  Sparkles,
   Search,
+  Headphones,
 } from "lucide-react";
 
 const features = [
   {
     icon: ShieldCheck,
-    title: "Secure Payments",
-    desc: "Every transaction is encrypted and protected. Pay with confidence using any major payment method.",
-    gradient: "from-orange-500 to-amber-600",
-    glow: "rgba(234,88,12,0.35)",
-    bg: "rgba(234,88,12,0.08)",
-  },
-  {
-    icon: UserCheck,
-    title: "Verified Users",
-    desc: "All lenders undergo identity verification and reviews, so you always know who you're dealing with.",
-    gradient: "from-sky-500 to-blue-500",
-    glow: "rgba(14,165,233,0.35)",
-    bg: "rgba(14,165,233,0.08)",
-  },
-  {
-    icon: Tag,
-    title: "Affordable Rentals",
-    desc: "Access premium electronics at a fraction of the retail price. Save up to 90% versus buying.",
-    gradient: "from-teal-500 to-emerald-500",
-    glow: "rgba(20,184,166,0.35)",
-    bg: "rgba(20,184,166,0.08)",
+    title: "100% Insured Equipment",
+    desc: "Every rental is protected up to ₹5 Lakhs against damage or loss. Rent and list with total peace of mind.",
+    glow: "rgba(255, 90, 95, 0.35)",
+    bg: "rgba(255, 90, 95, 0.1)",
   },
   {
     icon: Zap,
-    title: "Instant Booking",
-    desc: "Browse, select, and confirm your rental in minutes. Real-time availability and instant confirmations.",
-    gradient: "from-amber-500 to-yellow-500",
-    glow: "rgba(245,158,11,0.35)",
-    bg: "rgba(245,158,11,0.08)",
+    title: "Instant Same-Day Booking",
+    desc: "No waiting period. Connect directly with local lenders and pick up your gear or get express delivery.",
+    glow: "rgba(255, 90, 95, 0.35)",
+    bg: "rgba(255, 90, 95, 0.1)",
   },
   {
-    icon: Headphones,
-    title: "24/7 Support",
-    desc: "Our dedicated support team is always available to help with any issues before, during, or after your rental.",
-    gradient: "from-rose-500 to-red-500",
-    glow: "rgba(244,63,94,0.35)",
-    bg: "rgba(244,63,94,0.08)",
+    icon: RotateCcw,
+    title: "Flexible Rental Durations",
+    desc: "Need a camera for a 3-hour shoot or a drone for a 2-week trip? Customize your exact rental period effortlessly.",
+    glow: "rgba(255, 90, 95, 0.35)",
+    bg: "rgba(255, 90, 95, 0.1)",
+  },
+  {
+    icon: Sparkles,
+    title: "Verified Users & Gear",
+    desc: "Aadhaar & DigiLocker KYC verification for all members ensures a secure, trusted peer-to-peer community.",
+    glow: "rgba(255, 90, 95, 0.35)",
+    bg: "rgba(255, 90, 95, 0.1)",
   },
   {
     icon: Search,
-    title: "Smart Search",
-    desc: "Powerful filters by category, price, availability, and location let you find exactly what you need fast.",
-    gradient: "from-orange-600 to-red-500",
-    glow: "rgba(234,88,12,0.35)",
-    bg: "rgba(234,88,12,0.08)",
+    title: "Transparent & Zero Hidden Fees",
+    desc: "What you see is what you pay. Clear daily rates, refundable security deposits, and instant online receipts.",
+    glow: "rgba(255, 90, 95, 0.35)",
+    bg: "rgba(255, 90, 95, 0.1)",
+  },
+  {
+    icon: Headphones,
+    title: "24/7 Dedicated Support",
+    desc: "Our active support team is available round-the-clock via chat or phone to assist with any rental queries.",
+    glow: "rgba(255, 90, 95, 0.35)",
+    bg: "rgba(255, 90, 95, 0.1)",
   },
 ];
 
@@ -70,29 +64,26 @@ const containerVariants = {
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: "easeOut" as const },
+  },
 };
 
 export function Features() {
   const ref = useRef<HTMLElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-80px" });
+  const isInView = useInView(ref, { once: true, margin: "-60px" });
 
   return (
     <section
       id="features"
       ref={ref}
-      className="relative py-28 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #120c08 0%, #0f0906 100%)" }}
+      className="relative py-28 px-4 sm:px-6 overflow-hidden bg-[#000000] text-white border-t border-[#1a1a1a]"
     >
-      {/* Background gradient */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(234,88,12,0.08), transparent)",
-        }}
-      />
+      {/* Subtle Dot Grid */}
+      <div className="absolute inset-0 bg-[radial-gradient(#FF5A5F_1px,transparent_1px)] [background-size:32px_32px] opacity-5 pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto">
         {/* Section heading */}
@@ -100,32 +91,16 @@ export function Features() {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7 }}
-          className="text-center mb-16"
+          className="text-center mb-16 space-y-3"
         >
-          <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-5"
-            style={{
-              background: "rgba(234,88,12,0.12)",
-              border: "1px solid rgba(234,88,12,0.3)",
-            }}
-          >
-            <span className="text-xs font-semibold text-orange-400 tracking-wider uppercase">
-              Why Payent
-            </span>
+          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 bg-[#FF5A5F]/10 border border-[#FF5A5F]/30 text-[#FF5A5F] text-xs font-extrabold tracking-widest uppercase">
+            WHY PAYENT
           </div>
-          <h2
-            className="text-4xl sm:text-5xl font-extrabold tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 30%, #fed7aa 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            Everything you need to rent smarter
+          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white font-display">
+            Everything you need to <span className="text-[#FF5A5F]">rent smarter</span>
           </h2>
-          <p className="mt-4 text-slate-400 text-base max-w-xl mx-auto">
-            We've built every feature to make renting electronics effortless, safe, and
-            surprisingly affordable.
+          <p className="mt-3 text-slate-400 text-base max-w-xl mx-auto font-normal">
+            We've built every feature to make renting tech gear effortless, safe, and surprisingly affordable.
           </p>
         </motion.div>
 
@@ -142,45 +117,25 @@ export function Features() {
               variants={cardVariants}
               whileHover={{ y: -6, scale: 1.01 }}
               transition={{ type: "spring", stiffness: 300, damping: 24 }}
-              className="group relative rounded-2xl p-7 cursor-default overflow-hidden"
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                backdropFilter: "blur(20px)",
-              }}
+              className="group relative rounded-2xl p-7 cursor-default overflow-hidden bg-[#0A0A0A] border border-[#222222] hover:border-[#FF5A5F]/40 transition-all duration-300 shadow-xl"
             >
               {/* Hover glow border */}
-              <motion.div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at 50% 0%, ${f.glow}, transparent 70%)`,
-                  border: `1px solid ${f.glow}`,
-                }}
-              />
-
-              {/* Card background glow on hover */}
               <div
                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 style={{
-                  background: `radial-gradient(ellipse 80% 60% at 50% -20%, ${f.bg}, transparent)`,
+                  background: `radial-gradient(circle at 50% 0%, ${f.glow}, transparent 70%)`,
                 }}
               />
 
               {/* Icon */}
-              <div
-                className="relative flex-shrink-0 h-12 w-12 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
-                style={{
-                  background: `linear-gradient(135deg, ${f.bg}, rgba(255,255,255,0.03))`,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <f.icon className="h-6 w-6" style={{ color: f.glow.replace("0.35", "0.9") }} />
+              <div className="relative flex-shrink-0 h-12 w-12 rounded-xl flex items-center justify-center mb-5 bg-[#FF5A5F]/10 border border-[#FF5A5F]/20 text-[#FF5A5F] transition-transform duration-300 group-hover:scale-110">
+                <f.icon className="h-6 w-6" />
               </div>
 
-              <h3 className="text-base font-bold text-white mb-2 group-hover:text-orange-300 transition-colors duration-300">
+              <h3 className="text-base font-bold text-white mb-2 group-hover:text-[#FF5A5F] transition-colors duration-300">
                 {f.title}
               </h3>
-              <p className="text-sm text-slate-500 leading-relaxed group-hover:text-slate-400 transition-colors duration-300">
+              <p className="text-sm text-slate-400 leading-relaxed transition-colors duration-300 font-normal">
                 {f.desc}
               </p>
             </motion.div>

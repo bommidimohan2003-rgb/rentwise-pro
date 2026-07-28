@@ -1,46 +1,67 @@
-import { motion, useInView, useMotionValue, useSpring, animate } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 
-interface StatItem {
-  value: string;
-  numericValue: number;
-  suffix: string;
-  label: string;
-  icon: string;
-  gradient: string;
-}
-
-const stats: StatItem[] = [
-  { value: "10,000+", numericValue: 10000, suffix: "+", label: "Total Rentals", icon: "📦", gradient: "from-orange-500 to-amber-600" },
-  { value: "5,000+", numericValue: 5000, suffix: "+", label: "Happy Users", icon: "👥", gradient: "from-blue-500 to-cyan-500" },
-  { value: "500+", numericValue: 500, suffix: "+", label: "Verified Lenders", icon: "✅", gradient: "from-emerald-500 to-teal-500" },
-  { value: "99%", numericValue: 99, suffix: "%", label: "Satisfaction Rate", icon: "⭐", gradient: "from-amber-500 to-orange-500" },
+const stats = [
+  {
+    numericValue: 50,
+    suffix: "k+",
+    label: "Active Renters",
+    icon: "👥",
+    gradient: "from-[#FF5A5F] to-[#e0484d]",
+  },
+  {
+    numericValue: 12,
+    suffix: "k+",
+    label: "Listings Available",
+    icon: "📦",
+    gradient: "from-[#FF5A5F] to-[#ff7a7e]",
+  },
+  {
+    numericValue: 98,
+    suffix: "%",
+    label: "Satisfaction Rate",
+    icon: "⭐",
+    gradient: "from-amber-400 to-amber-500",
+  },
+  {
+    numericValue: 24,
+    suffix: "/7",
+    label: "Customer Support",
+    icon: "💬",
+    gradient: "from-emerald-400 to-teal-400",
+  },
 ];
 
 function AnimatedCounter({ target, suffix }: { target: number; suffix: string }) {
+  const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-40px" });
-  const motionVal = useMotionValue(0);
-  const spring = useSpring(motionVal, { stiffness: 60, damping: 18 });
+  const isInView = useInView(ref, { once: true });
 
   useEffect(() => {
-    if (inView) {
-      animate(motionVal, target, { duration: 2.5, ease: "easeOut" });
-    }
-  }, [inView, motionVal, target]);
+    if (!isInView) return;
+    let start = 0;
+    const duration = 1800; // ms
+    const stepTime = 20;
+    const steps = duration / stepTime;
+    const increment = target / steps;
 
-  const [display, setDisplay] = useState("0");
-  useEffect(() => {
-    const unsub = spring.on("change", (v) => {
-      const rounded = Math.round(v);
-      setDisplay(rounded >= 1000 ? `${(rounded / 1000).toFixed(1)}k` : String(rounded));
-    });
-    return unsub;
-  }, [spring]);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, stepTime);
+
+    return () => clearInterval(timer);
+  }, [isInView, target]);
 
   return (
     <span ref={ref}>
-      {display}{suffix}
+      {count}
+      {suffix}
     </span>
   );
 }
@@ -53,34 +74,26 @@ export function Stats() {
     <section
       id="stats"
       ref={ref}
-      className="relative py-24 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0f0906 0%, #120c08 100%)" }}
+      className="relative py-24 px-4 sm:px-6 overflow-hidden bg-[#000000] text-white border-t border-[#1a1a1a]"
     >
-      {/* Divider glow */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 pointer-events-none"
-        style={{ background: "linear-gradient(to bottom, transparent, rgba(234,88,12,0.4), transparent)" }}
-      />
+      {/* Subtle Dot Grid */}
+      <div className="absolute inset-0 bg-[radial-gradient(#FF5A5F_1px,transparent_1px)] [background-size:32px_32px] opacity-5 pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center mb-14"
+          className="text-center mb-14 space-y-3"
         >
-          <h2
-            className="text-4xl sm:text-5xl font-extrabold tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 30%, #fed7aa 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            Numbers that speak for us
+          <p className="text-xs font-extrabold tracking-widest text-[#FF5A5F] uppercase">
+            TRUST &amp; METRICS
+          </p>
+          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white font-display">
+            Numbers that <span className="text-[#FF5A5F]">speak for us</span>
           </h2>
-          <p className="mt-3 text-slate-400 text-base">
-            Trusted by thousands of renters and lenders across the country.
+          <p className="mt-3 text-slate-400 text-base max-w-lg mx-auto font-normal">
+            Trusted by thousands of creators and lenders across the country.
           </p>
         </motion.div>
 
@@ -92,19 +105,13 @@ export function Stats() {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: i * 0.1 }}
               whileHover={{ y: -4, scale: 1.02 }}
-              className="group relative rounded-2xl p-7 text-center overflow-hidden"
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                backdropFilter: "blur(20px)",
-              }}
+              className="group relative rounded-2xl p-7 text-center overflow-hidden bg-[#0A0A0A] border border-[#222222] hover:border-[#FF5A5F]/40 transition-all duration-300 shadow-xl"
             >
               {/* Hover glow */}
               <div
                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 style={{
-                  background: "radial-gradient(circle at 50% 0%, rgba(234,88,12,0.12), transparent 70%)",
-                  border: "1px solid rgba(234,88,12,0.2)",
+                  background: "radial-gradient(circle at 50% 0%, rgba(255,90,95,0.12), transparent 70%)",
                 }}
               />
 
@@ -119,7 +126,7 @@ export function Stats() {
               </div>
 
               {/* Label */}
-              <div className="mt-2 text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">
+              <div className="mt-2 text-sm font-medium text-slate-400 group-hover:text-slate-200 transition-colors">
                 {s.label}
               </div>
             </motion.div>
