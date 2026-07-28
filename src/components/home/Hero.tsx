@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Play, Users, Package, CheckCircle2, Star, Camera, Headphones, Laptop } from "lucide-react";
+import { ArrowRight, Play, Users, Package, CheckCircle2, Star, Camera, Headphones, Laptop, Plane, Wrench, BatteryCharging, Video } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export function Hero() {
@@ -46,7 +46,7 @@ export function Hero() {
               transition={{ delay: 0.2 }}
               className="text-slate-300 text-base md:text-lg max-w-xl leading-relaxed font-normal"
             >
-              Payent is a peer-to-peer rental marketplace where you can rent items you need or earn by listing what you own.
+              Payent is a peer-to-peer rental marketplace where you can rent cameras, drones, laptops, power tools, and gear or earn by listing what you own.
             </motion.p>
 
             {/* CTA Buttons */}
@@ -61,6 +61,7 @@ export function Hero() {
                 className="bg-[#FF5A5F] hover:bg-[#e0484d] text-white font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg shadow-[#FF5A5F]/30 transition-all duration-200 active:scale-95 flex items-center gap-2"
               >
                 <span>Explore Items</span>
+                <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/about"
@@ -110,7 +111,7 @@ export function Hero() {
             </motion.div>
           </div>
 
-          {/* Right Column: Visual Stage with Coral Circle, Person Cutout & Floating Product Cards */}
+          {/* Right Column: Visual Stage with Coral Circle, Tech Equipment Video & Animated Tool Badges */}
           <div className="lg:col-span-5 relative flex items-center justify-center min-h-[420px] md:min-h-[500px]">
             
             {/* Giant Coral Circle Backdrop */}
@@ -121,21 +122,39 @@ export function Hero() {
               className="absolute w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] rounded-full bg-[#FF5A5F] shadow-2xl shadow-[#FF5A5F]/40"
             />
 
-            {/* Person Cutout Image (Holding smartphone) */}
+            {/* Tech Equipment Video Showcase (Replaces human portrait) */}
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="relative z-10 w-[280px] sm:w-[350px] aspect-square flex items-center justify-center"
+              className="relative z-10 w-[280px] sm:w-[350px] aspect-square rounded-full border-4 border-white/20 shadow-2xl overflow-hidden bg-slate-900 flex items-center justify-center"
             >
-              <img
-                src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=700&q=80"
-                alt="Happy Payent Renter"
-                className="w-full h-full object-cover rounded-full border-4 border-white/20 shadow-2xl"
-              />
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                poster="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=700&q=80"
+                className="w-full h-full object-cover scale-105"
+              >
+                <source
+                  src="https://cdn.coverr.co/videos/coverr-camera-lens-in-action-5254/1080p.mp4"
+                  type="video/mp4"
+                />
+              </video>
+              
+              {/* Overlay Tech Live Badge */}
+              <div className="absolute top-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 text-[10px] font-bold text-white">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF5A5F] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF5A5F]"></span>
+                </span>
+                <Video className="h-3 w-3 text-[#FF5A5F]" />
+                <span>Tech Gear Live Loop</span>
+              </div>
             </motion.div>
 
-            {/* Floating Card 1: Top Right Camera Card */}
+            {/* Floating Card 1: Top Right 4K DSLR Camera */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8, x: 20 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -151,7 +170,7 @@ export function Hero() {
               </div>
             </motion.div>
 
-            {/* Floating Card 2: Left Headphones Card */}
+            {/* Floating Card 2: Left Audio Gear */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8, x: -20 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -167,12 +186,12 @@ export function Hero() {
               </div>
             </motion.div>
 
-            {/* Floating Card 3: Right Laptop Card */}
+            {/* Floating Card 3: Right MacBook Pro */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8, x: 20 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               transition={{ delay: 0.6 }}
-              className="absolute bottom-20 -right-4 sm:-right-8 z-20 bg-white text-slate-900 p-3 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3 w-36 rotate-[4deg]"
+              className="absolute bottom-24 -right-4 sm:-right-8 z-20 bg-white text-slate-900 p-3 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3 w-36 rotate-[4deg]"
             >
               <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-[#FF5A5F] shrink-0">
                 <Laptop className="h-5 w-5" />
@@ -183,25 +202,19 @@ export function Hero() {
               </div>
             </motion.div>
 
-            {/* Floating Badge 4: Bottom Overlay Badge "Top Renter John D. ⭐ 4.9" */}
+            {/* Floating Card 4: Bottom Left Power Tools */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ delay: 0.7 }}
-              className="absolute bottom-2 left-4 sm:left-8 z-30 bg-white text-slate-900 px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3"
+              className="absolute bottom-4 left-0 sm:left-2 z-30 bg-white text-slate-900 p-3 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3 w-40"
             >
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"
-                alt="John D."
-                className="h-9 w-9 rounded-full object-cover border border-slate-200"
-              />
-              <div className="text-left">
-                <p className="text-[10px] font-bold text-[#FF5A5F] uppercase tracking-wider">Top Renter</p>
-                <p className="text-xs font-extrabold text-slate-900">John D.</p>
-                <div className="flex items-center gap-1 text-[10px] font-bold text-amber-500">
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  <span>4.9 (120+ rentals)</span>
-                </div>
+              <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-[#FF5A5F] shrink-0">
+                <Wrench className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-800 leading-tight">Electric Tools</p>
+                <p className="text-[10px] font-bold text-[#FF5A5F]">₹750/day</p>
               </div>
             </motion.div>
 
