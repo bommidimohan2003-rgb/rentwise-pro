@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Filter, Search as SearchIcon } from "lucide-react";
+import { Filter, Search as SearchIcon, MapPin, SlidersHorizontal, Sparkles } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
 import { categories, products } from "@/utils/mockData";
@@ -18,8 +18,8 @@ export default function Categories() {
   const [q, setLocalQ] = useState(search.q || "");
   const [sort, setSort] = useState<Sort>("featured");
   const [max, setMax] = useState(10000);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
 
-  // Sync state if search.q changes externally
   useEffect(() => {
     setLocalQ(search.q || "");
   }, [search.q]);
@@ -87,34 +87,100 @@ export default function Categories() {
 
   return (
     <MainLayout>
-      <section className="mx-auto max-w-7xl px-4 md:px-6 py-10">
-        <h1 className="text-3xl md:text-4xl font-bold">Marketplace</h1>
-        <p className="mt-2 text-muted-foreground">
-          Browse {products.length}+ items from verified lenders.
-        </p>
+      <section className="mx-auto max-w-7xl px-4 md:px-6 py-10 space-y-8">
+        
+        {/* Top Location & Header Row (Reference App Mockup Style) */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-6">
+          <div className="space-y-1.5 text-left">
+            <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 bg-[#FF5A5F]/10 border border-[#FF5A5F]/30 text-[#FF5A5F] text-xs font-extrabold">
+              <MapPin className="h-3.5 w-3.5" />
+              <span>Bangalore • Mumbai • Delhi NCR</span>
+            </div>
+            <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight font-display">
+              Discover <span className="text-[#FF5A5F]">Your Next Gear</span>
+            </h1>
+            <p className="text-xs md:text-sm text-slate-500 font-medium">
+              Browse {products.length}+ insured cameras, drones, laptops, and audio gear nearby.
+            </p>
+          </div>
 
-        <div className="mt-8 flex flex-col lg:flex-row gap-6">
-          <aside className="lg:w-64 shrink-0 space-y-6">
-            <div className="card-premium p-5">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Filter className="h-4 w-4" /> Filters
+          {/* Quick Stats Pill */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="rounded-2xl bg-card border border-border p-3.5 text-center shadow-sm">
+              <p className="text-xs font-bold text-slate-400">Total Items</p>
+              <p className="text-xl font-extrabold text-[#FF5A5F]">{products.length}+</p>
+            </div>
+            <div className="rounded-2xl bg-card border border-border p-3.5 text-center shadow-sm">
+              <p className="text-xs font-bold text-slate-400">Protection</p>
+              <p className="text-xl font-extrabold text-[#0B2545] dark:text-white">₹5 Lakhs</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Bar & Category Pills Bar (Reference App Mockup Style) */}
+        <div className="space-y-4">
+          <div className="relative max-w-2xl">
+            <div className="flex items-center gap-3 rounded-full bg-card border border-border/90 px-4 py-3 shadow-md focus-within:border-[#FF5A5F] focus-within:ring-2 focus-within:ring-[#FF5A5F]/20 transition-all">
+              <SearchIcon className="h-5 w-5 text-slate-400 shrink-0" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder-slate-400 font-medium"
+                placeholder="Search Place, Camera, Drone, Laptop, or Mic..."
+              />
+              <button
+                onClick={() => setShowMobileFilter(!showMobileFilter)}
+                className="lg:hidden h-8 w-8 rounded-full bg-[#FF5A5F]/10 text-[#FF5A5F] flex items-center justify-center cursor-pointer"
+                aria-label="Filter"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Category Horizontal Filter Pills (Reference App Mockup Style) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            <button
+              onClick={() => setCat("all")}
+              className={cn(
+                "px-5 py-2 text-xs font-extrabold rounded-full transition-all duration-200 cursor-pointer shrink-0",
+                cat === "all"
+                  ? "bg-[#FF5A5F] text-white shadow-md shadow-[#FF5A5F]/30"
+                  : "bg-card hover:bg-secondary text-foreground border border-border"
+              )}
+            >
+              All Items
+            </button>
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setCat(c.id)}
+                className={cn(
+                  "px-5 py-2 text-xs font-extrabold rounded-full transition-all duration-200 cursor-pointer shrink-0",
+                  cat === c.id
+                    ? "bg-[#FF5A5F] text-white shadow-md shadow-[#FF5A5F]/30"
+                    : "bg-card hover:bg-secondary text-foreground border border-border"
+                )}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Grid & Filters Layout */}
+        <div className="flex flex-col lg:flex-row gap-6 pt-2">
+          {/* Desktop Filter Sidebar */}
+          <aside className="lg:w-64 shrink-0 space-y-6 hidden lg:block">
+            <div className="rounded-3xl bg-card border border-border p-6 shadow-sm space-y-6 text-left">
+              <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2 border-b border-border pb-3">
+                <Filter className="h-4 w-4 text-[#FF5A5F]" /> Filter Options
               </h3>
-              <div className="space-y-4">
+              
+              <div className="space-y-5">
                 <div>
-                  <label className="text-xs uppercase text-muted-foreground">Search</label>
-                  <div className="mt-1 flex items-center gap-2 rounded-xl border border-border px-3 h-10">
-                    <SearchIcon className="h-4 w-4 text-muted-foreground" />
-                    <input
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      className="flex-1 bg-transparent outline-none text-sm"
-                      placeholder="Search..."
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs uppercase text-muted-foreground">
-                    Max price / day: ₹{max}
+                  <label className="text-xs uppercase font-extrabold text-slate-400 tracking-wider">
+                    Max Price: <span className="text-[#FF5A5F]">₹{max}/day</span>
                   </label>
                   <input
                     type="range"
@@ -123,64 +189,60 @@ export default function Categories() {
                     step={100}
                     value={max}
                     onChange={(e) => setMax(Number(e.target.value))}
-                    className="w-full mt-2 accent-primary"
+                    className="w-full mt-3 accent-[#FF5A5F] cursor-pointer"
                   />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setCat("all")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-medium border",
-                      cat === "all"
-                        ? "btn-gradient border-transparent"
-                        : "border-border hover:bg-secondary",
-                    )}
+
+                <div>
+                  <label className="text-xs uppercase font-extrabold text-slate-400 tracking-wider block mb-2">
+                    Sort By
+                  </label>
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as Sort)}
+                    className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-bold text-foreground outline-none focus:border-[#FF5A5F]"
                   >
-                    All
-                  </button>
-                  {categories.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setCat(c.id)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-xs font-medium border",
-                        cat === c.id
-                          ? "btn-gradient border-transparent"
-                          : "border-border hover:bg-secondary",
-                      )}
-                    >
-                      {c.name}
-                    </button>
-                  ))}
+                    <option value="featured">Featured Items</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="rating">Top Rated</option>
+                  </select>
                 </div>
+
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full"
+                  className="w-full border-border hover:border-[#FF5A5F]/50 text-xs font-bold rounded-xl"
                   onClick={handleResetFilters}
                 >
-                  Reset
+                  Reset Filters
                 </Button>
               </div>
             </div>
           </aside>
 
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm text-muted-foreground">{filtered.length} results</p>
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as Sort)}
-                className="h-10 px-3 rounded-xl border border-border bg-card text-sm"
-              >
-                <option value="featured">Featured</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-                <option value="rating">Top Rated</option>
-              </select>
+          {/* Product Grid Area */}
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-slate-500">
+                Showing <span className="text-foreground font-black">{filtered.length}</span> rental listings
+              </p>
+              <div className="hidden lg:block">
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as Sort)}
+                  className="h-9 px-3 rounded-xl border border-border bg-card text-xs font-bold text-foreground outline-none"
+                >
+                  <option value="featured">Sort: Featured</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                  <option value="rating">Top Rated</option>
+                </select>
+              </div>
             </div>
+
             {filtered.length ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
                 {filtered.map((p, i) => (
                   <ProductCard key={p.id} product={p} index={i} />
                 ))}
@@ -193,6 +255,7 @@ export default function Categories() {
             )}
           </div>
         </div>
+
       </section>
     </MainLayout>
   );
