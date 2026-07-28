@@ -252,13 +252,10 @@ export function Hero() {
                     <p className="text-[10px] font-bold text-[#FF5A5F] uppercase tracking-wider">
                       {activeItem.category}
                     </p>
-                    <p className="text-xs font-extrabold text-white truncate max-w-[170px]">
+                    <p className="text-xs font-extrabold text-white truncate">
                       {activeItem.title}
                     </p>
                   </div>
-                  <span className="text-xs font-extrabold text-white bg-[#FF5A5F] px-2.5 py-1 rounded-lg shrink-0">
-                    {activeItem.price}
-                  </span>
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -271,17 +268,17 @@ export function Hero() {
                 animate={{ opacity: 1, scale: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.8, x: 20 }}
                 transition={{ duration: 0.35 }}
-                className="absolute top-2 right-0 sm:-right-4 z-20 bg-white text-slate-900 p-3 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3 w-40"
+                className="absolute top-2 right-0 sm:-right-4 z-20 bg-white text-slate-900 p-3 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3"
               >
                 <div className="h-10 w-10 rounded-xl bg-[#FF5A5F]/10 flex items-center justify-center text-[#FF5A5F] shrink-0">
                   <ActiveIcon className="h-5 w-5" />
                 </div>
-                <div className="text-left overflow-hidden">
+                <div className="text-left overflow-hidden pr-2">
                   <p className="text-[11px] font-bold text-slate-800 leading-tight truncate">
                     {activeItem.category}
                   </p>
-                  <p className="text-[10px] font-extrabold text-[#FF5A5F]">
-                    {activeItem.price}
+                  <p className="text-[10px] font-bold text-[#FF5A5F]">
+                    {activeItem.title}
                   </p>
                 </div>
               </motion.div>
