@@ -129,7 +129,7 @@ export function Hero() {
               className="relative z-10 w-[280px] sm:w-[350px] aspect-square flex items-center justify-center"
             >
               <img
-                src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=700&q=80"
+                src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=700&q=80"
                 alt="Happy Payent Renter"
                 className="w-full h-full object-cover rounded-full border-4 border-white/20 shadow-2xl"
               />
