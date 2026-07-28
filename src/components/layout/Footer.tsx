@@ -30,25 +30,12 @@ const socials = [
 
 export function Footer() {
   return (
-    <footer
-      className="relative overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #120c08 0%, #0a0704 100%)" }}
-    >
+    <footer className="relative overflow-hidden bg-[#000000] text-slate-300 border-t border-[#1a1a1a]">
       {/* Top divider glow */}
       <div
         className="absolute top-0 inset-x-0 h-px"
         style={{
-          background:
-            "linear-gradient(to right, transparent, rgba(234,88,12,0.4), rgba(220,38,38,0.3), transparent)",
-        }}
-      />
-
-      {/* Ambient glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 40% at 20% 0%, rgba(234,88,12,0.05), transparent)",
+          background: "linear-gradient(to right, transparent, rgba(255,90,95,0.6), transparent)",
         }}
       />
 
@@ -59,157 +46,114 @@ export function Footer() {
           <div className="lg:col-span-2 space-y-5">
             <Link to="/" className="flex items-center gap-2.5 group w-fit">
               <div
-                className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white flex-shrink-0"
+                className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white"
                 style={{
-                  background: "linear-gradient(135deg, #ff5a5f 0%, #e0484d 100%)",
-                  boxShadow: "0 0 20px rgba(255,90,95,0.3)",
+                  background: "linear-gradient(135deg, #FF5A5F 0%, #e0484d 100%)",
+                  boxShadow: "0 0 20px rgba(255,90,95,0.4)",
                 }}
               >
                 P
               </div>
-              <span
-                className="text-xl font-extrabold tracking-tight"
-                style={{
-                  background: "linear-gradient(135deg, #ffffff, #fed7aa)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
+              <span className="text-xl font-extrabold tracking-tight text-white font-display">
                 PAYENT
               </span>
             </Link>
-
-            <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
-              Rent premium electronics and professional tools from verified lenders anytime,
-              anywhere. Insured, fast, and affordable.
+            <p className="text-xs text-slate-400 leading-relaxed max-w-sm font-normal">
+              India's premier peer-to-peer tech gear rental platform. Access flagship cameras, drones, laptops, audio gear, and tools insured up to ₹5 Lakhs.
             </p>
 
-            {/* Contact info */}
-            <div className="space-y-2">
-              {[
-                { icon: Mail, text: "support@payent.com" },
-                { icon: Phone, text: "+91 98765 43210" },
-                { icon: MapPin, text: "Mumbai, India" },
-              ].map(({ icon: Icon, text }) => (
-                <div key={text} className="flex items-center gap-2 text-xs text-slate-600">
-                  <Icon className="h-3.5 w-3.5 text-orange-500/60" />
-                  <span>{text}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Social icons */}
-            <div className="flex gap-2">
-              {socials.map(({ icon: Icon, href, label }) => (
-                <a
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  className="h-9 w-9 flex items-center justify-center rounded-full transition-all duration-300"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "rgba(234,88,12,0.15)";
-                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(234,88,12,0.4)";
-                    (e.currentTarget as HTMLElement).style.boxShadow = "0 0 12px rgba(234,88,12,0.2)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.08)";
-                    (e.currentTarget as HTMLElement).style.boxShadow = "none";
-                  }}
-                >
-                  <Icon className="h-4 w-4 text-slate-500" />
-                </a>
-              ))}
+            <div className="space-y-2 pt-2 text-xs text-slate-400 font-medium">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5 text-[#FF5A5F]" />
+                <span>Bangalore • Mumbai • Delhi NCR • Hyderabad</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 text-[#FF5A5F]" />
+                <span>support@payent.com</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="h-3.5 w-3.5 text-[#FF5A5F]" />
+                <span>+91 800-PAYENT-PRO</span>
+              </div>
             </div>
           </div>
 
-          {/* Quick links */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-5">
-              Product
+          {/* Quick Links */}
+          <div className="space-y-4 text-left">
+            <h4 className="text-xs font-extrabold uppercase tracking-widest text-[#FF5A5F]">
+              Marketplace
             </h4>
-            <ul className="space-y-3">
-              {quickLinks.map((l) => (
-                <li key={l.label}>
+            <ul className="space-y-2.5 text-xs font-medium">
+              {quickLinks.map((link) => (
+                <li key={link.label}>
                   <Link
-                    to={l.to}
-                    className="text-sm text-slate-500 hover:text-orange-400 transition-colors duration-200"
+                    to={link.to}
+                    className="text-slate-400 hover:text-white transition-colors duration-200"
                   >
-                    {l.label}
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Account */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-5">
+          {/* Account Links */}
+          <div className="space-y-4 text-left">
+            <h4 className="text-xs font-extrabold uppercase tracking-widest text-[#FF5A5F]">
               Account
             </h4>
-            <ul className="space-y-3">
-              {accountLinks.map((l) => (
-                <li key={l.label}>
+            <ul className="space-y-2.5 text-xs font-medium">
+              {accountLinks.map((link) => (
+                <li key={link.label}>
                   <Link
-                    to={l.to}
-                    className="text-sm text-slate-500 hover:text-orange-400 transition-colors duration-200"
+                    to={link.to}
+                    className="text-slate-400 hover:text-white transition-colors duration-200"
                   >
-                    {l.label}
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Newsletter mini */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-5">
-              Stay Updated
+          {/* Legal Links */}
+          <div className="space-y-4 text-left">
+            <h4 className="text-xs font-extrabold uppercase tracking-widest text-[#FF5A5F]">
+              Legal
             </h4>
-            <p className="text-xs text-slate-600 mb-4 leading-relaxed">
-              Get weekly rental deals and new arrivals directly in your inbox.
-            </p>
-            <div
-              className="flex rounded-xl overflow-hidden"
-              style={{ border: "1px solid rgba(255,255,255,0.08)" }}
-            >
-              <input
-                type="email"
-                placeholder="your@email.com"
-                className="flex-1 bg-transparent px-3 py-2.5 text-xs text-slate-300 placeholder:text-slate-700 outline-none"
-              />
-              <button
-                className="px-3 py-2.5 text-xs font-semibold text-white flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #ff5a5f, #e0484d)" }}
-              >
-                Go
-              </button>
-            </div>
+            <ul className="space-y-2.5 text-xs font-medium">
+              {legalLinks.map((link) => (
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    className="text-slate-400 hover:text-white transition-colors duration-200"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div
-          className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
-        >
-          <p className="text-xs text-slate-700">
-            © {new Date().getFullYear()} Payent Inc. All rights reserved.
-          </p>
-          <div className="flex gap-5">
-            {legalLinks.map((l) => (
-              <a
-                key={l.label}
-                href={l.href}
-                className="text-xs text-slate-700 hover:text-slate-400 transition-colors"
-              >
-                {l.label}
-              </a>
-            ))}
+        <div className="pt-8 border-t border-[#1a1a1a] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 font-medium">
+          <p>© {new Date().getFullYear()} Payent Technologies Inc. All rights reserved.</p>
+
+          <div className="flex items-center gap-4">
+            {socials.map((s) => {
+              const Icon = s.icon;
+              return (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  aria-label={s.label}
+                  className="h-8 w-8 rounded-full bg-[#121212] border border-[#222222] text-slate-400 hover:text-[#FF5A5F] hover:border-[#FF5A5F]/40 flex items-center justify-center transition-all duration-200"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              );
+            })}
           </div>
         </div>
       </div>

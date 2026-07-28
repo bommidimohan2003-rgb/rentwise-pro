@@ -1,6 +1,6 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
-import { Mail, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 
 export function Newsletter() {
   const ref = useRef<HTMLElement>(null);
@@ -17,116 +17,55 @@ export function Newsletter() {
     <section
       id="newsletter"
       ref={ref}
-      className="relative py-20 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0a0704 0%, #120c08 100%)" }}
+      className="relative py-20 px-4 sm:px-6 overflow-hidden bg-[#000000] text-white border-t border-[#1a1a1a]"
     >
-      {/* Ambient glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse 50% 60% at 50% 50%, rgba(234,88,12,0.06), transparent)",
-        }}
-      />
-
       <div className="relative max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7 }}
-          className="relative rounded-3xl p-10 md:p-14 text-center overflow-hidden"
-          style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            backdropFilter: "blur(30px)",
-          }}
+          className="relative rounded-3xl p-8 md:p-14 text-center overflow-hidden bg-[#0A0A0A] border border-[#222222] shadow-2xl space-y-6"
         >
-          {/* Inner glow */}
-          <div
-            className="absolute inset-0 rounded-3xl pointer-events-none"
-            style={{
-              background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(234,88,12,0.1), transparent)",
-            }}
-          />
-
           {/* Badge */}
-          <div
-            className="relative z-10 inline-flex items-center gap-2 rounded-full px-3 py-1 mb-5"
-            style={{
-              background: "rgba(234,88,12,0.12)",
-              border: "1px solid rgba(234,88,12,0.3)",
-            }}
-          >
-            <Sparkles className="h-3 w-3 text-orange-400" />
-            <span className="text-xs font-semibold text-orange-400 tracking-wider uppercase">
-              Newsletter
-            </span>
+          <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1 bg-[#FF5A5F]/10 border border-[#FF5A5F]/30 text-[#FF5A5F] text-xs font-bold uppercase tracking-widest">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>PAYENT INSIDER</span>
           </div>
 
-          <h2
-            className="relative z-10 text-3xl sm:text-4xl font-extrabold tracking-tight mb-3"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 30%, #c4b5fd 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            Stay in the loop
-          </h2>
-          <p className="relative z-10 text-sm text-slate-400 mb-8 max-w-md mx-auto">
-            Weekly picks of new arrivals, seasonal deals, and pro creator tips — delivered to your
-            inbox.
+          <h3 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white font-display">
+            Get exclusive rental deals <br className="hidden sm:inline" />
+            &amp; new gear alerts
+          </h3>
+
+          <p className="text-slate-400 text-xs sm:text-sm max-w-md mx-auto font-normal">
+            No spam. Just top gear drops, lender discounts, and creator perks delivered once a week.
           </p>
 
           {done ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="relative z-10 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold"
-              style={{
-                background: "rgba(16,185,129,0.15)",
-                border: "1px solid rgba(16,185,129,0.4)",
-                color: "#6ee7b7",
-              }}
-            >
-              <span className="text-lg">🎉</span>
-              You're subscribed! Welcome aboard.
-            </motion.div>
+            <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-6 py-3 rounded-xl font-bold text-xs sm:text-sm">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              <span>You're subscribed! Check your inbox soon.</span>
+            </div>
           ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="relative z-10 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
-            >
-              <div
-                className="flex-1 flex items-center gap-2 rounded-xl px-4 py-3"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
-              >
-                <Mail className="h-4 w-4 text-slate-500 flex-shrink-0" />
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3 max-w-md mx-auto pt-2">
+              <div className="relative w-full">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <input
-                  id="newsletter-email"
                   type="email"
-                  placeholder="you@email.com"
+                  required
+                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-600 outline-none"
+                  className="w-full bg-[#141414] border border-[#262626] focus:border-[#FF5A5F] text-white placeholder-slate-500 text-xs sm:text-sm rounded-xl pl-10 pr-4 py-3.5 focus:outline-none transition-colors"
                 />
               </div>
-              <motion.button
+              <button
                 type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="group inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white"
-                style={{
-                  background: "linear-gradient(135deg, #ff5a5f, #e0484d)",
-                  boxShadow: "0 0 20px rgba(255,90,95,0.35)",
-                }}
+                className="w-full sm:w-auto shrink-0 bg-[#FF5A5F] hover:bg-[#e0484d] text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-lg shadow-[#FF5A5F]/25 transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
-                Subscribe
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </motion.button>
+                <span>Subscribe</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </form>
           )}
         </motion.div>
