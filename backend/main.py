@@ -113,6 +113,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()}
+
 @app.get("/")
 def read_root():
     return {

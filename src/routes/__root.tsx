@@ -150,9 +150,26 @@ function RootComponent() {
     show: boolean;
     loginUrl: "/login" | "/admin/login";
   }>({ show: false, loginUrl: "/login" });
+
   const [isOffline, setIsOffline] = useState(
     typeof navigator !== "undefined" ? !navigator.onLine : false
   );
+
+  const checkConnectivity = async () => {
+    if (typeof navigator !== "undefined" && navigator.onLine) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        await fetch("/api/health", { method: "GET", signal: controller.signal });
+        clearTimeout(timeoutId);
+        setIsOffline(false);
+      } catch {
+        setIsOffline(false);
+      }
+    } else {
+      setIsOffline(true);
+    }
+  };
 
   useEffect(() => {
     // Fetch custom products listed in the database and prepend them to the catalog
@@ -175,23 +192,37 @@ function RootComponent() {
     };
 
     // Online/Offline handlers
-    const handleOnline = () => setIsOffline(false);
+    const handleOnline = () => checkConnectivity();
     const handleOffline = () => setIsOffline(true);
+    const handleNetworkOfflineEvent = () => checkConnectivity();
 
     window.addEventListener("payent-session-expired", handleSessionExpired);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+    window.addEventListener("payent-network-offline", handleNetworkOfflineEvent);
+
+    // Initial check
+    if (typeof navigator !== "undefined" && navigator.onLine && isOffline) {
+      checkConnectivity();
+    }
 
     return () => {
       window.removeEventListener("payent-session-expired", handleSessionExpired);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("payent-network-offline", handleNetworkOfflineEvent);
     };
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isOffline && <NoInternetState mode="banner" />}
+      {isOffline && (
+        <NoInternetState
+          mode="banner"
+          onRetry={checkConnectivity}
+          onDismiss={() => setIsOffline(false)}
+        />
+      )}
       
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
