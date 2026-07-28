@@ -1362,6 +1362,26 @@ def admin_charts(current_admin: dict = Depends(check_admin_user)):
                     { "name": "DJI Inspire 3 Drone", "rentals": 28, "revenue": 9800 },
                     { "name": "MacBook Pro 16\" M3 Max", "rentals": 19, "revenue": 1805 },
                 ]
+            # Category distribution share
+            cursor.execute("""
+                SELECT category as name, COUNT(*) as value
+                FROM custom_products
+                GROUP BY category
+            """)
+            cat_rows = cursor.fetchall()
+            category_distribution = []
+            for c in cat_rows:
+                if c["name"]:
+                    category_distribution.append({"name": c["name"], "value": c["value"]})
+
+            if not category_distribution:
+                category_distribution = [
+                    {"name": "Cameras", "value": 4},
+                    {"name": "Drones", "value": 2},
+                    {"name": "Laptops", "value": 3},
+                    {"name": "Audio", "value": 2},
+                    {"name": "VR & AR", "value": 1},
+                ]
     finally:
         conn.close()
         
@@ -1402,6 +1422,7 @@ def admin_charts(current_admin: dict = Depends(check_admin_user)):
             { "name": "Jun", "products": 220 },
             { "name": "Jul", "products": 270 + int(total_products) },
         ],
+        "categoryDistribution": category_distribution,
         "topProducts": top_products
     }
 

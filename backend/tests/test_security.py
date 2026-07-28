@@ -156,5 +156,13 @@ class TestSecurityFunctions(unittest.TestCase):
         self.assertEqual(ctx.exception.status_code, 401)
         self.assertIn("revoked", ctx.exception.detail.lower())
 
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            execute_query("DELETE FROM users WHERE email IN ('test_regular_user@payent.com', 'test_admin_user@payent.com', 'user_a_idor@payent.com', 'user_b_idor@payent.com', 'revocation_user@payent.com')")
+            execute_query("DELETE FROM orders WHERE id = 'idor-test-order-100'")
+        except Exception:
+            pass
+
 if __name__ == "__main__":
     unittest.main()
