@@ -44,6 +44,7 @@ import { Loader } from "../components/layout/Loader";
 import { notificationsService, DashboardStats, DashboardCharts, DashboardActivity } from "../services/notifications";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { adminWS } from "../services/websocket";
 
 const COLORS = ["#ea580c", "#10b981", "#f97316", "#06b6d4", "#ec4899"];
 
@@ -54,9 +55,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [statsData, chartsData, activitiesData] = await Promise.all([
         notificationsService.getDashboardStats(),
         notificationsService.getDashboardCharts(),
@@ -67,14 +68,44 @@ export default function Dashboard() {
       setActivities(activitiesData);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load dashboard statistics.");
+      if (!silent) toast.error("Failed to load dashboard statistics.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
+
+    // Subscribe to real-time WebSocket broadcast events
+    const unsub = adminWS.subscribe("*", (event) => {
+      // Background silent refresh of dashboard metrics
+      loadData(true);
+
+      // Prepend event to activity stream live
+      if (event.data && typeof event.data === "object") {
+        const d = event.data as Record<string, unknown>;
+        const newAct: DashboardActivity = {
+          id: `live-${Date.now()}`,
+          type: event.type,
+          title: `Live Event: ${event.type.replace(".", " ").toUpperCase()}`,
+          detail: (d.title || d.fullName || d.email || d.id || "Platform activity recorded") as string,
+          time: "Just now",
+          icon: event.type.includes("user")
+            ? "UserPlus"
+            : event.type.includes("booking")
+            ? "Calendar"
+            : event.type.includes("payment")
+            ? "CreditCard"
+            : event.type.includes("product")
+            ? "Camera"
+            : "Info",
+        };
+        setActivities((prev) => [newAct, ...prev.slice(0, 9)]);
+      }
+    });
+
+    return () => unsub();
   }, []);
 
   const getActivityIcon = (type: string) => {
@@ -140,8 +171,8 @@ export default function Dashboard() {
 
         {/* Action Button */}
         <button
-          onClick={loadData}
-          className="btn-gradient text-xs px-4 py-2.5 rounded-xl font-bold"
+          onClick={() => loadData()}
+          className="btn-gradient text-xs px-4 py-2.5 rounded-xl font-bold font-display cursor-pointer"
         >
           Refresh Data
         </button>

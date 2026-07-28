@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
 
+import { adminWS } from "../services/websocket";
+
 export default function Payments() {
   const [payments, setPayments] = useState<AdminPayment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,22 +27,49 @@ export default function Payments() {
   const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
-  const fetchPayments = async () => {
+  const fetchPayments = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const data = await paymentsService.getPayments();
       setPayments(data);
     } catch {
-      setError("Failed to load payment transactions.");
-      toast.error("Failed to load transactions.");
+      if (!silent) {
+        setError("Failed to load payment transactions.");
+        toast.error("Failed to load transactions.");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchPayments();
+
+    const unsubCreated = adminWS.subscribe("payment.created", (event) => {
+      const newPay = event.data as AdminPayment;
+      if (newPay && newPay.id) {
+        setPayments((prev) => {
+          if (prev.some((p) => p.id === newPay.id)) return prev;
+          return [newPay, ...prev];
+        });
+        toast.info(`Live: New payment transaction ₹${newPay.amount || 0} received!`);
+      }
+    });
+
+    const unsubRefunded = adminWS.subscribe("payment.refunded", (event) => {
+      const refunded = event.data as AdminPayment;
+      if (refunded && refunded.id) {
+        setPayments((prev) =>
+          prev.map((p) => (p.id === refunded.id ? { ...p, status: "refunded" } : p))
+        );
+      }
+    });
+
+    return () => {
+      unsubCreated();
+      unsubRefunded();
+    };
   }, []);
 
   const handleSort = (key: string) => {

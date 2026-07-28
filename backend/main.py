@@ -3,13 +3,14 @@ import random
 import secrets
 import logging
 import json
+import asyncio
 from typing import Optional
 from dotenv import load_dotenv
 
 # Load env variables at application startup
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, Header, Depends, status, Request, Response
+from fastapi import FastAPI, HTTPException, Header, Depends, status, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 
@@ -362,6 +363,17 @@ def register_verify(data: RegisterVerifySchema, request: Request):
     clear_failed_auth_attempts(key)
     logger.info(f"User registration successful for {clean_email} with role={role}")
     
+    broadcast_admin_event("user.registered", {
+        "id": clean_email,
+        "fullName": display_name,
+        "email": clean_email,
+        "phone": clean_phone,
+        "role": role,
+        "status": "active",
+        "verified": True,
+        "createdAt": datetime.datetime.utcnow().isoformat()
+    })
+    
     return {"success": True, "message": "Account created successfully."}
 
 @app.post("/api/login")
@@ -652,6 +664,33 @@ def fetch_orders(email: str = Depends(get_current_user_email)):
 @app.post("/api/orders")
 def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
     create_order(email, data.dict())
+    user = get_user(email)
+    cust_name = user["full_name"] if user else email.split("@")[0]
+    
+    broadcast_admin_event("booking.created", {
+        "id": data.id,
+        "productId": data.productId,
+        "productTitle": data.productTitle,
+        "productImage": data.productImage,
+        "customerId": email,
+        "customerName": cust_name,
+        "startDate": data.startDate,
+        "endDate": data.endDate,
+        "amount": data.total,
+        "status": "pending",
+        "createdAt": datetime.datetime.utcnow().isoformat()
+    })
+    
+    broadcast_admin_event("payment.created", {
+        "id": f"pay-{data.id}",
+        "bookingId": data.id,
+        "customerId": email,
+        "customerName": cust_name,
+        "amount": data.total,
+        "status": "successful",
+        "method": "Credit Card",
+        "createdAt": datetime.datetime.utcnow().isoformat()
+    })
     return {"success": True}
 
 @app.post("/api/orders/{id}/cancel")
@@ -664,6 +703,7 @@ def cancel_user_order(id: str, email: str = Depends(get_current_user_email)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to cancel this order.")
     cancel_order(id)
     logger.info(f"Order {id} cancelled by {email}")
+    broadcast_admin_event("booking.cancelled", {"id": id, "status": "cancelled"})
     return {"success": True, "message": "Order cancelled successfully."}
 
 @app.get("/api/orders/{id}")
@@ -957,6 +997,101 @@ def check_admin_user(current_user_email: str = Depends(get_current_user_email)) 
             detail="Forbidden. Admin access required."
         )
     return user
+
+# ----------------------------------------------------------------------
+# Admin Live WebSocket Real-Time Broadcast Infrastructure
+# ----------------------------------------------------------------------
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                disconnected.append(connection)
+        for conn in disconnected:
+            self.disconnect(conn)
+
+ws_manager = ConnectionManager()
+
+def broadcast_admin_event(event_type: str, data: dict):
+    """Safely broadcast platform events to all active admin WebSocket connections."""
+    # Sanitize payload: strip sensitive fields like password_hash or internal secrets
+    sanitized = {k: v for k, v in data.items() if k not in ("password_hash", "otp", "password")}
+    payload = {
+        "type": event_type,
+        "data": sanitized,
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(ws_manager.broadcast(payload))
+        except RuntimeError:
+            asyncio.run(ws_manager.broadcast(payload))
+    except Exception as e:
+        logger.warning(f"Could not broadcast WS event {event_type}: {e}")
+
+@app.websocket("/api/admin/ws")
+async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):
+    # 1. Rate limiting WebSocket connection attempts per IP
+    client_ip = websocket.client.host if websocket.client else "unknown"
+    key = f"ws_conn:{client_ip}"
+    is_locked, secs = record_failed_auth_attempt(key, max_attempts=30, lock_duration_secs=60)
+    if is_locked:
+        await websocket.close(code=4003, reason=f"Too many connection attempts. Locked for {secs} seconds.")
+        return
+
+    # 2. Strict Authentication & Role Check Guard
+    if not token:
+        await websocket.close(code=4003, reason="Forbidden. Admin JWT token required.")
+        return
+
+    payload = decode_access_token(token, expected_type="access")
+    if not payload or "sub" not in payload:
+        await websocket.close(code=4003, reason="Forbidden. Invalid or expired token.")
+        return
+
+    user = get_user(payload["sub"])
+    if not user or user.get("role") != "admin":
+        await websocket.close(code=4003, reason="Forbidden. Admin access required.")
+        return
+
+    # 3. Connection Accepted
+    await ws_manager.connect(websocket)
+    logger.info(f"WebSocket admin session connected for {user['email']} from IP {client_ip}")
+
+    try:
+        await websocket.send_json({
+            "type": "connection.established",
+            "data": {
+                "email": user["email"],
+                "role": user["role"],
+                "serverTime": datetime.datetime.utcnow().isoformat()
+            }
+        })
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_json({"type": "pong", "timestamp": datetime.datetime.utcnow().isoformat()})
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+        logger.info(f"WebSocket admin disconnected: {user['email']}")
+    except Exception as e:
+        ws_manager.disconnect(websocket)
+        logger.warning(f"WebSocket error for {user['email']}: {e}")
 
 @app.post("/api/admin/auth/login")
 def admin_login(data: LoginRequestSchema, request: Request, response: Response):
@@ -1369,7 +1504,7 @@ def admin_update_user(id: str, data: UserUpdateSchema, current_admin: dict = Dep
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Updated user {id}", "Users", "127.0.0.1"))
     
     updated = get_user(id)
-    return {
+    res_user = {
         "id": updated["email"],
         "fullName": updated["full_name"],
         "email": updated["email"],
@@ -1380,6 +1515,8 @@ def admin_update_user(id: str, data: UserUpdateSchema, current_admin: dict = Dep
         "avatar": updated["avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
         "createdAt": updated["created_at"]
     }
+    broadcast_admin_event("user.updated", res_user)
+    return res_user
 
 @app.delete("/api/admin/users/{id}")
 def admin_delete_user(id: str, current_admin: dict = Depends(check_admin_user)):
@@ -1396,6 +1533,7 @@ def admin_delete_user(id: str, current_admin: dict = Depends(check_admin_user)):
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted user {id}", "Users", "127.0.0.1"))
     
+    broadcast_admin_event("user.deleted", {"id": id, "email": id})
     return {"success": True}
 
 @app.post("/api/admin/users/{id}/suspend")
@@ -1414,7 +1552,7 @@ def admin_suspend_user(id: str, current_admin: dict = Depends(check_admin_user))
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Suspended user {id}", "Users", "127.0.0.1"))
     
     updated = get_user(id)
-    return {
+    res_user = {
         "id": updated["email"],
         "fullName": updated["full_name"],
         "email": updated["email"],
@@ -1425,6 +1563,8 @@ def admin_suspend_user(id: str, current_admin: dict = Depends(check_admin_user))
         "avatar": updated["avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
         "createdAt": updated["created_at"]
     }
+    broadcast_admin_event("user.updated", res_user)
+    return res_user
 
 @app.post("/api/admin/users/{id}/activate")
 def admin_activate_user(id: str, current_admin: dict = Depends(check_admin_user)):
@@ -1442,7 +1582,7 @@ def admin_activate_user(id: str, current_admin: dict = Depends(check_admin_user)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Activated user {id}", "Users", "127.0.0.1"))
     
     updated = get_user(id)
-    return {
+    res_user = {
         "id": updated["email"],
         "fullName": updated["full_name"],
         "email": updated["email"],
@@ -1453,6 +1593,8 @@ def admin_activate_user(id: str, current_admin: dict = Depends(check_admin_user)
         "avatar": updated["avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
         "createdAt": updated["created_at"]
     }
+    broadcast_admin_event("user.updated", res_user)
+    return res_user
 
 # Agents
 @app.get("/api/admin/agents")
@@ -1742,6 +1884,7 @@ def admin_delete_product(id: str, current_admin: dict = Depends(check_admin_user
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted product {id}", "Inventory", "127.0.0.1"))
     
+    broadcast_admin_event("product.deleted", {"id": id})
     return {"success": True}
 
 @app.post("/api/admin/products/{id}/approve")
@@ -1755,7 +1898,9 @@ def admin_approve_product(id: str, current_admin: dict = Depends(check_admin_use
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Approved product {id}", "Inventory", "127.0.0.1"))
     
-    return admin_get_product(id, current_admin)
+    res_prod = admin_get_product(id, current_admin)
+    broadcast_admin_event("product.updated", res_prod)
+    return res_prod
 
 @app.post("/api/admin/products/{id}/reject")
 def admin_reject_product(id: str, current_admin: dict = Depends(check_admin_user)):
@@ -1768,7 +1913,9 @@ def admin_reject_product(id: str, current_admin: dict = Depends(check_admin_user
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Rejected product {id}", "Inventory", "127.0.0.1"))
     
-    return admin_get_product(id, current_admin)
+    res_prod = admin_get_product(id, current_admin)
+    broadcast_admin_event("product.updated", res_prod)
+    return res_prod
 
 @app.post("/api/admin/products/{id}/toggle-feature")
 def admin_toggle_feature_product(id: str, current_admin: dict = Depends(check_admin_user)):
@@ -1862,7 +2009,7 @@ def admin_create_category(data: CategorySchema, current_admin: dict = Depends(ch
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Created category {data.name}", "Inventory", "127.0.0.1"))
     
-    return {
+    res_cat = {
         "id": cat_id,
         "name": data.name,
         "icon": data.icon or "Laptop",
@@ -1870,6 +2017,8 @@ def admin_create_category(data: CategorySchema, current_admin: dict = Depends(ch
         "color": data.color or "bg-gray-500/10 text-gray-500",
         "enabled": data.enabled
     }
+    broadcast_admin_event("category.created", res_cat)
+    return res_cat
 
 @app.put("/api/admin/categories/{id}")
 def admin_update_category(id: str, data: CategorySchema, current_admin: dict = Depends(check_admin_user)):
@@ -1929,6 +2078,7 @@ def admin_delete_category(id: str, current_admin: dict = Depends(check_admin_use
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted category {id}", "Inventory", "127.0.0.1"))
     
+    broadcast_admin_event("category.deleted", {"id": id})
     return {"success": True}
 
 # Bookings
@@ -1993,7 +2143,7 @@ def admin_cancel_booking(id: str, current_admin: dict = Depends(check_admin_user
     finally:
         conn.close()
         
-    return {
+    res_b = {
         "id": r["id"],
         "productId": r["product_id"],
         "productTitle": r["product_title"],
@@ -2008,6 +2158,8 @@ def admin_cancel_booking(id: str, current_admin: dict = Depends(check_admin_user
         "status": r["status"],
         "createdAt": r["created_at"]
     }
+    broadcast_admin_event("booking.cancelled", res_b)
+    return res_b
 
 @app.post("/api/admin/bookings/{id}/complete")
 def admin_complete_booking(id: str, current_admin: dict = Depends(check_admin_user)):
@@ -2034,7 +2186,7 @@ def admin_complete_booking(id: str, current_admin: dict = Depends(check_admin_us
     finally:
         conn.close()
         
-    return {
+    res_b = {
         "id": r["id"],
         "productId": r["product_id"],
         "productTitle": r["product_title"],
@@ -2049,6 +2201,8 @@ def admin_complete_booking(id: str, current_admin: dict = Depends(check_admin_us
         "status": r["status"],
         "createdAt": r["created_at"]
     }
+    broadcast_admin_event("booking.updated", res_b)
+    return res_b
 
 @app.post("/api/admin/bookings/{id}/refund")
 def admin_refund_booking(id: str, current_admin: dict = Depends(check_admin_user)):
@@ -2140,7 +2294,7 @@ def admin_refund_payment(id: str, current_admin: dict = Depends(check_admin_user
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Refunded payment transaction {id}", "Payments", "127.0.0.1"))
     
-    return {
+    res_p = {
         "id": pay["id"],
         "bookingId": pay["booking_id"],
         "customerId": pay["customer_id"],
@@ -2151,6 +2305,8 @@ def admin_refund_payment(id: str, current_admin: dict = Depends(check_admin_user
         "invoiceUrl": pay["invoice_url"],
         "createdAt": pay["created_at"]
     }
+    broadcast_admin_event("payment.refunded", res_p)
+    return res_p
 
 # Reviews
 @app.get("/api/admin/reviews")

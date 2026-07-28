@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
 
+import { adminWS } from "../services/websocket";
+
 export default function Products() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,23 +48,56 @@ export default function Products() {
 
   const navigate = useNavigate();
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const data = await productsService.getProducts();
       setProducts(data);
     } catch (err) {
       console.error(err);
-      setError("Failed to fetch product catalog.");
-      toast.error("Failed to load products list.");
+      if (!silent) {
+        setError("Failed to fetch product catalog.");
+        toast.error("Failed to load products list.");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchProducts();
+
+    const unsubCreated = adminWS.subscribe("product.created", (event) => {
+      const newProd = event.data as AdminProduct;
+      if (newProd && newProd.id) {
+        setProducts((prev) => {
+          if (prev.some((p) => p.id === newProd.id)) return prev;
+          return [newProd, ...prev];
+        });
+        toast.info(`Live: New product "${newProd.title || newProd.id}" submitted!`);
+      }
+    });
+
+    const unsubUpdated = adminWS.subscribe("product.updated", (event) => {
+      const updated = event.data as AdminProduct;
+      if (updated && updated.id) {
+        setProducts((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+      }
+    });
+
+    const unsubDeleted = adminWS.subscribe("product.deleted", (event) => {
+      const deleted = event.data as { id: string };
+      if (deleted && deleted.id) {
+        setProducts((prev) => prev.filter((p) => p.id !== deleted.id));
+      }
+    });
+
+    return () => {
+      unsubCreated();
+      unsubUpdated();
+      unsubDeleted();
+    };
   }, []);
 
   const handleSort = (key: string) => {

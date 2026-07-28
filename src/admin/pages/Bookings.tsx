@@ -17,6 +17,7 @@ import { AdminBooking } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
+import { adminWS } from "../services/websocket";
 
 export default function Bookings() {
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
@@ -33,22 +34,57 @@ export default function Bookings() {
   const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
-  const fetchBookings = async () => {
+  const fetchBookings = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const data = await bookingsService.getBookings();
       setBookings(data);
     } catch {
-      setError("Failed to load bookings database.");
-      toast.error("Failed to load bookings list.");
+      if (!silent) {
+        setError("Failed to load bookings database.");
+        toast.error("Failed to load bookings list.");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchBookings();
+
+    const unsubCreated = adminWS.subscribe("booking.created", (event) => {
+      const newBooking = event.data as AdminBooking;
+      if (newBooking && newBooking.id) {
+        setBookings((prev) => {
+          if (prev.some((b) => b.id === newBooking.id)) return prev;
+          return [newBooking, ...prev];
+        });
+        toast.info(`Live: New booking #${newBooking.id} received!`);
+      }
+    });
+
+    const unsubUpdated = adminWS.subscribe("booking.updated", (event) => {
+      const updated = event.data as AdminBooking;
+      if (updated && updated.id) {
+        setBookings((prev) => prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)));
+      }
+    });
+
+    const unsubCancelled = adminWS.subscribe("booking.cancelled", (event) => {
+      const cancelled = event.data as { id: string; status: string };
+      if (cancelled && cancelled.id) {
+        setBookings((prev) =>
+          prev.map((b) => (b.id === cancelled.id ? { ...b, status: "cancelled" } : b))
+        );
+      }
+    });
+
+    return () => {
+      unsubCreated();
+      unsubUpdated();
+      unsubCancelled();
+    };
   }, []);
 
   const handleSort = (key: string) => {

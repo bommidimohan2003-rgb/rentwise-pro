@@ -19,6 +19,7 @@ import { AdminUser } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
+import { adminWS } from "../services/websocket";
 
 export default function Users() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -52,23 +53,57 @@ export default function Users() {
   const [editStatus, setEditStatus] = useState<"active" | "suspended">("active");
   const [editVerified, setEditVerified] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const data = await usersService.getUsers();
       setUsers(data);
     } catch (err) {
       console.error(err);
-      setError("Failed to load users record from database.");
-      toast.error("Failed to load users list.");
+      if (!silent) setError("Failed to fetch users. Please try again.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchUsers();
+
+    const unsubRegister = adminWS.subscribe("user.registered", (event) => {
+      const newUser = event.data as AdminUser;
+      if (newUser && newUser.email) {
+        setUsers((prev) => {
+          if (prev.some((u) => u.email === newUser.email)) return prev;
+          return [newUser, ...prev];
+        });
+        toast.info(`Live: New user ${newUser.fullName || newUser.email} registered!`);
+      }
+    });
+
+    const unsubUpdate = adminWS.subscribe("user.updated", (event) => {
+      const updatedUser = event.data as Partial<AdminUser>;
+      if (updatedUser && (updatedUser.id || updatedUser.email)) {
+        const key = updatedUser.id || updatedUser.email;
+        setUsers((prev) =>
+          prev.map((u) => (u.id === key || u.email === key ? { ...u, ...updatedUser } : u))
+        );
+      }
+    });
+
+    const unsubDelete = adminWS.subscribe("user.deleted", (event) => {
+      const deleted = event.data as { id: string; email?: string };
+      if (deleted && (deleted.id || deleted.email)) {
+        const key = deleted.id || deleted.email;
+        setUsers((prev) => prev.filter((u) => u.id !== key && u.email !== key));
+      }
+    });
+
+    return () => {
+      unsubRegister();
+      unsubUpdate();
+      unsubDelete();
+    };
   }, []);
 
   // Sort callback
