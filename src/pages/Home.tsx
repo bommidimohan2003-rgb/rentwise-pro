@@ -43,23 +43,19 @@ export default function Home() {
     <MainLayout>
       <JsonLd schema={orgSchema} />
       <JsonLd schema={websiteSchema} />
-      {/* Full-screen animated hero with floating gadgets */}
+      {/* Hero section */}
       <Hero />
-      {/* Animated counter stats */}
-      <Stats />
-      {/* Glassmorphism feature cards */}
-      <Features />
-      {/* Category cards grid */}
+      {/* Popular Categories */}
       <Categories />
-      {/* 3-step how it works */}
+      {/* How it works */}
       <HowItWorks />
-      {/* Why choose us tiles */}
+      {/* Trust & Security Banner */}
       <WhyChoose />
-      {/* Testimonial review cards */}
+      {/* Testimonials */}
       <Testimonials />
-      {/* Large gradient CTA */}
+      {/* Call to action */}
       <CallToAction />
-      {/* Newsletter signup */}
+      {/* Newsletter */}
       <Newsletter />
     </MainLayout>
   );

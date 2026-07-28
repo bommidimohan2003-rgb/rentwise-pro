@@ -1,161 +1,50 @@
-import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
-import { ShieldCheck, Truck, Wallet, BadgeCheck, Clock, Headphones } from "lucide-react";
+import { motion } from "framer-motion";
+import { ShieldCheck, UserCheck, Headphones } from "lucide-react";
 
-const items = [
+const trustItems = [
   {
     icon: ShieldCheck,
-    title: "Fully Insured",
-    body: "Every rental is protected up to ₹5 Lakhs. Rent with total peace of mind.",
-    gradient: "from-orange-500 to-amber-600",
-    glow: "rgba(234,88,12,0.3)",
+    title: "Secure Payments",
+    subtitle: "Safe & encrypted transactions",
   },
   {
-    icon: Truck,
-    title: "Fast Delivery",
-    body: "Same-day delivery in 40+ cities. Contactless pickup available too.",
-    gradient: "from-blue-500 to-cyan-500",
-    glow: "rgba(59,130,246,0.3)",
-  },
-  {
-    icon: Wallet,
-    title: "Save 90%+",
-    body: "Skip the retail price tag. Access flagship gear when you actually need it.",
-    gradient: "from-emerald-500 to-teal-500",
-    glow: "rgba(16,185,129,0.3)",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Verified Lenders",
-    body: "ID-checked owners with real reviews. No sketchy handoffs, ever.",
-    gradient: "from-amber-500 to-orange-500",
-    glow: "rgba(245,158,11,0.3)",
-  },
-  {
-    icon: Clock,
-    title: "Flexible Duration",
-    body: "Rent by the day, week, or month. Scale rental duration to your exact needs.",
-    gradient: "from-pink-500 to-rose-500",
-    glow: "rgba(236,72,153,0.3)",
+    icon: UserCheck,
+    title: "Verified Users",
+    subtitle: "Trusted community of renters",
   },
   {
     icon: Headphones,
     title: "24/7 Support",
-    body: "Round-the-clock help from our expert support team whenever you need it.",
-    gradient: "from-orange-600 to-red-500",
-    glow: "rgba(234,88,12,0.3)",
+    subtitle: "We're here to help anytime",
   },
 ];
 
 export function WhyChoose() {
-  const ref = useRef<HTMLElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-60px" });
-
   return (
-    <section
-      id="why-choose"
-      ref={ref}
-      className="relative py-28 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #120c08 0%, #0f0906 100%)" }}
-    >
-      {/* Ambient */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse 60% 40% at 30% 50%, rgba(234,88,12,0.05), transparent)",
-        }}
-      />
-
-      <div className="relative max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7 }}
-          className="text-center mb-16"
-        >
-          <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-5"
-            style={{
-              background: "rgba(245,158,11,0.1)",
-              border: "1px solid rgba(245,158,11,0.3)",
-            }}
-          >
-            <span className="text-xs font-semibold text-amber-400 tracking-wider uppercase">
-              Our Advantage
-            </span>
-          </div>
-          <h2
-            className="text-4xl sm:text-5xl font-extrabold tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 30%, #fcd34d 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            Why creators choose Payent
-          </h2>
-          <p className="mt-4 text-slate-400 text-base max-w-lg mx-auto">
-            Built for professionals. Priced for everyone. Here's what sets us apart.
-          </p>
-        </motion.div>
-
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {items.map((item, i) => (
-            <motion.div
-              key={item.title}
-              initial={{ opacity: 0, y: 40 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: i * 0.08 }}
-              whileHover={{ y: -6 }}
-              className="group relative rounded-2xl p-7 flex items-start gap-5 overflow-hidden"
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                backdropFilter: "blur(20px)",
-              }}
-            >
-              {/* Hover glow */}
-              <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at 0% 50%, ${item.glow.replace("0.3", "0.08")}, transparent 70%)`,
-                  border: `1px solid ${item.glow}`,
-                }}
-              />
-
-              {/* Icon */}
+    <section className="bg-[#F7F9FB] border-t border-b border-slate-200/80 py-12">
+      <div className="mx-auto max-w-7xl px-4 md:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {trustItems.map((item, idx) => {
+            const IconComp = item.icon;
+            return (
               <motion.div
-                whileHover={{ rotate: [0, -8, 8, 0], scale: 1.1 }}
-                transition={{ duration: 0.4 }}
-                className="relative flex-shrink-0 h-12 w-12 rounded-xl flex items-center justify-center"
-                style={{
-                  background: `linear-gradient(135deg, ${item.glow.replace("0.3", "0.15")}, rgba(255,255,255,0.02))`,
-                  border: `1px solid ${item.glow}`,
-                }}
+                key={item.title}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="bg-white border border-slate-200/80 rounded-2xl p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow duration-300"
               >
-                <item.icon
-                  className="h-6 w-6"
-                  style={{ color: item.glow.replace("0.3", "0.9") }}
-                />
+                <div className="h-12 w-12 rounded-xl bg-[#FF5A5F]/10 text-[#FF5A5F] flex items-center justify-center shrink-0">
+                  <IconComp className="h-6 w-6" />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-extrabold text-base text-[#0B2545]">{item.title}</h4>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">{item.subtitle}</p>
+                </div>
               </motion.div>
-
-              <div className="relative">
-                <h3 className="font-bold text-base text-white mb-1.5 group-hover:text-transparent group-hover:bg-clip-text transition-all duration-300"
-                  style={{
-                    backgroundImage: `linear-gradient(135deg, white, ${item.glow.replace("0.3", "1")})`,
-                    WebkitBackgroundClip: "text",
-                  }}
-                >
-                  {item.title}
-                </h3>
-                <p className="text-sm text-slate-500 leading-relaxed group-hover:text-slate-400 transition-colors">
-                  {item.body}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

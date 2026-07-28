@@ -22,9 +22,9 @@ import { toast } from "sonner";
 
 const links = [
   { to: "/", label: "Home" },
-  { to: "/categories", label: "Categories" },
-  { to: "/become-lender", label: "Become a Lender" },
-  { to: "/about", label: "About" },
+  { to: "/categories", label: "Browse" },
+  { to: "/about", label: "How It Works" },
+  { to: "/about", label: "About Us" },
   { to: "/contact", label: "Contact" },
 ] as const;
 
