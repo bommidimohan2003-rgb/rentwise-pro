@@ -238,26 +238,6 @@ export function Hero() {
                 <span>Auto-Cycling Gear (2s)</span>
               </div>
 
-              {/* Item Info Overlay at bottom of circle */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeItem.id + "-info"}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute bottom-4 left-4 right-4 bg-slate-950/85 backdrop-blur-md p-3 rounded-2xl border border-white/15 text-left flex items-center justify-between"
-                >
-                  <div>
-                    <p className="text-[10px] font-bold text-[#FF5A5F] uppercase tracking-wider">
-                      {activeItem.category}
-                    </p>
-                    <p className="text-xs font-extrabold text-white truncate">
-                      {activeItem.title}
-                    </p>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
             </div>
 
             {/* Floating Dynamic Badge 1: Top Right Active Item Card */}
