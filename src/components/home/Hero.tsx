@@ -83,7 +83,7 @@ export function Hero() {
             className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.08] max-w-5xl mx-auto text-foreground"
           >
             Rent Flagship{" "}
-            <span className="relative inline-block min-w-[220px] sm:min-w-[420px] text-left h-[1.1em] align-bottom overflow-hidden text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-accent">
+            <span className="relative inline-block min-w-[220px] sm:min-w-[420px] text-left h-[1.1em] align-bottom overflow-hidden text-transparent bg-clip-text bg-gradient-to-r from-primary via-orange-500 to-accent">
               <AnimatePresence mode="wait">
                 <motion.span
                   key={index}
@@ -259,7 +259,7 @@ export function Hero() {
           </div>
 
           <div className="spatial-card p-5 text-left space-y-3 bg-card/80 backdrop-blur-md -translate-y-2">
-            <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center font-bold">
+            <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <h4 className="font-bold text-sm text-foreground">Full Damage Protection</h4>

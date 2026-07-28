@@ -87,7 +87,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Peer-to-peer marketplace to rent cameras, drones, laptops and more. Insured. Delivered fast.",
       },
       { name: "author", content: "Payent" },
-      { name: "theme-color", content: "#7c3aed" },
+      { name: "theme-color", content: "#ea580c" },
       { property: "og:title", content: "Payent — Rent premium tech gear" },
       {
         property: "og:description",
@@ -106,7 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap",
       },
     ],
   }),

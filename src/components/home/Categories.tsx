@@ -14,8 +14,8 @@ const categories = [
     name: "Laptops",
     image: laptopImg,
     desc: "MacBooks, ThinkPads & more",
-    color: "from-violet-600/30 to-indigo-700/20",
-    border: "rgba(139,92,246,0.25)",
+    color: "from-orange-600/30 to-amber-700/20",
+    border: "rgba(234,88,12,0.25)",
   },
   {
     id: "cameras",
@@ -73,8 +73,8 @@ const categories = [
     image:
       "https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=200&h=200&q=80",
     desc: "4K, laser, portable projectors",
-    color: "from-purple-600/30 to-fuchsia-700/20",
-    border: "rgba(168,85,247,0.25)",
+    color: "from-amber-600/30 to-red-700/20",
+    border: "rgba(245,158,11,0.25)",
   },
 ];
 
@@ -102,14 +102,14 @@ export function Categories() {
       id="categories"
       ref={ref}
       className="relative py-28 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #080114 0%, #06010f 100%)" }}
+      style={{ background: "linear-gradient(180deg, #120c08 0%, #0f0906 100%)" }}
     >
       {/* Ambient glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(99,102,241,0.06), transparent)",
+            "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(234,88,12,0.06), transparent)",
         }}
       />
 
@@ -125,18 +125,18 @@ export function Categories() {
             <div
               className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-4"
               style={{
-                background: "rgba(99,102,241,0.1)",
-                border: "1px solid rgba(99,102,241,0.3)",
+                background: "rgba(234,88,12,0.1)",
+                border: "1px solid rgba(234,88,12,0.3)",
               }}
             >
-              <span className="text-xs font-semibold text-indigo-400 tracking-wider uppercase">
+              <span className="text-xs font-semibold text-orange-400 tracking-wider uppercase">
                 Browse
               </span>
             </div>
             <h2
               className="text-4xl sm:text-5xl font-extrabold tracking-tight"
               style={{
-                background: "linear-gradient(135deg, #ffffff 30%, #c4b5fd 100%)",
+                background: "linear-gradient(135deg, #ffffff 30%, #fed7aa 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}

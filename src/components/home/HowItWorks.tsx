@@ -11,9 +11,9 @@ const steps = [
     body: "Explore thousands of listings across categories. Use smart filters for location, price, and availability to find the perfect gear.",
     cta: "Explore Now",
     link: "/categories",
-    gradient: "from-violet-500 to-purple-600",
-    glow: "rgba(139,92,246,0.35)",
-    bg: "rgba(139,92,246,0.08)",
+    gradient: "from-orange-500 to-amber-600",
+    glow: "rgba(234,88,12,0.35)",
+    bg: "rgba(234,88,12,0.08)",
   },
   {
     number: "02",
@@ -48,13 +48,13 @@ export function HowItWorks() {
       id="how-it-works"
       ref={ref}
       className="relative py-28 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #06010f 0%, #080114 100%)" }}
+      style={{ background: "linear-gradient(180deg, #0f0906 0%, #120c08 100%)" }}
     >
       {/* Divider line */}
       <div
         className="absolute top-0 inset-x-0 h-px pointer-events-none"
         style={{
-          background: "linear-gradient(to right, transparent, rgba(139,92,246,0.3), transparent)",
+          background: "linear-gradient(to right, transparent, rgba(234,88,12,0.3), transparent)",
         }}
       />
 

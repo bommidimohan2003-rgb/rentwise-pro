@@ -13,7 +13,7 @@ export function CallToAction() {
       id="cta"
       ref={ref}
       className="relative py-28 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #06010f 0%, #0a0118 100%)" }}
+      style={{ background: "linear-gradient(180deg, #120c08 0%, #0a0704 100%)" }}
     >
       {/* Animated orbs */}
       <motion.div
@@ -24,7 +24,7 @@ export function CallToAction() {
           width: 600,
           height: 600,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(234,88,12,0.2) 0%, transparent 70%)",
           top: "-20%",
           left: "-10%",
           filter: "blur(60px)",
@@ -38,7 +38,7 @@ export function CallToAction() {
           width: 500,
           height: 500,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(236,72,153,0.15) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(220,38,38,0.15) 0%, transparent 70%)",
           bottom: "-20%",
           right: "-10%",
           filter: "blur(60px)",
@@ -152,10 +152,10 @@ export function CallToAction() {
               onMouseLeave={() => setHoveredBtn(null)}
               className="group relative inline-flex items-center gap-2 rounded-full px-9 py-4 text-sm font-bold text-white overflow-hidden transition-all duration-300"
               style={{
-                background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #2563eb 100%)",
+                background: "linear-gradient(135deg, #ea580c 0%, #dc2626 50%, #c2410c 100%)",
                 boxShadow: hoveredBtn === "browse"
-                  ? "0 0 60px rgba(124,58,237,0.7), 0 4px 30px rgba(0,0,0,0.3)"
-                  : "0 0 30px rgba(124,58,237,0.4), 0 4px 20px rgba(0,0,0,0.2)",
+                  ? "0 0 60px rgba(234,88,12,0.7), 0 4px 30px rgba(0,0,0,0.3)"
+                  : "0 0 30px rgba(234,88,12,0.4), 0 4px 20px rgba(0,0,0,0.2)",
                 transform: hoveredBtn === "browse" ? "translateY(-2px)" : "none",
               }}
             >

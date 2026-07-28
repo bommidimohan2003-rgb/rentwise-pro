@@ -18,13 +18,13 @@ export function Newsletter() {
       id="newsletter"
       ref={ref}
       className="relative py-20 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0a0118 0%, #080114 100%)" }}
+      style={{ background: "linear-gradient(180deg, #0a0704 0%, #120c08 100%)" }}
     >
       {/* Ambient glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 50% 60% at 50% 50%, rgba(139,92,246,0.06), transparent)",
+          background: "radial-gradient(ellipse 50% 60% at 50% 50%, rgba(234,88,12,0.06), transparent)",
         }}
       />
 
@@ -44,7 +44,7 @@ export function Newsletter() {
           <div
             className="absolute inset-0 rounded-3xl pointer-events-none"
             style={{
-              background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(139,92,246,0.1), transparent)",
+              background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(234,88,12,0.1), transparent)",
             }}
           />
 
@@ -52,12 +52,12 @@ export function Newsletter() {
           <div
             className="relative z-10 inline-flex items-center gap-2 rounded-full px-3 py-1 mb-5"
             style={{
-              background: "rgba(139,92,246,0.12)",
-              border: "1px solid rgba(139,92,246,0.3)",
+              background: "rgba(234,88,12,0.12)",
+              border: "1px solid rgba(234,88,12,0.3)",
             }}
           >
-            <Sparkles className="h-3 w-3 text-violet-400" />
-            <span className="text-xs font-semibold text-violet-400 tracking-wider uppercase">
+            <Sparkles className="h-3 w-3 text-orange-400" />
+            <span className="text-xs font-semibold text-orange-400 tracking-wider uppercase">
               Newsletter
             </span>
           </div>
@@ -120,7 +120,7 @@ export function Newsletter() {
                 whileTap={{ scale: 0.98 }}
                 className="group inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white"
                 style={{
-                  background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                  background: "linear-gradient(135deg, #ea580c, #dc2626)",
                   boxShadow: "0 0 20px rgba(124,58,237,0.35)",
                 }}
               >

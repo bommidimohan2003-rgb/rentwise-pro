@@ -11,8 +11,8 @@ const testimonials = [
       "Payent saved me thousands on camera gear. I rented a Sony A7 IV for a wedding shoot at a fraction of the cost. The lender was super reliable and delivery was on time!",
     rating: 5,
     product: "Sony A7 IV Camera",
-    gradient: "from-violet-900/60 to-purple-900/40",
-    accent: "rgba(139,92,246,0.4)",
+    gradient: "from-amber-900/60 to-orange-900/40",
+    accent: "rgba(234,88,12,0.4)",
   },
   {
     name: "Rohan Mehta",
@@ -90,13 +90,13 @@ export function Testimonials() {
       id="testimonials"
       ref={ref}
       className="relative py-28 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0a0118 0%, #06010f 100%)" }}
+      style={{ background: "linear-gradient(180deg, #0f0906 0%, #120c08 100%)" }}
     >
       {/* Background glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 70% 50% at 50% 100%, rgba(139,92,246,0.07), transparent)",
+          background: "radial-gradient(ellipse 70% 50% at 50% 100%, rgba(234,88,12,0.07), transparent)",
         }}
       />
 

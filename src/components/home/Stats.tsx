@@ -11,7 +11,7 @@ interface StatItem {
 }
 
 const stats: StatItem[] = [
-  { value: "10,000+", numericValue: 10000, suffix: "+", label: "Total Rentals", icon: "📦", gradient: "from-violet-500 to-purple-600" },
+  { value: "10,000+", numericValue: 10000, suffix: "+", label: "Total Rentals", icon: "📦", gradient: "from-orange-500 to-amber-600" },
   { value: "5,000+", numericValue: 5000, suffix: "+", label: "Happy Users", icon: "👥", gradient: "from-blue-500 to-cyan-500" },
   { value: "500+", numericValue: 500, suffix: "+", label: "Verified Lenders", icon: "✅", gradient: "from-emerald-500 to-teal-500" },
   { value: "99%", numericValue: 99, suffix: "%", label: "Satisfaction Rate", icon: "⭐", gradient: "from-amber-500 to-orange-500" },
@@ -54,12 +54,12 @@ export function Stats() {
       id="stats"
       ref={ref}
       className="relative py-24 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #06010f 0%, #080114 100%)" }}
+      style={{ background: "linear-gradient(180deg, #0f0906 0%, #120c08 100%)" }}
     >
       {/* Divider glow */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 pointer-events-none"
-        style={{ background: "linear-gradient(to bottom, transparent, rgba(139,92,246,0.4), transparent)" }}
+        style={{ background: "linear-gradient(to bottom, transparent, rgba(234,88,12,0.4), transparent)" }}
       />
 
       <div className="relative max-w-7xl mx-auto">
@@ -72,7 +72,7 @@ export function Stats() {
           <h2
             className="text-4xl sm:text-5xl font-extrabold tracking-tight"
             style={{
-              background: "linear-gradient(135deg, #ffffff 30%, #c4b5fd 100%)",
+              background: "linear-gradient(135deg, #ffffff 30%, #fed7aa 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
@@ -103,8 +103,8 @@ export function Stats() {
               <div
                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 style={{
-                  background: "radial-gradient(circle at 50% 0%, rgba(139,92,246,0.12), transparent 70%)",
-                  border: "1px solid rgba(139,92,246,0.2)",
+                  background: "radial-gradient(circle at 50% 0%, rgba(234,88,12,0.12), transparent 70%)",
+                  border: "1px solid rgba(234,88,12,0.2)",
                 }}
               />
 

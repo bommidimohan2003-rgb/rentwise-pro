@@ -58,7 +58,7 @@ export function Navbar() {
 
   const navBg = isHomePage
     ? scrolled
-      ? "rgba(10,1,24,0.85)"
+      ? "rgba(18,12,8,0.88)"
       : "transparent"
     : scrolled
       ? undefined
@@ -84,8 +84,8 @@ export function Navbar() {
             whileHover={{ rotate: 12, scale: 1.1 }}
             className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white"
             style={{
-              background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #2563eb 100%)",
-              boxShadow: "0 0 20px rgba(124,58,237,0.4)",
+              background: "linear-gradient(135deg, #ea580c 0%, #dc2626 50%, #c2410c 100%)",
+              boxShadow: "0 0 20px rgba(234,88,12,0.4)",
             }}
           >
             P
@@ -94,7 +94,7 @@ export function Navbar() {
             className="text-xl font-extrabold tracking-tight"
             style={{
               background: isHomePage
-                ? "linear-gradient(135deg, #ffffff, #c4b5fd)"
+                ? "linear-gradient(135deg, #ffffff, #fed7aa)"
                 : "inherit",
               WebkitBackgroundClip: isHomePage ? "text" : "unset",
               WebkitTextFillColor: isHomePage ? "transparent" : "unset",
@@ -221,7 +221,7 @@ export function Navbar() {
               >
                 <div
                   className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
+                  style={{ background: "linear-gradient(135deg, #ea580c, #dc2626)" }}
                 >
                   {user.fullName.charAt(0)}
                 </div>
@@ -242,8 +242,8 @@ export function Navbar() {
                 whileTap={{ scale: 0.97 }}
                 className="rounded-full px-5 py-2 text-sm font-semibold text-white transition-all duration-300"
                 style={{
-                  background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
-                  boxShadow: "0 0 20px rgba(124,58,237,0.35)",
+                  background: "linear-gradient(135deg, #ea580c 0%, #dc2626 100%)",
+                  boxShadow: "0 0 20px rgba(234,88,12,0.35)",
                 }}
               >
                 <span className="flex items-center gap-1.5">
@@ -280,7 +280,7 @@ export function Navbar() {
             exit={{ opacity: 0, height: 0 }}
             className="lg:hidden overflow-hidden"
             style={{
-              background: isHomePage ? "rgba(10,1,24,0.95)" : undefined,
+              background: isHomePage ? "rgba(18,12,8,0.96)" : undefined,
               backdropFilter: "blur(20px)",
               borderTop: "1px solid rgba(255,255,255,0.06)",
             }}
@@ -338,7 +338,7 @@ export function Navbar() {
                   <button
                     onClick={handleGetStarted}
                     className="col-span-2 rounded-xl py-3 text-sm font-semibold text-white text-center"
-                    style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
+                    style={{ background: "linear-gradient(135deg, #ea580c, #dc2626)" }}
                   >
                     <span className="flex items-center justify-center gap-2">
                       <UserIcon className="h-4 w-4" />

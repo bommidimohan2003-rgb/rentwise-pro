@@ -14,31 +14,31 @@ const features = [
     icon: ShieldCheck,
     title: "Secure Payments",
     desc: "Every transaction is encrypted and protected. Pay with confidence using any major payment method.",
-    gradient: "from-violet-500 to-purple-600",
-    glow: "rgba(139,92,246,0.35)",
-    bg: "rgba(139,92,246,0.08)",
+    gradient: "from-orange-500 to-amber-600",
+    glow: "rgba(234,88,12,0.35)",
+    bg: "rgba(234,88,12,0.08)",
   },
   {
     icon: UserCheck,
     title: "Verified Users",
     desc: "All lenders undergo identity verification and reviews, so you always know who you're dealing with.",
-    gradient: "from-blue-500 to-cyan-500",
-    glow: "rgba(59,130,246,0.35)",
-    bg: "rgba(59,130,246,0.08)",
+    gradient: "from-sky-500 to-blue-500",
+    glow: "rgba(14,165,233,0.35)",
+    bg: "rgba(14,165,233,0.08)",
   },
   {
     icon: Tag,
     title: "Affordable Rentals",
     desc: "Access premium electronics at a fraction of the retail price. Save up to 90% versus buying.",
-    gradient: "from-emerald-500 to-teal-500",
-    glow: "rgba(16,185,129,0.35)",
-    bg: "rgba(16,185,129,0.08)",
+    gradient: "from-teal-500 to-emerald-500",
+    glow: "rgba(20,184,166,0.35)",
+    bg: "rgba(20,184,166,0.08)",
   },
   {
     icon: Zap,
     title: "Instant Booking",
     desc: "Browse, select, and confirm your rental in minutes. Real-time availability and instant confirmations.",
-    gradient: "from-amber-500 to-orange-500",
+    gradient: "from-amber-500 to-yellow-500",
     glow: "rgba(245,158,11,0.35)",
     bg: "rgba(245,158,11,0.08)",
   },
@@ -46,17 +46,17 @@ const features = [
     icon: Headphones,
     title: "24/7 Support",
     desc: "Our dedicated support team is always available to help with any issues before, during, or after your rental.",
-    gradient: "from-pink-500 to-rose-500",
-    glow: "rgba(236,72,153,0.35)",
-    bg: "rgba(236,72,153,0.08)",
+    gradient: "from-rose-500 to-red-500",
+    glow: "rgba(244,63,94,0.35)",
+    bg: "rgba(244,63,94,0.08)",
   },
   {
     icon: Search,
     title: "Smart Search",
     desc: "Powerful filters by category, price, availability, and location let you find exactly what you need fast.",
-    gradient: "from-indigo-500 to-violet-500",
-    glow: "rgba(99,102,241,0.35)",
-    bg: "rgba(99,102,241,0.08)",
+    gradient: "from-orange-600 to-red-500",
+    glow: "rgba(234,88,12,0.35)",
+    bg: "rgba(234,88,12,0.08)",
   },
 ];
 
@@ -83,14 +83,14 @@ export function Features() {
       id="features"
       ref={ref}
       className="relative py-28 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0a0118 0%, #080114 100%)" }}
+      style={{ background: "linear-gradient(180deg, #120c08 0%, #0f0906 100%)" }}
     >
       {/* Background gradient */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(139,92,246,0.08), transparent)",
+            "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(234,88,12,0.08), transparent)",
         }}
       />
 
@@ -105,18 +105,18 @@ export function Features() {
           <div
             className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-5"
             style={{
-              background: "rgba(139,92,246,0.12)",
-              border: "1px solid rgba(139,92,246,0.3)",
+              background: "rgba(234,88,12,0.12)",
+              border: "1px solid rgba(234,88,12,0.3)",
             }}
           >
-            <span className="text-xs font-semibold text-violet-400 tracking-wider uppercase">
+            <span className="text-xs font-semibold text-orange-400 tracking-wider uppercase">
               Why Payent
             </span>
           </div>
           <h2
             className="text-4xl sm:text-5xl font-extrabold tracking-tight"
             style={{
-              background: "linear-gradient(135deg, #ffffff 30%, #c4b5fd 100%)",
+              background: "linear-gradient(135deg, #ffffff 30%, #fed7aa 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
@@ -177,7 +177,7 @@ export function Features() {
                 <f.icon className="h-6 w-6" style={{ color: f.glow.replace("0.35", "0.9") }} />
               </div>
 
-              <h3 className="text-base font-bold text-white mb-2 group-hover:text-violet-300 transition-colors duration-300">
+              <h3 className="text-base font-bold text-white mb-2 group-hover:text-orange-300 transition-colors duration-300">
                 {f.title}
               </h3>
               <p className="text-sm text-slate-500 leading-relaxed group-hover:text-slate-400 transition-colors duration-300">

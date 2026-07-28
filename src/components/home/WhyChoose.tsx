@@ -7,8 +7,8 @@ const items = [
     icon: ShieldCheck,
     title: "Fully Insured",
     body: "Every rental is protected up to ₹5 Lakhs. Rent with total peace of mind.",
-    gradient: "from-violet-500 to-purple-600",
-    glow: "rgba(139,92,246,0.3)",
+    gradient: "from-orange-500 to-amber-600",
+    glow: "rgba(234,88,12,0.3)",
   },
   {
     icon: Truck,
@@ -42,8 +42,8 @@ const items = [
     icon: Headphones,
     title: "24/7 Support",
     body: "Round-the-clock help from our expert support team whenever you need it.",
-    gradient: "from-indigo-500 to-violet-500",
-    glow: "rgba(99,102,241,0.3)",
+    gradient: "from-orange-600 to-red-500",
+    glow: "rgba(234,88,12,0.3)",
   },
 ];
 
@@ -56,13 +56,13 @@ export function WhyChoose() {
       id="why-choose"
       ref={ref}
       className="relative py-28 px-4 sm:px-6 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #080114 0%, #0a0118 100%)" }}
+      style={{ background: "linear-gradient(180deg, #120c08 0%, #0f0906 100%)" }}
     >
       {/* Ambient */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse 60% 40% at 30% 50%, rgba(139,92,246,0.05), transparent)",
+          background: "radial-gradient(ellipse 60% 40% at 30% 50%, rgba(234,88,12,0.05), transparent)",
         }}
       />
 

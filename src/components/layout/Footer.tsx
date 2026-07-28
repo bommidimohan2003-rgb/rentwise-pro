@@ -32,14 +32,14 @@ export function Footer() {
   return (
     <footer
       className="relative overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #080114 0%, #050010 100%)" }}
+      style={{ background: "linear-gradient(180deg, #120c08 0%, #0a0704 100%)" }}
     >
       {/* Top divider glow */}
       <div
         className="absolute top-0 inset-x-0 h-px"
         style={{
           background:
-            "linear-gradient(to right, transparent, rgba(139,92,246,0.4), rgba(236,72,153,0.3), transparent)",
+            "linear-gradient(to right, transparent, rgba(234,88,12,0.4), rgba(220,38,38,0.3), transparent)",
         }}
       />
 
@@ -48,7 +48,7 @@ export function Footer() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 60% 40% at 20% 0%, rgba(139,92,246,0.05), transparent)",
+            "radial-gradient(ellipse 60% 40% at 20% 0%, rgba(234,88,12,0.05), transparent)",
         }}
       />
 
@@ -61,8 +61,8 @@ export function Footer() {
               <div
                 className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white flex-shrink-0"
                 style={{
-                  background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #2563eb 100%)",
-                  boxShadow: "0 0 20px rgba(124,58,237,0.3)",
+                  background: "linear-gradient(135deg, #ea580c 0%, #dc2626 50%, #c2410c 100%)",
+                  boxShadow: "0 0 20px rgba(234,88,12,0.3)",
                 }}
               >
                 P
@@ -70,7 +70,7 @@ export function Footer() {
               <span
                 className="text-xl font-extrabold tracking-tight"
                 style={{
-                  background: "linear-gradient(135deg, #ffffff, #c4b5fd)",
+                  background: "linear-gradient(135deg, #ffffff, #fed7aa)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                 }}
@@ -92,7 +92,7 @@ export function Footer() {
                 { icon: MapPin, text: "Mumbai, India" },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-2 text-xs text-slate-600">
-                  <Icon className="h-3.5 w-3.5 text-violet-500/60" />
+                  <Icon className="h-3.5 w-3.5 text-orange-500/60" />
                   <span>{text}</span>
                 </div>
               ))}
@@ -111,9 +111,9 @@ export function Footer() {
                     border: "1px solid rgba(255,255,255,0.08)",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "rgba(139,92,246,0.15)";
-                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(139,92,246,0.4)";
-                    (e.currentTarget as HTMLElement).style.boxShadow = "0 0 12px rgba(139,92,246,0.2)";
+                    (e.currentTarget as HTMLElement).style.background = "rgba(234,88,12,0.15)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(234,88,12,0.4)";
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 0 12px rgba(234,88,12,0.2)";
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
@@ -137,7 +137,7 @@ export function Footer() {
                 <li key={l.label}>
                   <Link
                     to={l.to}
-                    className="text-sm text-slate-500 hover:text-violet-400 transition-colors duration-200"
+                    className="text-sm text-slate-500 hover:text-orange-400 transition-colors duration-200"
                   >
                     {l.label}
                   </Link>
@@ -156,7 +156,7 @@ export function Footer() {
                 <li key={l.label}>
                   <Link
                     to={l.to}
-                    className="text-sm text-slate-500 hover:text-violet-400 transition-colors duration-200"
+                    className="text-sm text-slate-500 hover:text-orange-400 transition-colors duration-200"
                   >
                     {l.label}
                   </Link>
@@ -184,7 +184,7 @@ export function Footer() {
               />
               <button
                 className="px-3 py-2.5 text-xs font-semibold text-white flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
+                style={{ background: "linear-gradient(135deg, #ea580c, #dc2626)" }}
               >
                 Go
               </button>

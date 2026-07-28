@@ -136,8 +136,8 @@ export default function Analytics() {
             >
               <defs>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="#ea580c" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#ea580c" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <CartesianGrid
@@ -166,7 +166,7 @@ export default function Analytics() {
                 type="monotone"
                 name="Revenue"
                 dataKey="revenue"
-                stroke="#7c3aed"
+                stroke="#ea580c"
                 strokeWidth={2.5}
                 fill="url(#colorRev)"
               />
@@ -249,7 +249,7 @@ export default function Analytics() {
                   type="monotone"
                   name="Agents (Lenders)"
                   dataKey="users"
-                  stroke="#7c3aed"
+                  stroke="#ea580c"
                   strokeWidth={2.5}
                   activeDot={{ r: 6 }}
                 />
@@ -257,7 +257,7 @@ export default function Analytics() {
                   type="monotone"
                   name="Gear Listed"
                   dataKey="products"
-                  stroke="#a855f7"
+                  stroke="#f97316"
                   strokeWidth={2}
                   strokeDasharray="5 5"
                 />
