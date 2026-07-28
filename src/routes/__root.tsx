@@ -151,21 +151,27 @@ function RootComponent() {
     loginUrl: "/login" | "/admin/login";
   }>({ show: false, loginUrl: "/login" });
 
-  const [isOffline, setIsOffline] = useState(
-    typeof navigator !== "undefined" ? !navigator.onLine : false
-  );
+  const [isOffline, setIsOffline] = useState(() => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
+        return false;
+      }
+    }
+    return typeof navigator !== "undefined" ? !navigator.onLine : false;
+  });
 
   const checkConnectivity = async () => {
-    if (typeof navigator !== "undefined" && navigator.onLine) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        await fetch("/api/health", { method: "GET", signal: controller.signal });
-        clearTimeout(timeoutId);
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
         setIsOffline(false);
-      } catch {
-        setIsOffline(false);
+        return;
       }
+    }
+
+    if (typeof navigator !== "undefined" && navigator.onLine) {
+      setIsOffline(false);
     } else {
       setIsOffline(true);
     }
@@ -193,18 +199,18 @@ function RootComponent() {
 
     // Online/Offline handlers
     const handleOnline = () => checkConnectivity();
-    const handleOffline = () => setIsOffline(true);
+    const handleOffline = () => {
+      const host = typeof window !== "undefined" ? window.location.hostname : "";
+      if (host !== "localhost" && host !== "127.0.0.1" && !host.endsWith(".local")) {
+        setIsOffline(true);
+      }
+    };
     const handleNetworkOfflineEvent = () => checkConnectivity();
 
     window.addEventListener("payent-session-expired", handleSessionExpired);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     window.addEventListener("payent-network-offline", handleNetworkOfflineEvent);
-
-    // Initial check
-    if (typeof navigator !== "undefined" && navigator.onLine && isOffline) {
-      checkConnectivity();
-    }
 
     return () => {
       window.removeEventListener("payent-session-expired", handleSessionExpired);
