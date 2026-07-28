@@ -21,7 +21,7 @@ import { toast } from "sonner";
 
 const links = [
   { to: "/", label: "Home" },
-  { to: "/categories", label: "Browse" },
+  { to: "/become-lender", label: "Become Lender" },
   { to: "/about", label: "About Us" },
   { to: "/contact", label: "Contact" },
 ] as const;
