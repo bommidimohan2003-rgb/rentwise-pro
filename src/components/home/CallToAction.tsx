@@ -152,10 +152,10 @@ export function CallToAction() {
               onMouseLeave={() => setHoveredBtn(null)}
               className="group relative inline-flex items-center gap-2 rounded-full px-9 py-4 text-sm font-bold text-white overflow-hidden transition-all duration-300"
               style={{
-                background: "linear-gradient(135deg, #ea580c 0%, #dc2626 50%, #c2410c 100%)",
+                background: "linear-gradient(135deg, #ff5a5f 0%, #e0484d 100%)",
                 boxShadow: hoveredBtn === "browse"
-                  ? "0 0 60px rgba(234,88,12,0.7), 0 4px 30px rgba(0,0,0,0.3)"
-                  : "0 0 30px rgba(234,88,12,0.4), 0 4px 20px rgba(0,0,0,0.2)",
+                  ? "0 0 60px rgba(255,90,95,0.7), 0 4px 30px rgba(0,0,0,0.3)"
+                  : "0 0 30px rgba(255,90,95,0.4), 0 4px 20px rgba(0,0,0,0.2)",
                 transform: hoveredBtn === "browse" ? "translateY(-2px)" : "none",
               }}
             >

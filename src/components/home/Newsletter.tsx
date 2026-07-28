@@ -120,8 +120,8 @@ export function Newsletter() {
                 whileTap={{ scale: 0.98 }}
                 className="group inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white"
                 style={{
-                  background: "linear-gradient(135deg, #ea580c, #dc2626)",
-                  boxShadow: "0 0 20px rgba(124,58,237,0.35)",
+                  background: "linear-gradient(135deg, #ff5a5f, #e0484d)",
+                  boxShadow: "0 0 20px rgba(255,90,95,0.35)",
                 }}
               >
                 Subscribe

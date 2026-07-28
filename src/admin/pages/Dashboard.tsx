@@ -46,7 +46,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { adminWS } from "../services/websocket";
 
-const COLORS = ["#ea580c", "#10b981", "#f97316", "#06b6d4", "#ec4899"];
+const COLORS = ["#ff5a5f", "#0b2545", "#10b981", "#06b6d4", "#ec4899"];
 
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -245,8 +245,8 @@ export default function Dashboard() {
               >
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ea580c" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#ea580c" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor="#ff5a5f" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#ff5a5f" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
                 <XAxis
@@ -269,7 +269,7 @@ export default function Dashboard() {
                 <Area
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#ea580c"
+                  stroke="#ff5a5f"
                   strokeWidth={2.5}
                   fillOpacity={1}
                   fill="url(#colorRev)"
@@ -355,7 +355,7 @@ export default function Dashboard() {
                   type="monotone"
                   name="Users"
                   dataKey="users"
-                  stroke="#ea580c"
+                  stroke="#ff5a5f"
                   strokeWidth={2.5}
                   activeDot={{ r: 6 }}
                 />

@@ -61,8 +61,8 @@ export function Footer() {
               <div
                 className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white flex-shrink-0"
                 style={{
-                  background: "linear-gradient(135deg, #ea580c 0%, #dc2626 50%, #c2410c 100%)",
-                  boxShadow: "0 0 20px rgba(234,88,12,0.3)",
+                  background: "linear-gradient(135deg, #ff5a5f 0%, #e0484d 100%)",
+                  boxShadow: "0 0 20px rgba(255,90,95,0.3)",
                 }}
               >
                 P
@@ -184,7 +184,7 @@ export function Footer() {
               />
               <button
                 className="px-3 py-2.5 text-xs font-semibold text-white flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #ea580c, #dc2626)" }}
+                style={{ background: "linear-gradient(135deg, #ff5a5f, #e0484d)" }}
               >
                 Go
               </button>

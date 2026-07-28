@@ -87,7 +87,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Peer-to-peer marketplace to rent cameras, drones, laptops and more. Insured. Delivered fast.",
       },
       { name: "author", content: "Payent" },
-      { name: "theme-color", content: "#ea580c" },
+      { name: "theme-color", content: "#ff5a5f" },
       { property: "og:title", content: "Payent — Rent premium tech gear" },
       {
         property: "og:description",

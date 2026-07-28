@@ -32,58 +32,58 @@
 
 :root {
   --radius: 0.9rem;
-  /* Hybrid A+B "Obsidian Frost" — warm ember palette */
-  --background: oklch(0.985 0.003 60);
-  --foreground: oklch(0.14 0.01 50);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.14 0.01 50);
-  --primary: oklch(0.65 0.2 40);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.008 55);
-  --secondary-foreground: oklch(0.18 0.01 50);
-  --muted: oklch(0.95 0.005 60);
-  --muted-foreground: oklch(0.48 0.015 50);
-  --accent: oklch(0.55 0.15 15);
-  --accent-foreground: oklch(0.99 0 0);
-  --destructive: oklch(0.58 0.24 27);
-  --border: oklch(0.92 0.006 55);
-  --input: oklch(0.94 0.005 55);
-  --ring: oklch(0.65 0.2 40);
+  /* Primary: #FF5A5F (Vibrant Coral), Navy: #0B2545 (Deep Navy), Soft White: #F7F9FB (Soft Off-White) */
+  --background: #F7F9FB;
+  --foreground: #0B2545;
+  --card: #FFFFFF;
+  --card-foreground: #0B2545;
+  --primary: #FF5A5F;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EAEFF5;
+  --secondary-foreground: #0B2545;
+  --muted: #EEF2F6;
+  --muted-foreground: #4A607A;
+  --accent: #FF5A5F;
+  --accent-foreground: #FFFFFF;
+  --destructive: #E63946;
+  --border: #DCE4EC;
+  --input: #E5ECF2;
+  --ring: #FF5A5F;
 
   /* Spatial UI Elevation System Tokens */
   --elevation-0-shadow: none;
-  --elevation-1-shadow: 0 2px 8px -2px oklch(0.3 0.02 45 / 0.08), 0 1px 2px -1px oklch(0.3 0.02 45 / 0.05);
-  --elevation-2-shadow: 0 12px 28px -6px oklch(0.3 0.02 45 / 0.1), 0 4px 12px -2px oklch(0.3 0.02 45 / 0.06);
-  --elevation-3-shadow: 0 20px 40px -10px oklch(0.3 0.02 45 / 0.16), 0 8px 20px -4px oklch(0.3 0.02 45 / 0.09);
-  --elevation-4-shadow: 0 32px 70px -14px oklch(0.3 0.02 45 / 0.22), 0 12px 28px -6px oklch(0.3 0.02 45 / 0.12);
-  --rim-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.75), inset 0 -1px 0 0 oklch(0 0 0 / 0.04);
+  --elevation-1-shadow: 0 2px 8px -2px rgba(11, 37, 69, 0.08), 0 1px 2px -1px rgba(11, 37, 69, 0.05);
+  --elevation-2-shadow: 0 12px 28px -6px rgba(11, 37, 69, 0.12), 0 4px 12px -2px rgba(11, 37, 69, 0.08);
+  --elevation-3-shadow: 0 20px 40px -10px rgba(11, 37, 69, 0.18), 0 8px 20px -4px rgba(11, 37, 69, 0.12);
+  --elevation-4-shadow: 0 32px 70px -14px rgba(11, 37, 69, 0.24), 0 12px 28px -6px rgba(11, 37, 69, 0.15);
+  --rim-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), inset 0 -1px 0 0 rgba(11, 37, 69, 0.05);
 }
 
 .dark {
-  /* Hybrid A+B dark — warm charcoal-stone + ember accents */
-  --background: oklch(0.12 0.008 45);
-  --foreground: oklch(0.96 0.005 55);
-  --card: oklch(0.16 0.01 45);
-  --card-foreground: oklch(0.96 0.005 55);
-  --primary: oklch(0.72 0.18 40);
-  --primary-foreground: oklch(0.12 0.01 45);
-  --secondary: oklch(0.21 0.01 45);
-  --secondary-foreground: oklch(0.96 0.005 55);
-  --muted: oklch(0.21 0.01 45);
-  --muted-foreground: oklch(0.65 0.015 50);
-  --accent: oklch(0.62 0.16 15);
-  --accent-foreground: oklch(0.12 0.01 45);
-  --destructive: oklch(0.68 0.22 25);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 13%);
-  --ring: oklch(0.72 0.18 40);
+  /* Dark Mode: Deep Navy #0B2545 background + Vibrant Coral #FF5A5F accent + Soft Off-White #F7F9FB text */
+  --background: #0B2545;
+  --foreground: #F7F9FB;
+  --card: #13315C;
+  --card-foreground: #F7F9FB;
+  --primary: #FF5A5F;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1C3F6E;
+  --secondary-foreground: #F7F9FB;
+  --muted: #183863;
+  --muted-foreground: #9BB0C7;
+  --accent: #FF5A5F;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF4D4D;
+  --border: rgba(247, 249, 251, 0.12);
+  --input: rgba(247, 249, 251, 0.15);
+  --ring: #FF5A5F;
 
   /* Dark Mode Spatial Elevation Tokens */
-  --elevation-1-shadow: 0 2px 10px -2px oklch(0 0 0 / 0.45);
-  --elevation-2-shadow: 0 14px 32px -6px oklch(0 0 0 / 0.55), 0 4px 14px -2px oklch(0 0 0 / 0.3);
-  --elevation-3-shadow: 0 24px 48px -8px oklch(0 0 0 / 0.65), 0 8px 24px -4px oklch(0 0 0 / 0.4);
-  --elevation-4-shadow: 0 36px 80px -12px oklch(0 0 0 / 0.8), 0 16px 36px -6px oklch(0 0 0 / 0.5);
-  --rim-highlight: inset 0 1px 0 0 oklch(1 0 0 / 0.12), inset 0 -1px 0 0 oklch(0 0 0 / 0.35);
+  --elevation-1-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.5);
+  --elevation-2-shadow: 0 14px 32px -6px rgba(0, 0, 0, 0.6), 0 4px 14px -2px rgba(0, 0, 0, 0.35);
+  --elevation-3-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.7), 0 8px 24px -4px rgba(0, 0, 0, 0.45);
+  --elevation-4-shadow: 0 36px 80px -12px rgba(0, 0, 0, 0.85), 0 16px 36px -6px rgba(0, 0, 0, 0.55);
+  --rim-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 0 rgba(0, 0, 0, 0.4);
 }
 
 @layer base {
@@ -106,7 +106,7 @@
   }
 }
 
-/* Spatial UI Elevation Utilities — Frost-glass inspired (Direction B) with warm tones (Direction A) */
+/* Spatial UI Elevation Utilities */
 @utility spatial-surface {
   background: var(--color-card);
   border: 1px solid var(--color-border);
@@ -127,7 +127,7 @@
   &:hover {
     transform: translateY(-4px) scale(1.006);
     box-shadow: var(--elevation-3-shadow), var(--rim-highlight);
-    border-color: color-mix(in oklch, var(--color-primary) 35%, var(--color-border));
+    border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
   }
 
   &:active {
@@ -144,42 +144,42 @@
 }
 
 @utility spatial-float {
-  background: color-mix(in oklch, var(--color-card) 82%, transparent);
+  background: color-mix(in srgb, var(--color-card) 85%, transparent);
   backdrop-filter: blur(20px) saturate(170%);
-  border: 1px solid color-mix(in oklch, var(--color-border) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
   border-radius: var(--radius-2xl);
   box-shadow: var(--elevation-3-shadow), var(--rim-highlight);
 }
 
 @utility spatial-overlay {
-  background: color-mix(in oklch, var(--color-card) 90%, transparent);
+  background: color-mix(in srgb, var(--color-card) 92%, transparent);
   backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid color-mix(in oklch, var(--color-border) 75%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
   border-radius: var(--radius-2xl);
   box-shadow: var(--elevation-4-shadow), var(--rim-highlight);
 }
 
 @utility glass {
-  background: color-mix(in oklch, var(--color-background) 65%, transparent);
+  background: color-mix(in srgb, var(--color-background) 70%, transparent);
   backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid color-mix(in oklch, var(--color-border) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
   box-shadow: var(--rim-highlight);
 }
 
 @utility btn-gradient {
-  background-image: linear-gradient(135deg, oklch(0.65 0.2 40), oklch(0.55 0.22 20));
+  background-image: linear-gradient(135deg, #FF5A5F 0%, #E0484D 100%);
   color: white;
-  box-shadow: 0 10px 30px -10px oklch(0.6 0.2 40 / 0.45), inset 0 1px 0 0 oklch(1 0 0 / 0.25);
+  box-shadow: 0 10px 30px -10px rgba(255, 90, 95, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
   transition:
     transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   &:hover {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 18px 40px -10px oklch(0.6 0.2 40 / 0.6), inset 0 1px 0 0 oklch(1 0 0 / 0.35);
+    box-shadow: 0 18px 40px -10px rgba(255, 90, 95, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
   }
   &:active {
     transform: translateY(0px) scale(0.98);
-    box-shadow: 0 6px 20px -8px oklch(0.6 0.2 40 / 0.35);
+    box-shadow: 0 6px 20px -8px rgba(255, 90, 95, 0.35);
   }
   @media (prefers-reduced-motion: reduce) {
     &:hover, &:active {
@@ -200,7 +200,7 @@
   &:hover {
     transform: translateY(-4px);
     box-shadow: var(--elevation-3-shadow), var(--rim-highlight);
-    border-color: color-mix(in oklch, var(--color-primary) 35%, var(--color-border));
+    border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
   }
   @media (prefers-reduced-motion: reduce) {
     &:hover {
@@ -211,9 +211,9 @@
 
 @utility hero-gradient {
   background:
-    radial-gradient(60% 60% at 20% 10%, oklch(0.7 0.18 40 / 0.3), transparent 60%),
-    radial-gradient(50% 50% at 90% 20%, oklch(0.6 0.15 15 / 0.25), transparent 60%),
-    radial-gradient(60% 60% at 50% 100%, oklch(0.65 0.12 55 / 0.2), transparent 60%);
+    radial-gradient(60% 60% at 20% 10%, rgba(255, 90, 95, 0.25), transparent 60%),
+    radial-gradient(50% 50% at 90% 20%, rgba(11, 37, 69, 0.35), transparent 60%),
+    radial-gradient(60% 60% at 50% 100%, rgba(255, 90, 95, 0.15), transparent 60%);
   background-size: 180% 180%;
   animation: hero-gradient-drift 18s ease-in-out infinite;
   @media (prefers-reduced-motion: reduce) {

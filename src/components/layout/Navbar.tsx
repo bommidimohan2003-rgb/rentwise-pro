@@ -84,8 +84,8 @@ export function Navbar() {
             whileHover={{ rotate: 12, scale: 1.1 }}
             className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white"
             style={{
-              background: "linear-gradient(135deg, #ea580c 0%, #dc2626 50%, #c2410c 100%)",
-              boxShadow: "0 0 20px rgba(234,88,12,0.4)",
+              background: "linear-gradient(135deg, #ff5a5f 0%, #e0484d 100%)",
+              boxShadow: "0 0 20px rgba(255,90,95,0.4)",
             }}
           >
             P
@@ -221,7 +221,7 @@ export function Navbar() {
               >
                 <div
                   className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ background: "linear-gradient(135deg, #ea580c, #dc2626)" }}
+                  style={{ background: "linear-gradient(135deg, #ff5a5f, #e0484d)" }}
                 >
                   {user.fullName.charAt(0)}
                 </div>
@@ -240,10 +240,10 @@ export function Navbar() {
                 id="nav-get-started"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="rounded-full px-5 py-2 text-sm font-semibold text-white transition-all duration-300"
+                className="rounded-full px-5 py-2 text-sm font-semibold text-white transition-all duration-300 cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg, #ea580c 0%, #dc2626 100%)",
-                  boxShadow: "0 0 20px rgba(234,88,12,0.35)",
+                  background: "linear-gradient(135deg, #ff5a5f 0%, #e0484d 100%)",
+                  boxShadow: "0 0 20px rgba(255,90,95,0.35)",
                 }}
               >
                 <span className="flex items-center gap-1.5">
@@ -338,7 +338,7 @@ export function Navbar() {
                   <button
                     onClick={handleGetStarted}
                     className="col-span-2 rounded-xl py-3 text-sm font-semibold text-white text-center"
-                    style={{ background: "linear-gradient(135deg, #ea580c, #dc2626)" }}
+                    style={{ background: "linear-gradient(135deg, #ff5a5f, #e0484d)" }}
                   >
                     <span className="flex items-center justify-center gap-2">
                       <UserIcon className="h-4 w-4" />
