@@ -2,7 +2,6 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
   Heart,
-  LayoutDashboard,
   LogIn,
   LogOut,
   Menu,
@@ -55,55 +54,38 @@ export function Navbar() {
 
   useEffect(() => setOpen(false), [pathname]);
 
-  const navBg = isHomePage
-    ? scrolled
-      ? "rgba(18,12,8,0.88)"
-      : "transparent"
-    : scrolled
-      ? undefined
-      : undefined;
-
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
-        scrolled ? "shadow-lg shadow-black/20" : "",
-        !isHomePage && scrolled ? "glass" : "",
+        "sticky top-0 z-50 w-full transition-all duration-300 border-b border-white/10 dark:border-[#222222]",
+        isHomePage
+          ? "bg-[#0B2545]/95 dark:bg-[#000000]/95 backdrop-blur-md"
+          : "bg-white/95 dark:bg-[#000000]/95 backdrop-blur-md",
+        scrolled ? "shadow-xl shadow-black/20" : ""
       )}
-      style={{
-        background: navBg,
-        backdropFilter: isHomePage && scrolled ? "blur(20px) saturate(180%)" : undefined,
-        borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "1px solid transparent",
-      }}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
+        
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group" id="nav-logo">
           <motion.div
-            whileHover={{ rotate: 12, scale: 1.1 }}
-            className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white"
+            whileHover={{ rotate: 12, scale: 1.05 }}
+            className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white shrink-0 shadow-lg shadow-[#FF5A5F]/30"
             style={{
-              background: "linear-gradient(135deg, #ff5a5f 0%, #e0484d 100%)",
-              boxShadow: "0 0 20px rgba(255,90,95,0.4)",
+              background: "linear-gradient(135deg, #FF5A5F 0%, #e0484d 100%)",
             }}
           >
             P
           </motion.div>
-          <span
-            className="text-xl font-extrabold tracking-tight"
-            style={{
-              background: isHomePage
-                ? "linear-gradient(135deg, #ffffff, #fed7aa)"
-                : "inherit",
-              WebkitBackgroundClip: isHomePage ? "text" : "unset",
-              WebkitTextFillColor: isHomePage ? "transparent" : "unset",
-            }}
-          >
+          <span className={cn(
+            "text-xl font-extrabold tracking-tight font-display",
+            isHomePage ? "text-white" : "text-slate-900 dark:text-white"
+          )}>
             PAYENT
           </span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop Nav Links */}
         <nav className="hidden lg:flex items-center gap-1">
           {links.map((l) => (
             <Link
@@ -111,15 +93,15 @@ export function Navbar() {
               to={l.to}
               id={`nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
               className={cn(
-                "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200",
+                "px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200",
                 isHomePage
-                  ? "text-slate-300 hover:text-white hover:bg-white/8"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                  ? "text-slate-200 hover:text-white hover:bg-white/10"
+                  : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
               )}
               activeProps={{
                 className: isHomePage
-                  ? "!text-white !bg-white/10"
-                  : "!text-foreground !bg-secondary",
+                  ? "!text-white !bg-[#FF5A5F]/20 font-bold"
+                  : "!text-[#FF5A5F] !bg-[#FF5A5F]/10 font-bold",
               }}
               activeOptions={{ exact: l.to === "/" }}
             >
@@ -127,28 +109,28 @@ export function Navbar() {
             </Link>
           ))}
           <button
+            type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-payent-help-chat"))}
             className={cn(
-              "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 cursor-pointer",
+              "px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 cursor-pointer",
               isHomePage
-                ? "text-slate-300 hover:text-white hover:bg-white/8"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                ? "text-slate-200 hover:text-white hover:bg-white/10"
+                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
             )}
           >
             Help
           </button>
         </nav>
 
-        {/* Right side actions */}
-        <div className="flex items-center gap-1">
-          {/* Icon buttons */}
+        {/* Right Side Icons & Actions */}
+        <div className="flex items-center gap-1.5">
           {[
             {
               icon: Bell,
               label: "Notifications",
               action: () => {
                 if (!user) {
-                  toast.error("Please log in to view your notifications.");
+                  toast.error("Please log in to view notifications.");
                   navigate({ to: "/login" });
                 } else {
                   navigate({ to: "/notifications" });
@@ -174,37 +156,39 @@ export function Navbar() {
               aria-label={label}
               id={`nav-${label.toLowerCase()}`}
               className={cn(
-                "h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200",
+                "h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer",
                 isHomePage
-                  ? "text-slate-400 hover:text-white hover:bg-white/10"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                  ? "text-slate-200 hover:text-white hover:bg-white/10"
+                  : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
               )}
             >
               <Icon className="h-4 w-4" />
             </button>
           ))}
 
+          {/* Theme Toggle Button */}
           <button
+            type="button"
             onClick={toggle}
             aria-label="Toggle theme"
             id="nav-theme-toggle"
             className={cn(
-              "h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200",
+              "h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer",
               isHomePage
-                ? "text-slate-400 hover:text-white hover:bg-white/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                ? "text-slate-200 hover:text-white hover:bg-white/10"
+                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
             )}
           >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {theme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
           </button>
 
-          {/* Auth button */}
+          {/* Auth Button / Profile */}
           {user ? (
             <div className="hidden md:flex items-center gap-2 ml-2">
               {user.role === "admin" && (
                 <Link
                   to="/admin/dashboard"
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm"
+                  className="px-3.5 py-1.5 text-xs font-bold rounded-full bg-[#FF5A5F] text-white hover:bg-[#e0484d] transition-all shadow-md"
                 >
                   Admin Portal
                 </Link>
@@ -212,23 +196,19 @@ export function Navbar() {
               <Link
                 to="/dashboard"
                 id="nav-dashboard"
-                className="flex items-center gap-2 rounded-full pl-2 pr-4 h-10 transition-all"
-                style={{
-                  background: isHomePage ? "rgba(255,255,255,0.08)" : undefined,
-                  border: isHomePage ? "1px solid rgba(255,255,255,0.12)" : undefined,
-                }}
+                className="flex items-center gap-2 rounded-full pl-2 pr-4 h-10 transition-all border border-white/15 bg-white/10 hover:bg-white/20"
               >
                 <div
-                  className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ background: "linear-gradient(135deg, #ff5a5f, #e0484d)" }}
+                  className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold shrink-0"
+                  style={{ background: "linear-gradient(135deg, #FF5A5F, #e0484d)" }}
                 >
                   {user.fullName.charAt(0)}
                 </div>
-                <span className={cn("text-sm font-medium", isHomePage ? "text-slate-200" : "text-foreground")}>
+                <span className="text-sm font-bold text-white">
                   {user.fullName.split(" ")[0]}
                 </span>
               </Link>
-              <Button variant="ghost" size="icon" aria-label="Logout" onClick={logout}>
+              <Button variant="ghost" size="icon" aria-label="Logout" onClick={logout} className="text-slate-200 hover:text-white">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
@@ -239,11 +219,7 @@ export function Navbar() {
                 id="nav-get-started"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="rounded-full px-5 py-2 text-sm font-semibold text-white transition-all duration-300 cursor-pointer"
-                style={{
-                  background: "linear-gradient(135deg, #ff5a5f 0%, #e0484d 100%)",
-                  boxShadow: "0 0 20px rgba(255,90,95,0.35)",
-                }}
+                className="rounded-xl px-5 py-2 text-sm font-bold text-white transition-all duration-200 cursor-pointer shadow-lg shadow-[#FF5A5F]/30 bg-[#FF5A5F] hover:bg-[#e0484d]"
               >
                 <span className="flex items-center gap-1.5">
                   <LogIn className="h-3.5 w-3.5" />
@@ -253,100 +229,93 @@ export function Navbar() {
             </div>
           )}
 
-          {/* Mobile menu toggle */}
+          {/* Mobile Menu Toggle */}
           <button
+            type="button"
             className={cn(
-              "lg:hidden ml-1 h-9 w-9 flex items-center justify-center rounded-full transition-all",
+              "lg:hidden ml-1 h-9 w-9 flex items-center justify-center rounded-full transition-all cursor-pointer",
               isHomePage
-                ? "text-slate-300 hover:text-white hover:bg-white/10"
-                : "text-muted-foreground hover:bg-secondary",
+                ? "text-slate-200 hover:text-white hover:bg-white/10"
+                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
             )}
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
-            id="nav-mobile-menu"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
+
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile Dropdown Menu */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden overflow-hidden"
-            style={{
-              background: isHomePage ? "rgba(18,12,8,0.96)" : undefined,
-              backdropFilter: "blur(20px)",
-              borderTop: "1px solid rgba(255,255,255,0.06)",
-            }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden overflow-hidden border-t border-white/10 bg-[#0B2545] dark:bg-[#000000] px-4 py-4 space-y-3"
           >
-            <nav className="flex flex-col p-4 gap-1">
-              {links.map((l) => (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  className={cn(
-                    "px-4 py-3 rounded-xl text-sm font-medium transition-all",
-                    isHomePage
-                      ? "text-slate-300 hover:text-white hover:bg-white/8"
-                      : "hover:bg-secondary text-muted-foreground",
-                  )}
-                  activeProps={{ className: isHomePage ? "!text-white !bg-white/10" : "bg-secondary" }}
-                  activeOptions={{ exact: l.to === "/" }}
-                >
-                  {l.label}
-                </Link>
-              ))}
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  window.dispatchEvent(new CustomEvent("open-payent-help-chat"));
-                }}
-                className={cn(
-                  "px-4 py-3 text-left rounded-xl text-sm font-medium cursor-pointer transition-all",
-                  isHomePage
-                    ? "text-slate-400 hover:text-white hover:bg-white/8"
-                    : "text-muted-foreground hover:bg-secondary",
-                )}
+            {links.map((l) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                className="block px-4 py-2.5 text-sm font-semibold rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
+                activeProps={{ className: "!text-[#FF5A5F] !bg-[#FF5A5F]/15 font-bold" }}
+                onClick={() => setOpen(false)}
               >
-                Help
-              </button>
-              <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5 mt-2">
-                {user ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate({ to: "/dashboard" })}
-                      leftIcon={<LayoutDashboard className="h-4 w-4" />}
-                    >
-                      Dashboard
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={logout}
-                      leftIcon={<LogOut className="h-4 w-4" />}
-                    >
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleGetStarted}
-                    className="col-span-2 rounded-xl py-3 text-sm font-semibold text-white text-center"
-                    style={{ background: "linear-gradient(135deg, #ff5a5f, #e0484d)" }}
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      <UserIcon className="h-4 w-4" />
-                      Get Started Free
-                    </span>
-                  </button>
-                )}
+                {l.label}
+              </Link>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                window.dispatchEvent(new CustomEvent("open-payent-help-chat"));
+              }}
+              className="block w-full text-left px-4 py-2.5 text-sm font-semibold rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              Help
+            </button>
+
+            {!user ? (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    handleGetStarted();
+                  }}
+                  className="w-full bg-[#FF5A5F] text-white font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span>Login / Register</span>
+                </button>
               </div>
-            </nav>
+            ) : (
+              <div className="pt-2 space-y-2 border-t border-white/10">
+                <Link
+                  to="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2.5 text-sm font-bold text-white bg-white/10 rounded-xl"
+                >
+                  Dashboard ({user.fullName})
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    logout();
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose-400 hover:bg-rose-500/10 rounded-xl flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
