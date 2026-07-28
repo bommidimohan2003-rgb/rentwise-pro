@@ -23,19 +23,9 @@ The admin portal dashboard (`/admin`) is fully backed by the FastAPI backend ser
 When the database is initialized (`init_db` in `backend/database.py`), default data is seeded **only if the respective tables are empty**. This populates the interface with realistic test listings while keeping actual operations separate.
 
 ### Illustrative Seed Data (Seeded on Empty DB)
-- **Seed Users**:
-  - `admin@payent.com` (Sarah Connor, Admin account)
-  - `alex@example.com` (Alex Mercer, Lender/Agent account)
-  - `emily@example.com` (Emily Davis, Lender/Agent account)
-  - `michael@example.com` (Michael Chang, Customer account)
-  - `jessica@example.com` (Jessica Ross, Customer account)
-- **Seed Listings**: Cameras, drones, laptops, audio recorders (IDs `p-1` through `p-6` owned by `alex` and `emily`).
-- **Seed Orders**: Initial mock bookings `b-1`, `b-2`, and `b-3`.
-- **Seed Transactions**: Initial matching mock transactions `tx-1`, `tx-2`, `tx-3`.
-- **Seed Tickets, Reports, & Logs**: Illustrated support tickets, review ratings, and audit entries.
-
-### Real User Data
-All user registrations via `/register` (including admin registration using `ADMIN_SETUP_CODE`), product listings uploaded via the lender dashboard, wishlists, messages, and orders submitted through checkout are **real user data**. They do not use mock prefixes and persist permanently.
+### Admin Account Creation
+- **Admin Registration**: Register a new account via `/register` providing your secure `ADMIN_SETUP_CODE` (configured in `backend/config.py`).
+- **Seed Listings**: Cameras, drones, laptops, audio recorders (IDs `p-1` through `p-6`).
 
 ---
 
@@ -50,6 +40,7 @@ All user registrations via `/register` (including admin registration using `ADMI
    - Go to `http://localhost:5173`.
 
 3. **Verify Connection**:
-   - Log in to the admin panel using `admin@payent.com` / `admin@123` or register a custom admin with your `ADMIN_SETUP_CODE`.
+   - Register your admin account at `/register` using your `ADMIN_SETUP_CODE` (default: `PAYENT-ADMIN-2026`).
+   - Log in to the admin panel using your registered admin credentials.
    - The Topbar should connect directly to the live server.
    - Stop the backend server to see the Topbar instantly reflect `⚠️ Offline Demo Mode`, fallback gracefully, and restore real-time state as soon as the server is booted back up.

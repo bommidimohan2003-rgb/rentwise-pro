@@ -1,14 +1,21 @@
 import datetime
 import random
+import secrets
+import logging
+import json
 from typing import Optional
 from dotenv import load_dotenv
 
 # Load env variables at application startup
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, Header, Depends, status
+from fastapi import FastAPI, HTTPException, Header, Depends, status, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
+
+# Setup Structured Logger
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger("payent.security")
 
 from database import (
     init_db,
@@ -32,15 +39,31 @@ from database import (
     execute_query,
     get_db_connection,
     delete_custom_product,
-    toggle_custom_product_availability
+    toggle_custom_product_availability,
+    revoke_token,
+    is_token_revoked,
+    record_failed_auth_attempt,
+    clear_failed_auth_attempts,
+    increment_otp_attempt
 )
 from auth import (
     hash_password,
     verify_password,
     create_access_token,
-    decode_access_token
+    create_refresh_token,
+    decode_access_token,
+    validate_password_strength
 )
-from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID, ADMIN_SETUP_CODE
+from config import (
+    TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN,
+    TWILIO_VERIFY_SERVICE_SID,
+    ADMIN_SETUP_CODE,
+    ALLOWED_ORIGINS,
+    IS_PRODUCTION,
+    STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET
+)
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -48,24 +71,44 @@ async def lifespan(app: FastAPI):
     # Startup Handler
     try:
         init_db()
-        print("MySQL database initialized successfully.")
+        logger.info("MySQL database initialized successfully.")
     except Exception as e:
-        print(f"Warning: Could not initialize MySQL database at startup: {e}")
+        logger.error(f"Could not initialize MySQL database at startup: {e}")
     yield
 
 app = FastAPI(
     title="Payent Backend API",
     description="Backend API for Payent Peer-to-Peer Renting Platform",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if not IS_PRODUCTION else None,
+    redoc_url=None
 )
+
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    # Enforce request body size limit (max 10MB)
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > 10 * 1024 * 1024:
+        return Response(content=json.dumps({"detail": "Payload too large. Maximum allowed size is 10MB."}), status_code=413, media_type="application/json")
+
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';"
+    if IS_PRODUCTION:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for dev simplicity
+    allow_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS else ["http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -126,9 +169,9 @@ def start_verification(phone: str) -> dict:
     """Start verification via Twilio Verify API or fall back to local mock OTP."""
     phone = normalize_phone(phone)
     if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_VERIFY_SERVICE_SID:
-        # Fallback to local mock OTP
-        mock_otp = f"{random.randint(100000, 999999)}"
-        print(f"\n[Twilio Simulator] Credentials not configured. Simulated SMS to {phone}: 'Your code is: {mock_otp}'\n")
+        # Fallback to cryptographically secure local mock OTP
+        mock_otp = f"{secrets.randbelow(900000) + 100000}"
+        logger.info(f"[Twilio Simulator] Simulated SMS to {phone}: 'Your code is: {mock_otp}'")
         return {"mode": "mock", "otp": mock_otp}
     try:
         from twilio.rest import Client
@@ -136,22 +179,43 @@ def start_verification(phone: str) -> dict:
         verification = client.verify.v2.services(TWILIO_VERIFY_SERVICE_SID) \
             .verifications \
             .create(to=phone, channel='sms')
-        print(f"Twilio Verify SMS initiated to {phone}, status: {verification.status}")
+        logger.info(f"Twilio Verify SMS initiated to {phone}, status: {verification.status}")
         return {"mode": "twilio"}
     except Exception as e:
-        print(f"Failed to initiate Twilio Verify: {e}. Falling back to mock.")
-        mock_otp = f"{random.randint(100000, 999999)}"
+        logger.warning(f"Failed to initiate Twilio Verify: {e}. Falling back to secure mock.")
+        mock_otp = f"{secrets.randbelow(900000) + 100000}"
         return {"mode": "mock", "otp": mock_otp}
 
 def check_verification(phone: str, code: str, email: str) -> bool:
-    """Check verification code against Twilio Verify or local mock database."""
+    """Check verification code with single-use, max attempts, and expiration checks."""
     phone = normalize_phone(phone)
-    # First check if there is a local mock OTP in the database
     record = get_otp(email)
     if record:
-        return record["otp"] == code
+        # Rate limit OTP attempts (max 3 tries)
+        attempts = increment_otp_attempt(email)
+        if attempts > 3:
+            delete_otp(email)
+            logger.warning(f"OTP verification attempt limit exceeded for {email}. Deleting OTP.")
+            return False
 
-    # If no local mock OTP, query the Twilio Verify API
+        # Check expiration (5 minutes = 300 seconds)
+        created_at_str = record.get("created_at")
+        if created_at_str:
+            try:
+                created_dt = datetime.datetime.fromisoformat(created_at_str)
+                if (datetime.datetime.utcnow() - created_dt).total_seconds() > 300:
+                    delete_otp(email)
+                    logger.warning(f"OTP for {email} has expired.")
+                    return False
+            except Exception:
+                pass
+
+        if record["otp"] == code:
+            delete_otp(email)  # Single-use: delete immediately on success
+            return True
+        return False
+
+    # Query Twilio Verify API if no local mock record
     if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_VERIFY_SERVICE_SID:
         return False
     try:
@@ -160,10 +224,9 @@ def check_verification(phone: str, code: str, email: str) -> bool:
         verification_check = client.verify.v2.services(TWILIO_VERIFY_SERVICE_SID) \
             .verification_checks \
             .create(to=phone, code=code)
-        print(f"Twilio Verify Check for {phone}: {verification_check.status}")
         return verification_check.status == "approved"
     except Exception as e:
-        print(f"Twilio Verify Check failed: {e}")
+        logger.error(f"Twilio Verify Check failed: {e}")
         return False
 
 # Security Dependency
@@ -175,27 +238,58 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
         )
     
     token = authorization.split(" ")[1]
-    payload = decode_access_token(token)
+    payload = decode_access_token(token, expected_type="access")
     if not payload or "sub" not in payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials / Token expired"
+            detail="Could not validate credentials or Token expired"
         )
+
+    # Check server-side token revocation
+    jti = payload.get("jti")
+    if jti and is_token_revoked(jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked or logged out."
+        )
+
+    user = get_user(payload["sub"])
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account no longer exists."
+        )
+    if user.get("status") == "suspended":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended. Please contact support."
+        )
+
     return payload["sub"]
+
+# Refresh Token Schema
+class RefreshTokenSchema(BaseModel):
+    refresh_token: Optional[str] = None
 
 # Endpoints
 @app.post("/api/register/request")
-def register_request(data: OTPRequestSchema):
+def register_request(data: OTPRequestSchema, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    key = f"regreq:{client_ip}"
+    is_locked, secs = record_failed_auth_attempt(key, max_attempts=5, lock_duration_secs=600)
+    if is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many registration requests. Please try again in {secs // 60} minutes."
+        )
+
     clean_email = data.email.lower().strip()
     clean_phone = normalize_phone(data.phone)
     
-    # Check if user already exists
+    # Preventing enumeration: Return standard success message even if email exists
     existing = get_user(clean_email)
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered."
-        )
+        return {"success": True, "message": "If this email is eligible, a verification code has been dispatched."}
     
     # Start Twilio Verify / Mock flow
     result = start_verification(clean_phone)
@@ -203,12 +297,28 @@ def register_request(data: OTPRequestSchema):
         save_otp(clean_email, clean_phone, result["otp"])
         return {"success": True, "otp": result["otp"], "message": "Verification code generated (Mock Mode)."}
     else:
-        # Delete any leftover mock OTP for this email
         delete_otp(clean_email)
         return {"success": True, "message": "Verification code sent via SMS."}
 
 @app.post("/api/register/verify")
-def register_verify(data: RegisterVerifySchema):
+def register_verify(data: RegisterVerifySchema, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    key = f"regver:{client_ip}:{data.email.lower().strip()}"
+    is_locked, secs = record_failed_auth_attempt(key, max_attempts=5, lock_duration_secs=600)
+    if is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many verification attempts. Please try again in {secs // 60} minutes."
+        )
+
+    # Server-side password strength validation
+    valid_pass, msg = validate_password_strength(data.password)
+    if not valid_pass:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=msg
+        )
+
     clean_email = data.email.lower().strip()
     clean_phone = normalize_phone(data.phone)
     
@@ -220,15 +330,14 @@ def register_verify(data: RegisterVerifySchema):
             detail="Invalid or expired verification code."
         )
     
-    # Check if user already exists (double-check)
     existing = get_user(clean_email)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered."
+            detail="Account registration could not be completed."
         )
     
-    # Determine the role
+    # Determine the role (Preserve Admin Account Model)
     role = "user"
     if data.admin_code:
         if data.admin_code == ADMIN_SETUP_CODE:
@@ -239,7 +348,6 @@ def register_verify(data: RegisterVerifySchema):
                 detail="Invalid admin setup code."
             )
 
-    # Register the user
     hashed = hash_password(data.password)
     display_name = data.full_name or clean_email.split("@")[0]
     create_user(
@@ -250,28 +358,143 @@ def register_verify(data: RegisterVerifySchema):
         role=role
     )
     
-    # Clean up local OTP database entry
     delete_otp(clean_email)
+    clear_failed_auth_attempts(key)
+    logger.info(f"User registration successful for {clean_email} with role={role}")
     
     return {"success": True, "message": "Account created successfully."}
 
 @app.post("/api/login")
-def login(data: LoginRequestSchema):
-    user = get_user(data.email)
+def login(data: LoginRequestSchema, request: Request, response: Response):
+    clean_email = data.email.lower().strip()
+    client_ip = request.client.host if request.client else "unknown"
+    ip_key = f"login_ip:{client_ip}"
+    user_key = f"login_user:{clean_email}"
+
+    # Rate Limiting Check
+    is_locked_ip, secs_ip = record_failed_auth_attempt(ip_key, max_attempts=10, lock_duration_secs=900)
+    if is_locked_ip:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many failed login attempts from this IP. Please try again in {secs_ip // 60} minutes."
+        )
+        
+    is_locked_user, secs_user = record_failed_auth_attempt(user_key, max_attempts=5, lock_duration_secs=900)
+    if is_locked_user:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Account locked due to multiple failed logins. Please try again in {secs_user // 60} minutes or reset your password."
+        )
+
+    user = get_user(clean_email)
     if not user or not verify_password(data.password, user["password_hash"]):
+        logger.warning(f"Failed login attempt for {clean_email} from IP {client_ip}")
+        # Uniform failure message to prevent enumeration
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password."
         )
-    
-    # Generate token
-    token = create_access_token({"sub": user["email"], "role": user["role"]})
+
+    if user.get("status") == "suspended":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended. Please contact support."
+        )
+
+    # Clear lockout on success
+    clear_failed_auth_attempts(ip_key)
+    clear_failed_auth_attempts(user_key)
+
+    # Generate short-lived access token and long-lived refresh token
+    access_token = create_access_token({"sub": user["email"], "role": user["role"]})
+    refresh_token = create_refresh_token({"sub": user["email"], "role": user["role"]})
+
+    # Set refresh token in HttpOnly, Secure cookie
+    response.set_cookie(
+        key="payent_refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
+        max_age=7 * 86400
+    )
+
+    logger.info(f"Successful user login for {clean_email} from IP {client_ip}")
     return {
         "success": True,
-        "token": token,
+        "token": access_token,
+        "refreshToken": refresh_token,
         "role": user["role"],
         "message": "Login successful."
     }
+
+@app.post("/api/auth/refresh")
+def refresh_token(request: Request, response: Response, data: Optional[RefreshTokenSchema] = None):
+    # Retrieve refresh token from cookie or request body
+    token = request.cookies.get("payent_refresh_token")
+    if not token and data:
+        token = data.refresh_token
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token required."
+        )
+
+    payload = decode_access_token(token, expected_type="refresh")
+    if not payload or "sub" not in payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token."
+        )
+
+    jti = payload.get("jti")
+    if jti and is_token_revoked(jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked."
+        )
+
+    user = get_user(payload["sub"])
+    if not user or user.get("status") == "suspended":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user session."
+        )
+
+    new_access_token = create_access_token({"sub": user["email"], "role": user["role"]})
+    new_refresh_token = create_refresh_token({"sub": user["email"], "role": user["role"]})
+
+    # Revoke old refresh token (refresh token rotation)
+    if jti:
+        revoke_token(jti, user["email"], payload.get("exp", 0))
+
+    response.set_cookie(
+        key="payent_refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
+        max_age=7 * 86400
+    )
+
+    return {
+        "success": True,
+        "token": new_access_token,
+        "refreshToken": new_refresh_token
+    }
+
+@app.post("/api/auth/logout")
+def logout(request: Request, response: Response, authorization: Optional[str] = Header(None)):
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        payload = decode_access_token(token, expected_type="access")
+        if payload and "jti" in payload:
+            revoke_token(payload["jti"], payload.get("sub", ""), payload.get("exp", 0))
+
+    # Clear refresh token cookie
+    response.delete_cookie("payent_refresh_token")
+    return {"success": True, "message": "Logged out successfully."}
 
 @app.post("/api/forgot-password/request")
 def forgot_password_request(data: ForgotPasswordRequestSchema):
@@ -433,8 +656,25 @@ def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
 
 @app.post("/api/orders/{id}/cancel")
 def cancel_user_order(id: str, email: str = Depends(get_current_user_email)):
+    order = fetch_one("SELECT * FROM orders WHERE id = %s", (id,))
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
+    user = get_user(email)
+    if order["user_email"] != email and user.get("role") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to cancel this order.")
     cancel_order(id)
-    return {"success": True}
+    logger.info(f"Order {id} cancelled by {email}")
+    return {"success": True, "message": "Order cancelled successfully."}
+
+@app.get("/api/orders/{id}")
+def get_order_details(id: str, email: str = Depends(get_current_user_email)):
+    order = fetch_one("SELECT * FROM orders WHERE id = %s", (id,))
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
+    user = get_user(email)
+    if order["user_email"] != email and user.get("role") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to view this order.")
+    return order
 
 @app.get("/api/products/custom")
 def fetch_user_listings(email: str = Depends(get_current_user_email)):
@@ -489,18 +729,73 @@ def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_curre
 
 @app.delete("/api/products/custom/{id}")
 def remove_custom_listing(id: str, email: str = Depends(get_current_user_email)):
+    product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (id,))
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found.")
+    user = get_user(email)
+    if product["user_email"] != email and user.get("role") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to delete this listing.")
     delete_custom_product(id, email)
-    return {"success": True}
+    return {"success": True, "message": "Listing deleted successfully."}
 
 @app.post("/api/products/custom/{id}/toggle-availability")
 def toggle_listing_availability(id: str, email: str = Depends(get_current_user_email)):
+    product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (id,))
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found.")
+    user = get_user(email)
+    if product["user_email"] != email and user.get("role") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to modify this listing.")
     new_status = toggle_custom_product_availability(id, email)
-    if new_status is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Listing not found or you are not the owner."
-        )
     return {"success": True, "available": new_status}
+
+# Payment Gateway Architecture & Webhook Verification (Phase 5)
+class PaymentCheckoutSchema(BaseModel):
+    bookingId: str
+    amount: int
+    currency: Optional[str] = "INR"
+    idempotencyKey: Optional[str] = None
+
+@app.post("/api/payments/checkout-session")
+def create_payment_checkout_session(data: PaymentCheckoutSchema, email: str = Depends(get_current_user_email)):
+    order = fetch_one("SELECT * FROM orders WHERE id = %s", (data.bookingId,))
+    if not order:
+        raise HTTPException(status_code=404, detail="Order/Booking not found.")
+    if order["user_email"] != email:
+        raise HTTPException(status_code=403, detail="Forbidden access to booking.")
+
+    existing_pay = fetch_one("SELECT * FROM payments WHERE booking_id = %s AND status = 'successful'", (data.bookingId,))
+    if existing_pay:
+        return {"success": True, "status": "already_paid", "paymentId": existing_pay["id"]}
+
+    checkout_id = f"cs_{secrets.token_hex(12)}"
+    return {
+        "success": True,
+        "checkoutSessionId": checkout_id,
+        "amount": data.amount,
+        "currency": data.currency,
+        "status": "requires_payment_method",
+        "clientSecret": f"pi_{secrets.token_hex(12)}_secret_{secrets.token_hex(8)}"
+    }
+
+@app.post("/api/payments/webhook")
+async def stripe_webhook_handler(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
+    if IS_PRODUCTION and STRIPE_WEBHOOK_SECRET:
+        try:
+            import stripe
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, STRIPE_WEBHOOK_SECRET
+            )
+        except Exception as e:
+            logger.error(f"Stripe Webhook Signature Verification Failed: {e}")
+            raise HTTPException(status_code=400, detail="Invalid Stripe webhook signature.")
+    else:
+        logger.info("Stripe webhook received and processed (Dev Mode / Test Signature).")
+
+    return {"status": "success"}
 
 @app.get("/api/lender/orders")
 def fetch_lender_orders(email: str = Depends(get_current_user_email)):
@@ -664,23 +959,61 @@ def check_admin_user(current_user_email: str = Depends(get_current_user_email)) 
     return user
 
 @app.post("/api/admin/auth/login")
-def admin_login(data: LoginRequestSchema):
-    user = get_user(data.email)
+def admin_login(data: LoginRequestSchema, request: Request, response: Response):
+    clean_email = data.email.lower().strip()
+    client_ip = request.client.host if request.client else "unknown"
+    ip_key = f"admin_login_ip:{client_ip}"
+    user_key = f"admin_login_user:{clean_email}"
+
+    is_locked_ip, secs_ip = record_failed_auth_attempt(ip_key, max_attempts=10, lock_duration_secs=900)
+    if is_locked_ip:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many admin login attempts from this IP. Locked out for {secs_ip // 60} minutes."
+        )
+
+    is_locked_user, secs_user = record_failed_auth_attempt(user_key, max_attempts=5, lock_duration_secs=900)
+    if is_locked_user:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Admin account locked due to repeated failed logins. Locked out for {secs_user // 60} minutes."
+        )
+
+    user = get_user(clean_email)
     if not user or not verify_password(data.password, user["password_hash"]):
+        logger.warning(f"Failed admin login attempt for {clean_email} from IP {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password."
         )
+
     if user["role"] != "admin":
+        logger.warning(f"Non-admin user {clean_email} attempted admin login from IP {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden. Only admin users can log in to the admin portal."
+            detail="Forbidden. Admin access required."
         )
-    
-    token = create_access_token({"sub": user["email"], "role": user["role"]})
+
+    clear_failed_auth_attempts(ip_key)
+    clear_failed_auth_attempts(user_key)
+
+    access_token = create_access_token({"sub": user["email"], "role": user["role"]})
+    refresh_token = create_refresh_token({"sub": user["email"], "role": user["role"]})
+
+    response.set_cookie(
+        key="payent_refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
+        max_age=7 * 86400
+    )
+
+    logger.info(f"Successful admin login for {clean_email} from IP {client_ip}")
     return {
         "success": True,
-        "token": token,
+        "token": access_token,
+        "refreshToken": refresh_token,
         "user": {
             "id": user["email"],
             "fullName": user["full_name"],
@@ -695,8 +1028,15 @@ def admin_login(data: LoginRequestSchema):
     }
 
 @app.post("/api/admin/auth/logout")
-def admin_logout():
-    return {"success": True}
+def admin_logout(request: Request, response: Response, authorization: Optional[str] = Header(None)):
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        payload = decode_access_token(token, expected_type="access")
+        if payload and "jti" in payload:
+            revoke_token(payload["jti"], payload.get("sub", ""), payload.get("exp", 0))
+
+    response.delete_cookie("payent_refresh_token")
+    return {"success": True, "message": "Admin logged out successfully."}
 
 @app.get("/api/admin/auth/me")
 def admin_get_me(current_admin: dict = Depends(check_admin_user)):

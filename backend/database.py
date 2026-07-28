@@ -79,12 +79,33 @@ def init_db():
     add_column_safely("users", "verified BOOLEAN DEFAULT TRUE")
     add_column_safely("users", "avatar VARCHAR(1000) DEFAULT 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'")
 
+    # Create token_blocklist table for server-side JWT revocation
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS token_blocklist (
+            jti VARCHAR(255) PRIMARY KEY,
+            email VARCHAR(255),
+            expires_at INT,
+            created_at VARCHAR(100) NOT NULL
+        )
+    """)
+
+    # Create auth_rate_limits table for brute-force tracking
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS auth_rate_limits (
+            key_id VARCHAR(255) PRIMARY KEY,
+            attempts INT DEFAULT 1,
+            last_attempt INT,
+            locked_until INT DEFAULT 0
+        )
+    """)
+
     # Create OTPs table
     execute_query("""
         CREATE TABLE IF NOT EXISTS otps (
             email VARCHAR(255) PRIMARY KEY,
             phone VARCHAR(50),
             otp VARCHAR(10) NOT NULL,
+            attempts INT DEFAULT 0,
             created_at VARCHAR(100) NOT NULL
         )
     """)
@@ -578,4 +599,93 @@ def toggle_custom_product_availability(product_id: str, email: str):
             return None
     finally:
         conn.close()
+
+# Token Revocation Helpers
+REVOKED_JTIS = set()
+
+def revoke_token(jti: str, email: str, expires_at: int):
+    if not jti:
+        return
+    REVOKED_JTIS.add(jti)
+    created_at = datetime.utcnow().isoformat()
+    try:
+        execute_query(
+            "REPLACE INTO token_blocklist (jti, email, expires_at, created_at) VALUES (%s, %s, %s, %s)",
+            (jti, email, expires_at, created_at)
+        )
+    except Exception as e:
+        print(f"Notice: Database write error in revoke_token: {e}")
+
+def is_token_revoked(jti: str) -> bool:
+    if not jti:
+        return True
+    if jti in REVOKED_JTIS:
+        return True
+    try:
+        res = fetch_one("SELECT 1 FROM token_blocklist WHERE jti = %s", (jti,))
+        if res:
+            REVOKED_JTIS.add(jti)
+            return True
+    except Exception as e:
+        print(f"Warning: Database read error in is_token_revoked: {e}")
+    return False
+
+# Rate-Limiting and OTP Attempt Helpers
+RATE_LIMIT_STORE = {}
+
+def record_failed_auth_attempt(key: str, max_attempts: int = 5, lock_duration_secs: int = 900) -> tuple[bool, int]:
+    """
+    Record a failed login attempt for a key (IP or email).
+    Returns (is_locked, seconds_remaining).
+    """
+    now = int(datetime.utcnow().timestamp())
+    record = RATE_LIMIT_STORE.get(key, {"attempts": 0, "last_attempt": now, "locked_until": 0})
+    
+    if record["locked_until"] > now:
+        return True, record["locked_until"] - now
+    
+    # If last attempt was more than 15 mins ago, reset count
+    if now - record["last_attempt"] > 900:
+        record["attempts"] = 1
+    else:
+        record["attempts"] += 1
+    
+    record["last_attempt"] = now
+    
+    if record["attempts"] >= max_attempts:
+        record["locked_until"] = now + lock_duration_secs
+        RATE_LIMIT_STORE[key] = record
+        try:
+            execute_query(
+                "REPLACE INTO auth_rate_limits (key_id, attempts, last_attempt, locked_until) VALUES (%s, %s, %s, %s)",
+                (key, record["attempts"], now, record["locked_until"])
+            )
+        except Exception:
+            pass
+        return True, lock_duration_secs
+    
+    RATE_LIMIT_STORE[key] = record
+    return False, 0
+
+def clear_failed_auth_attempts(key: str):
+    RATE_LIMIT_STORE.pop(key, None)
+    try:
+        execute_query("DELETE FROM auth_rate_limits WHERE key_id = %s", (key,))
+    except Exception:
+        pass
+
+def increment_otp_attempt(email: str) -> int:
+    clean_email = email.strip().lower()
+    otp_rec = get_otp(clean_email)
+    if not otp_rec:
+        return 0
+    attempts = otp_rec.get("attempts", 0) + 1
+    otp_rec["attempts"] = attempts
+    MOCK_OTPS[clean_email] = otp_rec
+    try:
+        execute_query("UPDATE otps SET attempts = %s WHERE LOWER(email) = LOWER(%s)", (attempts, clean_email))
+    except Exception:
+        pass
+    return attempts
+
 
