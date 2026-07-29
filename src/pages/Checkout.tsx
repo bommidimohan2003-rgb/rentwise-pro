@@ -1,6 +1,6 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { Check, CreditCard, QrCode, Phone, Smartphone, AlertCircle, Info } from "lucide-react";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { Check, ShieldCheck, Lock, Loader2, AlertTriangle, RefreshCw, Smartphone, CreditCard, Building2, Wallet, QrCode } from "lucide-react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
@@ -11,6 +11,19 @@ import { api } from "@/utils/api";
 import type { Order } from "@/types";
 import { toast } from "sonner";
 import { CelebrationFlourish } from "@/components/common/CelebrationFlourish";
+
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && (window as unknown as { Razorpay?: unknown }).Razorpay) {
+      return resolve(true);
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 export default function Checkout() {
   const search = useSearch({ from: "/checkout" }) as { id?: string };
@@ -25,9 +38,12 @@ export default function Checkout() {
   const [coupon, setCoupon] = useState("");
   const [applied, setApplied] = useState(false);
 
-  // Modal & Processing Statuses
+  // Modal & Razorpay Processing Statuses
   const [open, setOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
 
   // Payment Method: "card" | "upi"
   const [paymentMethod, setPaymentMethod] = useState<"card" | "upi">("card");
@@ -121,52 +137,135 @@ export default function Checkout() {
     }, 1200);
   };
 
-  // Simulate payment processing & submit
-  const handlePay = () => {
-    if (paymentMethod === "card") {
-      const cleanNum = cardNumber.replace(/\D/g, "");
-      if (cleanNum.length < 16) {
-        toast.error("Please enter a valid 16-digit card number.");
-        return;
-      }
-      if (!cardName.trim()) {
-        toast.error("Please enter the cardholder name.");
-        return;
-      }
-      if (cardExpiry.length < 5) {
-        toast.error("Please enter a valid expiration date (MM/YY).");
-        return;
-      }
-      if (cardCvv.length < 3) {
-        toast.error("Please enter a valid 3-digit CVV.");
-        return;
-      }
-    } else if (paymentMethod === "upi") {
-      if (upiType === "id" && !upiVerified) {
-        toast.error("Please verify your UPI ID before submitting payment.");
-        return;
-      }
-      if (upiType === "qr" && !qrActive) {
-        toast.error("Please generate a payment QR code first.");
-        return;
-      }
+  // Razorpay Real Payment Handler
+  const handlePayWithRazorpay = async () => {
+    setPaymentError(null);
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    
+    if (!token) {
+      toast.error("Please sign in to complete your gear rental.");
+      navigate({ to: "/login" });
+      return;
     }
 
     setIsProcessing(true);
 
-    // Simulate Redirecting to payment portal
-    setTimeout(() => {
-      setIsProcessing(false);
-      navigate({
-        to: "/payment",
-        search: {
-          id: product.id,
-          total: Math.round(total),
-          start,
-          end,
-        } as never,
+    try {
+      // 1. Create order on backend (recomputes price server-side from DB)
+      const orderRes = await api.createRazorpayOrder(
+        token,
+        product.id,
+        start,
+        end,
+        applied ? "SAVE10" : coupon
+      );
+
+      // 2. Ensure Razorpay Checkout SDK is loaded
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        setIsProcessing(false);
+        setPaymentError("Failed to load Razorpay Payment Gateway. Check your network connection.");
+        toast.error("Razorpay SDK failed to load.");
+        return;
+      }
+
+      const user = storage.get<{ email?: string; fullName?: string; phone?: string } | null>(
+        STORAGE_KEYS.currentUser,
+        null
+      );
+
+      // 3. Razorpay Options Config
+      const options = {
+        key: orderRes.key_id,
+        amount: orderRes.amount,
+        currency: orderRes.currency || "INR",
+        name: "Payent Tech Gear Rental",
+        description: `Rental: ${product.title} (${orderRes.days || days} days)`,
+        image: product.image,
+        order_id: orderRes.razorpay_order_id,
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          setIsProcessing(false);
+          setIsVerifying(true);
+          toast.loading("Verifying payment security signature...", { id: "rzp-verify" });
+
+          try {
+            const verifyRes = await api.verifyRazorpayPayment(
+              token,
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature
+            );
+
+            setIsVerifying(false);
+            toast.dismiss("rzp-verify");
+            toast.success("Payment verified! Rental booking confirmed 🎉");
+
+            const confirmed: Order = {
+              id: verifyRes.order_id || orderRes.order_id,
+              productId: product.id,
+              productTitle: product.title,
+              productImage: product.image,
+              startDate: start,
+              endDate: end,
+              total: Math.round(orderRes.total),
+              status: "active",
+              createdAt: new Date().toISOString(),
+            };
+
+            setConfirmedOrder(confirmed);
+            setOpen(true);
+          } catch (verifyErr) {
+            setIsVerifying(false);
+            toast.dismiss("rzp-verify");
+            const err = verifyErr as { message?: string };
+            setPaymentError(err.message || "Payment signature verification failed. Please contact support.");
+            toast.error("Payment verification failed.");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessing(false);
+            setIsVerifying(false);
+            setPaymentError("Payment window was closed before completing the transaction.");
+            toast.info("Payment window closed.");
+          },
+        },
+        prefill: {
+          name: user?.fullName || "",
+          email: user?.email || "",
+          contact: user?.phone || "",
+        },
+        notes: {
+          product_id: product.id,
+          booking_id: orderRes.order_id,
+        },
+        theme: {
+          color: "#000000",
+        },
+      };
+
+      const rzp = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void; on: (event: string, handler: (resp: any) => void) => void } }).Razorpay(options);
+
+      rzp.on("payment.failed", (response: { error?: { description?: string; code?: string; reason?: string } }) => {
+        setIsProcessing(false);
+        setIsVerifying(false);
+        const description = response.error?.description || "Payment attempt failed.";
+        setPaymentError(`Razorpay Payment Failed: ${description}`);
+        toast.error(`Payment failed: ${description}`);
       });
-    }, 1200);
+
+      rzp.open();
+    } catch (err) {
+      setIsProcessing(false);
+      setIsVerifying(false);
+      const error = err as { message?: string };
+      setPaymentError(error.message || "Could not initiate payment. Please try again.");
+      toast.error(error.message || "Failed to create payment order.");
+    }
   };
 
   // Helper for countdown display
@@ -572,14 +671,53 @@ export default function Checkout() {
               </div>
             </div>
 
-            <Button size="lg" className="w-full" onClick={handlePay} loading={isProcessing}>
-              {isProcessing ? "Processing..." : `Confirm & Pay ₹${total.toFixed(0)}`}
+            {isVerifying && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center gap-2 text-xs">
+                <Loader2 className="h-4 w-4 animate-spin shrink-0 text-amber-500" />
+                <span>Verifying payment signature with server...</span>
+              </div>
+            )}
+
+            {paymentError && (
+              <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-2">
+                <div className="flex items-center gap-2 font-semibold">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>Payment Error</span>
+                </div>
+                <p className="text-muted-foreground">{paymentError}</p>
+                <button
+                  type="button"
+                  onClick={handlePayWithRazorpay}
+                  className="font-medium underline flex items-center gap-1 text-foreground hover:text-primary transition-colors"
+                >
+                  <RefreshCw className="h-3 w-3" /> Retry Payment
+                </button>
+              </div>
+            )}
+
+            <Button
+              size="lg"
+              className="w-full font-bold"
+              onClick={handlePayWithRazorpay}
+              loading={isProcessing || isVerifying}
+              disabled={isProcessing || isVerifying}
+            >
+              {isVerifying ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Verifying Security...
+                </span>
+              ) : isProcessing ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Launching Razorpay...
+                </span>
+              ) : (
+                `Pay with Razorpay ₹${total.toFixed(0)}`
+              )}
             </Button>
 
             {/* Secure Payment details */}
             <div className="flex items-center gap-2 justify-center text-[10px] text-muted-foreground mt-4 text-center">
-              <Check className="h-3 w-3 text-emerald-500 shrink-0" /> Secure 256-bit SSL encrypted
-              payments.
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> Razorpay 256-bit PCI-DSS encrypted payment gateway.
             </div>
           </aside>
         </div>

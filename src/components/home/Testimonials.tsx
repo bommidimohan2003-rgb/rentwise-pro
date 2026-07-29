@@ -8,18 +8,18 @@ const testimonials = [
     role: "Freelance Photographer",
     avatar: "👩‍🎨",
     quote:
-      "Payent saved me thousands on camera gear. I rented a Sony A7 IV for a wedding shoot at a fraction of the cost. The lender was super reliable and delivery was on time!",
+      "Payent saved me thousands on camera gear. I rented a professional camera for a wedding shoot at a fraction of the cost. The lender was super reliable and delivery was on time!",
     rating: 5,
-    product: "Sony A7 IV Camera",
+    product: "Camera",
   },
   {
     name: "Rohan Mehta",
     role: "Content Creator",
     avatar: "🧑‍💻",
     quote:
-      "Rented a DJI Mavic 3 for my travel series. The booking process was instant, payments were secure, and the drone arrived perfectly packed. 10/10 experience!",
+      "Rented a drone for my travel series. The booking process was instant, payments were secure, and the drone arrived perfectly packed. 10/10 experience!",
     rating: 5,
-    product: "DJI Mavic 3 Drone",
+    product: "Drone",
   },
   {
     name: "Anjali Nair",
@@ -77,7 +77,7 @@ export function Testimonials() {
     <section
       id="testimonials"
       ref={ref}
-      className="relative py-28 px-4 sm:px-6 overflow-hidden bg-[#000000] text-white border-t border-[#1a1a1a]"
+      className="relative py-28 px-4 sm:px-6 overflow-hidden bg-background text-foreground border-t border-border"
     >
       {/* Subtle Dot Grid */}
       <div className="absolute inset-0 bg-[radial-gradient(#FF5A5F_1px,transparent_1px)] [background-size:32px_32px] opacity-5 pointer-events-none" />
@@ -93,10 +93,10 @@ export function Testimonials() {
           <p className="text-xs font-extrabold tracking-widest text-[#FF5A5F] uppercase">
             TESTIMONIALS
           </p>
-          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white font-display">
+          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground font-display">
             Loved by <span className="text-[#FF5A5F]">50,000+</span> creators
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base max-w-lg mx-auto font-normal">
+          <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto font-normal">
             Real stories from renters who discovered a smarter way to access premium gear.
           </p>
         </motion.div>
@@ -113,7 +113,7 @@ export function Testimonials() {
               key={t.name}
               variants={cardVariants}
               whileHover={{ y: -6 }}
-              className="group relative rounded-2xl p-7 flex flex-col bg-[#0A0A0A] border border-[#222222] hover:border-[#FF5A5F]/40 transition-all duration-300 shadow-xl"
+              className="group relative rounded-2xl p-7 flex flex-col bg-card border border-border hover:border-[#FF5A5F]/40 transition-all duration-300 shadow-xl"
             >
               {/* Quote Icon */}
               <Quote className="h-6 w-6 mb-4 text-[#FF5A5F] opacity-70 group-hover:opacity-100 transition-opacity" />
@@ -126,7 +126,7 @@ export function Testimonials() {
               </div>
 
               {/* Quote Text */}
-              <p className="text-sm text-slate-300 leading-relaxed flex-1 italic group-hover:text-white transition-colors">
+              <p className="text-sm text-muted-foreground leading-relaxed flex-1 italic group-hover:text-foreground transition-colors">
                 "{t.quote}"
               </p>
 
@@ -136,13 +136,13 @@ export function Testimonials() {
               </div>
 
               {/* User Avatar & Info */}
-              <div className="mt-5 pt-5 border-t border-[#1c1c1c] flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-[#181818] border border-[#2a2a2a] flex items-center justify-center text-xl shrink-0">
+              <div className="mt-5 pt-5 border-t border-border flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-secondary border border-border flex items-center justify-center text-xl shrink-0">
                   {t.avatar}
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-extrabold text-white">{t.name}</div>
-                  <div className="text-xs text-slate-500 font-medium">{t.role}</div>
+                  <div className="text-sm font-extrabold text-foreground">{t.name}</div>
+                  <div className="text-xs text-muted-foreground font-medium">{t.role}</div>
                 </div>
               </div>
             </motion.div>

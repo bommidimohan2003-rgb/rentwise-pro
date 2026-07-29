@@ -96,15 +96,15 @@ export function Hero() {
   const ActiveIcon = activeItem.icon;
 
   return (
-    <section className="relative overflow-hidden bg-[#0B2545] text-white pt-10 pb-20 md:pt-16 md:pb-28">
+    <section className="relative overflow-hidden bg-background text-foreground pt-8 pb-12 md:pt-10 md:pb-16 border-b border-border">
       {/* Subtle Dot Grid Pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(#FF5A5F_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
 
       <div className="relative mx-auto max-w-7xl px-4 md:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
           
           {/* Left Column: Headline, Subtitle, Buttons, Stats */}
-          <div className="lg:col-span-7 space-y-8 text-left z-10">
+          <div className="lg:col-span-7 space-y-5 text-left z-10">
             
             {/* Tagline Badge */}
             <motion.div
@@ -124,7 +124,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] text-white font-display"
+              className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-foreground font-display"
             >
               Rent <span className="text-[#FF5A5F]">Anything.</span>
               <br />
@@ -136,7 +136,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-slate-300 text-base md:text-lg max-w-xl leading-relaxed font-normal"
+              className="text-muted-foreground text-sm md:text-base max-w-xl leading-relaxed font-normal"
             >
               Payent is a peer-to-peer rental marketplace where you can rent cameras, drones, laptops, power tools, and gear or earn by listing what you own.
             </motion.p>
@@ -150,17 +150,17 @@ export function Hero() {
             >
               <Link
                 to="/categories"
-                className="bg-[#FF5A5F] hover:bg-[#e0484d] text-white font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg shadow-[#FF5A5F]/30 transition-all duration-200 active:scale-95 flex items-center gap-2"
+                className="bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all duration-200 active:scale-95 flex items-center gap-2"
               >
                 <span>Explore Items</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/about"
-                className="border border-white/25 hover:bg-white/10 text-white font-bold text-sm px-7 py-3.5 rounded-xl transition-all duration-200 active:scale-95 flex items-center gap-2"
+                className="border border-border bg-secondary hover:bg-secondary/80 text-foreground font-bold text-sm px-7 py-3.5 rounded-xl transition-all duration-200 active:scale-95 flex items-center gap-2"
               >
                 <span>How It Works</span>
-                <Play className="h-3.5 w-3.5 fill-current text-white" />
+                <Play className="h-3.5 w-3.5 fill-current text-foreground" />
               </Link>
             </motion.div>
 
@@ -169,35 +169,35 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="grid grid-cols-3 gap-4 pt-6 max-w-lg border-t border-white/10"
+              className="grid grid-cols-3 gap-4 pt-6 max-w-lg border-t border-border"
             >
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#FF5A5F] shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-[#FF5A5F] shrink-0">
                   <Users className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-lg md:text-xl font-extrabold text-white">10K+</h4>
-                  <p className="text-[11px] text-slate-400 font-medium">Active Users</p>
+                  <h4 className="text-lg md:text-xl font-extrabold text-foreground">10K+</h4>
+                  <p className="text-[11px] text-muted-foreground font-medium">Active Users</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#FF5A5F] shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-[#FF5A5F] shrink-0">
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-lg md:text-xl font-extrabold text-white">5K+</h4>
-                  <p className="text-[11px] text-slate-400 font-medium">Items Listed</p>
+                  <h4 className="text-lg md:text-xl font-extrabold text-foreground">5K+</h4>
+                  <p className="text-[11px] text-muted-foreground font-medium">Items Listed</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#FF5A5F] shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-[#FF5A5F] shrink-0">
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-lg md:text-xl font-extrabold text-white">25K+</h4>
-                  <p className="text-[11px] text-slate-400 font-medium">Successful Rentals</p>
+                  <h4 className="text-lg md:text-xl font-extrabold text-foreground">25K+</h4>
+                  <p className="text-[11px] text-muted-foreground font-medium">Successful Rentals</p>
                 </div>
               </div>
             </motion.div>

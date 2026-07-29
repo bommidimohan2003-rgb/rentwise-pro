@@ -8,18 +8,25 @@ import bikeImg from "@/assets/images/bike.png";
 import toolImg from "@/assets/images/tool.png";
 import powerbankImg from "@/assets/images/powerbank.png";
 
-// Specific product images
-import sonyA7Img from "@/assets/images/sony_a7.png";
+// Specific flagship product angle images (1 item per category)
+import sonyA7FrontImg from "@/assets/images/sony_a7_front.png";
+import sonyA7TopImg from "@/assets/images/sony_a7_top.png";
+import sonyA7BackImg from "@/assets/images/sony_a7_back.png";
+import sonyA7SideImg from "@/assets/images/sony_a7_side.png";
+
 import macbookProImg from "@/assets/images/macbook_pro.png";
-import djiMavicImg from "@/assets/images/dji_mavic.png";
+import macbookFrontImg from "@/assets/images/macbook_front.png";
+import macbookTopImg from "@/assets/images/macbook_top.png";
+import macbookKeyboardImg from "@/assets/images/macbook_keyboard.png";
+import macbookSideImg from "@/assets/images/macbook_side.png";
+
+import droneFrontImg from "@/assets/images/drone_front.png";
+import droneTopImg from "@/assets/images/drone_top.png";
+import droneRemoteImg from "@/assets/images/drone_remote.png";
+import droneSideImg from "@/assets/images/drone_side.png";
+
 import ankerPowerCoreImg from "@/assets/images/anker_powercore.png";
-import ambranePowerLitImg from "@/assets/images/ambrane_powerlit.png";
-import xiaomiMiBoostImg from "@/assets/images/xiaomi_mi_boost.png";
-import urbnPowerbankProdImg from "@/assets/images/urbn_powerbank_prod.png";
 import reClassic350Img from "@/assets/images/re_classic350.png";
-import trekMarlinImg from "@/assets/images/trek_marlin.png";
-import ktmDukeImg from "@/assets/images/ktm_duke.png";
-import hondaActivaImg from "@/assets/images/honda_activa.png";
 
 const stockImg = (seed: string) =>
   `https://images.unsplash.com/photo-${seed}?auto=format&fit=crop&w=1200&q=80`;
@@ -29,7 +36,7 @@ export const categories: Category[] = [
     id: "cameras",
     name: "Cameras",
     icon: "Camera",
-    count: 128,
+    count: 1,
     color: "from-rose-500 to-pink-500",
     image: cameraImg,
   },
@@ -37,7 +44,7 @@ export const categories: Category[] = [
     id: "laptops",
     name: "Laptops",
     icon: "Laptop",
-    count: 96,
+    count: 1,
     color: "from-blue-500 to-indigo-500",
     image: laptopImg,
   },
@@ -45,7 +52,7 @@ export const categories: Category[] = [
     id: "drones",
     name: "Drones",
     icon: "Plane",
-    count: 54,
+    count: 1,
     color: "from-emerald-500 to-teal-500",
     image: droneImg,
   },
@@ -53,7 +60,7 @@ export const categories: Category[] = [
     id: "bikes",
     name: "Bikes & Rides",
     icon: "Bike",
-    count: 62,
+    count: 1,
     color: "from-teal-500 to-cyan-500",
     image: bikeImg,
   },
@@ -61,7 +68,7 @@ export const categories: Category[] = [
     id: "tools",
     name: "Electric Tools",
     icon: "Hammer",
-    count: 48,
+    count: 1,
     color: "from-purple-500 to-indigo-500",
     image: toolImg,
   },
@@ -69,342 +76,202 @@ export const categories: Category[] = [
     id: "powerbanks",
     name: "Power Banks",
     icon: "Zap",
-    count: 28,
+    count: 1,
     color: "from-amber-500 to-yellow-500",
     image: powerbankImg,
   },
 ];
 
-const sonyA7Frames: string[] = [
-  "https://images.unsplash.com/photo-1516035069371-29a6b244cc54?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1508898578281-774ac4893c0c?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1512756290469-ec264b7fbf97?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1510127034890-ba27508e9f1c?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1516035069371-29a6b244cc54?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1000&q=80",
+export const sonyA7Frames: string[] = [
+  sonyA7FrontImg,
+  sonyA7TopImg,
+  sonyA7BackImg,
+  sonyA7SideImg,
 ];
 
-const macbookProFrames: string[] = [
-  "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1000&q=80",
+export const macbookProFrames: string[] = [
+  macbookFrontImg,
+  macbookTopImg,
+  macbookKeyboardImg,
+  macbookSideImg,
 ];
 
-const djiMavicFrames: string[] = [
-  "https://images.unsplash.com/photo-1527977966376-1c8408f9f10c?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1521405924368-64c5b84bec60?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1527977966376-1c8408f9f10c?auto=format&fit=crop&w=1000&q=80",
-  "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1000&q=80",
+export const djiMavicFrames: string[] = [
+  droneFrontImg,
+  droneTopImg,
+  droneRemoteImg,
+  droneSideImg,
+];
+
+export const powerbankFrames: string[] = [
+  ankerPowerCoreImg,
+  "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1541877944-ac82a091518a?auto=format&fit=crop&w=1000&q=80",
+];
+
+export const bikeFrames: string[] = [
+  reClassic350Img,
+  "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1000&q=80",
+];
+
+export const toolFrames: string[] = [
+  toolImg,
+  "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80",
 ];
 
 const initialProducts: Product[] = [
+  // --- 1. CAMERAS CATEGORY (1 Product) ---
   {
     id: "p1",
-    title: "Sony A7 IV Mirrorless Camera",
-    description:
-      "Full-frame 33MP hybrid camera. Perfect for cinema-quality video and stills. Includes 28-70mm lens, batteries, and hard case.",
+    title: "Camera",
+    description: "Full-frame 33MP hybrid camera. Perfect for cinema-quality video and stills. Includes 28-70mm lens, batteries, and protective hard case.",
     price: 4500,
-    image: sonyA7Img,
-    rotationFrames: sonyA7Frames,
+    image: sonyA7FrontImg,
+    images: [sonyA7FrontImg, sonyA7TopImg, sonyA7BackImg, sonyA7SideImg],
+    angleImages: [
+      { label: "Front", image: sonyA7FrontImg },
+      { label: "Top", image: sonyA7TopImg },
+      { label: "Back", image: sonyA7BackImg },
+      { label: "Side", image: sonyA7SideImg }
+    ],
     category: "cameras",
     rating: 4.9,
     reviews: 128,
     available: true,
+    isReference: true,
     owner: { name: "Alex Morgan", avatar: "https://i.pravatar.cc/100?img=12", rating: 4.9 },
   },
+
+  // --- 2. LAPTOPS CATEGORY (1 Product) ---
   {
     id: "p2",
-    title: 'MacBook Pro 16" M3 Max',
-    description: "Top-spec MacBook Pro with 64GB RAM and 2TB SSD. Ideal for editing and dev work.",
+    title: "Laptop",
+    description: "High-performance professional laptop with 16-core CPU, 40-core GPU, 64GB RAM, and 2TB SSD. Ideal for 8K video editing and 3D rendering.",
     price: 3500,
     image: macbookProImg,
+    images: [macbookFrontImg, macbookTopImg, macbookKeyboardImg, macbookSideImg],
+    angleImages: [
+      { label: "Front", image: macbookFrontImg },
+      { label: "Top", image: macbookTopImg },
+      { label: "Keyboard", image: macbookKeyboardImg },
+      { label: "Side", image: macbookSideImg }
+    ],
     rotationFrames: macbookProFrames,
     category: "laptops",
     rating: 4.8,
     reviews: 92,
     available: true,
+    isReference: true,
     owner: { name: "Priya Shah", avatar: "https://i.pravatar.cc/100?img=32", rating: 4.8 },
   },
-  {
-    id: "p2_dell",
-    title: "Dell XPS 15 Touchscreen Laptop",
-    description:
-      'Premium Dell creator laptop featuring a stunning 15.6" OLED touchscreen display, Intel Core i9, 32GB RAM, and NVIDIA RTX 4060 graphics.',
-    price: 2800,
-    image: laptopImg,
-    category: "laptops",
-    rating: 4.7,
-    reviews: 45,
-    available: true,
-    owner: { name: "Sarah Connor", avatar: "https://i.pravatar.cc/100?img=25", rating: 4.8 },
-  },
-  {
-    id: "p2_lenovo",
-    title: "Lenovo ThinkPad X1 Carbon Laptop",
-    description:
-      "Ultimate lightweight business companion. Features Intel Core i7, 16GB RAM, 1TB SSD, and legendary ThinkPad durability and keyboard comfort.",
-    price: 2200,
-    image: laptopImg,
-    category: "laptops",
-    rating: 4.9,
-    reviews: 31,
-    available: true,
-    owner: { name: "David Miller", avatar: "https://i.pravatar.cc/100?img=18", rating: 4.9 },
-  },
-  {
-    id: "p2_asus",
-    title: "Asus ROG Zephyrus G14 Gaming Laptop",
-    description:
-      "High-performance ultraportable gaming beast. AMD Ryzen 9, NVIDIA RTX 4070, 16GB DDR5, and a blazing-fast 120Hz display.",
-    price: 3000,
-    image: macbookProImg,
-    category: "laptops",
-    rating: 4.8,
-    reviews: 27,
-    available: true,
-    owner: { name: "John Doe", avatar: "https://i.pravatar.cc/100?img=8", rating: 4.7 },
-  },
-  {
-    id: "p2_hp",
-    title: "HP Spectre x360 Convertible Laptop",
-    description:
-      "Premium 2-in-1 touchscreen convertible laptop. Intel Core i7, 16GB RAM, 512GB SSD. Easily flips into tablet mode, stylus pen included.",
-    price: 2400,
-    image: laptopImg,
-    category: "laptops",
-    rating: 4.6,
-    reviews: 19,
-    available: true,
-    owner: { name: "Lisa Ray", avatar: "https://i.pravatar.cc/100?img=35", rating: 4.6 },
-  },
+
+  // --- 3. DRONES CATEGORY (1 Product) ---
   {
     id: "p3",
-    title: "DJI Mavic 3 Pro Drone",
-    description:
-      "Hasselblad triple-camera drone with 43-min flight time. Includes 3 batteries and ND filters.",
+    title: "Drone",
+    description: "Pro cinema aerial drone with 4/3 CMOS primary sensor, 4K video recording, 43-minute flight time, and omnidirectional sensing.",
     price: 5000,
-    image: djiMavicImg,
+    image: droneFrontImg,
+    images: [droneFrontImg, droneTopImg, droneRemoteImg, droneSideImg],
+    angleImages: [
+      { label: "Front", image: droneFrontImg },
+      { label: "Top", image: droneTopImg },
+      { label: "Remote", image: droneRemoteImg },
+      { label: "Side", image: droneSideImg }
+    ],
     rotationFrames: djiMavicFrames,
     category: "drones",
     rating: 5.0,
     reviews: 67,
     available: true,
+    isReference: true,
     owner: { name: "Leo Chen", avatar: "https://i.pravatar.cc/100?img=45", rating: 5.0 },
   },
-  {
-    id: "p4",
-    title: "Anker PowerCore 24K 140W Power Bank",
-    description:
-      "Ultra-high capacity power bank with 140W two-way fast charging. Features a smart digital display showing charge level and output specs.",
-    price: 250,
-    image: ankerPowerCoreImg,
-    category: "powerbanks",
-    rating: 4.9,
-    reviews: 114,
-    available: true,
-    owner: { name: "Maya Patel", avatar: "https://i.pravatar.cc/100?img=47", rating: 4.7 },
-  },
-  {
-    id: "p5",
-    title: "Ambrane PowerLit 50000mAh Power Bank",
-    description:
-      "Massive 50000mAh battery backup. Supports 22.5W fast charging, triple outputs, and dual input modes. Rugged design with LED flashlight.",
-    price: 350,
-    image: ambranePowerLitImg,
-    category: "powerbanks",
-    rating: 4.8,
-    reviews: 95,
-    available: true,
-    owner: { name: "James Ford", avatar: "https://i.pravatar.cc/100?img=52", rating: 4.6 },
-  },
-  {
-    id: "p6",
-    title: "Xiaomi Mi Boost Pro 30000mAh Power Bank",
-    description:
-      "High-capacity power bank with 18W fast charge capability. Triple port output, dual input, and high-quality metallic finish.",
-    price: 200,
-    image: xiaomiMiBoostImg,
-    category: "powerbanks",
-    rating: 4.7,
-    reviews: 63,
-    available: true,
-    owner: { name: "Sofia Ruiz", avatar: "https://i.pravatar.cc/100?img=48", rating: 4.9 },
-  },
-  {
-    id: "p7",
-    title: "URBN 20000mAh Ultra Compact Power Bank",
-    description:
-      "Pocket-sized 20000mAh external battery with 22.5W super-fast charging. Dual ports and carbon fiber texture finish.",
-    price: 150,
-    image: urbnPowerbankProdImg,
-    category: "powerbanks",
-    rating: 4.6,
-    reviews: 42,
-    available: true,
-    owner: { name: "Noah Kim", avatar: "https://i.pravatar.cc/100?img=15", rating: 4.8 },
-  },
+
+  // --- 4. BIKES & RIDES CATEGORY (1 Product) ---
   {
     id: "p9",
-    title: "Royal Enfield Classic 350",
-    description:
-      "Iconic cruiser bike. Perfect for road trips and local rides. Insured, well maintained, includes helmet.",
+    title: "Motorcycle",
+    description: "Classic cruiser bike with 349cc engine, dual-channel ABS, teardrop fuel tank, and comfortable riding posture. Includes helmet & insurance.",
     price: 1200,
     image: reClassic350Img,
+    images: [
+      reClassic350Img,
+      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1000&q=80"
+    ],
+    angleImages: [
+      { label: "Front Cruiser", image: reClassic350Img },
+      { label: "Side Profile", image: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=80" },
+      { label: "Rear Exhaust", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1000&q=80" },
+      { label: "3/4 Cockpit", image: "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1000&q=80" }
+    ],
     category: "bikes",
     rating: 4.9,
     reviews: 43,
     available: true,
+    isReference: true,
     owner: { name: "Rahul Sharma", avatar: "https://i.pravatar.cc/100?img=11", rating: 4.8 },
   },
-  {
-    id: "p10",
-    title: "Trek Marlin 7 Mountain Bike",
-    description:
-      "High-performance mountain bike with front suspension, hydraulic disc brakes, and 1x10 drivetrain. Helmet included.",
-    price: 500,
-    image: trekMarlinImg,
-    category: "bikes",
-    rating: 4.7,
-    reviews: 29,
-    available: true,
-    owner: { name: "Amit Patel", avatar: "https://i.pravatar.cc/100?img=33", rating: 4.7 },
-  },
+
+  // --- 5. ELECTRIC TOOLS CATEGORY (1 Product) ---
   {
     id: "p11",
-    title: "Bosch Professional Hammer Drill",
-    description:
-      "Powerful 800W rotary hammer drill and drilling machine. Includes concrete/wood drill bits, side handle, and depth stop. Perfect for home improvement.",
+    title: "Electric Tool",
+    description: "Professional 880W rotary hammer drill with 3.2 Joules impact energy, safety clutch, and variable speed control. Includes drill bits and heavy-duty case.",
     price: 350,
     image: toolImg,
+    images: [
+      toolImg,
+      "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80"
+    ],
+    angleImages: [
+      { label: "Main Drill", image: toolImg },
+      { label: "Side Grip", image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1000&q=80" },
+      { label: "Hammer Chuck", image: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=1000&q=80" },
+      { label: "Carry Case", image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80" }
+    ],
     category: "tools",
     rating: 4.8,
     reviews: 35,
     available: true,
+    isReference: true,
     owner: { name: "Vikram Singh", avatar: "https://i.pravatar.cc/100?img=47", rating: 4.9 },
   },
+
+  // --- 6. POWER BANKS CATEGORY (1 Product) ---
   {
-    id: "p12",
-    title: "DeWare 20V Max Cordless Drill",
-    description:
-      "Compact cordless drill/driver and drilling machine with 2 batteries and charger. High-speed transmission for fast drilling and fastening.",
-    price: 450,
-    image: toolImg,
-    category: "tools",
-    rating: 4.6,
-    reviews: 18,
-    available: true,
-    owner: { name: "Suresh Kumar", avatar: "https://i.pravatar.cc/100?img=12", rating: 4.6 },
-  },
-  {
-    id: "p13",
-    title: "KTM Duke 390 Sports Bike",
-    description:
-      "High-performance sports motorcycle with 373cc liquid-cooled engine. Extreme agility, ABS, and standard riding gear included.",
-    price: 1800,
-    image: ktmDukeImg,
-    category: "bikes",
-    rating: 4.9,
-    reviews: 57,
-    available: true,
-    owner: { name: "Aditya Verma", avatar: "https://i.pravatar.cc/100?img=15", rating: 4.9 },
-  },
-  {
-    id: "p14",
-    title: "Honda Activa 6G Scooter",
-    description:
-      "Comfortable, fuel-efficient city scooter. Easy automatic transmission. Comes with first-aid kit and helmet.",
-    price: 400,
-    image: hondaActivaImg,
-    category: "bikes",
-    rating: 4.6,
-    reviews: 82,
-    available: true,
-    owner: { name: "Karan Johar", avatar: "https://i.pravatar.cc/100?img=20", rating: 4.5 },
-  },
-  {
-    id: "p15",
-    title: "Firefox Target 21-Speed Hybrid Cycle",
-    description:
-      "Premium alloy hybrid bicycle with Shimano 21-speed shifters and front suspension. Includes lock and helmet.",
+    id: "p4",
+    title: "Power Bank",
+    description: "Ultra-high capacity 24,000mAh external battery pack with 140W fast charging and smart digital display for rapid device charging.",
     price: 250,
-    image: bikeImg,
-    category: "bikes",
-    rating: 4.5,
-    reviews: 14,
-    available: true,
-    owner: { name: "Vikram Seth", avatar: "https://i.pravatar.cc/100?img=32", rating: 4.6 },
-  },
-  {
-    id: "p16",
-    title: "Ather 450X Electric Scooter",
-    description:
-      "Flagship smart electric scooter with warp mode. Insured, GPS enabled, touch dashboard. Charger included.",
-    price: 600,
-    image: hondaActivaImg,
-    category: "bikes",
-    rating: 4.8,
-    reviews: 31,
-    available: true,
-    owner: { name: "Rohan Das", avatar: "https://i.pravatar.cc/100?img=48", rating: 4.9 },
-  },
-  {
-    id: "p17",
-    title: "Makita 5-Inch Angle Grinder",
-    description:
-      "Heavy-duty electric grinder for metal cutting, grinding, and polishing. Safety guard and side handle included.",
-    price: 300,
-    image: toolImg,
-    category: "tools",
-    rating: 4.7,
-    reviews: 22,
-    available: true,
-    owner: { name: "Deepak Gupta", avatar: "https://i.pravatar.cc/100?img=45", rating: 4.7 },
-  },
-  {
-    id: "p18",
-    title: "Stanley 7-Inch Electric Circular Saw",
-    description:
-      "High-precision circular saw for woodworking. Ergonomic design and powerful motor for clean, fast straight cuts.",
-    price: 400,
-    image: toolImg,
-    category: "tools",
-    rating: 4.8,
-    reviews: 19,
-    available: true,
-    owner: { name: "Manish Sharma", avatar: "https://i.pravatar.cc/100?img=52", rating: 4.8 },
-  },
-  {
-    id: "p19",
-    title: "Dyson V11 Cordless Vacuum Cleaner",
-    description:
-      "Powerful intelligent cordless vacuum. Auto-adapts to different floor types. Complete set of accessories included.",
-    price: 1000,
-    image: toolImg,
-    category: "tools",
+    image: ankerPowerCoreImg,
+    images: [
+      ankerPowerCoreImg,
+      "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1541877944-ac82a091518a?auto=format&fit=crop&w=1000&q=80"
+    ],
+    angleImages: [
+      { label: "Front Display", image: ankerPowerCoreImg },
+      { label: "140W Ports", image: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?auto=format&fit=crop&w=1000&q=80" },
+      { label: "Metal Casing", image: "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1000&q=80" },
+      { label: "Fast Charging", image: "https://images.unsplash.com/photo-1541877944-ac82a091518a?auto=format&fit=crop&w=1000&q=80" }
+    ],
+    category: "powerbanks",
     rating: 4.9,
-    reviews: 44,
+    reviews: 114,
     available: true,
-    owner: { name: "Anjali Rao", avatar: "https://i.pravatar.cc/100?img=5", rating: 4.9 },
-  },
-  {
-    id: "p20",
-    title: "Karcher K4 High-Pressure Washer",
-    description:
-      "Professional high-pressure washer for cleaning cars, patios, and walls. Water-cooled motor with adjustable nozzle spray.",
-    price: 500,
-    image: toolImg,
-    category: "tools",
-    rating: 4.7,
-    reviews: 26,
-    available: true,
-    owner: { name: "Prakash Raj", avatar: "https://i.pravatar.cc/100?img=12", rating: 4.6 },
+    isReference: true,
+    owner: { name: "Maya Patel", avatar: "https://i.pravatar.cc/100?img=47", rating: 4.7 },
   },
 ];
 
@@ -414,7 +281,28 @@ const getCustomProducts = (): Product[] => {
   return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
 };
 
-export const products: Product[] = [...getCustomProducts(), ...initialProducts];
+export const products: Product[] = [...getCustomProducts(), ...initialProducts].map((p) => {
+  let defaultAngles = sonyA7Frames;
+  if (p.category === "laptops") defaultAngles = macbookProFrames;
+  else if (p.category === "drones") defaultAngles = djiMavicFrames;
+  else if (p.category === "powerbanks") defaultAngles = powerbankFrames;
+  else if (p.category === "bikes") defaultAngles = bikeFrames;
+  else if (p.category === "tools") defaultAngles = toolFrames;
+
+  const rawImages = p.images && p.images.length >= 2 ? p.images : defaultAngles;
+  const defaultLabels = ["Front", "Side", "Back", "3/4 View"];
+  const angleImages = rawImages.slice(0, 4).map((img, idx) => ({
+    label: defaultLabels[idx] || `Angle ${idx + 1}`,
+    image: img,
+  }));
+
+  return {
+    ...p,
+    images: rawImages,
+    angleImages: p.angleImages && p.angleImages.length >= 2 ? p.angleImages : angleImages,
+    rotationFrames: p.rotationFrames && p.rotationFrames.length >= 2 ? p.rotationFrames : defaultAngles,
+  };
+});
 
 export const reviews: Review[] = [
   {
@@ -479,16 +367,11 @@ export const stats = [
   {
     label: "Happy Renters",
     value: "48k",
-    image: stockImg("1494790108377-be9c29b29330"),
+    image: stockImg("1522071820081-009f0129c71c"),
   },
   {
     label: "Cities Covered",
-    value: "120",
-    image: stockImg("1595658658481-d53d3f999875"),
-  },
-  {
-    label: "Avg. Rating",
-    value: "4.9★",
-    image: stockImg("1516035069371-29a1b244cc32"),
+    value: "120+",
+    image: stockImg("1477959858617-67f30ac4ce71"),
   },
 ];

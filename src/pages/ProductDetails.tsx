@@ -1,15 +1,18 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { Calendar, Check, Heart, Shield, Truck, MessageSquare, MapPin, Star, Clock, ArrowRight, ShieldCheck } from "lucide-react";
+import { Calendar, Check, Heart, Shield, Truck, MessageSquare, MapPin, Star, Clock, ArrowRight, ShieldCheck, Info } from "lucide-react";
 import { useState } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Rating } from "@/components/common/Rating";
 import { products, reviews } from "@/utils/mockData";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { JsonLd } from "@/components/common/JsonLd";
 import { PhotoDetailViewer } from "@/components/common/PhotoDetailViewer";
 import { ProductRotationViewer } from "@/components/common/ProductRotationViewer";
+import { ProductAngleViewer } from "@/components/common/ProductAngleViewer";
 
 const mockDates = [
   { day: "Mon", date: "20 May" },
@@ -25,17 +28,19 @@ export default function ProductDetails() {
   const { id } = useParams({ from: "/product/$id" });
   const navigate = useNavigate();
   const { has, toggle } = useWishlist();
+  const { user } = useAuth();
   const product = products.find((p) => p.id === id);
-  const [activeImg, setActiveImg] = useState(0);
   const [selectedDate, setSelectedDate] = useState(0);
   const [selectedTime, setSelectedTime] = useState("12:00 PM");
+
+  const isOwner = Boolean(user && product && (user.fullName === product.owner.name || user.email === product.owner.name));
 
   if (!product) {
     return (
       <MainLayout>
         <div className="mx-auto max-w-3xl px-4 md:px-6 py-24 text-center">
           <h1 className="text-2xl font-bold">Product not found</h1>
-          <Button className="mt-6 bg-[#FF5A5F]" onClick={() => navigate({ to: "/categories" })}>
+          <Button className="mt-6 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200" onClick={() => navigate({ to: "/categories" })}>
             Browse marketplace
           </Button>
         </div>
@@ -94,53 +99,56 @@ export default function ProductDetails() {
     ],
   };
 
-  const gallery = [product.image, product.image, product.image, product.image];
+  const gallery =
+    product.images && product.images.length > 0
+      ? product.images
+      : product.rotationFrames && product.rotationFrames.length > 0
+      ? product.rotationFrames
+      : [product.image];
 
   return (
     <MainLayout>
       <JsonLd schema={productSchema} />
       <JsonLd schema={breadcrumbSchema} />
-      <section className="mx-auto max-w-7xl px-4 md:px-6 py-10 space-y-12">
-        <div className="grid lg:grid-cols-12 gap-10 items-start">
+      <section className="mx-auto max-w-7xl px-4 md:px-6 py-5 space-y-6">
+        <div className="grid lg:grid-cols-12 gap-6 items-start">
           
-          {/* Left Column: Image Viewer & Thumbnail Gallery */}
-          <div className="lg:col-span-7 space-y-4 sticky top-24">
-            {product.rotationFrames && product.rotationFrames.length >= 2 ? (
+          {/* Left Column: Image Viewer */}
+          <div className="lg:col-span-7 space-y-3 sticky top-20">
+            {product.angleImages && product.angleImages.length >= 2 ? (
+              <ProductAngleViewer
+                angles={product.angleImages}
+                productTitle={product.title}
+                onWishlistToggle={() => toggle(product.id)}
+                isWishlisted={has(product.id)}
+              />
+            ) : product.rotationFrames && product.rotationFrames.length >= 2 ? (
               <ProductRotationViewer
                 frames={product.rotationFrames}
                 productTitle={product.title}
               />
             ) : (
               <PhotoDetailViewer
-                primaryImage={gallery[activeImg]}
+                primaryImage={product.image}
                 productTitle={product.title}
+                angles={gallery}
                 onWishlistToggle={() => toggle(product.id)}
                 isWishlisted={has(product.id)}
               />
             )}
-
-            {/* Thumbnail Gallery */}
-            <div className="grid grid-cols-4 gap-3 pt-2">
-              {gallery.map((g, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImg(i)}
-                  className={cn(
-                    "aspect-square rounded-2xl overflow-hidden border-2 transition-all cursor-pointer",
-                    activeImg === i
-                      ? "border-[#FF5A5F] ring-2 ring-[#FF5A5F]/30 scale-105"
-                      : "border-transparent opacity-60 hover:opacity-100"
-                  )}
-                >
-                  <img src={g} alt="" className="h-full w-full object-cover" />
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Right Column: Reference App Mockup Details & Booking Panel */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="rounded-3xl bg-card border border-border/80 p-6 md:p-8 space-y-6 shadow-xl text-left">
+          <div className="lg:col-span-5 space-y-4">
+            {/* Functional Reference Notice Banner */}
+            {product.isReference && (
+              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-card border-2 border-primary/30 text-xs text-foreground shadow-sm">
+                <Info className="h-4 w-4 text-primary shrink-0" />
+                <span><span className="font-extrabold px-1.5 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black text-[10px] tracking-wider uppercase mr-1">REFERENCE MODEL</span> This item serves as a reference model for demonstrating platform features.</span>
+              </div>
+            )}
+
+            <div className="rounded-2xl bg-card border border-border/80 p-4 md:p-5 space-y-4 shadow-lg text-left">
               
               {/* Category & Availability Header */}
               <div className="flex items-center justify-between">
@@ -214,7 +222,7 @@ export default function ProductDetails() {
                       className={cn(
                         "p-2.5 rounded-2xl text-center border transition-all cursor-pointer",
                         selectedDate === idx
-                          ? "bg-[#0B2545] dark:bg-[#000000] text-white border-[#0B2545] dark:border-[#FF5A5F] shadow-md"
+                          ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-md"
                           : "bg-card border-border text-foreground hover:border-[#FF5A5F]/50"
                       )}
                     >
@@ -238,8 +246,8 @@ export default function ProductDetails() {
                       className={cn(
                         "py-2 px-1 text-center rounded-xl border text-xs font-extrabold transition-all cursor-pointer",
                         selectedTime === time
-                          ? "bg-[#FF5A5F] text-white border-[#FF5A5F] shadow-md shadow-[#FF5A5F]/20"
-                          : "bg-card border-border text-foreground hover:border-[#FF5A5F]/50"
+                          ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-md"
+                          : "bg-card border-border text-foreground hover:border-black/50 dark:hover:border-white/50"
                       )}
                     >
                       {time}
@@ -249,24 +257,60 @@ export default function ProductDetails() {
               </div>
 
               {/* Pricing & Primary Action Button */}
-              <div className="pt-4 border-t border-border/80 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-bold">Total Rental Fee</span>
+              <div className="pt-4 border-t border-border space-y-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Rental Rate</span>
                   <div>
-                    <span className="text-3xl font-black text-[#FF5A5F] tracking-tight">₹{product.price}</span>
+                    <span className="text-3xl font-black text-foreground tracking-tight">₹{product.price}</span>
                     <span className="text-xs text-slate-400 font-medium"> / day</span>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={!product.available}
-                  onClick={() => navigate({ to: "/checkout", search: { id: product.id } as never })}
-                  className="w-full bg-[#FF5A5F] hover:bg-[#e0484d] disabled:opacity-50 text-white font-bold text-sm py-4 rounded-2xl shadow-lg shadow-[#FF5A5F]/30 transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>Confirm Booking</span>
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                {product.isReference ? (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate({ to: "/become-lender", search: { title: product.title, category: product.category, price: product.price.toString() } as never })}
+                      className="w-full bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>List Your Gear</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                    <p className="text-[11px] text-muted-foreground text-center font-medium">
+                      Reference item. Listed gear from community lenders includes instant Rent Now booking.
+                    </p>
+                  </div>
+                ) : isOwner ? (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full bg-secondary text-muted-foreground font-bold text-sm py-4 rounded-2xl border border-border/80 cursor-not-allowed flex items-center justify-center gap-2 opacity-70"
+                    >
+                      <span>Your Listed Item</span>
+                    </button>
+                    <p className="text-[11px] text-muted-foreground text-center font-medium">
+                      You are the owner of this listing and cannot book your own item.
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={!product.available}
+                    onClick={() => {
+                      if (!user) {
+                        toast.error("Please log in to book this item.");
+                        navigate({ to: "/login" });
+                        return;
+                      }
+                      navigate({ to: "/checkout", search: { id: product.id } as never });
+                    }}
+                    className="w-full bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50 text-white dark:text-black font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Rent Now - Confirm Booking</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                )}
               </div>
 
               {/* Insurance & Delivery Badges */}

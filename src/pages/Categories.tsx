@@ -1,14 +1,41 @@
-import { useMemo, useState, useEffect } from "react";
-import { Filter, Search as SearchIcon, MapPin, SlidersHorizontal, Sparkles } from "lucide-react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import {
+  Search as SearchIcon,
+  Sparkles,
+  Camera,
+  Laptop,
+  Plane,
+  Bike,
+  Hammer,
+  Zap,
+  Layers,
+  X,
+  ArrowUpDown,
+  ChevronDown,
+  Check,
+  Star,
+  ArrowRight,
+  Info,
+} from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
 import { categories, products } from "@/utils/mockData";
-import { Button } from "@/components/common/Button";
+import { advancedSearch } from "@/utils/searchEngine";
 import { cn } from "@/lib/utils";
-import { useSearch, useNavigate } from "@tanstack/react-router";
+import { useSearch, useNavigate, Link } from "@tanstack/react-router";
 import { NoSearchResults } from "@/components/states/NoSearchResults";
 
 type Sort = "featured" | "price_asc" | "price_desc" | "rating";
+
+const categoryIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  all: Layers,
+  cameras: Camera,
+  laptops: Laptop,
+  drones: Plane,
+  bikes: Bike,
+  tools: Hammer,
+  powerbanks: Zap,
+};
 
 export default function Categories() {
   const search = useSearch({ from: "/categories" }) as { q?: string; cat?: string };
@@ -17,12 +44,29 @@ export default function Categories() {
   const cat = search.cat || "all";
   const [q, setLocalQ] = useState(search.q || "");
   const [sort, setSort] = useState<Sort>("featured");
-  const [max, setMax] = useState(10000);
-  const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLocalQ(search.q || "");
   }, [search.q]);
+
+  // Click outside listener for category dropdown and search suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const setQ = (val: string) => {
     setLocalQ(val);
@@ -41,36 +85,23 @@ export default function Categories() {
         cat: newCat === "all" ? undefined : newCat,
       }),
     });
+    setIsDropdownOpen(false);
   };
 
   const handleResetFilters = () => {
     setCat("all");
     setQ("");
-    setMax(10000);
+    setSort("featured");
   };
 
+  // Perform Intelligent Advanced Search
   const filtered = useMemo(() => {
     let list = products.filter((p) => (cat === "all" ? true : p.category === cat));
 
     if (q) {
-      const searchLower = q.toLowerCase().trim();
-      const matchedCategoryIds = categories
-        .filter(
-          (c) =>
-            c.name.toLowerCase().includes(searchLower) || c.id.toLowerCase().includes(searchLower),
-        )
-        .map((c) => c.id);
-
-      list = list.filter((p) => {
-        const matchesTitle = p.title.toLowerCase().includes(searchLower);
-        const matchesDesc = p.description.toLowerCase().includes(searchLower);
-        const matchesCategoryDirect = p.category.toLowerCase().includes(searchLower);
-        const matchesCategoryName = matchedCategoryIds.includes(p.category);
-        return matchesTitle || matchesDesc || matchesCategoryDirect || matchesCategoryName;
-      });
+      list = advancedSearch(list, q);
     }
 
-    list = list.filter((p) => p.price <= max);
     switch (sort) {
       case "price_asc":
         list = [...list].sort((a, b) => a.price - b.price);
@@ -83,180 +114,262 @@ export default function Categories() {
         break;
     }
     return list;
-  }, [cat, q, sort, max]);
+  }, [cat, q, sort]);
+
+  // Instant Suggestions for Search Autocomplete
+  const liveSuggestions = useMemo(() => {
+    if (!q || q.trim().length < 2) return [];
+    return advancedSearch(products, q).slice(0, 5);
+  }, [q]);
+
+  // Compute category item counts dynamically
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: products.length };
+    categories.forEach((c) => {
+      counts[c.id] = products.filter((p) => p.category === c.id).length;
+    });
+    return counts;
+  }, []);
+
+  // Selected Category Info
+  const selectedCatObj = categories.find((c) => c.id === cat);
+  const selectedCatName = cat === "all" ? "All Categories" : selectedCatObj?.name || cat;
+  const SelectedIcon = categoryIconMap[cat] || Layers;
+  const selectedCount = categoryCounts[cat] || 0;
+
+  // List of all options for the vertical dropdown
+  const allCategoryOptions = [
+    { id: "all", name: "All Categories", icon: Layers, count: categoryCounts.all },
+    ...categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      icon: categoryIconMap[c.id] || Sparkles,
+      count: categoryCounts[c.id] || 0,
+    })),
+  ];
 
   return (
     <MainLayout>
-      <section className="mx-auto max-w-7xl px-4 md:px-6 py-10 space-y-8">
-        
-        {/* Top Location & Header Row (Reference App Mockup Style) */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-6">
-          <div className="space-y-1.5 text-left">
-            <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 bg-[#FF5A5F]/10 border border-[#FF5A5F]/30 text-[#FF5A5F] text-xs font-extrabold">
-              <MapPin className="h-3.5 w-3.5" />
-              <span>Bangalore • Mumbai • Delhi NCR</span>
-            </div>
-            <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight font-display">
-              Discover <span className="text-[#FF5A5F]">Your Next Gear</span>
-            </h1>
-            <p className="text-xs md:text-sm text-slate-500 font-medium">
-              Browse {products.length}+ insured cameras, drones, laptops, and audio gear nearby.
-            </p>
+      <div className="space-y-6 py-4 px-4 md:px-8 max-w-7xl mx-auto">
+        {/* Section Title Header */}
+        <div className="text-center space-y-2 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-black text-primary tracking-wider uppercase">
+            <Sparkles className="h-3 w-3" />
+            <span>Explore Marketplace</span>
           </div>
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground font-display">
+            Browse <span className="px-2 py-0.5 rounded-lg bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-sm">Reference</span> Premium Gear
+          </h1>
+          <p className="text-xs md:text-sm text-muted-foreground font-medium">
+            Rent high-performance cameras, laptops, drones, bikes, power banks, and electric tools from verified owners.
+          </p>
 
-          {/* Quick Stats Pill */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="rounded-2xl bg-card border border-border p-3.5 text-center shadow-sm">
-              <p className="text-xs font-bold text-slate-400">Total Items</p>
-              <p className="text-xl font-extrabold text-[#FF5A5F]">{products.length}+</p>
-            </div>
-            <div className="rounded-2xl bg-card border border-border p-3.5 text-center shadow-sm">
-              <p className="text-xs font-bold text-slate-400">Protection</p>
-              <p className="text-xl font-extrabold text-[#0B2545] dark:text-white">₹5 Lakhs</p>
-            </div>
+          {/* Functional Reference Notice */}
+          <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-card border-2 border-primary/30 text-xs text-foreground text-center font-medium shadow-sm max-w-xl mx-auto mt-2">
+            <Info className="h-4 w-4 text-primary shrink-0" />
+            <span>Listed items serve as <span className="font-extrabold px-1.5 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black text-[11px]">REFERENCE MODELS</span> for platform demonstration purposes only.</span>
           </div>
         </div>
 
-        {/* Search Bar & Category Pills Bar (Reference App Mockup Style) */}
-        <div className="space-y-4">
-          <div className="relative max-w-2xl">
-            <div className="flex items-center gap-3 rounded-full bg-card border border-border/90 px-4 py-3 shadow-md focus-within:border-[#FF5A5F] focus-within:ring-2 focus-within:ring-[#FF5A5F]/20 transition-all">
-              <SearchIcon className="h-5 w-5 text-slate-400 shrink-0" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder-slate-400 font-medium"
-                placeholder="Search Place, Camera, Drone, Laptop, or Mic..."
-              />
-              <button
-                onClick={() => setShowMobileFilter(!showMobileFilter)}
-                className="lg:hidden h-8 w-8 rounded-full bg-[#FF5A5F]/10 text-[#FF5A5F] flex items-center justify-center cursor-pointer"
-                aria-label="Filter"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Category Horizontal Filter Pills (Reference App Mockup Style) */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {/* Top Control Bar: Category Dropdown at TOP LEFT CORNER + Intelligent Search Bar + Sort */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+          
+          {/* TOP LEFT CORNER: Category Dropdown Menu Button */}
+          <div className="relative md:w-64 shrink-0" ref={dropdownRef}>
             <button
-              onClick={() => setCat("all")}
-              className={cn(
-                "px-5 py-2 text-xs font-extrabold rounded-full transition-all duration-200 cursor-pointer shrink-0",
-                cat === "all"
-                  ? "bg-[#FF5A5F] text-white shadow-md shadow-[#FF5A5F]/30"
-                  : "bg-card hover:bg-secondary text-foreground border border-border"
-              )}
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full flex items-center justify-between h-11 px-3.5 rounded-2xl bg-black dark:bg-white text-white dark:text-black border border-primary/50 shadow-md hover:shadow-lg transition-all cursor-pointer group"
+              aria-expanded={isDropdownOpen}
+              aria-haspopup="true"
             >
-              All Items
-            </button>
-            {categories.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setCat(c.id)}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1.5 rounded-lg bg-primary text-primary-foreground shrink-0">
+                  <SelectedIcon className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-black tracking-tight truncate">{selectedCatName}</span>
+                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-white/20 dark:bg-black/20 text-white dark:text-black shrink-0">
+                  {selectedCount}
+                </span>
+              </div>
+
+              <ChevronDown
                 className={cn(
-                  "px-5 py-2 text-xs font-extrabold rounded-full transition-all duration-200 cursor-pointer shrink-0",
-                  cat === c.id
-                    ? "bg-[#FF5A5F] text-white shadow-md shadow-[#FF5A5F]/30"
-                    : "bg-card hover:bg-secondary text-foreground border border-border"
+                  "h-4 w-4 text-white/80 dark:text-black/80 shrink-0 transition-transform duration-300 ml-1",
+                  isDropdownOpen && "rotate-180"
                 )}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Main Grid & Filters Layout */}
-        <div className="flex flex-col lg:flex-row gap-6 pt-2">
-          {/* Desktop Filter Sidebar */}
-          <aside className="lg:w-64 shrink-0 space-y-6 hidden lg:block">
-            <div className="rounded-3xl bg-card border border-border p-6 shadow-sm space-y-6 text-left">
-              <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2 border-b border-border pb-3">
-                <Filter className="h-4 w-4 text-[#FF5A5F]" /> Filter Options
-              </h3>
-              
-              <div className="space-y-5">
-                <div>
-                  <label className="text-xs uppercase font-extrabold text-slate-400 tracking-wider">
-                    Max Price: <span className="text-[#FF5A5F]">₹{max}/day</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={100}
-                    max={10000}
-                    step={100}
-                    value={max}
-                    onChange={(e) => setMax(Number(e.target.value))}
-                    className="w-full mt-3 accent-[#FF5A5F] cursor-pointer"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs uppercase font-extrabold text-slate-400 tracking-wider block mb-2">
-                    Sort By
-                  </label>
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value as Sort)}
-                    className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-bold text-foreground outline-none focus:border-[#FF5A5F]"
-                  >
-                    <option value="featured">Featured Items</option>
-                    <option value="price_asc">Price: Low to High</option>
-                    <option value="price_desc">Price: High to Low</option>
-                    <option value="rating">Top Rated</option>
-                  </select>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-border hover:border-[#FF5A5F]/50 text-xs font-bold rounded-xl"
-                  onClick={handleResetFilters}
-                >
-                  Reset Filters
-                </Button>
-              </div>
-            </div>
-          </aside>
-
-          {/* Product Grid Area */}
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-slate-500">
-                Showing <span className="text-foreground font-black">{filtered.length}</span> rental listings
-              </p>
-              <div className="hidden lg:block">
-                <select
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as Sort)}
-                  className="h-9 px-3 rounded-xl border border-border bg-card text-xs font-bold text-foreground outline-none"
-                >
-                  <option value="featured">Sort: Featured</option>
-                  <option value="price_asc">Price: Low to High</option>
-                  <option value="price_desc">Price: High to Low</option>
-                  <option value="rating">Top Rated</option>
-                </select>
-              </div>
-            </div>
-
-            {filtered.length ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-                {filtered.map((p, i) => (
-                  <ProductCard key={p.id} product={p} index={i} />
-                ))}
-              </div>
-            ) : (
-              <NoSearchResults
-                query={q}
-                onClearFilters={handleResetFilters}
               />
+            </button>
+
+            {/* Vertical Dropdown Menu List */}
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 w-72 mt-2 z-50 rounded-2xl bg-card border border-border shadow-2xl p-1.5 space-y-1 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+                <div className="px-3 py-1.5 text-[10px] uppercase font-black tracking-wider text-muted-foreground border-b border-border/50">
+                  Select Category
+                </div>
+
+                <div className="max-h-[320px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                  {allCategoryOptions.map((opt) => {
+                    const IconComp = opt.icon;
+                    const isSelected = cat === opt.id;
+
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => setCat(opt.id)}
+                        className={cn(
+                          "w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all cursor-pointer",
+                          isSelected
+                            ? "bg-primary text-primary-foreground shadow-md font-bold"
+                            : "hover:bg-secondary text-foreground hover:text-primary font-medium"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className={cn(
+                              "p-1.5 rounded-lg transition-all",
+                              isSelected
+                                ? "bg-white/20 text-white"
+                                : "bg-secondary text-muted-foreground group-hover:text-primary"
+                            )}
+                          >
+                            <IconComp className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="text-xs font-extrabold">{opt.name}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "text-[9px] font-extrabold px-2 py-0.5 rounded-full",
+                              isSelected
+                                ? "bg-white/25 text-white"
+                                : "bg-secondary/80 text-muted-foreground"
+                            )}
+                          >
+                            {opt.count} Items
+                          </span>
+                          {isSelected && <Check className="h-3.5 w-3.5 text-white shrink-0" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
+
+          {/* Intelligent Search Input Bar with Instant Live Suggestions Dropdown */}
+          <div className="relative flex-1 w-full" ref={searchBoxRef}>
+            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              value={q}
+              onFocus={() => setIsSearchFocused(true)}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setIsSearchFocused(true);
+              }}
+              placeholder="Search Sony, MacBook, Mavic, Royal Enfield, DeWalt, Anker..."
+              className="w-full h-11 pl-10 pr-9 rounded-2xl bg-card border border-border/80 text-xs font-medium text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 shadow-sm transition-all"
+            />
+            {q && (
+              <button
+                onClick={() => setQ("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            {/* Instant Live Autocomplete Suggestions Popup */}
+            {isSearchFocused && liveSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl bg-card border border-border shadow-2xl p-2 space-y-1 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+                <div className="px-3 py-1.5 flex items-center justify-between text-[10px] uppercase font-black tracking-wider text-muted-foreground border-b border-border/50">
+                  <span>Live Search Matches ({liveSuggestions.length})</span>
+                  <span className="text-[9px] text-primary font-bold">Fuzzy & Synonym Engine Active</span>
+                </div>
+
+                <div className="space-y-1">
+                  {liveSuggestions.map((item) => (
+                    <Link
+                      key={item.id}
+                      to="/product/$id"
+                      params={{ id: item.id }}
+                      onClick={() => setIsSearchFocused(false)}
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-secondary transition-all group text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="h-10 w-10 rounded-lg object-cover border border-border/60 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-extrabold text-foreground group-hover:text-primary transition-colors truncate">
+                            {item.title}
+                          </p>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <span className="capitalize font-bold text-primary">{item.category}</span>
+                            <span>•</span>
+                            <div className="flex items-center gap-0.5 text-amber-500 font-bold">
+                              <Star className="h-3 w-3 fill-amber-400" />
+                              <span>{item.rating.toFixed(1)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-black text-primary">₹{item.price}/day</span>
+                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sort Selector */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <ArrowUpDown className="h-4 w-4 text-muted-foreground hidden sm:block" />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as Sort)}
+              className="h-11 px-3 rounded-2xl border border-border bg-card text-xs font-bold text-foreground outline-none cursor-pointer focus:border-primary"
+            >
+              <option value="featured">Sort: Featured</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="rating">Top Rated</option>
+            </select>
+          </div>
+
         </div>
 
-      </section>
+        {/* Results Info Subheader */}
+        <div className="flex items-center justify-between px-1 pt-1">
+          <p className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
+            Showing <span className="text-foreground font-black">{filtered.length}</span> rental listings
+            {cat !== "all" && ` in ${categories.find((c) => c.id === cat)?.name || cat}`}
+            {q && ` for "${q}"`}
+          </p>
+
+          <span className="text-xs font-bold text-muted-foreground">
+            {products.length} Items Total
+          </span>
+        </div>
+
+        {/* Product Cards Grid */}
+        {filtered.length ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filtered.map((p, i) => (
+              <ProductCard key={p.id} product={p} index={i} />
+            ))}
+          </div>
+        ) : (
+          <NoSearchResults query={q} onClearFilters={handleResetFilters} />
+        )}
+      </div>
     </MainLayout>
   );
 }

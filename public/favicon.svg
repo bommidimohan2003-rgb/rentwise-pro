@@ -1,21 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- Rounded gradient background box representing our logo badge -->
-  <rect width="32" height="32" rx="8" fill="url(#bg-gradient)" />
-  
-  <!-- Clean, highly legible connected ribbon P and R logo inside the badge -->
-  <g transform="translate(1, 1)">
-    <!-- Left side 'P' -->
-    <path d="M7 21V7h5.5a3.5 3.5 0 0 1 0 7H7" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-    <!-- Connected bridge and right side 'R' -->
-    <path d="M7 14h7V7h5.5a3.5 3.5 0 0 1 0 7H14" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-    <!-- Leg of the R -->
-    <path d="M17.5 14l3.5 7" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-  </g>
-  
-  <defs>
-    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7c3aed" /> {/* Violet-600 */}
-      <stop offset="100%" stop-color="#ec4899" /> {/* Pink-500 */}
-    </linearGradient>
-  </defs>
+  <rect width="32" height="32" rx="8" fill="#000000" />
+  <rect x="7" y="6" width="3.5" height="20" rx="1.75" fill="#FFFFFF" />
+  <path
+    fill="#FFFFFF"
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M10.5 6H18.5C22.6421 6 26 9.35786 26 13.5C26 17.6421 22.6421 21 18.5 21H10.5V17.5H18.5C20.7091 17.5 22.5 15.7091 22.5 13.5C22.5 11.2909 20.7091 9.5 18.5 9.5H10.5V6Z"
+  />
+  <circle cx="18.5" cy="13.5" r="2.25" fill="#FFFFFF" />
 </svg>

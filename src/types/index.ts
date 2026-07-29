@@ -3,6 +3,9 @@ export interface User {
   fullName: string;
   email: string;
   phone?: string;
+  address?: string;
+  city?: string;
+  pincode?: string;
   password?: string;
   avatar?: string;
   role?: "user" | "admin";
@@ -16,11 +19,13 @@ export interface Product {
   price: number;
   image: string;
   images?: string[];
+  angleImages?: { label: string; image: string }[];
   rotationFrames?: string[];
   category: string;
   rating: number;
   reviews: number;
   available: boolean;
+  isReference?: boolean;
   owner: {
     name: string;
     avatar: string;

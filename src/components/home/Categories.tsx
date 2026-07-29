@@ -1,96 +1,75 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { Camera, Laptop, Plane, Bike, Wrench, BatteryCharging } from "lucide-react";
+import { Camera, Laptop, Plane, Bike, Hammer, Zap, ArrowRight, Sparkles } from "lucide-react";
 
 const categoryList = [
   {
     id: "cameras",
     name: "Cameras",
-    count: "1,200+ items",
+    count: "10 Products",
     icon: Camera,
+    gradient: "from-rose-500/10 to-pink-500/10 border-rose-500/20 text-rose-500",
   },
   {
     id: "laptops",
     name: "Laptops",
-    count: "950+ items",
+    count: "10 Products",
     icon: Laptop,
+    gradient: "from-blue-500/10 to-indigo-500/10 border-blue-500/20 text-blue-500",
   },
   {
     id: "drones",
     name: "Drones",
-    count: "850+ items",
+    count: "8 Products",
     icon: Plane,
+    gradient: "from-emerald-500/10 to-teal-500/10 border-emerald-500/20 text-emerald-500",
   },
   {
-    id: "bikes-rides",
+    id: "bikes",
     name: "Bikes & Rides",
-    count: "650+ items",
+    count: "11 Products",
     icon: Bike,
+    gradient: "from-teal-500/10 to-cyan-500/10 border-cyan-500/20 text-cyan-500",
   },
   {
-    id: "electric-tools",
+    id: "tools",
     name: "Electric Tools",
-    count: "750+ items",
-    icon: Wrench,
+    icon: Hammer,
+    count: "10 Products",
+    gradient: "from-purple-500/10 to-indigo-500/10 border-indigo-500/20 text-indigo-500",
   },
   {
-    id: "power-banks",
+    id: "powerbanks",
     name: "Power Banks",
-    count: "500+ items",
-    icon: BatteryCharging,
+    count: "10 Products",
+    icon: Zap,
+    gradient: "from-amber-500/10 to-yellow-500/10 border-amber-500/20 text-amber-500",
   },
 ];
 
-const pills = ["All", "Cameras", "Laptops", "Drones", "Bikes & Rides", "Electric Tools", "Power Banks"];
-
 export function Categories() {
-  const [activeTab, setActiveTab] = useState("All");
-
-  const filteredCategories = activeTab === "All"
-    ? categoryList
-    : categoryList.filter((cat) => cat.name.toLowerCase() === activeTab.toLowerCase());
-
   return (
-    <section className="bg-[#F7F9FB] py-20 text-slate-900">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 text-center space-y-10">
+    <section className="bg-background py-10 text-foreground border-y border-border/50">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 text-center space-y-6">
         
         {/* Header */}
-        <div className="space-y-3 max-w-2xl mx-auto">
-          <p className="text-xs font-extrabold tracking-widest text-[#FF5A5F] uppercase">
-            POPULAR CATEGORIES
-          </p>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#0B2545] font-display">
-            Find What <span className="text-[#FF5A5F]">You Need</span>
+        <div className="space-y-2 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-black text-primary tracking-wider uppercase">
+            <Sparkles className="h-3 w-3" />
+            <span>Popular Categories</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground font-display">
+            Find What <span className="text-primary">You Need</span>
           </h2>
-          <p className="text-sm md:text-base text-slate-500 font-medium">
-            Explore top gear categories and discover great equipment around you.
+          <p className="text-xs md:text-sm text-muted-foreground font-medium">
+            Explore 59+ insured cameras, laptops, drones, bikes, power banks, and electric tools nearby.
           </p>
-        </div>
-
-        {/* Category Pills (Matching Image 2 design) */}
-        <div className="flex flex-wrap items-center justify-center gap-2.5 max-w-3xl mx-auto">
-          {pills.map((pill) => {
-            const isActive = activeTab === pill;
-            return (
-              <button
-                key={pill}
-                onClick={() => setActiveTab(pill)}
-                className={`px-5 py-2.5 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? "bg-[#FF5A5F] text-white shadow-md shadow-[#FF5A5F]/30"
-                    : "bg-[#0B2545]/90 hover:bg-[#0B2545] text-white border border-[#0B2545]"
-                }`}
-              >
-                {pill}
-              </button>
-            );
-          })}
         </div>
 
         {/* 6 Category Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {filteredCategories.map((cat, idx) => {
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {categoryList.map((cat, idx) => {
             const IconComp = cat.icon;
             return (
               <motion.div
@@ -101,16 +80,17 @@ export function Categories() {
               >
                 <Link
                   to="/categories"
-                  className="group bg-white hover:bg-[#0B2545] border border-slate-200/80 hover:border-[#0B2545] rounded-2xl p-6 text-center shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center space-y-3 cursor-pointer h-full"
+                  search={{ cat: cat.id }}
+                  className="group bg-card hover:bg-secondary border border-border hover:border-primary/50 rounded-2xl p-3.5 text-center shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-between space-y-2.5 cursor-pointer h-full"
                 >
-                  <div className="h-14 w-14 rounded-2xl bg-[#FF5A5F]/10 group-hover:bg-[#FF5A5F] text-[#FF5A5F] group-hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm">
-                    <IconComp className="h-7 w-7" />
+                  <div className="h-10 w-10 rounded-xl bg-secondary group-hover:bg-primary text-foreground group-hover:text-primary-foreground flex items-center justify-center transition-all duration-300 shadow-sm group-hover:scale-110">
+                    <IconComp className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-[#0B2545] group-hover:text-white transition-colors duration-300">
+                    <h3 className="font-extrabold text-xs text-foreground transition-colors duration-300">
                       {cat.name}
                     </h3>
-                    <p className="text-xs text-slate-400 group-hover:text-slate-300 font-medium mt-1 transition-colors duration-300">
+                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5 transition-colors duration-300">
                       {cat.count}
                     </p>
                   </div>
@@ -124,9 +104,10 @@ export function Categories() {
         <div className="pt-2">
           <Link
             to="/categories"
-            className="inline-flex items-center justify-center bg-[#FF5A5F] hover:bg-[#e0484d] text-white font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg shadow-[#FF5A5F]/25 transition-all duration-200 active:scale-95"
+            className="inline-flex items-center gap-2 bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-extrabold text-sm px-8 py-3.5 rounded-full shadow-lg transition-all duration-200 active:scale-95 cursor-pointer"
           >
-            View All Categories
+            <span>View All 59 Listings</span>
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 

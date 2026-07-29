@@ -105,6 +105,7 @@ export default function BecomeLender() {
       rating: 5.0,
       reviews: 0,
       available: true,
+      isReference: false,
       owner: {
         name: user?.fullName || "Verified Lender",
         avatar:
@@ -181,7 +182,7 @@ export default function BecomeLender() {
           <form className="mt-6 space-y-4" onSubmit={onSubmit}>
             <Input
               label="Item title"
-              placeholder="e.g. Sony A7 IV Mirrorless Camera"
+              placeholder="e.g. High-Resolution Camera"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required

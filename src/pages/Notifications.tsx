@@ -11,7 +11,7 @@ const seed: Notification[] = [
   {
     id: "n1",
     title: "Booking confirmed",
-    message: "Your Sony A7 IV rental starts tomorrow.",
+    message: "Your Camera rental starts tomorrow.",
     type: "success",
     read: false,
     createdAt: "2h ago",
@@ -27,7 +27,7 @@ const seed: Notification[] = [
   {
     id: "n3",
     title: "Return reminder",
-    message: "DJI Mavic 3 due back in 2 days.",
+    message: "Drone due back in 2 days.",
     type: "warning",
     read: true,
     createdAt: "1d ago",

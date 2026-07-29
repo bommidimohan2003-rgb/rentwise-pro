@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
-import { Eye, EyeOff, Lock, Mail, Phone, User } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Phone, User, ArrowRight, ShieldCheck, MapPin, Building2, Compass } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,6 +15,9 @@ const schema = z
     fullName: z.string().trim().min(2, "Enter your full name (at least 2 letters)").max(100),
     email: z.string().trim().min(1, "Email is required").email("Enter a valid email address").max(255),
     phone: z.string().trim().min(7, "Enter a valid phone number (at least 7 digits)").max(20),
+    address: z.string().trim().min(5, "Enter complete street address (at least 5 characters)"),
+    city: z.string().trim().min(2, "Enter city name"),
+    pincode: z.string().trim().min(6, "Enter valid 6-digit PIN code").max(10),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirm: z.string().min(1, "Please confirm your password"),
     terms: z.literal(true, { errorMap: () => ({ message: "Please accept the Terms & Privacy Policy" }) }),
@@ -90,11 +93,13 @@ export function RegisterForm() {
       fullName: data.fullName,
       email: data.email,
       phone: data.phone,
+      address: data.address,
+      city: data.city,
+      pincode: data.pincode,
       password: data.password,
       adminCode: showAdminOption && data.isAdmin ? data.adminCode : undefined,
     };
 
-    // Save registration details to pending state to complete verification in OTP step
     storage.set(STORAGE_KEYS.pendingUser, pendingUser);
     storage.set(STORAGE_KEYS.otpEmail, data.email);
 
@@ -103,82 +108,159 @@ export function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Input
-        label="Full name"
-        placeholder="Jane Doe"
-        icon={<User className="h-4 w-4" />}
-        error={errors.fullName?.message}
-        {...register("fullName")}
-      />
-      <Input
-        label="Email"
-        type="email"
-        placeholder="you@work.com"
-        icon={<Mail className="h-4 w-4" />}
-        error={errors.email?.message}
-        {...register("email")}
-      />
-      <Input
-        label="Phone"
-        placeholder="+1 555 123 4567"
-        icon={<Phone className="h-4 w-4" />}
-        error={errors.phone?.message}
-        {...register("phone")}
-      />
-      <Input
-        label="Password"
-        type={showPw ? "text" : "password"}
-        icon={<Lock className="h-4 w-4" />}
-        rightAdornment={
-          <button
-            type="button"
-            onClick={() => setShowPw((v) => !v)}
-            className="p-1 text-muted-foreground hover:text-foreground"
-          >
-            {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        }
-        error={errors.password?.message}
-        {...register("password")}
-      />
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
+      
+      {/* Section 1: Account & Contact Info */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
+          <User className="h-3.5 w-3.5" />
+          <span>Account & Contact Info</span>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Input
+            label="Full Name"
+            placeholder="Aarav Sharma"
+            icon={<User className="h-4 w-4" />}
+            error={errors.fullName?.message}
+            {...register("fullName")}
+          />
+          <Input
+            label="Email Address"
+            type="email"
+            placeholder="aarav@creator.com"
+            icon={<Mail className="h-4 w-4" />}
+            error={errors.email?.message}
+            {...register("email")}
+          />
+        </div>
+      </div>
+
+      {/* Section 2: Address & Phone */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
+          <MapPin className="h-3.5 w-3.5" />
+          <span>Address & Phone</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+          <div className="sm:col-span-5">
+            <Input
+              label="Phone Number"
+              placeholder="+91 98765 43210"
+              icon={<Phone className="h-4 w-4" />}
+              error={errors.phone?.message}
+              {...register("phone")}
+            />
+          </div>
+          <div className="sm:col-span-7">
+            <Input
+              label="Street Address / House No"
+              placeholder="123 Indiranagar, 100ft Road"
+              icon={<MapPin className="h-4 w-4" />}
+              error={errors.address?.message}
+              {...register("address")}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Input
+            label="City"
+            placeholder="Bengaluru"
+            icon={<Building2 className="h-4 w-4" />}
+            error={errors.city?.message}
+            {...register("city")}
+          />
+          <Input
+            label="PIN Code"
+            placeholder="560038"
+            icon={<Compass className="h-4 w-4" />}
+            error={errors.pincode?.message}
+            {...register("pincode")}
+          />
+        </div>
+      </div>
+
+      {/* Section 3: Password & Security */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
+          <Lock className="h-3.5 w-3.5" />
+          <span>Security Password</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Input
+            label="Password"
+            type={showPw ? "text" : "password"}
+            placeholder="At least 8 characters"
+            icon={<Lock className="h-4 w-4" />}
+            rightAdornment={
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            }
+            error={errors.password?.message}
+            {...register("password")}
+          />
+
+          <Input
+            label="Confirm Password"
+            type={showPw ? "text" : "password"}
+            placeholder="Repeat password"
+            icon={<Lock className="h-4 w-4" />}
+            error={errors.confirm?.message}
+            {...register("confirm")}
+          />
+        </div>
+      </div>
+
+      {/* Password Strength Indicator */}
       {pw && (
-        <div className="space-y-1">
+        <div className="space-y-1 p-2.5 rounded-xl bg-secondary/50 border border-border/60">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground font-medium">Password Security:</span>
+            <span className="font-bold text-foreground">{labels[level]}</span>
+          </div>
           <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
             <div
-              className="h-full transition-all duration-300"
+              className="h-full transition-all duration-300 rounded-full"
               style={{
                 width: `${(level / 4) * 100}%`,
                 backgroundColor:
                   level < 2
-                    ? "oklch(0.65 0.22 27)"
+                    ? "#E63946"
                     : level < 3
-                      ? "oklch(0.75 0.18 60)"
-                      : "oklch(0.65 0.2 145)",
+                      ? "#F59E0B"
+                      : level < 4
+                        ? "#3B82F6"
+                        : "#10B981",
               }}
             />
           </div>
-          <p className="text-xs text-muted-foreground">Strength: {labels[level]}</p>
         </div>
       )}
-      <Input
-        label="Confirm password"
-        type={showPw ? "text" : "password"}
-        icon={<Lock className="h-4 w-4" />}
-        error={errors.confirm?.message}
-        {...register("confirm")}
-      />
+
       {showAdminOption && (
-        <div className="space-y-4 pt-2 border-t border-border/40">
-          <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-            <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" {...register("isAdmin")} />
-            <span className="text-foreground">Register as site administrator</span>
+        <div className="space-y-2 p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-purple-600 dark:text-purple-400">
+            <input
+              type="checkbox"
+              className="rounded border-purple-400 text-purple-600 focus:ring-purple-500"
+              {...register("isAdmin")}
+            />
+            <ShieldCheck className="h-4 w-4" />
+            <span>Register as site administrator</span>
           </label>
 
           {watchIsAdmin && (
             <Input
               label="Admin Setup Code"
-              placeholder="Enter setup code"
+              placeholder="Enter admin key"
               icon={<Lock className="h-4 w-4" />}
               error={errors.adminCode?.message}
               {...register("adminCode")}
@@ -187,25 +269,39 @@ export function RegisterForm() {
         </div>
       )}
 
-      <label className="flex items-start gap-2 text-sm cursor-pointer">
-        <input type="checkbox" className="mt-1 rounded border-border text-primary focus:ring-primary" {...register("terms")} />
-        <span className="text-muted-foreground">
-          I agree to the{" "}
-          <a href="#" className="text-primary hover:underline font-semibold">
-            Terms
-          </a>{" "}
-          and{" "}
-          <a href="#" className="text-primary hover:underline font-semibold">
-            Privacy Policy
-          </a>
-          .
-        </span>
-      </label>
+      {/* Terms & Action Row */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/40">
+        <label className="flex items-center gap-2 text-xs cursor-pointer">
+          <input
+            type="checkbox"
+            className="rounded border-border text-primary focus:ring-primary"
+            {...register("terms")}
+          />
+          <span className="text-muted-foreground text-[11px]">
+            I accept the{" "}
+            <a href="#" className="text-foreground hover:underline font-bold">
+              Terms
+            </a>{" "}
+            &{" "}
+            <a href="#" className="text-foreground hover:underline font-bold">
+              Privacy Policy
+            </a>
+          </span>
+        </label>
+
+        <Button
+          type="submit"
+          className="w-full sm:w-auto px-7 font-extrabold h-11 text-xs rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+          loading={isSubmitting}
+          disabled={isSubmitting}
+        >
+          <span>{isSubmitting ? "Creating..." : "Create Account & Verify"}</span>
+          {!isSubmitting && <ArrowRight className="h-3.5 w-3.5" />}
+        </Button>
+      </div>
+
       {errors.terms && <p className="text-xs text-destructive font-medium">{errors.terms.message}</p>}
-      {error && <p className="text-sm text-destructive font-medium">{error}</p>}
-      <Button type="submit" className="w-full font-bold" loading={isSubmitting} disabled={isSubmitting}>
-        {isSubmitting ? "Creating account..." : "Create account"}
-      </Button>
+      {error && <p className="text-xs text-destructive font-medium">{error}</p>}
     </form>
   );
 }

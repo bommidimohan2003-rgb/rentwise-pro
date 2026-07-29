@@ -32,51 +32,51 @@
 
 :root {
   --radius: 0.9rem;
-  /* Primary: #FF5A5F (Vibrant Coral), Navy: #0B2545 (Deep Navy), Soft White: #F7F9FB (Soft Off-White) */
-  --background: #F7F9FB;
-  --foreground: #0B2545;
+  /* Light Mode: Background pure white #FFFFFF, buttons pure black #000000 with #FFFFFF text */
+  --background: #FFFFFF;
+  --foreground: #000000;
   --card: #FFFFFF;
-  --card-foreground: #0B2545;
-  --primary: #FF5A5F;
+  --card-foreground: #000000;
+  --primary: #000000;
   --primary-foreground: #FFFFFF;
-  --secondary: #EAEFF5;
-  --secondary-foreground: #0B2545;
-  --muted: #EEF2F6;
-  --muted-foreground: #4A607A;
-  --accent: #FF5A5F;
+  --secondary: #F4F4F5;
+  --secondary-foreground: #000000;
+  --muted: #F4F4F5;
+  --muted-foreground: #71717A;
+  --accent: #000000;
   --accent-foreground: #FFFFFF;
   --destructive: #E63946;
-  --border: #DCE4EC;
-  --input: #E5ECF2;
-  --ring: #FF5A5F;
+  --border: #E4E4E7;
+  --input: #E4E4E7;
+  --ring: #000000;
 
   /* Spatial UI Elevation System Tokens */
   --elevation-0-shadow: none;
-  --elevation-1-shadow: 0 2px 8px -2px rgba(11, 37, 69, 0.08), 0 1px 2px -1px rgba(11, 37, 69, 0.05);
-  --elevation-2-shadow: 0 12px 28px -6px rgba(11, 37, 69, 0.12), 0 4px 12px -2px rgba(11, 37, 69, 0.08);
-  --elevation-3-shadow: 0 20px 40px -10px rgba(11, 37, 69, 0.18), 0 8px 20px -4px rgba(11, 37, 69, 0.12);
-  --elevation-4-shadow: 0 32px 70px -14px rgba(11, 37, 69, 0.24), 0 12px 28px -6px rgba(11, 37, 69, 0.15);
-  --rim-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), inset 0 -1px 0 0 rgba(11, 37, 69, 0.05);
+  --elevation-1-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --elevation-2-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+  --elevation-3-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12), 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+  --elevation-4-shadow: 0 32px 70px -14px rgba(0, 0, 0, 0.16), 0 12px 28px -6px rgba(0, 0, 0, 0.10);
+  --rim-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), inset 0 -1px 0 0 rgba(0, 0, 0, 0.05);
 }
 
 .dark {
-  /* Dark Mode: Pure Obsidian Black #000000 background + Vibrant Coral #FF5A5F accent + Soft Off-White #F7F9FB text */
+  /* Dark Mode: Pure Obsidian Black #000000 background + White buttons #FFFFFF with #000000 text */
   --background: #000000;
-  --foreground: #F7F9FB;
-  --card: #0A0A0A;
-  --card-foreground: #F7F9FB;
-  --primary: #FF5A5F;
-  --primary-foreground: #FFFFFF;
-  --secondary: #121212;
-  --secondary-foreground: #F7F9FB;
-  --muted: #141414;
+  --foreground: #FFFFFF;
+  --card: #000000;
+  --card-foreground: #FFFFFF;
+  --primary: #FFFFFF;
+  --primary-foreground: #000000;
+  --secondary: #18181B;
+  --secondary-foreground: #FFFFFF;
+  --muted: #18181B;
   --muted-foreground: #A1A1AA;
-  --accent: #FF5A5F;
-  --accent-foreground: #FFFFFF;
+  --accent: #FFFFFF;
+  --accent-foreground: #000000;
   --destructive: #FF4D4D;
-  --border: #222222;
-  --input: #1C1C1C;
-  --ring: #FF5A5F;
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #FFFFFF;
 
   /* Dark Mode Spatial Elevation Tokens */
   --elevation-1-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.8);
@@ -167,25 +167,43 @@
 }
 
 @utility btn-gradient {
-  background-image: linear-gradient(135deg, #FF5A5F 0%, #E0484D 100%);
-  color: white;
-  box-shadow: 0 10px 30px -10px rgba(255, 90, 95, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+  background-color: #000000;
+  background-image: linear-gradient(135deg, #18181B 0%, #000000 100%);
+  color: #FFFFFF;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
   transition:
     transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.3s ease,
+    color 0.3s ease;
   &:hover {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 18px 40px -10px rgba(255, 90, 95, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+    background-image: linear-gradient(135deg, #27272A 0%, #09090B 100%);
+    box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
   }
   &:active {
     transform: translateY(0px) scale(0.98);
-    box-shadow: 0 6px 20px -8px rgba(255, 90, 95, 0.35);
+    box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.3);
   }
   @media (prefers-reduced-motion: reduce) {
     &:hover, &:active {
       transform: none;
     }
   }
+}
+
+.dark .btn-gradient,
+:where(.dark) .btn-gradient {
+  background-color: #FFFFFF !important;
+  background-image: linear-gradient(135deg, #FFFFFF 0%, #F4F4F5 100%) !important;
+  color: #000000 !important;
+  box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+.dark .btn-gradient:hover,
+:where(.dark) .btn-gradient:hover {
+  background-image: linear-gradient(135deg, #F4F4F5 0%, #E4E4E7 100%) !important;
+  box-shadow: 0 18px 40px -10px rgba(255, 255, 255, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 1) !important;
 }
 
 @utility card-premium {

@@ -35,7 +35,7 @@ export default function Messages() {
   const [active, setActive] = useState(conversations[0].id);
   const [input, setInput] = useState("");
   const [thread, setThread] = useState<{ me: boolean; text: string }[]>([
-    { me: false, text: "Hi! Interested in your Sony A7 IV" },
+    { me: false, text: "Hi! Interested in your Camera" },
     { me: true, text: "Yes it's available this weekend" },
     { me: false, text: "Sure, pickup at 3pm works!" },
   ]);

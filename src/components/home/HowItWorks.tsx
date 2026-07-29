@@ -4,7 +4,7 @@ import { Search, ClipboardList, Sparkles, Star } from "lucide-react";
 
 export function HowItWorks() {
   return (
-    <section className="bg-[#0B2545] py-20 text-white overflow-hidden">
+    <section className="bg-background py-10 text-foreground overflow-hidden border-b border-border">
       <div className="mx-auto max-w-7xl px-4 md:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
@@ -14,30 +14,30 @@ export function HowItWorks() {
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="relative w-[280px] sm:w-[320px] bg-white text-slate-900 rounded-[40px] p-4 shadow-2xl border-4 border-slate-700/50"
+              className="relative w-[280px] sm:w-[320px] bg-card text-foreground rounded-[40px] p-4 shadow-2xl border-4 border-border"
             >
               {/* Phone Notch */}
-              <div className="h-4 w-28 bg-slate-900 rounded-b-xl mx-auto mb-3" />
+              <div className="h-4 w-28 bg-foreground rounded-b-xl mx-auto mb-3" />
               
               {/* App Search Bar */}
-              <div className="bg-slate-100 p-2.5 rounded-xl flex items-center gap-2 mb-4">
-                <Search className="h-4 w-4 text-slate-400" />
-                <span className="text-xs text-slate-400 font-medium">Search items...</span>
+              <div className="bg-secondary p-2.5 rounded-xl flex items-center gap-2 mb-4">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground font-medium">Search items...</span>
               </div>
 
               {/* App Section: Popular Nearby */}
               <div className="space-y-3 text-left">
-                <p className="text-xs font-bold text-slate-900">Popular Nearby</p>
+                <p className="text-xs font-bold text-foreground">Popular Nearby</p>
                 
                 {/* Product 1 */}
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center gap-3">
+                <div className="bg-secondary/50 p-2.5 rounded-xl border border-border flex items-center gap-3">
                   <img
                     src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=150&q=80"
                     alt="Canon EOS 2000"
                     className="h-12 w-12 rounded-lg object-cover"
                   />
                   <div className="flex-1">
-                    <p className="text-xs font-extrabold text-slate-900">Canon EOS 2000</p>
+                    <p className="text-xs font-extrabold text-foreground">Canon EOS 2000</p>
                     <p className="text-[10px] font-bold text-[#FF5A5F]">₹900 / day</p>
                     <div className="flex items-center gap-1 text-[9px] text-amber-500 font-bold">
                       <Star className="h-2.5 w-2.5 fill-amber-400" />
@@ -47,14 +47,14 @@ export function HowItWorks() {
                 </div>
 
                 {/* Product 2 */}
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center gap-3">
+                <div className="bg-secondary/50 p-2.5 rounded-xl border border-border flex items-center gap-3">
                   <img
                     src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=150&q=80"
                     alt="MacBook Air M1"
                     className="h-12 w-12 rounded-lg object-cover"
                   />
                   <div className="flex-1">
-                    <p className="text-xs font-extrabold text-slate-900">MacBook Air M1</p>
+                    <p className="text-xs font-extrabold text-foreground">MacBook Air M1</p>
                     <p className="text-[10px] font-bold text-[#FF5A5F]">₹1,200 / day</p>
                     <div className="flex items-center gap-1 text-[9px] text-amber-500 font-bold">
                       <Star className="h-2.5 w-2.5 fill-amber-400" />
@@ -65,7 +65,7 @@ export function HowItWorks() {
               </div>
 
               {/* Bottom Nav Simulation */}
-              <div className="mt-6 pt-3 border-t border-slate-100 flex justify-around text-slate-400 text-[10px] font-bold">
+              <div className="mt-6 pt-3 border-t border-border flex justify-around text-muted-foreground text-[10px] font-bold">
                 <span className="text-[#FF5A5F]">Home</span>
                 <span>Browse</span>
                 <span>Bookings</span>
@@ -80,7 +80,7 @@ export function HowItWorks() {
               <p className="text-xs font-extrabold tracking-widest text-[#FF5A5F] uppercase">
                 HOW IT WORKS
               </p>
-              <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white font-display">
+              <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground font-display">
                 Simple Steps to <br />
                 Start <span className="text-[#FF5A5F]">Renting</span>
               </h2>
@@ -100,8 +100,8 @@ export function HowItWorks() {
                   <Search className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white">1. Discover</h3>
-                  <p className="text-xs md:text-sm text-slate-300 font-normal mt-1 leading-relaxed">
+                  <h3 className="text-base font-extrabold text-foreground">1. Discover</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground font-normal mt-1 leading-relaxed">
                     Find items you need from trusted local owners in your city.
                   </p>
                 </div>
@@ -119,8 +119,8 @@ export function HowItWorks() {
                   <ClipboardList className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white">2. Book</h3>
-                  <p className="text-xs md:text-sm text-slate-300 font-normal mt-1 leading-relaxed">
+                  <h3 className="text-base font-extrabold text-foreground">2. Book</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground font-normal mt-1 leading-relaxed">
                     Send a request and get instant confirmation from verified lenders.
                   </p>
                 </div>
@@ -138,8 +138,8 @@ export function HowItWorks() {
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white">3. Enjoy</h3>
-                  <p className="text-xs md:text-sm text-slate-300 font-normal mt-1 leading-relaxed">
+                  <h3 className="text-base font-extrabold text-foreground">3. Enjoy</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground font-normal mt-1 leading-relaxed">
                     Use the item, create amazing work, and return it safely when done.
                   </p>
                 </div>
@@ -151,7 +151,7 @@ export function HowItWorks() {
             <div className="pt-2">
               <Link
                 to="/register"
-                className="inline-flex items-center justify-center bg-[#FF5A5F] hover:bg-[#e0484d] text-white font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg shadow-[#FF5A5F]/25 transition-all duration-200 active:scale-95"
+                className="inline-flex items-center justify-center bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all duration-200 active:scale-95"
               >
                 Start Renting Now
               </Link>

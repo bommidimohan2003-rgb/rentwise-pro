@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { authService } from "../../services/auth";
 import { notificationsService } from "../../services/notifications";
+import { LogoIcon } from "@/components/common/LogoIcon";
 
 const menuItems = [
   {
@@ -129,7 +130,7 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative",
                 active
-                  ? "bg-primary text-white shadow-md shadow-primary/20"
+                  ? "bg-primary text-primary-foreground shadow-md"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
               )}
             >
@@ -191,13 +192,13 @@ export function Sidebar() {
         {/* Brand Logo */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-border/40">
           <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center text-white font-bold shadow-md shadow-primary/20 shrink-0">
-              PE
+            <div className="h-8 w-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-md shrink-0">
+              <LogoIcon className="h-4.5 w-4.5" />
             </div>
             {!collapsed && (
-              <span className="font-display font-extrabold text-sm tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+              <span className="font-display font-extrabold text-sm tracking-tight text-foreground">
                 Payent{" "}
-                <span className="text-[10px] font-semibold text-primary px-1 bg-primary/10 rounded">
+                <span className="text-[10px] font-semibold text-foreground px-1.5 py-0.5 bg-secondary border border-border rounded">
                   Admin
                 </span>
               </span>

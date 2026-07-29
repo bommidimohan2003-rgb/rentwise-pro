@@ -11,7 +11,7 @@ export function CallToAction() {
     <section
       id="cta"
       ref={ref}
-      className="relative py-28 px-4 sm:px-6 overflow-hidden bg-[#000000] text-white border-t border-[#1a1a1a]"
+      className="relative py-28 px-4 sm:px-6 overflow-hidden bg-background text-foreground border-t border-border"
     >
       {/* Background radial glow */}
       <div
@@ -27,7 +27,7 @@ export function CallToAction() {
           initial={{ opacity: 0, y: 30, scale: 0.96 }}
           animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="relative rounded-3xl p-10 md:p-20 text-center overflow-hidden bg-[#0A0A0A] border border-[#222222] shadow-2xl space-y-8"
+          className="relative rounded-3xl p-10 md:p-20 text-center overflow-hidden bg-card border border-border shadow-2xl space-y-8"
         >
           {/* Badge */}
           <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 bg-[#FF5A5F]/10 border border-[#FF5A5F]/30 text-[#FF5A5F] text-xs font-extrabold uppercase tracking-widest">
@@ -36,13 +36,13 @@ export function CallToAction() {
           </div>
 
           {/* Headline */}
-          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white font-display leading-tight max-w-3xl mx-auto">
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground font-display leading-tight max-w-3xl mx-auto">
             Ready to experience flagship gear <br className="hidden sm:inline" />
             <span className="text-[#FF5A5F]">without buying?</span>
           </h2>
 
           {/* Subtitle */}
-          <p className="text-slate-400 text-sm sm:text-lg max-w-2xl mx-auto font-normal leading-relaxed">
+          <p className="text-muted-foreground text-sm sm:text-lg max-w-2xl mx-auto font-normal leading-relaxed">
             Join 50,000+ creators renting and earning on Payent. Insured up to ₹5 Lakhs. Doorstep express delivery.
           </p>
 
@@ -50,14 +50,14 @@ export function CallToAction() {
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <Link
               to="/categories"
-              className="bg-[#FF5A5F] hover:bg-[#e0484d] text-white font-bold text-sm px-8 py-4 rounded-xl shadow-lg shadow-[#FF5A5F]/30 transition-all duration-200 active:scale-95 flex items-center gap-2"
+              className="bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-sm px-8 py-4 rounded-xl shadow-lg transition-all duration-200 active:scale-95 flex items-center gap-2"
             >
               <span>Browse Catalog</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/become-lender"
-              className="border border-[#333333] hover:bg-[#181818] text-white font-bold text-sm px-8 py-4 rounded-xl transition-all duration-200 active:scale-95"
+              className="border border-border bg-secondary hover:bg-secondary/80 text-foreground font-bold text-sm px-8 py-4 rounded-xl transition-all duration-200 active:scale-95"
             >
               List Gear &amp; Earn
             </Link>

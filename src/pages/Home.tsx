@@ -51,8 +51,6 @@ export default function Home() {
       <HowItWorks />
       {/* Trust & Security Banner */}
       <WhyChoose />
-      {/* Testimonials */}
-      <Testimonials />
       {/* Call to action */}
       <CallToAction />
       {/* Newsletter */}

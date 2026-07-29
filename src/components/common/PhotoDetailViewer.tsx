@@ -92,19 +92,19 @@ export function PhotoDetailViewer({
 
       {/* Discrete Angle Switcher (If multiple photo angles exist) */}
       {angles && angles.length > 1 && (
-        <div className="grid grid-cols-4 gap-2 pt-2">
+        <div className="grid grid-cols-4 gap-3 pt-2">
           {angles.map((src, idx) => (
             <button
               key={idx}
               onClick={() => setActiveAngleIndex(idx)}
               className={cn(
-                "aspect-square rounded-2xl overflow-hidden border-2 transition-all spatial-surface",
+                "aspect-square rounded-2xl overflow-hidden border-2 transition-all spatial-surface cursor-pointer bg-card",
                 activeAngleIndex === idx
-                  ? "border-primary ring-2 ring-primary/30 scale-105"
-                  : "border-transparent opacity-60 hover:opacity-100"
+                  ? "border-primary ring-2 ring-primary/30 scale-105 opacity-100 shadow-md"
+                  : "border-border/40 opacity-75 hover:opacity-100 hover:border-primary/50"
               )}
             >
-              <img src={src} alt="" className="h-full w-full object-cover" />
+              <img src={src} alt={`Angle ${idx + 1}`} className="h-full w-full object-cover" />
             </button>
           ))}
         </div>

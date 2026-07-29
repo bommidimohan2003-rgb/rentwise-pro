@@ -78,6 +78,9 @@ def init_db():
     add_column_safely("users", "status VARCHAR(50) DEFAULT 'active'")
     add_column_safely("users", "verified BOOLEAN DEFAULT TRUE")
     add_column_safely("users", "avatar VARCHAR(1000) DEFAULT 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'")
+    add_column_safely("users", "address VARCHAR(500)")
+    add_column_safely("users", "city VARCHAR(100)")
+    add_column_safely("users", "pincode VARCHAR(20)")
 
     # Create token_blocklist table for server-side JWT revocation
     execute_query("""
@@ -134,6 +137,14 @@ def init_db():
             created_at VARCHAR(100)
         )
     """)
+
+    # Safely alter orders table for Razorpay payment fields
+    add_column_safely("orders", "razorpay_order_id VARCHAR(255)")
+    add_column_safely("orders", "razorpay_payment_id VARCHAR(255)")
+    add_column_safely("orders", "razorpay_signature VARCHAR(500)")
+    add_column_safely("orders", "payment_status VARCHAR(50) DEFAULT 'unpaid'")
+    add_column_safely("orders", "refund_id VARCHAR(255)")
+    add_column_safely("orders", "refund_status VARCHAR(50)")
 
     # Create custom_products table
     execute_query("""
@@ -352,6 +363,7 @@ def init_db():
 
 MOCK_USERS = {}
 MOCK_OTPS = {}
+MOCK_ORDERS = {}
 
 def get_user(email: str):
     if not email:
@@ -365,7 +377,7 @@ def get_user(email: str):
         print(f"Warning: Database read error in get_user: {e}")
     return MOCK_USERS.get(clean_email)
 
-def create_user(email: str, phone: str, password_hash: str, full_name: str, role: str = "user"):
+def create_user(email: str, phone: str, password_hash: str, full_name: str, role: str = "user", address: str = None, city: str = None, pincode: str = None):
     created_at = datetime.utcnow().isoformat()
     clean_email = email.strip().lower()
     user_data = {
@@ -374,13 +386,16 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
         "password_hash": password_hash,
         "full_name": full_name,
         "role": role,
+        "address": address,
+        "city": city,
+        "pincode": pincode,
         "created_at": created_at
     }
     MOCK_USERS[clean_email] = user_data
     try:
         execute_query(
-            "INSERT INTO users (email, phone, password_hash, full_name, role, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
-            (clean_email, phone, password_hash, full_name, role, created_at)
+            "INSERT INTO users (email, phone, password_hash, full_name, role, address, city, pincode, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (clean_email, phone, password_hash, full_name, role, address, city, pincode, created_at)
         )
     except Exception as e:
         print(f"Notice: Database write error in create_user: {e}")
@@ -389,6 +404,9 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
         "phone": phone,
         "fullName": full_name,
         "role": role,
+        "address": address,
+        "city": city,
+        "pincode": pincode,
         "createdAt": created_at
     }
 
@@ -687,5 +705,122 @@ def increment_otp_attempt(email: str) -> int:
     except Exception:
         pass
     return attempts
+
+
+# Order Persistence & Razorpay Helpers
+def create_order_record(
+    order_id: str,
+    user_email: str,
+    product_id: str,
+    product_title: str,
+    product_image: str,
+    start_date: str,
+    end_date: str,
+    total: int,
+    status: str = "pending",
+    razorpay_order_id: str = None,
+    payment_status: str = "unpaid"
+):
+    created_at = datetime.utcnow().isoformat()
+    order_data = {
+        "id": order_id,
+        "user_email": user_email,
+        "product_id": product_id,
+        "product_title": product_title,
+        "product_image": product_image,
+        "start_date": start_date,
+        "end_date": end_date,
+        "total": total,
+        "status": status,
+        "created_at": created_at,
+        "razorpay_order_id": razorpay_order_id,
+        "payment_status": payment_status
+    }
+    MOCK_ORDERS[order_id] = order_data
+    try:
+        execute_query(
+            """INSERT INTO orders 
+               (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at, razorpay_order_id, payment_status) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (order_id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at, razorpay_order_id, payment_status)
+        )
+    except Exception as e:
+        print(f"Notice: Database write error in create_order_record: {e}")
+    return order_data
+
+def get_order_by_id(order_id: str):
+    if not order_id:
+        return None
+    try:
+        order = fetch_one("SELECT * FROM orders WHERE id = %s", (order_id,))
+        if order:
+            return order
+    except Exception as e:
+        print(f"Warning: Database read error in get_order_by_id: {e}")
+    return MOCK_ORDERS.get(order_id)
+
+def get_order_by_razorpay_order_id(razorpay_order_id: str):
+    if not razorpay_order_id:
+        return None
+    try:
+        order = fetch_one("SELECT * FROM orders WHERE razorpay_order_id = %s", (razorpay_order_id,))
+        if order:
+            return order
+    except Exception as e:
+        print(f"Warning: Database read error in get_order_by_razorpay_order_id: {e}")
+    for o in MOCK_ORDERS.values():
+        if o.get("razorpay_order_id") == razorpay_order_id:
+            return o
+    return None
+
+def update_order_payment_status(
+    order_id: str,
+    payment_status: str,
+    status: str = None,
+    razorpay_payment_id: str = None,
+    razorpay_signature: str = None,
+    refund_id: str = None,
+    refund_status: str = None
+):
+    fields = ["payment_status = %s"]
+    params = [payment_status]
+
+    if status:
+        fields.append("status = %s")
+        params.append(status)
+    if razorpay_payment_id:
+        fields.append("razorpay_payment_id = %s")
+        params.append(razorpay_payment_id)
+    if razorpay_signature:
+        fields.append("razorpay_signature = %s")
+        params.append(razorpay_signature)
+    if refund_id:
+        fields.append("refund_id = %s")
+        params.append(refund_id)
+    if refund_status:
+        fields.append("refund_status = %s")
+        params.append(refund_status)
+
+    params.append(order_id)
+    sql = f"UPDATE orders SET {', '.join(fields)} WHERE id = %s"
+
+    try:
+        execute_query(sql, tuple(params))
+    except Exception as e:
+        print(f"Notice: Database write error in update_order_payment_status: {e}")
+
+    if order_id in MOCK_ORDERS:
+        MOCK_ORDERS[order_id]["payment_status"] = payment_status
+        if status:
+            MOCK_ORDERS[order_id]["status"] = status
+        if razorpay_payment_id:
+            MOCK_ORDERS[order_id]["razorpay_payment_id"] = razorpay_payment_id
+        if razorpay_signature:
+            MOCK_ORDERS[order_id]["razorpay_signature"] = razorpay_signature
+        if refund_id:
+            MOCK_ORDERS[order_id]["refund_id"] = refund_id
+        if refund_status:
+            MOCK_ORDERS[order_id]["refund_status"] = refund_status
+
 
 

@@ -39,6 +39,9 @@ export const api = {
     password: string,
     fullName?: string,
     adminCode?: string,
+    address?: string,
+    city?: string,
+    pincode?: string,
   ) {
     try {
       const res = await fetch(`${API_BASE}/api/register/verify`, {
@@ -51,6 +54,9 @@ export const api = {
           password,
           full_name: fullName || null,
           admin_code: adminCode || null,
+          address: address || null,
+          city: city || null,
+          pincode: pincode || null,
         }),
       });
       if (!res.ok) {
@@ -284,6 +290,67 @@ export const api = {
       },
     });
     if (!res.ok) throw new Error("Failed to toggle custom product availability");
+    return res.json();
+  },
+
+  async createRazorpayOrder(token: string, productId: string, startDate: string, endDate: string, couponCode?: string) {
+    const res = await fetch(`${API_BASE}/api/payments/create-order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        product_id: productId,
+        start_date: startDate,
+        end_date: endDate,
+        coupon_code: couponCode || null,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Failed to create Razorpay order.");
+    }
+    return res.json();
+  },
+
+  async verifyRazorpayPayment(token: string, razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string) {
+    const res = await fetch(`${API_BASE}/api/payments/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        razorpay_order_id: razorpayOrderId,
+        razorpay_payment_id: razorpayPaymentId,
+        razorpay_signature: razorpaySignature,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Razorpay signature verification failed.");
+    }
+    return res.json();
+  },
+
+  async processRefund(token: string, orderId: string, amount?: number, reason?: string) {
+    const res = await fetch(`${API_BASE}/api/payments/refund`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        order_id: orderId,
+        amount: amount || null,
+        reason: reason || null,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Failed to process refund.");
+    }
     return res.json();
   },
 };

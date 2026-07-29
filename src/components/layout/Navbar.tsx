@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
+import { LogoIcon } from "@/components/common/LogoIcon";
 import { Button } from "@/components/common/Button";
 import { toast } from "sonner";
 
@@ -58,30 +59,21 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300 border-b border-white/10 dark:border-[#222222]",
-        isHomePage
-          ? "bg-[#0B2545]/95 dark:bg-[#000000]/95 backdrop-blur-md"
-          : "bg-white/95 dark:bg-[#000000]/95 backdrop-blur-md",
-        scrolled ? "shadow-xl shadow-black/20" : ""
+        "sticky top-0 z-50 w-full transition-all duration-300 border-b border-border bg-background/95 backdrop-blur-md",
+        scrolled ? "shadow-xl shadow-black/10 dark:shadow-black/40" : ""
       )}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-6">
         
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group" id="nav-logo">
           <motion.div
-            whileHover={{ rotate: 12, scale: 1.05 }}
-            className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white shrink-0 shadow-lg shadow-[#FF5A5F]/30"
-            style={{
-              background: "linear-gradient(135deg, #FF5A5F 0%, #e0484d 100%)",
-            }}
+            whileHover={{ scale: 1.08, rotate: 6 }}
+            className="h-9 w-9 rounded-xl flex items-center justify-center bg-primary text-primary-foreground shrink-0 shadow-md transition-all"
           >
-            P
+            <LogoIcon className="h-5 w-5" />
           </motion.div>
-          <span className={cn(
-            "text-xl font-extrabold tracking-tight font-display",
-            isHomePage ? "text-white" : "text-slate-900 dark:text-white"
-          )}>
+          <span className="text-xl font-extrabold tracking-tight font-display text-foreground">
             PAYENT
           </span>
         </Link>
@@ -93,16 +85,9 @@ export function Navbar() {
               key={l.to}
               to={l.to}
               id={`nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-              className={cn(
-                "px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200",
-                isHomePage
-                  ? "text-slate-200 hover:text-white hover:bg-white/10"
-                  : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
-              )}
+              className="px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-secondary"
               activeProps={{
-                className: isHomePage
-                  ? "!text-white !bg-[#FF5A5F]/20 font-bold"
-                  : "!text-[#FF5A5F] !bg-[#FF5A5F]/10 font-bold",
+                className: "!text-[#FF5A5F] !bg-[#FF5A5F]/10 font-bold",
               }}
               activeOptions={{ exact: l.to === "/" }}
             >
@@ -112,12 +97,7 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-payent-help-chat"))}
-            className={cn(
-              "px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 cursor-pointer",
-              isHomePage
-                ? "text-slate-200 hover:text-white hover:bg-white/10"
-                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
-            )}
+            className="px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-secondary"
           >
             Help
           </button>
@@ -189,7 +169,7 @@ export function Navbar() {
               {user.role === "admin" && (
                 <Link
                   to="/admin/dashboard"
-                  className="px-3.5 py-1.5 text-xs font-bold rounded-full bg-[#FF5A5F] text-white hover:bg-[#e0484d] transition-all shadow-md"
+                  className="px-3.5 py-1.5 text-xs font-bold rounded-full bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all shadow-md"
                 >
                   Admin Portal
                 </Link>
@@ -200,8 +180,7 @@ export function Navbar() {
                 className="flex items-center gap-2 rounded-full pl-2 pr-4 h-10 transition-all border border-white/15 bg-white/10 hover:bg-white/20"
               >
                 <div
-                  className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold shrink-0"
-                  style={{ background: "linear-gradient(135deg, #FF5A5F, #e0484d)" }}
+                  className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold shrink-0 bg-black dark:bg-white dark:text-black"
                 >
                   {user.fullName.charAt(0)}
                 </div>
@@ -220,7 +199,7 @@ export function Navbar() {
                 id="nav-get-started"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="rounded-xl px-5 py-2 text-sm font-bold text-white transition-all duration-200 cursor-pointer shadow-lg shadow-[#FF5A5F]/30 bg-[#FF5A5F] hover:bg-[#e0484d]"
+                className="rounded-xl px-5 py-2 text-sm font-bold bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all duration-200 cursor-pointer shadow-lg"
               >
                 <span className="flex items-center gap-1.5">
                   <LogIn className="h-3.5 w-3.5" />
@@ -256,13 +235,13 @@ export function Navbar() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="lg:hidden overflow-hidden border-t border-white/10 bg-[#0B2545] dark:bg-[#000000] px-4 py-4 space-y-3"
+            className="lg:hidden overflow-hidden border-t border-border bg-background px-4 py-4 space-y-3"
           >
             {links.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
-                className="block px-4 py-2.5 text-sm font-semibold rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
+                className="block px-4 py-2.5 text-sm font-semibold rounded-xl text-foreground hover:bg-secondary transition-colors"
                 activeProps={{ className: "!text-[#FF5A5F] !bg-[#FF5A5F]/15 font-bold" }}
                 onClick={() => setOpen(false)}
               >
@@ -276,7 +255,7 @@ export function Navbar() {
                 setOpen(false);
                 window.dispatchEvent(new CustomEvent("open-payent-help-chat"));
               }}
-              className="block w-full text-left px-4 py-2.5 text-sm font-semibold rounded-xl text-slate-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="block w-full text-left px-4 py-2.5 text-sm font-semibold rounded-xl text-foreground hover:bg-secondary transition-colors cursor-pointer"
             >
               Help
             </button>
@@ -289,7 +268,7 @@ export function Navbar() {
                     setOpen(false);
                     handleGetStarted();
                   }}
-                  className="w-full bg-[#FF5A5F] text-white font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2"
+                  className="w-full bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2"
                 >
                   <LogIn className="h-4 w-4" />
                   <span>Login / Register</span>

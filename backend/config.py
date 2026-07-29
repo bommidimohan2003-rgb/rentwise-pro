@@ -65,7 +65,15 @@ TWILIO_VERIFY_SERVICE_SID = os.getenv("TWILIO_VERIFY_SERVICE_SID", "")
 # Admin Registration Config
 ADMIN_SETUP_CODE = os.getenv("ADMIN_SETUP_CODE", "PAYENT-ADMIN-2026")
 
-# Payment Gateway (Stripe/Razorpay) Config
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+# Payment Gateway (Razorpay) Config (Commented out / Inactive)
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
+
+# --- RAZORPAY BACKEND CONFIG COMMENTED OUT FOR NOW ---
+# if IS_PRODUCTION:
+#     if not os.getenv("RAZORPAY_KEY_ID") or not os.getenv("RAZORPAY_KEY_SECRET"):
+#         raise RuntimeError("FATAL SECURITY ERROR: RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set in environment for production!")
+#     if not os.getenv("RAZORPAY_WEBHOOK_SECRET"):
+#         raise RuntimeError("FATAL SECURITY ERROR: RAZORPAY_WEBHOOK_SECRET must be set in environment for production!")
 

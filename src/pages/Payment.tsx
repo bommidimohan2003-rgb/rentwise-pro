@@ -27,6 +27,19 @@ interface PaymentSearch {
   end?: string;
 }
 
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && (window as unknown as { Razorpay?: unknown }).Razorpay) {
+      return resolve(true);
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function Payment() {
   const search = useSearch({ from: "/payment" }) as PaymentSearch;
   const navigate = useNavigate();
@@ -42,7 +55,9 @@ export default function Payment() {
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [paySuccess, setPaySuccess] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   // Timer Countdown Effect
   useEffect(() => {
@@ -61,46 +76,111 @@ export default function Payment() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleSelectApp = (appName: string) => {
-    setSelectedMethod(appName);
-    setIsProcessing(true);
-
-    // Auto simulate success after 3.5s or via manual confirmation button
-    setTimeout(() => {
-      // Allow manual simulation inside UI modal
-    }, 500);
-  };
-
-  const handleConfirmMockPayment = () => {
-    setIsProcessing(false);
-    setPaySuccess(true);
-
-    // Create and save order
-    const order: Order = {
-      id: crypto.randomUUID(),
-      productId: product.id,
-      productTitle: product.title,
-      productImage: product.image,
-      startDate: start,
-      endDate: end,
-      total: Math.round(totalAmount),
-      status: "active",
-      createdAt: new Date().toISOString(),
-    };
-
+  const handleRazorpayCheckout = async (appName?: string) => {
+    if (appName) setSelectedMethod(appName);
+    setPaymentError(null);
     const token = storage.get<string | null>(STORAGE_KEYS.token, null);
-    if (token) {
-      api
-        .createOrder(token, order)
-        .catch((err) => console.error("Failed to create order on backend:", err));
+    
+    if (!token) {
+      toast.error("Please log in to complete your payment.");
+      navigate({ to: "/login" });
+      return;
     }
 
-    toast.success("Payment Completed Successfully! 🎉");
+    setIsProcessing(true);
 
-    // Redirect to orders page after 2.5 seconds
-    setTimeout(() => {
-      navigate({ to: "/orders" });
-    }, 2500);
+    try {
+      const orderRes = await api.createRazorpayOrder(token, product.id, start, end);
+      const loaded = await loadRazorpayScript();
+
+      if (!loaded) {
+        setIsProcessing(false);
+        setPaymentError("Could not load Razorpay Payment Gateway script.");
+        toast.error("Razorpay SDK failed to load.");
+        return;
+      }
+
+      const user = storage.get<{ email?: string; fullName?: string; phone?: string } | null>(
+        STORAGE_KEYS.currentUser,
+        null
+      );
+
+      const options = {
+        key: orderRes.key_id,
+        amount: orderRes.amount,
+        currency: orderRes.currency || "INR",
+        name: "Payent Tech Gear Rental",
+        description: `Rental: ${product.title}`,
+        image: product.image,
+        order_id: orderRes.razorpay_order_id,
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          setIsProcessing(false);
+          setIsVerifying(true);
+          toast.loading("Verifying payment security signature...", { id: "pay-verify" });
+
+          try {
+            await api.verifyRazorpayPayment(
+              token,
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature
+            );
+            setIsVerifying(false);
+            toast.dismiss("pay-verify");
+            setPaySuccess(true);
+            toast.success("Payment Completed Successfully! 🎉");
+
+            setTimeout(() => {
+              navigate({ to: "/orders" });
+            }, 2000);
+          } catch (err) {
+            setIsVerifying(false);
+            toast.dismiss("pay-verify");
+            const error = err as { message?: string };
+            setPaymentError(error.message || "Razorpay payment verification failed.");
+            toast.error("Verification failed.");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessing(false);
+            setIsVerifying(false);
+            setPaymentError("Payment process was cancelled by user.");
+            toast.info("Payment window closed.");
+          },
+        },
+        prefill: {
+          name: user?.fullName || "",
+          email: user?.email || "",
+          contact: user?.phone || "",
+        },
+        theme: {
+          color: "#000000",
+        },
+      };
+
+      const rzp = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void; on: (event: string, handler: (resp: any) => void) => void } }).Razorpay(options);
+
+      rzp.on("payment.failed", (resp: { error?: { description?: string } }) => {
+        setIsProcessing(false);
+        setIsVerifying(false);
+        const desc = resp.error?.description || "Payment failed.";
+        setPaymentError(`Payment failed: ${desc}`);
+        toast.error(`Payment failed: ${desc}`);
+      });
+
+      rzp.open();
+    } catch (err) {
+      setIsProcessing(false);
+      setIsVerifying(false);
+      const error = err as { message?: string };
+      setPaymentError(error.message || "Failed to initialize Razorpay checkout.");
+      toast.error("Failed to start payment.");
+    }
   };
 
   const upiApps = [
@@ -181,11 +261,18 @@ export default function Payment() {
                   UPI Applications
                 </h3>
 
+                {paymentError && (
+                  <div className="mb-4 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+                    <div className="font-semibold mb-1">Payment Notice</div>
+                    <div>{paymentError}</div>
+                  </div>
+                )}
+
                 <div className="grid gap-3.5">
                   {upiApps.map((app) => (
                     <button
                       key={app.id}
-                      onClick={() => handleSelectApp(app.name)}
+                      onClick={() => handleRazorpayCheckout(app.name)}
                       className={`w-full flex items-center justify-between p-4 rounded-2xl border text-left transition-all duration-300 ${app.color} hover:translate-x-1 group shadow-sm`}
                     >
                       <div className="flex items-center gap-3.5">
@@ -220,7 +307,7 @@ export default function Payment() {
                 </h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <button
-                    onClick={() => handleSelectApp("Credit/Debit Card")}
+                    onClick={() => handleRazorpayCheckout("Credit/Debit Card")}
                     className="flex items-center gap-3 p-3.5 rounded-xl border border-border/60 hover:bg-secondary text-left text-sm font-medium transition-colors"
                   >
                     <CreditCard className="h-4.5 w-4.5 text-muted-foreground" />
@@ -232,7 +319,7 @@ export default function Payment() {
                     </div>
                   </button>
                   <button
-                    onClick={() => handleSelectApp("Net Banking")}
+                    onClick={() => handleRazorpayCheckout("Net Banking")}
                     className="flex items-center gap-3 p-3.5 rounded-xl border border-border/60 hover:bg-secondary text-left text-sm font-medium transition-colors"
                   >
                     <Building className="h-4.5 w-4.5 text-muted-foreground" />
@@ -248,8 +335,7 @@ export default function Payment() {
 
               <div className="flex items-center gap-2 justify-center text-[10px] text-muted-foreground mt-6 border-t border-border/40 pt-4">
                 <Lock className="h-3.5 w-3.5 text-emerald-500" />
-                Your security is our priority. Transactions are encrypted using AES 256-bit bank
-                standards.
+                Transactions encrypted using Razorpay 256-bit bank-grade PCI-DSS standards.
               </div>
             </div>
           </div>
@@ -285,6 +371,15 @@ export default function Payment() {
                 <span className="text-primary font-extrabold">₹{totalAmount.toFixed(0)}</span>
               </div>
             </div>
+
+            <Button
+              onClick={() => handleRazorpayCheckout()}
+              loading={isProcessing || isVerifying}
+              disabled={isProcessing || isVerifying}
+              className="w-full font-bold"
+            >
+              {isVerifying ? "Verifying Payment..." : isProcessing ? "Launching Razorpay..." : "Pay with Razorpay"}
+            </Button>
           </aside>
         </div>
       </section>
@@ -319,9 +414,9 @@ export default function Payment() {
               </div>
             </div>
 
-            {/* Simulated success confirm button */}
-            <Button onClick={handleConfirmMockPayment} className="w-full">
-              Confirm Payment (Mock Success)
+            {/* Razorpay Launch Button */}
+            <Button onClick={() => handleRazorpayCheckout()} className="w-full">
+              Proceed to Razorpay Checkout
             </Button>
           </div>
         </div>

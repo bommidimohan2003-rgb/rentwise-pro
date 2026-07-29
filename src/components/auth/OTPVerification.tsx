@@ -12,6 +12,9 @@ interface PendingUser {
   phone: string;
   password?: string;
   fullName?: string;
+  address?: string;
+  city?: string;
+  pincode?: string;
   adminCode?: string;
 }
 
@@ -84,6 +87,9 @@ export function OTPVerification() {
           pendingUser.password || "",
           pendingUser.fullName,
           pendingUser.adminCode,
+          pendingUser.address,
+          pendingUser.city,
+          pendingUser.pincode,
         );
         storage.remove(STORAGE_KEYS.otp);
         storage.remove(STORAGE_KEYS.pendingUser);
@@ -119,10 +125,10 @@ export function OTPVerification() {
   return (
     <div className="space-y-6">
       {/* Real-time SMS Verification */}
-      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-sm flex gap-3 items-start">
-        <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+      <div className="bg-card border border-border rounded-xl p-4 text-sm flex gap-3 items-start shadow-sm">
+        <Info className="h-5 w-5 text-foreground shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold text-primary">SMS Verification</span>
+          <span className="font-semibold text-foreground">SMS Verification</span>
           <p className="text-muted-foreground mt-0.5 text-xs">
             We sent a verification code via SMS to{" "}
             <span className="font-semibold text-foreground">{targetContact}</span>.
@@ -137,8 +143,8 @@ export function OTPVerification() {
       {(() => {
         const generatedOtp = storage.get<string | null>(STORAGE_KEYS.otp, null);
         return generatedOtp ? (
-          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl p-3.5 text-xs font-semibold text-center select-all">
-            Demo Mode Verification Code: <span className="font-mono text-sm tracking-widest text-foreground bg-background px-2 py-0.5 rounded border border-border ml-1.5">{generatedOtp}</span>
+          <div className="bg-card border border-border text-foreground rounded-xl p-3.5 text-xs font-semibold text-center select-all shadow-sm">
+            Demo Mode Verification Code: <span className="font-mono text-sm tracking-widest text-foreground bg-secondary px-2 py-0.5 rounded border border-border ml-1.5">{generatedOtp}</span>
           </div>
         ) : null;
       })()}

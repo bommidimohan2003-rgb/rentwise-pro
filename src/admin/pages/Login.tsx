@@ -5,6 +5,7 @@ import * as z from "zod";
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, Mail, Loader2, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { LogoIcon } from "@/components/common/LogoIcon";
 import { authService } from "../services/auth";
 import { toast } from "sonner";
 
@@ -74,8 +75,8 @@ export default function Login() {
         <div className="glass bg-card/65 rounded-3xl p-8 shadow-2xl border border-border/80 relative">
           {/* Logo & Header */}
           <div className="flex flex-col items-center mb-8 text-center">
-            <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center text-white font-extrabold text-lg shadow-lg shadow-primary/25 mb-4">
-              TR
+            <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-lg shadow-lg mb-4">
+              <LogoIcon className="h-6 w-6" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
               Welcome back
@@ -178,7 +179,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 btn-gradient font-bold py-3.5 px-4 rounded-xl text-xs mt-3 select-none"
+              className="w-full flex items-center justify-center gap-2 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 font-bold py-3.5 px-4 rounded-xl text-xs mt-3 select-none transition-all shadow-md cursor-pointer"
             >
               {loading ? (
                 <>

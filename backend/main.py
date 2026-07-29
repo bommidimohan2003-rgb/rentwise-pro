@@ -18,6 +18,12 @@ from pydantic import BaseModel, EmailStr
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("payent.security")
 
+import hmac
+import hashlib
+import uuid
+import math
+import razorpay
+
 from database import (
     init_db,
     get_user,
@@ -45,7 +51,11 @@ from database import (
     is_token_revoked,
     record_failed_auth_attempt,
     clear_failed_auth_attempts,
-    increment_otp_attempt
+    increment_otp_attempt,
+    create_order_record,
+    get_order_by_id,
+    get_order_by_razorpay_order_id,
+    update_order_payment_status
 )
 from auth import (
     hash_password,
@@ -62,9 +72,17 @@ from config import (
     ADMIN_SETUP_CODE,
     ALLOWED_ORIGINS,
     IS_PRODUCTION,
-    STRIPE_SECRET_KEY,
-    STRIPE_WEBHOOK_SECRET
+    RAZORPAY_KEY_ID,
+    RAZORPAY_KEY_SECRET,
+    RAZORPAY_WEBHOOK_SECRET
 )
+
+# try:
+#     razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+# except Exception as rzp_err:
+#     logger.warning(f"Razorpay Client init warning: {rzp_err}")
+#     razorpay_client = None
+razorpay_client = None
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -144,6 +162,9 @@ class RegisterVerifySchema(BaseModel):
     otp: str
     password: str
     full_name: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    pincode: Optional[str] = None
     admin_code: Optional[str] = None
 
 class LoginRequestSchema(BaseModel):
@@ -360,7 +381,10 @@ def register_verify(data: RegisterVerifySchema, request: Request):
         phone=clean_phone,
         password_hash=hashed,
         full_name=display_name,
-        role=role
+        role=role,
+        address=data.address,
+        city=data.city,
+        pincode=data.pincode
     )
     
     delete_otp(clean_email)
@@ -373,6 +397,9 @@ def register_verify(data: RegisterVerifySchema, request: Request):
         "email": clean_email,
         "phone": clean_phone,
         "role": role,
+        "address": data.address,
+        "city": data.city,
+        "pincode": data.pincode,
         "status": "active",
         "verified": True,
         "createdAt": datetime.datetime.utcnow().isoformat()
@@ -570,8 +597,12 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
         )
     return {
         "email": user["email"],
-        "fullName": user["full_name"],
-        "role": user["role"]
+        "fullName": user.get("full_name"),
+        "role": user.get("role"),
+        "phone": user.get("phone"),
+        "address": user.get("address"),
+        "city": user.get("city"),
+        "pincode": user.get("pincode")
     }
 
 # Schemas and Routes for database persistence
@@ -793,53 +824,289 @@ def toggle_listing_availability(id: str, email: str = Depends(get_current_user_e
     new_status = toggle_custom_product_availability(id, email)
     return {"success": True, "available": new_status}
 
-# Payment Gateway Architecture & Webhook Verification (Phase 5)
-class PaymentCheckoutSchema(BaseModel):
-    bookingId: str
-    amount: int
-    currency: Optional[str] = "INR"
-    idempotencyKey: Optional[str] = None
+# ==============================================================================
+# --- RAZORPAY BACKEND PAYMENT ENDPOINTS (COMMENTED OUT AS REQUESTED) ---
+# ==============================================================================
+"""
+class CreateRazorpayOrderSchema(BaseModel):
+    product_id: str
+    start_date: str
+    end_date: str
+    coupon_code: Optional[str] = None
 
-@app.post("/api/payments/checkout-session")
-def create_payment_checkout_session(data: PaymentCheckoutSchema, email: str = Depends(get_current_user_email)):
-    order = fetch_one("SELECT * FROM orders WHERE id = %s", (data.bookingId,))
-    if not order:
-        raise HTTPException(status_code=404, detail="Order/Booking not found.")
-    if order["user_email"] != email:
-        raise HTTPException(status_code=403, detail="Forbidden access to booking.")
+class VerifyRazorpayPaymentSchema(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
 
-    existing_pay = fetch_one("SELECT * FROM payments WHERE booking_id = %s AND status = 'successful'", (data.bookingId,))
-    if existing_pay:
-        return {"success": True, "status": "already_paid", "paymentId": existing_pay["id"]}
+class RefundPaymentSchema(BaseModel):
+    order_id: str
+    amount: Optional[int] = None
+    reason: Optional[str] = None
 
-    checkout_id = f"cs_{secrets.token_hex(12)}"
+@app.post("/api/payments/create-order")
+def create_razorpay_order(data: CreateRazorpayOrderSchema, current_user_email: str = Depends(get_current_user_email)):
+    product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (data.product_id,))
+    price_per_day = 0
+    product_title = "Tech Gear Rental"
+    product_image = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
+
+    if product:
+        price_per_day = int(product.get("price", 2500))
+        product_title = product.get("title", product_title)
+        product_image = product.get("image", product_image)
+    else:
+        mock_prices = {
+            "p1": 2500, "p2": 4200, "p3": 1800, "p4": 3500, "p5": 1200, "p6": 2900, "p7": 2200, "p8": 4500
+        }
+        mock_titles = {
+            "p1": "Sony FX3 Cinema Line Camera",
+            "p2": "DJI Mavic 3 Pro Cine Premium Combo",
+            "p3": "MacBook Pro 16\" M3 Max 64GB",
+            "p4": "RED Komodo 6K Digital Cinema",
+            "p5": "Sennheiser MKH 416 Microphone Kit",
+            "p6": "Aputure LS 600d Pro Daylight LED",
+            "p7": "Apple Vision Pro 512GB",
+            "p8": "ARRI Alexa Mini LF Cinema Package"
+        }
+        price_per_day = mock_prices.get(data.product_id, 2500)
+        product_title = mock_titles.get(data.product_id, "Tech Gear Rental")
+
+    try:
+        d1 = datetime.datetime.fromisoformat(data.start_date.replace("Z", ""))
+        d2 = datetime.datetime.fromisoformat(data.end_date.replace("Z", ""))
+        days = max(1, math.ceil((d2 - d1).total_seconds() / 86400))
+    except Exception:
+        days = 3
+
+    subtotal = price_per_day * days
+    discount = 0
+    if data.coupon_code:
+        code_clean = data.coupon_code.strip().upper()
+        if code_clean in ("SAVE10", "WELCOME10", "PAYENT10"):
+            discount = int(subtotal * 0.10)
+
+    tax = int((subtotal - discount) * 0.08)
+    total_rupees = max(1, subtotal - discount + tax)
+    amount_paise = total_rupees * 100
+
+    order_id = f"ord_{uuid.uuid4().hex[:12]}"
+    razorpay_order_id = f"order_rzp_{uuid.uuid4().hex[:14]}"
+
+    if razorpay_client:
+        try:
+            rzp_response = razorpay_client.order.create({
+                "amount": amount_paise,
+                "currency": "INR",
+                "receipt": order_id,
+                "notes": {
+                    "product_id": data.product_id,
+                    "user_email": current_user_email,
+                    "rental_days": str(days)
+                }
+            })
+            razorpay_order_id = rzp_response["id"]
+        except Exception as e:
+            logger.error(f"Error creating Razorpay Order via SDK: {e}")
+            if IS_PRODUCTION:
+                raise HTTPException(status_code=500, detail="Failed to initialize Razorpay payment order.")
+
+    create_order_record(
+        order_id=order_id,
+        user_email=current_user_email,
+        product_id=data.product_id,
+        product_title=product_title,
+        product_image=product_image,
+        start_date=data.start_date,
+        end_date=data.end_date,
+        total=total_rupees,
+        status="pending",
+        razorpay_order_id=razorpay_order_id,
+        payment_status="unpaid"
+    )
+
     return {
         "success": True,
-        "checkoutSessionId": checkout_id,
-        "amount": data.amount,
-        "currency": data.currency,
-        "status": "requires_payment_method",
-        "clientSecret": f"pi_{secrets.token_hex(12)}_secret_{secrets.token_hex(8)}"
+        "order_id": order_id,
+        "razorpay_order_id": razorpay_order_id,
+        "amount": amount_paise,
+        "currency": "INR",
+        "key_id": RAZORPAY_KEY_ID,
+        "total": total_rupees,
+        "days": days
+    }
+
+@app.post("/api/payments/verify")
+def verify_razorpay_payment(data: VerifyRazorpayPaymentSchema, current_user_email: str = Depends(get_current_user_email)):
+    order = get_order_by_razorpay_order_id(data.razorpay_order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Booking order record not found.")
+
+    if order.get("payment_status") == "paid":
+        return {
+            "success": True,
+            "message": "Payment already verified.",
+            "order_id": order["id"]
+        }
+
+    signature_valid = False
+    if razorpay_client:
+        try:
+            razorpay_client.utility.verify_payment_signature({
+                "razorpay_order_id": data.razorpay_order_id,
+                "razorpay_payment_id": data.razorpay_payment_id,
+                "razorpay_signature": data.razorpay_signature
+            })
+            signature_valid = True
+        except Exception as e:
+            logger.warning(f"Razorpay SDK signature verification failed: {e}")
+            signature_valid = False
+
+    if not signature_valid:
+        msg = f"{data.razorpay_order_id}|{data.razorpay_payment_id}"
+        expected_sig = hmac.new(
+            RAZORPAY_KEY_SECRET.encode(),
+            msg.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        signature_valid = hmac.compare_digest(expected_sig, data.razorpay_signature)
+
+    if not signature_valid:
+        update_order_payment_status(
+            order_id=order["id"],
+            payment_status="failed",
+            status="failed",
+            razorpay_payment_id=data.razorpay_payment_id,
+            razorpay_signature=data.razorpay_signature
+        )
+        raise HTTPException(status_code=400, detail="Invalid Razorpay payment signature. Verification failed.")
+
+    update_order_payment_status(
+        order_id=order["id"],
+        payment_status="paid",
+        status="active",
+        razorpay_payment_id=data.razorpay_payment_id,
+        razorpay_signature=data.razorpay_signature
+    )
+
+    create_notification(
+        user_email=order["user_email"],
+        title="Payment Verified & Booking Confirmed 🎉",
+        message=f"Payment for '{order['product_title']}' has been verified. Your rental is active!",
+        notif_type="success"
+    )
+
+    return {
+        "success": True,
+        "message": "Payment verified and booking activated successfully.",
+        "order_id": order["id"]
     }
 
 @app.post("/api/payments/webhook")
-async def stripe_webhook_handler(request: Request):
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
+async def razorpay_webhook_handler(request: Request):
+    raw_body = await request.body()
+    signature = request.headers.get("X-Razorpay-Signature") or request.headers.get("x-razorpay-signature")
 
-    if IS_PRODUCTION and STRIPE_WEBHOOK_SECRET:
+    if not signature:
+        raise HTTPException(status_code=400, detail="Missing X-Razorpay-Signature header.")
+
+    expected_sig = hmac.new(
+        RAZORPAY_WEBHOOK_SECRET.encode(),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+
+    if not hmac.compare_digest(expected_sig, signature):
+        logger.warning("Razorpay Webhook signature verification failed.")
+        raise HTTPException(status_code=400, detail="Webhook signature verification failed.")
+
+    try:
+        payload = json.loads(raw_body)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload.")
+
+    event = payload.get("event")
+    event_payload = payload.get("payload", {})
+    payment_entity = event_payload.get("payment", {}).get("entity", {})
+    
+    razorpay_order_id = payment_entity.get("order_id")
+    razorpay_payment_id = payment_entity.get("id")
+
+    if razorpay_order_id:
+        order = get_order_by_razorpay_order_id(razorpay_order_id)
+        if order:
+            if event == "payment.captured":
+                if order.get("payment_status") != "paid":
+                    update_order_payment_status(
+                        order_id=order["id"],
+                        payment_status="paid",
+                        status="active",
+                        razorpay_payment_id=razorpay_payment_id
+                    )
+                    create_notification(
+                        user_email=order["user_email"],
+                        title="Payment Captured via Webhook 💳",
+                        message=f"Payment for '{order['product_title']}' was captured successfully.",
+                        notif_type="success"
+                    )
+            elif event in ("payment.failed", "payment.disputed"):
+                if order.get("payment_status") != "paid":
+                    update_order_payment_status(
+                        order_id=order["id"],
+                        payment_status="failed",
+                        status="failed",
+                        razorpay_payment_id=razorpay_payment_id
+                    )
+
+    return {"status": "ok", "event": event}
+
+@app.post("/api/payments/refund")
+def process_admin_refund(data: RefundPaymentSchema, current_admin: dict = Depends(check_admin_user)):
+    order = get_order_by_id(data.order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found.")
+
+    if order.get("payment_status") != "paid" or not order.get("razorpay_payment_id"):
+        raise HTTPException(status_code=400, detail="Order does not have a completed paid transaction to refund.")
+
+    refund_amount_rupees = data.amount if data.amount else order["total"]
+    refund_amount_paise = int(refund_amount_rupees * 100)
+    refund_id = f"rfnd_{uuid.uuid4().hex[:12]}"
+
+    if razorpay_client:
         try:
-            import stripe
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, STRIPE_WEBHOOK_SECRET
+            rzp_refund = razorpay_client.payment.refund(
+                order["razorpay_payment_id"],
+                {"amount": refund_amount_paise, "notes": {"reason": data.reason or "Admin initiated refund"}}
             )
+            refund_id = rzp_refund["id"]
         except Exception as e:
-            logger.error(f"Stripe Webhook Signature Verification Failed: {e}")
-            raise HTTPException(status_code=400, detail="Invalid Stripe webhook signature.")
-    else:
-        logger.info("Stripe webhook received and processed (Dev Mode / Test Signature).")
+            logger.error(f"Razorpay refund API error: {e}")
+            if IS_PRODUCTION:
+                raise HTTPException(status_code=500, detail=f"Failed to process Razorpay refund: {e}")
 
-    return {"status": "success"}
+    update_order_payment_status(
+        order_id=order["id"],
+        payment_status="refunded",
+        status="cancelled",
+        refund_id=refund_id,
+        refund_status="processed"
+    )
+
+    create_notification(
+        user_email=order["user_email"],
+        title="Refund Processed 💰",
+        message=f"Refund of ₹{refund_amount_rupees} for '{order['product_title']}' has been processed.",
+        notif_type="info"
+    )
+
+    return {
+        "success": True,
+        "message": f"Refund of ₹{refund_amount_rupees} processed successfully.",
+        "refund_id": refund_id,
+        "order_id": order["id"]
+    }
+"""
 
 @app.get("/api/lender/orders")
 def fetch_lender_orders(email: str = Depends(get_current_user_email)):
@@ -1469,7 +1736,7 @@ def admin_users_list(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT email, phone, full_name, role, status, verified, avatar, created_at FROM users ORDER BY created_at DESC")
+            cursor.execute("SELECT email, phone, full_name, role, status, verified, avatar, address, city, pincode, created_at FROM users ORDER BY created_at DESC")
             rows = cursor.fetchall()
     finally:
         conn.close()
@@ -1481,6 +1748,9 @@ def admin_users_list(current_admin: dict = Depends(check_admin_user)):
             "fullName": r["full_name"],
             "email": r["email"],
             "phone": r["phone"],
+            "address": r.get("address"),
+            "city": r.get("city"),
+            "pincode": r.get("pincode"),
             "role": r["role"],
             "status": r["status"] or "active",
             "verified": bool(r["verified"]),

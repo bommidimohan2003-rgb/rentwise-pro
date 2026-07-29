@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Github, Instagram, Twitter, Youtube, Mail, MapPin, Phone } from "lucide-react";
+import { LogoIcon } from "@/components/common/LogoIcon";
 
 const quickLinks = [
   { label: "Browse Rentals", to: "/categories" },
@@ -30,7 +31,7 @@ const socials = [
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-[#000000] text-slate-300 border-t border-[#1a1a1a]">
+    <footer className="relative overflow-hidden bg-background text-foreground border-t border-border">
       {/* Top divider glow */}
       <div
         className="absolute top-0 inset-x-0 h-px"
@@ -39,30 +40,24 @@ export function Footer() {
         }}
       />
 
-      <div className="relative max-w-7xl mx-auto px-4 md:px-6 pt-16 pb-10">
+      <div className="relative max-w-7xl mx-auto px-4 md:px-6 pt-10 pb-6">
         {/* Main grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-8 mb-8">
           {/* Brand column */}
           <div className="lg:col-span-2 space-y-5">
             <Link to="/" className="flex items-center gap-2.5 group w-fit">
-              <div
-                className="h-9 w-9 rounded-xl flex items-center justify-center text-lg font-black text-white"
-                style={{
-                  background: "linear-gradient(135deg, #FF5A5F 0%, #e0484d 100%)",
-                  boxShadow: "0 0 20px rgba(255,90,95,0.4)",
-                }}
-              >
-                P
+              <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-primary text-primary-foreground shrink-0 shadow-md">
+                <LogoIcon className="h-5 w-5" />
               </div>
-              <span className="text-xl font-extrabold tracking-tight text-white font-display">
+              <span className="text-xl font-extrabold tracking-tight text-foreground font-display">
                 PAYENT
               </span>
             </Link>
-            <p className="text-xs text-slate-400 leading-relaxed max-w-sm font-normal">
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-sm font-normal">
               India's premier peer-to-peer tech gear rental platform. Access flagship cameras, drones, laptops, audio gear, and tools insured up to ₹5 Lakhs.
             </p>
 
-            <div className="space-y-2 pt-2 text-xs text-slate-400 font-medium">
+            <div className="space-y-2 pt-2 text-xs text-muted-foreground font-medium">
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 text-[#FF5A5F]" />
                 <span>Bangalore • Mumbai • Delhi NCR • Hyderabad</span>
@@ -88,7 +83,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     to={link.to}
-                    className="text-slate-400 hover:text-white transition-colors duration-200"
+                    className="text-muted-foreground hover:text-foreground transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -107,7 +102,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     to={link.to}
-                    className="text-slate-400 hover:text-white transition-colors duration-200"
+                    className="text-muted-foreground hover:text-foreground transition-colors duration-200"
                   >
                     {link.label}
                   </Link>
@@ -126,7 +121,7 @@ export function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-slate-400 hover:text-white transition-colors duration-200"
+                    className="text-muted-foreground hover:text-foreground transition-colors duration-200"
                   >
                     {link.label}
                   </a>
@@ -137,7 +132,7 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 border-t border-[#1a1a1a] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 font-medium">
+        <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-medium">
           <p>© {new Date().getFullYear()} Payent Technologies Inc. All rights reserved.</p>
 
           <div className="flex items-center gap-4">
@@ -148,7 +143,7 @@ export function Footer() {
                   key={s.label}
                   href={s.href}
                   aria-label={s.label}
-                  className="h-8 w-8 rounded-full bg-[#121212] border border-[#222222] text-slate-400 hover:text-[#FF5A5F] hover:border-[#FF5A5F]/40 flex items-center justify-center transition-all duration-200"
+                  className="h-8 w-8 rounded-full bg-secondary border border-border text-muted-foreground hover:text-[#FF5A5F] hover:border-[#FF5A5F]/40 flex items-center justify-center transition-all duration-200"
                 >
                   <Icon className="h-4 w-4" />
                 </a>

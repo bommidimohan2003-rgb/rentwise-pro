@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
-import { Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, AlertCircle, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -49,7 +49,6 @@ export function LoginForm() {
 
   const onSubmit = async (data: FormValues) => {
     setErrorState(null);
-
     const res = await login(data.email, data.password);
     if (!res.ok) {
       const msg = res.error ?? "Invalid email or password.";
@@ -97,7 +96,7 @@ export function LoginForm() {
       )}
 
       <Input
-        label="Email"
+        label="Email address"
         type="email"
         placeholder="you@work.com"
         icon={<Mail className="h-4 w-4" />}
@@ -113,7 +112,7 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => setShowPw((v) => !v)}
-            className="p-1 text-muted-foreground hover:text-foreground"
+            className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
           >
             {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
@@ -121,22 +120,35 @@ export function LoginForm() {
         error={errors.password?.message}
         {...register("password")}
       />
-      <div className="flex items-center justify-between text-sm">
+
+      <div className="flex items-center justify-between text-xs sm:text-sm">
         <label className="inline-flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-          <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" {...register("remember")} />
+          <input
+            type="checkbox"
+            className="rounded border-border text-foreground focus:ring-foreground"
+            {...register("remember")}
+          />
           Remember me
         </label>
         <button
           type="button"
           onClick={() => navigate({ to: "/forgot-password" })}
-          className="text-primary hover:underline font-semibold"
+          className="text-foreground hover:underline font-bold text-xs cursor-pointer"
         >
           Forgot password?
         </button>
       </div>
+
       {error && <p className="text-xs text-destructive font-medium">{error}</p>}
-      <Button type="submit" className="w-full font-bold" loading={isSubmitting} disabled={isSubmitting}>
-        {isSubmitting ? "Signing in..." : "Login"}
+
+      <Button
+        type="submit"
+        className="w-full font-extrabold h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg active:scale-98 flex items-center justify-center gap-2 cursor-pointer mt-2"
+        loading={isSubmitting}
+        disabled={isSubmitting}
+      >
+        <span>{isSubmitting ? "Signing in..." : "Sign In to Payent"}</span>
+        {!isSubmitting && <ArrowRight className="h-4 w-4" />}
       </Button>
     </form>
   );

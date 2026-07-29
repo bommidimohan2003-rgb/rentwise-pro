@@ -149,7 +149,7 @@ export function NoInternetState({
         <button
           type="button"
           onClick={handleManualRetry}
-          className="inline-flex items-center gap-2 bg-[#FF5A5F] hover:bg-[#e0484d] text-white text-xs md:text-sm px-5 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+          className="inline-flex items-center gap-2 bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black text-xs md:text-sm px-5 py-2.5 rounded-xl font-bold transition-all shadow-md active:scale-95 cursor-pointer"
         >
           <RefreshCw className={cn("h-4 w-4", retrying && "animate-spin")} />
           <span>{retrying ? "Verifying network..." : "Retry connection"}</span>
