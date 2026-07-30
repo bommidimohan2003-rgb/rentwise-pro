@@ -6,9 +6,11 @@ import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Modal } from "@/components/common/Modal";
 import { products } from "@/utils/mockData";
-import { STORAGE_KEYS, storage } from "@/utils/storage";
+import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { api } from "@/utils/api";
-import type { Order } from "@/types";
+import { tracker } from "@/utils/eventTracker";
+import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
+import type { Order, Product } from "@/types";
 import { toast } from "sonner";
 import { CelebrationFlourish } from "@/components/common/CelebrationFlourish";
 
@@ -44,6 +46,21 @@ export default function Checkout() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
+  const [upsellProducts, setUpsellProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (product) {
+      api.getFrequentlyTogetherRecommendations(product.id).then((items) => {
+        if (isMounted && items && items.length > 0) {
+          setUpsellProducts(items);
+        }
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [product?.id]);
 
   // Payment Method: "card" | "upi"
   const [paymentMethod, setPaymentMethod] = useState<"card" | "upi">("card");
@@ -217,6 +234,7 @@ export default function Checkout() {
             };
 
             setConfirmedOrder(confirmed);
+            tracker.bookingCompleted(product.id, product.category);
             setOpen(true);
           } catch (verifyErr) {
             setIsVerifying(false);
@@ -723,6 +741,19 @@ export default function Checkout() {
             </div>
           </aside>
         </div>
+
+        {/* Restrained single-row checkout accessory recommendation */}
+        {upsellProducts.length > 0 && (
+          <RecommendationSection
+            title="You might also like"
+            subtitle="Recommended accessory gear for your rental project"
+            products={upsellProducts.slice(0, 4)}
+            type="frequently_together"
+            badge="Project Add-on"
+            layout="compact"
+            className="pt-8 mt-6 border-t border-border/80"
+          />
+        )}
 
         {/* Success Modal */}
         <Modal

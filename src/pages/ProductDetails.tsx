@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { Calendar, Check, Heart, Shield, Truck, MessageSquare, MapPin, Star, Clock, ArrowRight, ShieldCheck, Info, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Rating } from "@/components/common/Rating";
@@ -13,6 +13,10 @@ import { JsonLd } from "@/components/common/JsonLd";
 import { PhotoDetailViewer } from "@/components/common/PhotoDetailViewer";
 import { ProductRotationViewer } from "@/components/common/ProductRotationViewer";
 import { ProductAngleViewer } from "@/components/common/ProductAngleViewer";
+import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
+import { tracker } from "@/utils/eventTracker";
+import { api } from "@/utils/api";
+import type { Product } from "@/types";
 
 const mockDates = [
   { day: "Mon", date: "20 May" },
@@ -32,8 +36,32 @@ export default function ProductDetails() {
   const product = products.find((p) => p.id === id);
   const [selectedDate, setSelectedDate] = useState(0);
   const [selectedTime, setSelectedTime] = useState("12:00 PM");
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
+  const [frequentlyTogether, setFrequentlyTogether] = useState<Product[]>([]);
 
   const isOwner = Boolean(user && product && (user.fullName === product.owner.name || user.email === product.owner.name));
+
+  useEffect(() => {
+    if (!product) return;
+    const currentId = product.id;
+    tracker.viewProduct(currentId, product.category);
+
+    let isMounted = true;
+    async function loadRecommendations() {
+      const [similar, together] = await Promise.all([
+        api.getSimilarRecommendations(currentId),
+        api.getFrequentlyTogetherRecommendations(currentId),
+      ]);
+      if (isMounted) {
+        if (similar && similar.length > 0) setSimilarProducts(similar);
+        if (together && together.length > 0) setFrequentlyTogether(together);
+      }
+    }
+    loadRecommendations();
+    return () => {
+      isMounted = false;
+    };
+  }, [product?.id]);
 
   if (!product) {
     return (
@@ -176,7 +204,9 @@ export default function ProductDetails() {
                     <Star className="h-3.5 w-3.5 fill-foreground text-foreground" />
                     <span>{product.rating.toFixed(1)}</span>
                   </div>
-                  <span className="text-muted-foreground">({product.reviews} verified reviews)</span>
+                  {product.reviews > 0 && (
+                    <span className="text-muted-foreground">({product.reviews} verified reviews)</span>
+                  )}
                 </div>
               </div>
 
@@ -353,25 +383,52 @@ export default function ProductDetails() {
           </div>
         </div>
 
-        {/* Reviews Section */}
-        <div className="pt-10 border-t border-border/80">
-          <h2 className="text-2xl font-black tracking-tight mb-6 font-display">Verified Customer Reviews</h2>
-          <div className="grid gap-5 md:grid-cols-3">
-            {reviews.map((r) => (
-              <div key={r.id} className="rounded-3xl bg-card border border-border p-6 space-y-3 shadow-md">
-                <div className="flex items-center gap-3">
-                  <img src={r.avatar} alt={r.user} className="h-10 w-10 rounded-full object-cover border border-[#FF5A5F]" />
-                  <div className="text-left">
-                    <div className="text-sm font-extrabold text-foreground">{r.user}</div>
-                    <Rating value={r.rating} />
+        {/* Frequently Booked Together Section */}
+        {frequentlyTogether.length > 0 && (
+          <RecommendationSection
+            title="Frequently Booked Together"
+            subtitle="Popular gear combinations rented in single projects"
+            products={frequentlyTogether}
+            type="frequently_together"
+            badge="Bundle Pick"
+            layout="compact"
+            className="pt-10"
+          />
+        )}
+
+        {/* Similar Items Section */}
+        {similarProducts.length > 0 && (
+          <RecommendationSection
+            title="Similar Tech Gear"
+            subtitle={`Explore items similar to ${product.title} in ${product.category}`}
+            products={similarProducts}
+            type="similar"
+            badge="Category Match"
+            className="pt-6"
+          />
+        )}
+
+        {/* Reviews Section - Hidden for reference catalog products */}
+        {!product.isReference && product.reviews > 0 && (
+          <div className="pt-10 border-t border-border/80">
+            <h2 className="text-2xl font-black tracking-tight mb-6 font-display">Verified Customer Reviews</h2>
+            <div className="grid gap-5 md:grid-cols-3">
+              {reviews.map((r) => (
+                <div key={r.id} className="rounded-3xl bg-card border border-border p-6 space-y-3 shadow-md">
+                  <div className="flex items-center gap-3">
+                    <img src={r.avatar} alt={r.user} className="h-10 w-10 rounded-full object-cover border border-[#FF5A5F]" />
+                    <div className="text-left">
+                      <div className="text-sm font-extrabold text-foreground">{r.user}</div>
+                      <div className="text-[10px] text-muted-foreground font-medium">{r.date}</div>
+                    </div>
                   </div>
+                  <Rating value={r.rating} />
+                  <p className="text-xs text-muted-foreground leading-relaxed font-medium">{r.comment}</p>
                 </div>
-                <p className="text-xs md:text-sm text-slate-500 leading-relaxed font-normal">{r.comment}</p>
-                <p className="text-[11px] font-bold text-slate-400">{r.date}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </section>
     </MainLayout>
   );

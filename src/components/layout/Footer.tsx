@@ -17,7 +17,7 @@ const accountLinks = [
 ];
 
 const legalLinks = [
-  { label: "Privacy Policy", href: "#" },
+  { label: "Privacy Policy", to: "/privacy" },
   { label: "Terms of Service", href: "#" },
   { label: "Cookie Policy", href: "#" },
 ];
@@ -60,15 +60,15 @@ export function Footer() {
             <div className="space-y-2 pt-2 text-xs text-muted-foreground font-medium">
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 text-[#FF5A5F]" />
-                <span>Bangalore • Mumbai • Delhi NCR • Hyderabad</span>
+                <span>Vizag, Andhra Pradesh</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 text-[#FF5A5F]" />
-                <span>support@payent.com</span>
+                <span>payent_support@gmail.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-3.5 w-3.5 text-[#FF5A5F]" />
-                <span>+91 800-PAYENT-PRO</span>
+                <span>+91 7989002612</span>
               </div>
             </div>
           </div>
@@ -119,12 +119,21 @@ export function Footer() {
             <ul className="space-y-2.5 text-xs font-medium">
               {legalLinks.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors duration-200"
-                  >
-                    {link.label}
-                  </a>
+                  {link.to ? (
+                    <Link
+                      to={link.to}
+                      className="text-muted-foreground hover:text-foreground transition-colors duration-200"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-muted-foreground hover:text-foreground transition-colors duration-200"
+                    >
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

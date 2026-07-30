@@ -4,7 +4,7 @@ import secrets
 import logging
 import json
 import asyncio
-from typing import Optional
+from typing import Optional, List
 from dotenv import load_dotenv
 
 # Load env variables at application startup
@@ -55,8 +55,18 @@ from database import (
     create_order_record,
     get_order_by_id,
     get_order_by_razorpay_order_id,
-    update_order_payment_status
+    update_order_payment_status,
+    record_user_event_record,
+    record_user_events_batch,
+    get_recent_user_events,
+    get_trending_event_counts,
+    get_order_co_occurrences,
+    get_precomputed_similarities,
+    get_user_category_affinities,
+    get_popular_search_queries
 )
+from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
+from search_ml import ml_search_engine
 from auth import (
     hash_password,
     verify_password,
@@ -93,6 +103,13 @@ async def lifespan(app: FastAPI):
         logger.info("MySQL database initialized successfully.")
     except Exception as e:
         logger.error(f"Could not initialize MySQL database at startup: {e}")
+
+    try:
+        catalog = get_recommendation_catalog()
+        ml_search_engine.build_index(catalog)
+        logger.info(f"ML Search Engine index initialized with {len(catalog)} products.")
+    except Exception as se_err:
+        logger.error(f"Error initializing ML Search Engine index: {se_err}")
     yield
 
 app = FastAPI(
@@ -3093,6 +3110,414 @@ def admin_activity_logs(current_admin: dict = Depends(check_admin_user)):
     return res
 
 
+# Event Tracking & Recommendation Schemas
+class EventItemSchema(BaseModel):
+    user_email: Optional[str] = None
+    session_id: Optional[str] = None
+    event_type: str
+    product_id: Optional[str] = None
+    category: Optional[str] = None
+    search_query: Optional[str] = None
+    recommendation_type: Optional[str] = None
+    variant: Optional[str] = None
+
+class EventBatchSchema(BaseModel):
+    events: List[EventItemSchema]
+
+
+# Helper: Consolidated Products Catalog for Recommendations
+DEFAULT_CATALOG_PRODUCTS = [
+    {
+        "id": "prod-sony-a7iv",
+        "title": "Sony Alpha a7 IV Mirrorless Camera",
+        "description": "33MP Full-Frame Exmor R CMOS Sensor, 4K 60p Video, 10 fps Shooting.",
+        "price": 2500,
+        "category": "Cameras",
+        "rating": 4.9,
+        "reviews": 0,
+        "available": True,
+        "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
+        "owner": {"name": "Alex Mercer", "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150", "rating": 4.9}
+    },
+    {
+        "id": "prod-macbook-pro-16",
+        "title": "Apple MacBook Pro 16 M3 Max",
+        "description": "36GB Unified Memory, 1TB SSD, 16-inch Liquid Retina XDR display.",
+        "price": 3500,
+        "category": "Laptops",
+        "rating": 4.95,
+        "reviews": 0,
+        "available": True,
+        "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80",
+        "owner": {"name": "Sarah Connor", "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150", "rating": 5.0}
+    },
+    {
+        "id": "prod-dji-mavic-3-pro",
+        "title": "DJI Mavic 3 Pro Cine Drone",
+        "description": "Triple-camera system, Hasselblad 4/3 CMOS, 43 min flight time.",
+        "price": 3000,
+        "category": "Drones",
+        "rating": 4.88,
+        "reviews": 0,
+        "available": True,
+        "image": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1200&q=80",
+        "owner": {"name": "Marcus Vance", "avatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150", "rating": 4.8}
+    },
+    {
+        "id": "prod-anker-737-powerbank",
+        "title": "Anker 737 Power Bank (PowerCore 24K)",
+        "description": "24,000mAh 140W Output 3-Port Laptop Power Bank with Smart Digital Display.",
+        "price": 450,
+        "category": "Power Banks",
+        "rating": 4.75,
+        "reviews": 0,
+        "available": True,
+        "image": "https://images.unsplash.com/photo-1609592424074-2975a8996b27?auto=format&fit=crop&w=1200&q=80",
+        "owner": {"name": "Tech Hub Rentals", "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150", "rating": 4.9}
+    },
+    {
+        "id": "prod-canon-r5",
+        "title": "Canon EOS R5 8K Mirrorless Camera",
+        "description": "45MP Full-Frame Sensor, 8K RAW Video, In-Body Image Stabilization.",
+        "price": 2800,
+        "category": "Cameras",
+        "rating": 4.9,
+        "reviews": 0,
+        "available": True,
+        "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
+        "owner": {"name": "Alex Mercer", "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150", "rating": 4.9}
+    },
+    {
+        "id": "prod-dell-xps-15",
+        "title": "Dell XPS 15 OLED Touch Laptop",
+        "description": "Intel i9, 32GB RAM, RTX 4070, 3.5K OLED Display.",
+        "price": 2200,
+        "category": "Laptops",
+        "rating": 4.7,
+        "reviews": 0,
+        "available": True,
+        "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80",
+        "owner": {"name": "Sarah Connor", "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150", "rating": 5.0}
+    }
+]
+
+def get_recommendation_catalog() -> List[dict]:
+    """Retrieve full product list combining custom_products DB table and reference items."""
+    db_products = get_all_custom_products()
+    catalog_map = {p["id"]: p for p in DEFAULT_CATALOG_PRODUCTS}
+    
+    for db_p in db_products:
+        if db_p.get("status", "approved") == "approved" and not db_p.get("hidden", False):
+            catalog_map[db_p["id"]] = {
+                "id": db_p["id"],
+                "title": db_p["title"],
+                "description": db_p.get("description", ""),
+                "price": db_p["price"],
+                "category": db_p["category"],
+                "rating": float(db_p.get("rating", 4.5)),
+                "reviews": int(db_p.get("reviews", 10)),
+                "available": bool(db_p.get("available", True)),
+                "image": db_p["image"],
+                "owner": {
+                    "name": db_p.get("owner_name", "Gear Owner"),
+                    "avatar": db_p.get("owner_avatar", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"),
+                    "rating": float(db_p.get("owner_rating", 4.8))
+                }
+            }
+    return list(catalog_map.values())
+
+
+# Phase 1 — Event Tracking API Endpoint
+@app.post("/api/events")
+def post_events(payload: dict):
+    """
+    POST /api/events
+    Accepts single event dict or batch JSON with list of events.
+    """
+    if "events" in payload and isinstance(payload["events"], list):
+        events = payload["events"]
+        record_user_events_batch(events)
+        return {"status": "ok", "recorded": len(events)}
+    else:
+        record_user_event_record(payload)
+        return {"status": "ok", "recorded": 1}
+
+
+# Phase 2 — Immediate Non-ML Recommendations: Similar Items
+@app.get("/api/recommendations/similar/{product_id}")
+def get_similar_recommendations(product_id: str):
+    """
+    GET /api/recommendations/similar/{product_id}
+    Returns items in same category with similar price and precomputed similarity boost.
+    """
+    catalog = get_recommendation_catalog()
+    target = next((p for p in catalog if p["id"] == product_id), None)
+    
+    if not target:
+        # Fallback to general high-rated products if product_id not found
+        return sorted(catalog, key=lambda x: x["rating"], reverse=True)[:4]
+
+    target_cat = target.get("category", "")
+    target_price = target.get("price", 1000)
+
+    # Load ML precomputed similarities if existing
+    ml_similarities = {row["product_id"]: float(row["score"]) for row in get_precomputed_similarities(product_id)}
+
+    scored_items = []
+    for item in catalog:
+        if item["id"] == product_id:
+            continue
+        
+        score = 0.0
+        # Category similarity (+50 pts)
+        if item.get("category") == target_cat:
+            score += 50.0
+            
+        # Price similarity (up to +30 pts)
+        price_diff = abs(item.get("price", 0) - target_price)
+        price_score = max(0.0, 30.0 - (30.0 * price_diff / max(1, target_price)))
+        score += price_score
+        
+        # Rating quality (+10 pts max)
+        score += item.get("rating", 4.0) * 2.0
+        
+        # ML Collaborative filtering similarity boost (+ up to 40 pts)
+        if item["id"] in ml_similarities:
+            score += ml_similarities[item["id"]] * 40.0
+
+        scored_items.append((score, item))
+
+    scored_items.sort(key=lambda x: x[0], reverse=True)
+    return [item for score, item in scored_items[:6]]
+
+
+# Phase 2 — Immediate Non-ML Recommendations: Trending Now
+@app.get("/api/recommendations/trending")
+def get_trending_recommendations():
+    """
+    GET /api/recommendations/trending
+    Returns products ranked by recent weighted event interactions (booking_completed, add_to_cart, view_product)
+    with time-decay, falling back to top catalog items.
+    """
+    catalog = get_recommendation_catalog()
+    catalog_map = {p["id"]: p for p in catalog}
+    
+    event_counts = get_trending_event_counts(days=30)
+    trending_items = []
+    seen_ids = set()
+
+    for row in event_counts:
+        pid = row["product_id"]
+        if pid in catalog_map:
+            trending_items.append(catalog_map[pid])
+            seen_ids.add(pid)
+
+    # Fallback / Top up with highest rated items if events are sparse
+    if len(trending_items) < 8:
+        fallback_sorted = sorted(catalog, key=lambda x: (x.get("rating", 0), x.get("reviews", 0)), reverse=True)
+        for item in fallback_sorted:
+            if item["id"] not in seen_ids:
+                trending_items.append(item)
+                seen_ids.add(item["id"])
+                if len(trending_items) >= 8:
+                    break
+
+    return trending_items[:8]
+
+
+# Phase 2 — Immediate Non-ML Recommendations: Frequently Booked Together
+@app.get("/api/recommendations/frequently-together/{product_id}")
+def get_frequently_together_recommendations(product_id: str):
+    """
+    GET /api/recommendations/frequently-together/{product_id}
+    Returns co-occurring items in order history or complementary category products.
+    """
+    catalog = get_recommendation_catalog()
+    catalog_map = {p["id"]: p for p in catalog}
+    target = catalog_map.get(product_id)
+
+    co_occurrences = get_order_co_occurrences(product_id, limit=4)
+    results = []
+    seen_ids = {product_id}
+
+    for row in co_occurrences:
+        pid = row["product_id"]
+        if pid in catalog_map:
+            results.append(catalog_map[pid])
+            seen_ids.add(pid)
+
+    # Fallback to complementary / adjacent category items
+    if len(results) < 3 and target:
+        target_cat = target.get("category", "")
+        # Adjacent complementary category mapping
+        complement_cats = {
+            "Cameras": ["Audio", "Power Banks", "Cameras"],
+            "Laptops": ["Power Banks", "Audio", "Laptops"],
+            "Drones": ["Power Banks", "Cameras", "Drones"],
+            "Audio": ["Cameras", "Power Banks"],
+            "Power Banks": ["Cameras", "Laptops", "Drones"]
+        }.get(target_cat, [target_cat])
+
+        for cat in complement_cats:
+            for item in catalog:
+                if item["id"] not in seen_ids and item.get("category") == cat:
+                    results.append(item)
+                    seen_ids.add(item["id"])
+                    if len(results) >= 4:
+                        break
+            if len(results) >= 4:
+                break
+
+    return results[:4]
+
+
+# Phase 3 — Cold-Start-Aware Personalization
+@app.get("/api/recommendations/personalized")
+def get_personalized_recommendations(user_email: Optional[str] = None, session_id: Optional[str] = None):
+    """
+    GET /api/recommendations/personalized
+    Returns personalized items based on logged-in user's or current session's recent view/browse history.
+    Falls back cleanly to Phase 2 trending products if no prior user history exists (cold-start).
+    """
+    catalog = get_recommendation_catalog()
+    recent_events = get_recent_user_events(user_email=user_email, session_id=session_id, limit=25)
+
+    if not recent_events:
+        # COLD-START FALLBACK: Return trending items cleanly
+        trending = get_trending_recommendations()
+        return {
+            "source": "trending_fallback",
+            "title": "Trending Tech Gear",
+            "description": "Popular items rented by the community this week",
+            "items": trending
+        }
+
+    # Count user's interest frequency across categories and viewed product IDs
+    cat_weights = {}
+    viewed_pids = set()
+
+    for ev in recent_events:
+        cat = ev.get("category")
+        pid = ev.get("product_id")
+        if pid:
+            viewed_pids.add(pid)
+
+        if cat:
+            weight = 3.0 if ev.get("event_type") == "add_to_cart" else 1.0
+            cat_weights[cat] = cat_weights.get(cat, 0.0) + weight
+
+    if not cat_weights:
+        trending = get_trending_recommendations()
+        return {
+            "source": "trending_fallback",
+            "title": "Trending Tech Gear",
+            "description": "Popular items rented by the community this week",
+            "items": trending
+        }
+
+    # Score catalog items based on user's category affinity
+    scored_items = []
+    top_cat = max(cat_weights.items(), key=lambda x: x[1])[0]
+
+    for item in catalog:
+        cat = item.get("category")
+        pid = item.get("id")
+        
+        score = cat_weights.get(cat, 0.0) * 10.0
+        # Give mild penalty to products already viewed so user discovers fresh gear
+        if pid in viewed_pids:
+            score -= 5.0
+            
+        score += item.get("rating", 4.0) * 2.0
+        scored_items.append((score, item))
+
+    scored_items.sort(key=lambda x: x[0], reverse=True)
+    personalized_items = [item for score, item in scored_items[:8]]
+
+    return {
+        "source": "personalized",
+        "title": f"Recommended For You in {top_cat}",
+        "description": f"Based on your recent interest in {top_cat} and gear rentals",
+        "items": personalized_items
+    }
+
+
+# Phase 4 — ML Data Sufficiency & Training Endpoints
+@app.get("/api/recommendations/ml-status")
+def get_ml_status():
+    """
+    GET /api/recommendations/ml-status
+    Evaluates dataset interaction density and reports whether Phase 4 collaborative filtering ML can run.
+    """
+    return check_data_sufficiency()
+
+@app.post("/api/recommendations/train")
+def train_recommendation_model():
+    """
+    POST /api/recommendations/train
+    Triggers batch computation of item-item similarity matrix if interaction dataset volume threshold is satisfied.
+    """
+    return compute_and_save_item_similarities()
+
+
+# ML Search Engine Endpoints
+class SearchRequestSchema(BaseModel):
+    query: Optional[str] = ""
+    category: Optional[str] = None
+    user_email: Optional[str] = None
+    session_id: Optional[str] = None
+    limit: Optional[int] = 20
+
+@app.post("/api/search")
+def search_products_ml(req: SearchRequestSchema):
+    """
+    POST /api/search
+    ML-powered search using TF-IDF, cosine similarity, and user event personalization.
+    """
+    if not ml_search_engine.is_indexed:
+        catalog = get_recommendation_catalog()
+        ml_search_engine.build_index(catalog)
+
+    affinities = {}
+    if req.user_email or req.session_id:
+        affinities = get_user_category_affinities(req.user_email, req.session_id)
+
+    results_data = ml_search_engine.search(
+        query=req.query or "",
+        category=req.category,
+        user_affinities=affinities,
+        limit=req.limit or 20
+    )
+
+    return {
+        "success": True,
+        "results": results_data["results"],
+        "did_you_mean": results_data["did_you_mean"],
+        "total": results_data["total"]
+    }
+
+@app.get("/api/search/stats")
+def get_search_stats():
+    """
+    GET /api/search/stats
+    Returns index stats and top trending search queries.
+    """
+    if not ml_search_engine.is_indexed:
+        catalog = get_recommendation_catalog()
+        ml_search_engine.build_index(catalog)
+
+    popular_queries = get_popular_search_queries(limit=6)
+
+    return {
+        "is_indexed": ml_search_engine.is_indexed,
+        "indexed_products_count": len(ml_search_engine.products),
+        "vocabulary_size": len(ml_search_engine.vocabulary),
+        "popular_queries": popular_queries
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
+

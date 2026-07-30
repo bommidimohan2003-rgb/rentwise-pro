@@ -80,7 +80,7 @@ export const api = {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.detail || "Invalid email or password.");
       }
-      return await res.json(); // returns { success, token, role, message }
+      return await res.json();
     } catch (err) {
       throw err;
     }
@@ -141,7 +141,7 @@ export const api = {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.detail || "Failed to fetch user profile.");
       }
-      return await res.json(); // returns { email, role, fullName }
+      return await res.json();
     } catch (err) {
       throw err;
     }
@@ -352,5 +352,91 @@ export const api = {
       throw new Error(data.detail || "Failed to process refund.");
     }
     return res.json();
+  },
+
+  // Recommendation Engine API Methods
+  async getSimilarRecommendations(productId: string): Promise<Product[]> {
+    try {
+      const res = await fetch(`${API_BASE}/api/recommendations/similar/${encodeURIComponent(productId)}`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async getTrendingRecommendations(): Promise<Product[]> {
+    try {
+      const res = await fetch(`${API_BASE}/api/recommendations/trending`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async getFrequentlyTogetherRecommendations(productId: string): Promise<Product[]> {
+    try {
+      const res = await fetch(`${API_BASE}/api/recommendations/frequently-together/${encodeURIComponent(productId)}`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async getPersonalizedRecommendations(userEmail?: string, sessionId?: string) {
+    try {
+      const params = new URLSearchParams();
+      if (userEmail) params.append("user_email", userEmail);
+      if (sessionId) params.append("session_id", sessionId);
+
+      const url = `${API_BASE}/api/recommendations/personalized${params.toString() ? "?" + params.toString() : ""}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getMLStatus() {
+    try {
+      const res = await fetch(`${API_BASE}/api/recommendations/ml-status`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async searchML(query: string, category?: string, userEmail?: string, sessionId?: string, limit: number = 20) {
+    try {
+      const res = await fetch(`${API_BASE}/api/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: (query || "").trim(),
+          category: category === "all" ? undefined : category,
+          user_email: userEmail,
+          session_id: sessionId,
+          limit,
+        }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getSearchStats() {
+    try {
+      const res = await fetch(`${API_BASE}/api/search/stats`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
   },
 };

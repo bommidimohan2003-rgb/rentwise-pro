@@ -301,6 +301,38 @@ def init_db():
         )
     """)
 
+    # Create user_events table for behavioral recommendation tracking
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS user_events (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_email VARCHAR(255) NULL,
+            session_id VARCHAR(255) NULL,
+            event_type VARCHAR(50) NOT NULL,
+            product_id VARCHAR(255) NULL,
+            category VARCHAR(100) NULL,
+            search_query VARCHAR(255) NULL,
+            recommendation_type VARCHAR(100) NULL,
+            variant VARCHAR(10) NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user (user_email),
+            INDEX idx_session (session_id),
+            INDEX idx_event_type (event_type),
+            INDEX idx_created (created_at),
+            INDEX idx_product (product_id)
+        )
+    """)
+
+    # Create item_similarities table for precomputed collaborative filtering similarity matrix
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS item_similarities (
+            product_id_a VARCHAR(255) NOT NULL,
+            product_id_b VARCHAR(255) NOT NULL,
+            score DECIMAL(5, 4) NOT NULL,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (product_id_a, product_id_b)
+        )
+    """)
+
     # Migrate existing databases that might have been initialized with VARCHAR(1000)
     try:
         execute_query("ALTER TABLE custom_products MODIFY COLUMN image LONGTEXT")
@@ -821,6 +853,301 @@ def update_order_payment_status(
             MOCK_ORDERS[order_id]["refund_id"] = refund_id
         if refund_status:
             MOCK_ORDERS[order_id]["refund_status"] = refund_status
+
+
+# Recommendation System Database Helpers
+
+MOCK_USER_EVENTS = []
+
+def record_user_event_record(event: dict):
+    """Insert a single behavioral event record into user_events."""
+    try:
+        query = """
+            INSERT INTO user_events (user_email, session_id, event_type, product_id, category, search_query, recommendation_type, variant, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """
+        params = (
+            event.get("user_email"),
+            event.get("session_id"),
+            event.get("event_type"),
+            event.get("product_id"),
+            event.get("category"),
+            event.get("search_query"),
+            event.get("recommendation_type"),
+            event.get("variant"),
+        )
+        execute_query(query, params)
+    except Exception as e:
+        print(f"Notice: Database write error in record_user_event_record: {e}")
+        MOCK_USER_EVENTS.append({**event, "created_at": datetime.utcnow().isoformat()})
+
+def record_user_events_batch(events: list):
+    """Batch insert multiple behavioral event records."""
+    if not events:
+        return
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            query = """
+                INSERT INTO user_events (user_email, session_id, event_type, product_id, category, search_query, recommendation_type, variant, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            """
+            params_list = [
+                (
+                    ev.get("user_email"),
+                    ev.get("session_id"),
+                    ev.get("event_type"),
+                    ev.get("product_id"),
+                    ev.get("category"),
+                    ev.get("search_query"),
+                    ev.get("recommendation_type"),
+                    ev.get("variant"),
+                )
+                for ev in events
+            ]
+            cursor.executemany(query, params_list)
+        conn.commit()
+    except Exception as e:
+        print(f"Notice: Database batch write error in record_user_events_batch: {e}")
+        for ev in events:
+            MOCK_USER_EVENTS.append({**ev, "created_at": datetime.utcnow().isoformat()})
+    finally:
+        conn.close()
+
+def get_recent_user_events(user_email: str = None, session_id: str = None, limit: int = 20):
+    """Fetch recent user events for cold-start and personalized recommendations."""
+    if not user_email and not session_id:
+        return []
+    try:
+        if user_email and session_id:
+            query = """
+                SELECT * FROM user_events
+                WHERE LOWER(user_email) = LOWER(%s) OR session_id = %s
+                ORDER BY created_at DESC LIMIT %s
+            """
+            params = (user_email, session_id, limit)
+        elif user_email:
+            query = """
+                SELECT * FROM user_events
+                WHERE LOWER(user_email) = LOWER(%s)
+                ORDER BY created_at DESC LIMIT %s
+            """
+            params = (user_email, limit)
+        else:
+            query = """
+                SELECT * FROM user_events
+                WHERE session_id = %s
+                ORDER BY created_at DESC LIMIT %s
+            """
+            params = (session_id, limit)
+
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Warning: Database error in get_recent_user_events: {e}")
+        results = []
+        for ev in reversed(MOCK_USER_EVENTS):
+            if (user_email and ev.get("user_email") == user_email) or (session_id and ev.get("session_id") == session_id):
+                results.append(ev)
+                if len(results) >= limit:
+                    break
+        return results
+
+def get_trending_event_counts(days: int = 30):
+    """Aggregate weighted interaction event counts for product ranking with time decay."""
+    try:
+        query = """
+            SELECT product_id,
+                   SUM(CASE WHEN event_type = 'booking_completed' THEN 5.0
+                            WHEN event_type = 'add_to_cart' THEN 3.0
+                            WHEN event_type = 'view_product' THEN 1.0
+                            ELSE 0.5 END * EXP(-0.05 * DATEDIFF(NOW(), created_at))) AS score
+            FROM user_events
+            WHERE product_id IS NOT NULL AND created_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
+            GROUP BY product_id
+            ORDER BY score DESC
+            LIMIT 50
+        """
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, (days,))
+                return cursor.fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Warning: Database error in get_trending_event_counts: {e}")
+        # Fallback to counting in mock array
+        scores = {}
+        for ev in MOCK_USER_EVENTS:
+            pid = ev.get("product_id")
+            if pid:
+                weight = 5.0 if ev.get("event_type") == "booking_completed" else (3.0 if ev.get("event_type") == "add_to_cart" else 1.0)
+                scores[pid] = scores.get(pid, 0.0) + weight
+        return [{"product_id": k, "score": v} for k, v in sorted(scores.items(), key=lambda x: x[1], reverse=True)]
+
+def get_order_co_occurrences(product_id: str, limit: int = 10):
+    """Find products frequently ordered by the same user as product_id."""
+    if not product_id:
+        return []
+    try:
+        query = """
+            SELECT o2.product_id, COUNT(*) as count
+            FROM orders o1
+            JOIN orders o2 ON o1.user_email = o2.user_email AND o1.product_id != o2.product_id
+            WHERE o1.product_id = %s AND o2.product_id IS NOT NULL
+            GROUP BY o2.product_id
+            ORDER BY count DESC
+            LIMIT %s
+        """
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, (product_id, limit))
+                return cursor.fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Warning: Database error in get_order_co_occurrences: {e}")
+        return []
+
+def get_precomputed_similarities(product_id: str, limit: int = 10):
+    """Retrieve precomputed item-based collaborative filtering similarity scores."""
+    if not product_id:
+        return []
+    try:
+        query = """
+            SELECT product_id_b as product_id, score
+            FROM item_similarities
+            WHERE product_id_a = %s
+            ORDER BY score DESC
+            LIMIT %s
+        """
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, (product_id, limit))
+                return cursor.fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Warning: Database error in get_precomputed_similarities: {e}")
+        return []
+
+def save_precomputed_similarities(rows: list):
+    """Insert or replace precomputed item similarity pairs."""
+    if not rows:
+        return
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            query = """
+                REPLACE INTO item_similarities (product_id_a, product_id_b, score, updated_at)
+                VALUES (%s, %s, %s, NOW())
+            """
+            params_list = [(r["product_id_a"], r["product_id_b"], float(r["score"])) for r in rows]
+            cursor.executemany(query, params_list)
+        conn.commit()
+    except Exception as e:
+        print(f"Notice: Database write error in save_precomputed_similarities: {e}")
+    finally:
+        conn.close()
+
+def get_interaction_matrix_data():
+    """Fetch user-item interaction pairs for ML training."""
+    try:
+        query = """
+            SELECT COALESCE(user_email, session_id) as user_identifier, product_id,
+                   SUM(CASE WHEN event_type = 'booking_completed' THEN 5.0
+                            WHEN event_type = 'add_to_cart' THEN 3.0
+                            WHEN event_type = 'view_product' THEN 1.0
+                            ELSE 0.5 END) as interaction_score
+            FROM user_events
+            WHERE product_id IS NOT NULL AND (user_email IS NOT NULL OR session_id IS NOT NULL)
+            GROUP BY user_identifier, product_id
+        """
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query)
+                return cursor.fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Warning: Database error in get_interaction_matrix_data: {e}")
+        return []
+
+def get_user_category_affinities(user_email: str = None, session_id: str = None) -> dict:
+    """Calculate user category affinities based on user_events history."""
+    if not user_email and not session_id:
+        return {}
+    affinities = {}
+    try:
+        query = """
+            SELECT category, COUNT(*) as interaction_count
+            FROM user_events
+            WHERE (LOWER(user_email) = LOWER(%s) OR session_id = %s)
+              AND category IS NOT NULL AND category != ''
+            GROUP BY category
+        """
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, (user_email or "", session_id or ""))
+                rows = cursor.fetchall()
+                for r in rows:
+                    if r.get("category"):
+                        affinities[r["category"]] = float(r.get("interaction_count", 0))
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Notice: Database query fallback in get_user_category_affinities: {e}")
+        # Fallback to in-memory event tracking
+        for ev in MOCK_USER_EVENTS:
+            em = ev.get("user_email") or ""
+            sid = ev.get("session_id") or ""
+            if (user_email and em.lower() == user_email.lower()) or (session_id and sid == session_id):
+                cat = ev.get("category")
+                if cat:
+                    affinities[cat] = affinities.get(cat, 0.0) + 1.0
+    return affinities
+
+def get_popular_search_queries(limit: int = 5) -> list:
+    """Fetch top search queries recorded in user_events."""
+    try:
+        query = """
+            SELECT search_query, COUNT(*) as cnt
+            FROM user_events
+            WHERE event_type = 'search' AND search_query IS NOT NULL AND TRIM(search_query) != ''
+            GROUP BY search_query
+            ORDER BY cnt DESC
+            LIMIT %s
+        """
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, (limit,))
+                rows = cursor.fetchall()
+                return [r["search_query"] for r in rows if r.get("search_query")]
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Notice: Database fallback in get_popular_search_queries: {e}")
+        counts = {}
+        for ev in MOCK_USER_EVENTS:
+            if ev.get("event_type") == "search" and ev.get("search_query"):
+                sq = ev["search_query"].strip()
+                if sq:
+                    counts[sq] = counts.get(sq, 0) + 1
+        sorted_queries = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+        return [sq for sq, _ in sorted_queries[:limit]]
+
+
 
 
 

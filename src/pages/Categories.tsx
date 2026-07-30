@@ -21,9 +21,12 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
 import { categories, products } from "@/utils/mockData";
 import { advancedSearch } from "@/utils/searchEngine";
+import { searchWithML, getSearchStats } from "@/utils/smartSearch";
+import type { Product } from "@/types";
 import { cn } from "@/lib/utils";
 import { useSearch, useNavigate, Link } from "@tanstack/react-router";
 import { NoSearchResults } from "@/components/states/NoSearchResults";
+import { tracker } from "@/utils/eventTracker";
 
 type Sort = "featured" | "price_asc" | "price_desc" | "rating";
 
@@ -47,12 +50,62 @@ export default function Categories() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
+  const [mlResults, setMlResults] = useState<Product[] | null>(null);
+  const [didYouMean, setDidYouMean] = useState<string | null>(null);
+  const [isMLActive, setIsMLActive] = useState(false);
+  const [popularQueries, setPopularQueries] = useState<string[]>([]);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLocalQ(search.q || "");
   }, [search.q]);
+
+  useEffect(() => {
+    if (cat && cat !== "all") {
+      tracker.browseCategory(cat);
+    }
+  }, [cat]);
+
+  useEffect(() => {
+    if (search.q && search.q.trim()) {
+      const timer = setTimeout(() => {
+        tracker.search(search.q!);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [search.q]);
+
+  // Fetch ML Search results asynchronously when query or category changes
+  useEffect(() => {
+    let isMounted = true;
+    if (q && q.trim()) {
+      searchWithML(products, q, cat).then((res) => {
+        if (isMounted) {
+          setMlResults(res.results);
+          setDidYouMean(res.didYouMean);
+          setIsMLActive(res.isMLPowered);
+        }
+      });
+    } else {
+      setMlResults(null);
+      setDidYouMean(null);
+      setIsMLActive(false);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [q, cat]);
+
+  // Fetch Search Index stats & popular queries once
+  useEffect(() => {
+    getSearchStats().then((stats) => {
+      if (stats.popularQueries && stats.popularQueries.length > 0) {
+        setPopularQueries(stats.popularQueries);
+      }
+    });
+  }, []);
 
   // Click outside listener for category dropdown and search suggestions
   useEffect(() => {
@@ -94,11 +147,11 @@ export default function Categories() {
     setSort("featured");
   };
 
-  // Perform Intelligent Advanced Search
+  // Perform Intelligent Advanced & ML-Powered Search
   const filtered = useMemo(() => {
-    let list = products.filter((p) => (cat === "all" ? true : p.category === cat));
+    let list = mlResults !== null ? mlResults : products.filter((p) => (cat === "all" ? true : p.category === cat));
 
-    if (q) {
+    if (mlResults === null && q) {
       list = advancedSearch(list, q);
     }
 
@@ -114,13 +167,16 @@ export default function Categories() {
         break;
     }
     return list;
-  }, [cat, q, sort]);
+  }, [cat, q, sort, mlResults]);
 
   // Instant Suggestions for Search Autocomplete
   const liveSuggestions = useMemo(() => {
     if (!q || q.trim().length < 2) return [];
+    if (mlResults && mlResults.length > 0) {
+      return mlResults.slice(0, 5);
+    }
     return advancedSearch(products, q).slice(0, 5);
-  }, [q]);
+  }, [q, mlResults]);
 
   // Compute category item counts dynamically
   const categoryCounts = useMemo(() => {
@@ -281,11 +337,39 @@ export default function Categories() {
             )}
 
             {/* Instant Live Autocomplete Suggestions Popup */}
-            {isSearchFocused && liveSuggestions.length > 0 && (
+            {isSearchFocused && !q && popularQueries.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl bg-card border border-border shadow-2xl p-3 space-y-2 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-wider text-muted-foreground border-b border-border/50 pb-1.5">
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-primary" />
+                    Trending & Popular Searches
+                  </span>
+                  <span className="text-[9px] text-primary font-bold">ML Powered</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {popularQueries.map((pq) => (
+                    <button
+                      key={pq}
+                      onClick={() => {
+                        setQ(pq);
+                        setIsSearchFocused(false);
+                      }}
+                      className="px-2.5 py-1 rounded-xl bg-secondary hover:bg-primary hover:text-primary-foreground text-xs font-bold text-foreground transition-all cursor-pointer shadow-sm"
+                    >
+                      {pq}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {isSearchFocused && q && liveSuggestions.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl bg-card border border-border shadow-2xl p-2 space-y-1 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
                 <div className="px-3 py-1.5 flex items-center justify-between text-[10px] uppercase font-black tracking-wider text-muted-foreground border-b border-border/50">
                   <span>Live Search Matches ({liveSuggestions.length})</span>
-                  <span className="text-[9px] text-primary font-bold">Fuzzy & Synonym Engine Active</span>
+                  <span className="text-[9px] text-primary font-bold">
+                    {isMLActive ? "TF-IDF ML Engine Active" : "Fuzzy & Synonym Engine Active"}
+                  </span>
                 </div>
 
                 <div className="space-y-1">
@@ -345,6 +429,23 @@ export default function Categories() {
           </div>
 
         </div>
+
+        {/* Spelling Typo Correction Chip ("Did you mean?") */}
+        {didYouMean && (
+          <div className="flex items-center gap-2.5 p-3 px-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-medium">
+            <Sparkles className="h-4 w-4 shrink-0 text-amber-500" />
+            <span>
+              Did you mean{" "}
+              <button
+                onClick={() => setQ(didYouMean)}
+                className="font-black underline cursor-pointer text-amber-600 dark:text-amber-300 hover:text-primary transition-colors"
+              >
+                "{didYouMean}"
+              </button>
+              ?
+            </span>
+          </div>
+        )}
 
         {/* Results Info Subheader */}
         <div className="flex items-center justify-between px-1 pt-1">

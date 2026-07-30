@@ -39,6 +39,10 @@ export function Navbar() {
   const isHomePage = pathname === "/";
 
   const handleGetStarted = () => {
+    if (user) {
+      navigate({ to: "/dashboard" });
+      return;
+    }
     const users = storage.get<unknown[]>(STORAGE_KEYS.users, []);
     if (users.length > 0) {
       navigate({ to: "/login" });

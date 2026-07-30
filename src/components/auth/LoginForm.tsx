@@ -20,11 +20,17 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export function LoginForm() {
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [error, setErrorState] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      navigate({ to: "/categories" });
+    }
+  }, [user, navigate]);
 
   const {
     register,

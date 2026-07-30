@@ -50,17 +50,17 @@ export default function Contact() {
               <Mail className="h-5 w-5 text-primary" />
               <div className="mt-2 font-medium">Email</div>
               <a
-                href="mailto:hi@payent.io"
+                href="mailto:payent_support@gmail.com"
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                bommidimohan2003@gmail.com
+                payent_support@gmail.com
               </a>
             </div>
             <div className="card-premium p-6">
               <Phone className="h-5 w-5 text-primary" />
               <div className="mt-2 font-medium">Phone</div>
               <a
-                href="tel:+15551234567"
+                href="tel:+917989002612"
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
                 +91 7989002612
@@ -69,7 +69,7 @@ export default function Contact() {
             <div className="card-premium p-6">
               <MapPin className="h-5 w-5 text-primary" />
               <div className="mt-2 font-medium">Office</div>
-              <p className="text-sm text-muted-foreground"></p>
+              <p className="text-sm text-muted-foreground">Vizag, Andhra Pradesh</p>
             </div>
           </aside>
         </div>

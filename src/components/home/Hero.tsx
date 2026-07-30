@@ -6,7 +6,7 @@ import {
   Camera,
   Laptop,
   Plane,
-  Headphones,
+  Bike,
   Sparkles,
   SlidersHorizontal,
   ChevronRight,
@@ -14,15 +14,14 @@ import {
   Check,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import reClassic350Img from "@/assets/images/re_classic350.png";
 
 const featuredGear = [
   {
     id: "camera-1",
-    title: "Sony Alpha A7 IV",
+    title: "Hybrid Cinema Camera",
     category: "4K Cinema Camera",
     specs: ["33MP Full-Frame", "4K 60p HDR", "Dual SD Slots"],
-    price: "₹2,499",
-    period: "day",
     icon: Camera,
     image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=700&q=80",
     owner: "Arjun Mehta",
@@ -31,11 +30,9 @@ const featuredGear = [
   },
   {
     id: "drone-1",
-    title: "DJI Mavic 3 Pro",
+    title: "Professional Aerial Drone",
     category: "Aerial Cine Drone",
-    specs: ["Tri-Camera System", "43 Min Flight", "Hasselblad 4/3"],
-    price: "₹3,200",
-    period: "day",
+    specs: ["Tri-Camera System", "43 Min Flight", "Cine Sensor"],
     icon: Plane,
     image: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=700&q=80",
     owner: "Ananya Roy",
@@ -44,11 +41,9 @@ const featuredGear = [
   },
   {
     id: "laptop-1",
-    title: "MacBook Pro M3 Max",
+    title: "High-End Editing Workstation",
     category: "Edit Workstation",
     specs: ["128GB Unified RAM", "4TB NVMe", "Liquid Retina XDR"],
-    price: "₹1,850",
-    period: "day",
     icon: Laptop,
     image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80",
     owner: "Vikram Patel",
@@ -56,15 +51,13 @@ const featuredGear = [
     verified: true,
   },
   {
-    id: "audio-1",
-    title: "Sennheiser Studio Kit",
-    category: "Field Audio Package",
-    specs: ["MKH 416 Shotgun", "Dual Wireless Lavs", "MixPre Recorder"],
-    price: "₹850",
-    period: "day",
-    icon: Headphones,
-    image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=700&q=80",
-    owner: "Siddharth Rao",
+    id: "bike-1",
+    title: "Royal Enfield Classic 350",
+    category: "Bikes & Rides",
+    specs: ["349cc Engine", "Dual-Channel ABS", "Helmet Included"],
+    icon: Bike,
+    image: reClassic350Img,
+    owner: "Payent Reference Catalog",
     ownerRating: 4.9,
     verified: true,
   },
@@ -242,14 +235,6 @@ export function Hero() {
                     Verified Gear Item
                   </span>
                 </div>
-
-                {/* Price Tag */}
-                <div className="absolute bottom-2.5 right-2.5 spatial-surface px-2.5 py-1 text-right">
-                  <span className="text-sm font-bold text-foreground font-display">
-                    {activeGear.price}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground font-medium">/{activeGear.period}</span>
-                </div>
               </div>
 
               {/* Compact Specs Footer */}
@@ -258,13 +243,10 @@ export function Hero() {
                   <div>
                     <div className="flex items-center gap-1.5">
                       <ActiveIcon className="h-3.5 w-3.5 text-foreground" />
-                      <span className="text-[11px] font-medium text-muted-foreground">
+                      <span className="text-[11px] font-bold text-foreground">
                         {activeGear.category}
                       </span>
                     </div>
-                    <h3 className="text-base font-bold text-foreground font-display mt-0.5">
-                      {activeGear.title}
-                    </h3>
                   </div>
 
                   <Link

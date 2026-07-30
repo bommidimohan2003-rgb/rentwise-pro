@@ -74,7 +74,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 rounded-full bg-slate-950/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 font-bold border border-white/20 shadow-md">
             <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
             <span>{product.rating.toFixed(1)}</span>
-            <span className="text-slate-400">({product.reviews})</span>
+            {product.reviews > 0 && <span className="text-slate-400">({product.reviews})</span>}
           </div>
         </div>
 

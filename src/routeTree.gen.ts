@@ -13,6 +13,7 @@ import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PaymentRouteImport } from './routes/payment'
 import { Route as OtpRouteImport } from './routes/otp'
 import { Route as OrdersRouteImport } from './routes/orders'
@@ -67,6 +68,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PaymentRoute = PaymentRouteImport.update({
@@ -262,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/orders': typeof OrdersRoute
   '/otp': typeof OtpRoute
   '/payment': typeof PaymentRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
@@ -302,6 +309,7 @@ export interface FileRoutesByTo {
   '/orders': typeof OrdersRoute
   '/otp': typeof OtpRoute
   '/payment': typeof PaymentRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
@@ -344,6 +352,7 @@ export interface FileRoutesById {
   '/orders': typeof OrdersRoute
   '/otp': typeof OtpRoute
   '/payment': typeof PaymentRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
@@ -387,6 +396,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/otp'
     | '/payment'
+    | '/privacy'
     | '/profile'
     | '/register'
     | '/settings'
@@ -427,6 +437,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/otp'
     | '/payment'
+    | '/privacy'
     | '/profile'
     | '/register'
     | '/settings'
@@ -468,6 +479,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/otp'
     | '/payment'
+    | '/privacy'
     | '/profile'
     | '/register'
     | '/settings'
@@ -510,6 +522,7 @@ export interface RootRouteChildren {
   OrdersRoute: typeof OrdersRoute
   OtpRoute: typeof OtpRoute
   PaymentRoute: typeof PaymentRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   SettingsRoute: typeof SettingsRoute
@@ -545,6 +558,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payment': {
@@ -866,6 +886,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrdersRoute: OrdersRoute,
   OtpRoute: OtpRoute,
   PaymentRoute: PaymentRoute,
+  PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   SettingsRoute: SettingsRoute,

@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { Search, ClipboardList, Sparkles, Star } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export function HowItWorks() {
+  const { user } = useAuth();
   return (
     <section className="bg-background py-10 text-foreground overflow-hidden border-b border-border">
       <div className="mx-auto max-w-7xl px-4 md:px-6">
@@ -150,8 +152,8 @@ export function HowItWorks() {
             {/* Button */}
             <div className="pt-2">
               <Link
-                to="/register"
-                className="inline-flex items-center justify-center bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all duration-200 active:scale-95"
+                to={user ? "/categories" : "/register"}
+                className="inline-flex items-center justify-center bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all duration-200 active:scale-95 cursor-pointer"
               >
                 Start Renting Now
               </Link>

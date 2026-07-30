@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, Mail, Phone, User, ArrowRight, ShieldCheck, MapPin, Building2, Compass } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/common/Button";
@@ -42,10 +42,16 @@ function strength(pw: string) {
 }
 
 export function RegisterForm() {
-  const { register: registerUser } = useAuth();
+  const { user, register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      navigate({ to: "/categories" });
+    }
+  }, [user, navigate]);
 
   const {
     register,

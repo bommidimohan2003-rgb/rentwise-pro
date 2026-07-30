@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { Camera, Laptop, Plane, Bike, Hammer, Zap, ArrowRight, Sparkles } from "lucide-react";
-import { products } from "@/utils/mockData";
 
 const baseCategories = [
   {
@@ -37,8 +36,6 @@ const baseCategories = [
 ];
 
 export function Categories() {
-  const totalProducts = products.length;
-
   return (
     <section className="bg-background py-10 text-foreground border-y border-border/50">
       <div className="mx-auto max-w-7xl px-4 md:px-6 text-center space-y-6">
@@ -53,16 +50,14 @@ export function Categories() {
             Find What <span className="text-primary">You Need</span>
           </h2>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">
-            Explore {totalProducts}+ insured cameras, laptops, drones, bikes, power banks, and electric tools nearby.
+            Explore insured cameras, laptops, drones, bikes, power banks, and electric tools nearby.
           </p>
         </div>
 
-        {/* Category Cards Grid with Auto-Adjusted Dynamic Product Counts */}
+        {/* Category Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {baseCategories.map((cat, idx) => {
             const IconComp = cat.icon;
-            const count = products.filter((p) => p.category === cat.id).length;
-            const countLabel = `${count} ${count === 1 ? "Product" : "Products"}`;
 
             return (
               <motion.div
@@ -83,9 +78,6 @@ export function Categories() {
                     <h3 className="font-extrabold text-xs text-foreground transition-colors duration-300">
                       {cat.name}
                     </h3>
-                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5 transition-colors duration-300">
-                      {countLabel}
-                    </p>
                   </div>
                 </Link>
               </motion.div>
@@ -99,7 +91,7 @@ export function Categories() {
             to="/categories"
             className="inline-flex items-center gap-2 bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-extrabold text-sm px-8 py-3.5 rounded-full shadow-lg transition-all duration-200 active:scale-95 cursor-pointer"
           >
-            <span>View All {totalProducts} Listings</span>
+            <span>Explore All Gear Listings</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
