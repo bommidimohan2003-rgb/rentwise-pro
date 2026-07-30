@@ -334,11 +334,11 @@ def init_db():
             cursor.execute("SELECT COUNT(*) as count FROM categories")
             if cursor.fetchone()["count"] == 0:
                 categories_data = [
-                    ("cat-1", "Cameras", "Camera", "bg-blue-500/10 text-blue-500", True),
-                    ("cat-2", "Drones", "Plane", "bg-green-500/10 text-green-500", True),
-                    ("cat-3", "Laptops", "Laptop", "bg-purple-500/10 text-purple-500", True),
-                    ("cat-4", "Audio", "Mic", "bg-orange-500/10 text-orange-500", True),
-                    ("cat-5", "VR & AR", "Glasses", "bg-pink-500/10 text-pink-500", True),
+                    ("cat-1", "Cameras", "Camera", "bg-secondary text-foreground", True),
+                    ("cat-2", "Drones", "Plane", "bg-secondary text-foreground", True),
+                    ("cat-3", "Laptops", "Laptop", "bg-secondary text-foreground", True),
+                    ("cat-4", "Audio", "Mic", "bg-secondary text-foreground", True),
+                    ("cat-5", "VR & AR", "Glasses", "bg-secondary text-foreground", True),
                 ]
                 cursor.executemany(
                     "INSERT INTO categories (id, name, icon, color, enabled) VALUES (%s, %s, %s, %s, %s)",

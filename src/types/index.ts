@@ -10,6 +10,14 @@ export interface User {
   avatar?: string;
   role?: "user" | "admin";
   createdAt?: string;
+  bio?: string;
+  occupation?: string;
+  website?: string;
+  upiId?: string;
+  isVerified?: boolean;
+  rating?: number;
+  rentalsCount?: number;
+  listingsCount?: number;
 }
 
 export interface Product {

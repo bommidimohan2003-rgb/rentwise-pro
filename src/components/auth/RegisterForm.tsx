@@ -246,14 +246,14 @@ export function RegisterForm() {
       )}
 
       {showAdminOption && (
-        <div className="space-y-2 p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
-          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-purple-600 dark:text-purple-400">
+        <div className="space-y-2 p-2.5 rounded-xl bg-secondary border border-border">
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-foreground">
             <input
               type="checkbox"
-              className="rounded border-purple-400 text-purple-600 focus:ring-purple-500"
+              className="rounded border-border text-primary focus:ring-primary"
               {...register("isAdmin")}
             />
-            <ShieldCheck className="h-4 w-4" />
+            <ShieldCheck className="h-4 w-4 text-primary" />
             <span>Register as site administrator</span>
           </label>
 

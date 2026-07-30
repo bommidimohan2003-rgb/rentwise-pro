@@ -27,8 +27,8 @@ export function Newsletter() {
           className="relative rounded-3xl p-8 md:p-14 text-center overflow-hidden bg-card border border-border shadow-2xl space-y-6"
         >
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1 bg-[#FF5A5F]/10 border border-[#FF5A5F]/30 text-[#FF5A5F] text-xs font-bold uppercase tracking-widest">
-            <Sparkles className="h-3.5 w-3.5" />
+          <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1 bg-secondary border border-border text-foreground text-xs font-semibold uppercase tracking-wider">
+            <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
             <span>PAYENT INSIDER</span>
           </div>
 
@@ -42,8 +42,8 @@ export function Newsletter() {
           </p>
 
           {done ? (
-            <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-6 py-3 rounded-xl font-bold text-xs sm:text-sm">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-6 py-3 rounded-xl font-bold text-xs sm:text-sm">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
               <span>You're subscribed! Check your inbox soon.</span>
             </div>
           ) : (
@@ -56,7 +56,7 @@ export function Newsletter() {
                   placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-input border border-border focus:border-[#FF5A5F] text-foreground placeholder:text-muted-foreground text-xs sm:text-sm rounded-xl pl-10 pr-4 py-3.5 focus:outline-none transition-colors"
+                  className="w-full bg-secondary border border-border focus:border-primary text-foreground placeholder:text-muted-foreground text-xs sm:text-sm rounded-xl pl-10 pr-4 py-3.5 focus:outline-none transition-colors"
                 />
               </div>
               <button

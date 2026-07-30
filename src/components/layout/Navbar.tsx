@@ -289,7 +289,7 @@ export function Navbar() {
                     setOpen(false);
                     logout();
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose-400 hover:bg-rose-500/10 rounded-xl flex items-center gap-2"
+                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/10 rounded-xl flex items-center gap-2"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Log Out</span>

@@ -111,19 +111,19 @@ export default function Dashboard() {
   const getActivityIcon = (type: string) => {
     switch (type) {
       case "user_registered":
-        return <UserPlus className="h-4 w-4 text-primary" />;
+        return <UserPlus className="h-4 w-4 text-foreground" />;
       case "product_uploaded":
-        return <Camera className="h-4 w-4 text-blue-500" />;
+        return <Camera className="h-4 w-4 text-foreground" />;
       case "product_approved":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />;
       case "product_rejected":
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-destructive" />;
       case "booking_created":
-        return <Calendar className="h-4 w-4 text-purple-500" />;
+        return <Calendar className="h-4 w-4 text-foreground" />;
       case "payment_success":
-        return <CreditCard className="h-4 w-4 text-emerald-500" />;
+        return <CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />;
       case "review_submitted":
-        return <Star className="h-4 w-4 text-amber-500" fill="currentColor" />;
+        return <Star className="h-4 w-4 text-foreground" fill="currentColor" />;
       case "product_reported":
         return <Flag className="h-4 w-4 text-destructive" />;
       default:
@@ -134,23 +134,23 @@ export default function Dashboard() {
   const getActivityBg = (type: string) => {
     switch (type) {
       case "user_registered":
-        return "bg-primary/10";
+        return "bg-secondary border border-border";
       case "product_uploaded":
-        return "bg-blue-500/10";
+        return "bg-secondary border border-border";
       case "product_approved":
-        return "bg-green-500/10";
+        return "bg-emerald-500/10 border border-emerald-500/20";
       case "product_rejected":
-        return "bg-red-500/10";
+        return "bg-destructive/10 border border-destructive/20";
       case "booking_created":
-        return "bg-purple-500/10";
+        return "bg-secondary border border-border";
       case "payment_success":
-        return "bg-emerald-500/10";
+        return "bg-emerald-500/10 border border-emerald-500/20";
       case "review_submitted":
-        return "bg-amber-500/10";
+        return "bg-secondary border border-border";
       case "product_reported":
-        return "bg-destructive/10";
+        return "bg-destructive/10 border border-destructive/20";
       default:
-        return "bg-muted";
+        return "bg-secondary border border-border";
     }
   };
 
@@ -452,7 +452,7 @@ export default function Dashboard() {
                 to="/admin/support"
                 className="flex flex-col items-center justify-center p-4 rounded-2xl bg-secondary/30 border border-border/40 hover:bg-primary/5 hover:border-primary/30 transition-all text-center group"
               >
-                <Users className="h-5 w-5 text-blue-500 mb-2 group-hover:scale-110 transition-transform" />
+                <Users className="h-5 w-5 text-foreground mb-2 group-hover:scale-110 transition-transform" />
                 <span className="text-[11px] font-bold text-foreground">Open Tickets</span>
               </Link>
               <Link

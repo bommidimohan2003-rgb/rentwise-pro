@@ -100,14 +100,14 @@ export default function Orders() {
                 <div className="font-semibold">₹{o.total}</div>
                 <div className="flex flex-col gap-1 items-start">
                   <span
-                    className={`text-xs px-2 py-1 rounded-full w-fit ${
+                    className={`text-xs px-2.5 py-0.5 rounded-full font-semibold w-fit border ${
                       o.status === "active"
-                        ? "bg-emerald-500/10 text-emerald-600"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                         : o.status === "pending"
-                          ? "bg-amber-500/10 text-amber-600"
+                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                           : o.status === "cancelled"
-                            ? "bg-destructive/10 text-destructive"
-                            : "bg-secondary text-muted-foreground"
+                            ? "bg-destructive/10 text-destructive border-destructive/20"
+                            : "bg-secondary text-muted-foreground border-border"
                     }`}
                   >
                     {o.status}

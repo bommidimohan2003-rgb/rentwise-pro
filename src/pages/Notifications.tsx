@@ -80,7 +80,7 @@ export default function Notifications() {
               className={`card-premium p-5 flex gap-4 ${!n.read ? "border-primary/40" : ""}`}
             >
               <div
-                className={`h-10 w-10 rounded-xl grid place-items-center shrink-0 ${n.type === "success" ? "bg-emerald-500/10 text-emerald-500" : n.type === "warning" ? "bg-amber-500/10 text-amber-500" : "bg-primary/10 text-primary"}`}
+                className={`h-10 w-10 rounded-xl border grid place-items-center shrink-0 ${n.type === "success" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" : n.type === "warning" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" : "bg-secondary text-foreground border-border"}`}
               >
                 <Bell className="h-5 w-5" />
               </div>

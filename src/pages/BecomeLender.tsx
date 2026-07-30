@@ -254,7 +254,7 @@ export default function BecomeLender() {
               )}
             </div>
             <Button type="submit" size="lg" className="w-full" loading={done}>
-              {done ? "Listing submitted ✓" : "Submit listing"}
+              {done ? "Listing submitted" : "Submit listing"}
             </Button>
           </form>
         </div>

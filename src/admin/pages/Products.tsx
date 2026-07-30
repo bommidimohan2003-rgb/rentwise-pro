@@ -266,10 +266,10 @@ export default function Products() {
       render: (row) => (
         <span
           className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none",
-            row.status === "approved" && "bg-green-500/10 text-green-600 dark:text-green-400",
-            row.status === "pending" && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-            row.status === "rejected" && "bg-red-500/10 text-red-600 dark:text-red-400",
+            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
+            row.status === "approved" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+            row.status === "pending" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+            row.status === "rejected" && "bg-destructive/10 text-destructive border-destructive/20",
           )}
         >
           {row.status}

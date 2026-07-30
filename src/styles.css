@@ -229,9 +229,9 @@
 
 @utility hero-gradient {
   background:
-    radial-gradient(60% 60% at 20% 10%, rgba(255, 90, 95, 0.25), transparent 60%),
-    radial-gradient(50% 50% at 90% 20%, rgba(11, 37, 69, 0.35), transparent 60%),
-    radial-gradient(60% 60% at 50% 100%, rgba(255, 90, 95, 0.15), transparent 60%);
+    radial-gradient(60% 60% at 20% 10%, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 60%),
+    radial-gradient(50% 50% at 90% 20%, color-mix(in srgb, var(--color-primary) 5%, transparent), transparent 60%),
+    radial-gradient(60% 60% at 50% 100%, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent 60%);
   background-size: 180% 180%;
   animation: hero-gradient-drift 18s ease-in-out infinite;
   @media (prefers-reduced-motion: reduce) {

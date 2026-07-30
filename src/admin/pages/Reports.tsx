@@ -186,11 +186,11 @@ export default function Reports() {
       render: (row) => (
         <span
           className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none",
+            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
             row.status === "open" &&
-              "bg-amber-500/10 text-amber-600 dark:text-amber-400 animate-pulse",
-            row.status === "resolved" && "bg-green-500/10 text-green-600 dark:text-green-400",
-            row.status === "dismissed" && "bg-muted text-muted-foreground",
+              "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse",
+            row.status === "resolved" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+            row.status === "dismissed" && "bg-secondary text-muted-foreground border-border",
           )}
         >
           {row.status}
@@ -361,10 +361,10 @@ export default function Reports() {
                 <span className="text-muted-foreground font-semibold">Status of Claim</span>
                 <span
                   className={cn(
-                    "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full",
-                    selectedReport.status === "open" && "bg-amber-500/10 text-amber-600",
-                    selectedReport.status === "resolved" && "bg-green-500/10 text-green-600",
-                    selectedReport.status === "dismissed" && "bg-muted text-muted-foreground",
+                    "text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border",
+                    selectedReport.status === "open" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+                    selectedReport.status === "resolved" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+                    selectedReport.status === "dismissed" && "bg-secondary text-muted-foreground border-border",
                   )}
                 >
                   {selectedReport.status}

@@ -1,54 +1,44 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { Camera, Laptop, Plane, Bike, Hammer, Zap, ArrowRight, Sparkles } from "lucide-react";
+import { products } from "@/utils/mockData";
 
-const categoryList = [
+const baseCategories = [
   {
     id: "cameras",
     name: "Cameras",
-    count: "10 Products",
     icon: Camera,
-    gradient: "from-rose-500/10 to-pink-500/10 border-rose-500/20 text-rose-500",
   },
   {
     id: "laptops",
     name: "Laptops",
-    count: "10 Products",
     icon: Laptop,
-    gradient: "from-blue-500/10 to-indigo-500/10 border-blue-500/20 text-blue-500",
   },
   {
     id: "drones",
     name: "Drones",
-    count: "8 Products",
     icon: Plane,
-    gradient: "from-emerald-500/10 to-teal-500/10 border-emerald-500/20 text-emerald-500",
   },
   {
     id: "bikes",
     name: "Bikes & Rides",
-    count: "11 Products",
     icon: Bike,
-    gradient: "from-teal-500/10 to-cyan-500/10 border-cyan-500/20 text-cyan-500",
   },
   {
     id: "tools",
     name: "Electric Tools",
     icon: Hammer,
-    count: "10 Products",
-    gradient: "from-purple-500/10 to-indigo-500/10 border-indigo-500/20 text-indigo-500",
   },
   {
     id: "powerbanks",
     name: "Power Banks",
-    count: "10 Products",
     icon: Zap,
-    gradient: "from-amber-500/10 to-yellow-500/10 border-amber-500/20 text-amber-500",
   },
 ];
 
 export function Categories() {
+  const totalProducts = products.length;
+
   return (
     <section className="bg-background py-10 text-foreground border-y border-border/50">
       <div className="mx-auto max-w-7xl px-4 md:px-6 text-center space-y-6">
@@ -63,14 +53,17 @@ export function Categories() {
             Find What <span className="text-primary">You Need</span>
           </h2>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">
-            Explore 59+ insured cameras, laptops, drones, bikes, power banks, and electric tools nearby.
+            Explore {totalProducts}+ insured cameras, laptops, drones, bikes, power banks, and electric tools nearby.
           </p>
         </div>
 
-        {/* 6 Category Cards Grid */}
+        {/* Category Cards Grid with Auto-Adjusted Dynamic Product Counts */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {categoryList.map((cat, idx) => {
+          {baseCategories.map((cat, idx) => {
             const IconComp = cat.icon;
+            const count = products.filter((p) => p.category === cat.id).length;
+            const countLabel = `${count} ${count === 1 ? "Product" : "Products"}`;
+
             return (
               <motion.div
                 key={cat.id}
@@ -91,7 +84,7 @@ export function Categories() {
                       {cat.name}
                     </h3>
                     <p className="text-[10px] text-muted-foreground font-medium mt-0.5 transition-colors duration-300">
-                      {cat.count}
+                      {countLabel}
                     </p>
                   </div>
                 </Link>
@@ -106,7 +99,7 @@ export function Categories() {
             to="/categories"
             className="inline-flex items-center gap-2 bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-extrabold text-sm px-8 py-3.5 rounded-full shadow-lg transition-all duration-200 active:scale-95 cursor-pointer"
           >
-            <span>View All 59 Listings</span>
+            <span>View All {totalProducts} Listings</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

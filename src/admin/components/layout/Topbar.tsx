@@ -39,12 +39,12 @@ export function Topbar() {
         <SearchBar />
 
         {offline ? (
-          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse flex items-center gap-1.5 shrink-0">
+          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse flex items-center gap-1.5 shrink-0">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
             Offline Demo Mode
           </span>
         ) : wsStatus === "LIVE" ? (
-          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1.5 shrink-0">
+          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 shrink-0">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -53,13 +53,13 @@ export function Topbar() {
             Live Updates Active
           </span>
         ) : wsStatus === "CONNECTING" ? (
-          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse flex items-center gap-1.5 shrink-0">
+          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse flex items-center gap-1.5 shrink-0">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
             Connecting Live Stream...
           </span>
         ) : (
-          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20 flex items-center gap-1.5 shrink-0">
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-secondary text-muted-foreground border border-border flex items-center gap-1.5 shrink-0">
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground"></span>
             Disconnected
           </span>
         )}

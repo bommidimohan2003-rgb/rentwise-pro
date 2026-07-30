@@ -37,7 +37,7 @@ export const categories: Category[] = [
     name: "Cameras",
     icon: "Camera",
     count: 1,
-    color: "from-rose-500 to-pink-500",
+    color: "bg-secondary text-foreground",
     image: cameraImg,
   },
   {
@@ -45,7 +45,7 @@ export const categories: Category[] = [
     name: "Laptops",
     icon: "Laptop",
     count: 1,
-    color: "from-blue-500 to-indigo-500",
+    color: "bg-secondary text-foreground",
     image: laptopImg,
   },
   {
@@ -53,7 +53,7 @@ export const categories: Category[] = [
     name: "Drones",
     icon: "Plane",
     count: 1,
-    color: "from-emerald-500 to-teal-500",
+    color: "bg-secondary text-foreground",
     image: droneImg,
   },
   {
@@ -61,7 +61,7 @@ export const categories: Category[] = [
     name: "Bikes & Rides",
     icon: "Bike",
     count: 1,
-    color: "from-teal-500 to-cyan-500",
+    color: "bg-secondary text-foreground",
     image: bikeImg,
   },
   {
@@ -69,7 +69,7 @@ export const categories: Category[] = [
     name: "Electric Tools",
     icon: "Hammer",
     count: 1,
-    color: "from-purple-500 to-indigo-500",
+    color: "bg-secondary text-foreground",
     image: toolImg,
   },
   {
@@ -77,7 +77,7 @@ export const categories: Category[] = [
     name: "Power Banks",
     icon: "Zap",
     count: 1,
-    color: "from-amber-500 to-yellow-500",
+    color: "bg-secondary text-foreground",
     image: powerbankImg,
   },
 ];
@@ -144,7 +144,7 @@ const initialProducts: Product[] = [
     reviews: 128,
     available: true,
     isReference: true,
-    owner: { name: "Alex Morgan", avatar: "https://i.pravatar.cc/100?img=12", rating: 4.9 },
+    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=12", rating: 5.0 },
   },
 
   // --- 2. LAPTOPS CATEGORY (1 Product) ---
@@ -190,7 +190,7 @@ const initialProducts: Product[] = [
     reviews: 67,
     available: true,
     isReference: true,
-    owner: { name: "Leo Chen", avatar: "https://i.pravatar.cc/100?img=45", rating: 5.0 },
+    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=45", rating: 5.0 },
   },
 
   // --- 4. BIKES & RIDES CATEGORY (1 Product) ---
@@ -217,7 +217,7 @@ const initialProducts: Product[] = [
     reviews: 43,
     available: true,
     isReference: true,
-    owner: { name: "Rahul Sharma", avatar: "https://i.pravatar.cc/100?img=11", rating: 4.8 },
+    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=11", rating: 5.0 },
   },
 
   // --- 5. ELECTRIC TOOLS CATEGORY (1 Product) ---
@@ -244,7 +244,7 @@ const initialProducts: Product[] = [
     reviews: 35,
     available: true,
     isReference: true,
-    owner: { name: "Vikram Singh", avatar: "https://i.pravatar.cc/100?img=47", rating: 4.9 },
+    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=47", rating: 5.0 },
   },
 
   // --- 6. POWER BANKS CATEGORY (1 Product) ---
@@ -271,7 +271,7 @@ const initialProducts: Product[] = [
     reviews: 114,
     available: true,
     isReference: true,
-    owner: { name: "Maya Patel", avatar: "https://i.pravatar.cc/100?img=47", rating: 4.7 },
+    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=47", rating: 5.0 },
   },
 ];
 

@@ -187,7 +187,7 @@ const INITIAL_CATEGORIES: AdminCategory[] = [
     name: "Cameras",
     icon: "Camera",
     count: 24,
-    color: "bg-blue-500/10 text-blue-500",
+    color: "bg-secondary text-foreground",
     enabled: true,
   },
   {
@@ -195,7 +195,7 @@ const INITIAL_CATEGORIES: AdminCategory[] = [
     name: "Drones",
     icon: "Plane",
     count: 12,
-    color: "bg-green-500/10 text-green-500",
+    color: "bg-secondary text-foreground",
     enabled: true,
   },
   {
@@ -203,7 +203,7 @@ const INITIAL_CATEGORIES: AdminCategory[] = [
     name: "Laptops",
     icon: "Laptop",
     count: 18,
-    color: "bg-purple-500/10 text-purple-500",
+    color: "bg-secondary text-foreground",
     enabled: true,
   },
   {
@@ -211,7 +211,7 @@ const INITIAL_CATEGORIES: AdminCategory[] = [
     name: "Audio",
     icon: "Mic",
     count: 15,
-    color: "bg-orange-500/10 text-orange-500",
+    color: "bg-secondary text-foreground",
     enabled: true,
   },
   {
@@ -219,7 +219,7 @@ const INITIAL_CATEGORIES: AdminCategory[] = [
     name: "VR & AR",
     icon: "Glasses",
     count: 8,
-    color: "bg-pink-500/10 text-pink-500",
+    color: "bg-secondary text-foreground",
     enabled: true,
   },
 ];

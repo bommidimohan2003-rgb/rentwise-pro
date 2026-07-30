@@ -76,25 +76,21 @@ export default function Dashboard() {
       icon: Package,
       label: "Active rentals",
       value: String(activeRentalsCount),
-      color: "from-blue-500 to-indigo-500",
     },
     {
       icon: TrendingUp,
       label: "This month",
       value: `₹${monthlyTotal.toLocaleString("en-IN")}`,
-      color: "from-emerald-500 to-teal-500",
     },
     {
       icon: Heart,
       label: "Saved items",
       value: String(savedItemsCount),
-      color: "from-rose-500 to-pink-500",
     },
     {
       icon: Bell,
       label: "Alerts",
       value: String(alertsCount),
-      color: "from-amber-500 to-orange-500",
     },
   ];
 
@@ -102,7 +98,7 @@ export default function Dashboard() {
     <DashboardLayout>
       <div>
         <h1 className="text-3xl md:text-4xl font-bold">
-          Welcome back{user ? `, ${user.fullName.split(" ")[0]}` : ""} 👋
+          Welcome back{user ? `, ${user.fullName.split(" ")[0]}` : ""}
         </h1>
         <p className="mt-2 text-muted-foreground">Here's what's happening with your rentals.</p>
 
@@ -116,9 +112,9 @@ export default function Dashboard() {
               className="card-premium p-5"
             >
               <div
-                className={`h-10 w-10 rounded-xl grid place-items-center bg-gradient-to-br ${s.color} mb-3`}
+                className="h-10 w-10 rounded-xl grid place-items-center bg-secondary border border-border text-foreground mb-3"
               >
-                <s.icon className="h-5 w-5 text-white" />
+                <s.icon className="h-5 w-5" />
               </div>
               <div className="text-2xl font-bold">{s.value}</div>
               <div className="text-xs text-muted-foreground">{s.label}</div>
@@ -159,14 +155,14 @@ export default function Dashboard() {
                         </button>
                       )}
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${
                           o.status === "active"
-                            ? "bg-emerald-500/10 text-emerald-600"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                             : o.status === "pending"
-                              ? "bg-amber-500/10 text-amber-600"
+                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                               : o.status === "cancelled"
-                                ? "bg-destructive/10 text-destructive"
-                                : "bg-secondary text-muted-foreground"
+                                ? "bg-destructive/10 text-destructive border-destructive/20"
+                                : "bg-secondary text-muted-foreground border-border"
                         }`}
                       >
                         {o.status}

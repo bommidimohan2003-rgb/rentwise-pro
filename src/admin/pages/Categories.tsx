@@ -41,7 +41,7 @@ export default function Categories() {
   // Form State
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("Camera");
-  const [color, setColor] = useState("bg-purple-500/10 text-purple-500");
+  const [color, setColor] = useState("bg-secondary text-foreground border border-border");
 
   const fetchCats = async () => {
     try {
@@ -139,7 +139,7 @@ export default function Categories() {
           onClick={() => {
             setName("");
             setIcon("Camera");
-            setColor("bg-purple-500/10 text-purple-500");
+            setColor("bg-secondary text-foreground border border-border");
             setCreateModalOpen(true);
           }}
           className="btn-gradient text-xs px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 self-start sm:self-auto"
@@ -190,7 +190,7 @@ export default function Categories() {
                   {cat.enabled ? (
                     <XCircle className="h-4.5 w-4.5 text-destructive/80" />
                   ) : (
-                    <CheckCircle className="h-4.5 w-4.5 text-green-500" />
+                    <CheckCircle className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
                   )}
                 </button>
                 <button

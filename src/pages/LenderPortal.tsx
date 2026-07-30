@@ -151,7 +151,7 @@ export default function LenderPortal() {
             transition={{ delay: 0.05 }}
             className="card-premium p-5 flex items-center gap-4"
           >
-            <div className="h-12 w-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+            <div className="h-12 w-12 rounded-xl bg-secondary border border-border text-foreground flex items-center justify-center shrink-0">
               <PackageCheck className="h-6 w-6" />
             </div>
             <div>
@@ -166,7 +166,7 @@ export default function LenderPortal() {
             transition={{ delay: 0.1 }}
             className="card-premium p-5 flex items-center gap-4"
           >
-            <div className="h-12 w-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+            <div className="h-12 w-12 rounded-xl bg-secondary border border-border text-foreground flex items-center justify-center shrink-0">
               <IndianRupee className="h-6 w-6" />
             </div>
             <div>
@@ -250,10 +250,10 @@ export default function LenderPortal() {
                                 {p.category}
                               </span>
                               <span
-                                className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
                                   p.available
-                                    ? "bg-emerald-500/10 text-emerald-600"
-                                    : "bg-amber-500/10 text-amber-600"
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                                 }`}
                               >
                                 {p.available ? "Active" : "Paused"}
@@ -329,14 +329,12 @@ export default function LenderPortal() {
                             </h3>
                             <div className="flex items-center gap-2 mt-1.5">
                               <span
-                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                  booking.status === "active"
-                                    ? "bg-emerald-500/10 text-emerald-600"
+                                className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
+                                  booking.status === "active" || booking.status === "completed"
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                                     : booking.status === "pending"
-                                      ? "bg-amber-500/10 text-amber-600"
-                                      : booking.status === "completed"
-                                        ? "bg-blue-500/10 text-blue-600"
-                                        : "bg-destructive/10 text-destructive"
+                                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                      : "bg-destructive/10 text-destructive border-destructive/20"
                                 }`}
                               >
                                 {booking.status}

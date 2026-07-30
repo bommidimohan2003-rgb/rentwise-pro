@@ -35,7 +35,7 @@ export function WhyChoose() {
                 transition={{ delay: idx * 0.1 }}
                 className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-300"
               >
-                <div className="h-10 w-10 rounded-xl bg-[#FF5A5F]/10 text-[#FF5A5F] flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-secondary text-foreground flex items-center justify-center shrink-0 border border-border">
                   <IconComp className="h-5 w-5" />
                 </div>
                 <div className="text-left">

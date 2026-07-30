@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { Calendar, Check, Heart, Shield, Truck, MessageSquare, MapPin, Star, Clock, ArrowRight, ShieldCheck, Info } from "lucide-react";
+import { Calendar, Check, Heart, Shield, Truck, MessageSquare, MapPin, Star, Clock, ArrowRight, ShieldCheck, Info, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
@@ -152,15 +152,15 @@ export default function ProductDetails() {
               
               {/* Category & Availability Header */}
               <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-extrabold tracking-wider text-[#FF5A5F] px-3.5 py-1 rounded-full bg-[#FF5A5F]/10 border border-[#FF5A5F]/20">
+                <span className="text-xs uppercase font-bold tracking-wider text-foreground px-3 py-1 rounded-md bg-secondary border border-border">
                   {product.category}
                 </span>
                 {product.available ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-emerald-500 font-extrabold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-extrabold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                     <Check className="h-3.5 w-3.5" /> Available Now
                   </span>
                 ) : (
-                  <span className="text-xs text-rose-500 font-extrabold px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20">
+                  <span className="text-xs text-destructive font-extrabold px-3 py-1 rounded-full bg-destructive/10 border border-destructive/20">
                     Currently Booked
                   </span>
                 )}
@@ -172,42 +172,60 @@ export default function ProductDetails() {
                   {product.title}
                 </h1>
                 <div className="flex items-center gap-2 text-xs font-bold">
-                  <div className="flex items-center gap-1 text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
-                    <Star className="h-3.5 w-3.5 fill-current" />
+                  <div className="flex items-center gap-1 text-foreground bg-secondary px-2.5 py-0.5 rounded-full border border-border">
+                    <Star className="h-3.5 w-3.5 fill-foreground text-foreground" />
                     <span>{product.rating.toFixed(1)}</span>
                   </div>
-                  <span className="text-slate-400">({product.reviews} verified reviews)</span>
+                  <span className="text-muted-foreground">({product.reviews} verified reviews)</span>
                 </div>
               </div>
 
               {/* Description */}
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+              <p className="text-sm text-muted-foreground leading-relaxed font-normal">
                 {product.description}
               </p>
 
               {/* Owner Info Tile */}
-              <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-secondary/50 border border-border/80">
-                <img
-                  src={product.owner.avatar}
-                  alt={product.owner.name}
-                  className="h-12 w-12 rounded-full object-cover border-2 border-[#FF5A5F]"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-extrabold text-foreground truncate">{product.owner.name}</div>
-                  <div className="text-xs text-slate-400 mt-0.5 font-medium">
-                    Verified Lender · {product.owner.rating}★ · Responds in 1h
+              {!product.isReference ? (
+                <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-secondary/50 border border-border/80">
+                  <img
+                    src={product.owner.avatar}
+                    alt={product.owner.name}
+                    className="h-12 w-12 rounded-full object-cover border-2 border-border"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-extrabold text-foreground truncate">{product.owner.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 font-medium flex items-center gap-1">
+                      <span>Verified Lender</span>
+                      <span>·</span>
+                      <Star className="h-3 w-3 fill-foreground text-foreground inline" />
+                      <span>{product.owner.rating}</span>
+                      <span>· Responds in 1h</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<MessageSquare className="h-3.5 w-3.5 text-foreground" />}
+                    onClick={() => navigate({ to: "/messages" })}
+                    className="font-bold text-xs border-border hover:border-primary"
+                  >
+                    Message
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-secondary/40 border border-border/70">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-foreground font-black shrink-0">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-extrabold text-foreground uppercase tracking-wider">Payent Reference Model</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 font-medium">
+                      Standard specification item for lender guidance and reference booking.
+                    </div>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  leftIcon={<MessageSquare className="h-3.5 w-3.5 text-[#FF5A5F]" />}
-                  onClick={() => navigate({ to: "/messages" })}
-                  className="font-bold text-xs border-border hover:border-[#FF5A5F]/50"
-                >
-                  Message
-                </Button>
-              </div>
+              )}
 
               {/* Date Selector Pills (Reference App Mockup Style) */}
               <div className="space-y-3 pt-2">

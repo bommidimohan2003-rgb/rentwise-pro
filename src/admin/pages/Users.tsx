@@ -309,10 +309,10 @@ export default function Users() {
       render: (row) => (
         <span
           className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full select-none",
-            row.role === "admin" && "bg-purple-500/10 text-purple-600 dark:text-purple-400",
-            row.role === "agent" && "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-            row.role === "user" && "bg-secondary text-muted-foreground",
+            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
+            row.role === "admin" && "bg-primary text-primary-foreground border-primary",
+            row.role === "agent" && "bg-secondary text-foreground border-border",
+            row.role === "user" && "bg-secondary text-muted-foreground border-border/60",
           )}
         >
           {row.role}
@@ -326,7 +326,7 @@ export default function Users() {
       render: (row) => (
         <div className="flex items-center justify-center">
           {row.verified ? (
-            <ShieldCheck className="h-4.5 w-4.5 text-green-500" />
+            <ShieldCheck className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
           ) : (
             <ShieldAlert className="h-4.5 w-4.5 text-muted-foreground/60" />
           )}

@@ -1,325 +1,295 @@
 import { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
-  Play,
-  Users,
-  Package,
-  CheckCircle2,
-  Star,
+  ShieldCheck,
   Camera,
-  Headphones,
   Laptop,
   Plane,
-  Wrench,
-  BatteryCharging,
-  Video,
+  Headphones,
   Sparkles,
+  SlidersHorizontal,
+  ChevronRight,
+  Star,
+  Check,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
-const showcaseItems = [
+const featuredGear = [
   {
-    id: "camera",
+    id: "camera-1",
     title: "Sony Alpha A7 IV",
-    category: "4K DSLR Camera",
-    price: "₹2,499/day",
+    category: "4K Cinema Camera",
+    specs: ["33MP Full-Frame", "4K 60p HDR", "Dual SD Slots"],
+    price: "₹2,499",
+    period: "day",
     icon: Camera,
     image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=700&q=80",
-    rating: "4.9",
-    renter: "John D.",
+    owner: "Arjun Mehta",
+    ownerRating: 4.9,
+    verified: true,
   },
   {
-    id: "drone",
+    id: "drone-1",
     title: "DJI Mavic 3 Pro",
-    category: "4K Aerial Drone",
-    price: "₹3,200/day",
+    category: "Aerial Cine Drone",
+    specs: ["Tri-Camera System", "43 Min Flight", "Hasselblad 4/3"],
+    price: "₹3,200",
+    period: "day",
     icon: Plane,
     image: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=700&q=80",
-    rating: "5.0",
-    renter: "Ananya R.",
+    owner: "Ananya Roy",
+    ownerRating: 5.0,
+    verified: true,
   },
   {
-    id: "laptop",
+    id: "laptop-1",
     title: "MacBook Pro M3 Max",
-    category: "Pro Workstation",
-    price: "₹1,850/day",
+    category: "Edit Workstation",
+    specs: ["128GB Unified RAM", "4TB NVMe", "Liquid Retina XDR"],
+    price: "₹1,850",
+    period: "day",
     icon: Laptop,
     image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80",
-    rating: "4.8",
-    renter: "Vikram P.",
+    owner: "Vikram Patel",
+    ownerRating: 4.8,
+    verified: true,
   },
   {
-    id: "audio",
+    id: "audio-1",
     title: "Sennheiser Studio Kit",
-    category: "Pro Audio & Mic",
-    price: "₹850/day",
+    category: "Field Audio Package",
+    specs: ["MKH 416 Shotgun", "Dual Wireless Lavs", "MixPre Recorder"],
+    price: "₹850",
+    period: "day",
     icon: Headphones,
     image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=700&q=80",
-    rating: "4.9",
-    renter: "Siddharth M.",
-  },
-  {
-    id: "tool",
-    title: "DeWalt Power Tools Set",
-    category: "Electric Heavy Tools",
-    price: "₹750/day",
-    icon: Wrench,
-    image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=700&q=80",
-    rating: "4.7",
-    renter: "Rajesh K.",
-  },
-  {
-    id: "power",
-    title: "Jackery 200W Station",
-    category: "Portable Power Bank",
-    price: "₹500/day",
-    icon: BatteryCharging,
-    image: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?auto=format&fit=crop&w=700&q=80",
-    rating: "4.9",
-    renter: "Kavita S.",
+    owner: "Siddharth Rao",
+    ownerRating: 4.9,
+    verified: true,
   },
 ];
 
 export function Hero() {
-  const [itemIndex, setItemIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setItemIndex((prev) => (prev + 1) % showcaseItems.length);
-    }, 2000); // Auto-change items every 2 seconds!
-
+      setSelectedIndex((prev) => (prev + 1) % featuredGear.length);
+    }, 4500);
     return () => clearInterval(timer);
   }, []);
 
-  const activeItem = showcaseItems[itemIndex];
-  const ActiveIcon = activeItem.icon;
+  const activeGear = featuredGear[selectedIndex];
+  const ActiveIcon = activeGear.icon;
 
   return (
-    <section className="relative overflow-hidden bg-background text-foreground pt-8 pb-12 md:pt-10 md:pb-16 border-b border-border">
-      {/* Subtle Dot Grid Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(#FF5A5F_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
+    <section className="relative overflow-hidden bg-background text-foreground pt-10 pb-14 lg:pt-16 lg:pb-20 border-b border-border">
+      {/* Ambient Grid Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30 pointer-events-none" />
 
-      <div className="relative mx-auto max-w-7xl px-4 md:px-6">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
           
-          {/* Left Column: Headline, Subtitle, Buttons, Stats */}
-          <div className="lg:col-span-7 space-y-5 text-left z-10">
+          {/* Left Column: Value Proposition & CTAs */}
+          <div className="lg:col-span-7 space-y-5 text-left">
             
-            {/* Tagline Badge */}
+            {/* Category Tag */}
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 text-xs font-extrabold tracking-widest text-[#FF5A5F] uppercase"
+              transition={{ duration: 0.4 }}
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary border border-border text-xs font-semibold text-muted-foreground"
             >
-              <span>RENT</span>
-              <span className="h-1 w-1 rounded-full bg-[#FF5A5F]" />
-              <span>EARN</span>
-              <span className="h-1 w-1 rounded-full bg-[#FF5A5F]" />
-              <span>CONNECT</span>
+              <ShieldCheck className="h-3.5 w-3.5 text-foreground" />
+              <span>Peer-to-Peer Gear Rental Platform</span>
             </motion.div>
 
-            {/* Main Headline */}
+            {/* Headline */}
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-foreground font-display"
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight leading-[1.08] font-display"
             >
-              Rent <span className="text-[#FF5A5F]">Anything.</span>
-              <br />
-              Earn <span className="text-[#FF5A5F]">Everything.</span>
+              Professional gear on demand.{" "}
+              <span className="text-muted-foreground font-normal">
+                Earn when your kit is idle.
+              </span>
             </motion.h1>
 
-            {/* Description Subtitle */}
+            {/* Subheadline */}
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-muted-foreground text-sm md:text-base max-w-xl leading-relaxed font-normal"
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed font-normal"
             >
-              Payent is a peer-to-peer rental marketplace where you can rent cameras, drones, laptops, power tools, and gear or earn by listing what you own.
+              Rent cinema cameras, aerial drones, studio audio, and workstation laptops directly from verified creators in your city — fully insured and ready for your next project.
             </motion.p>
 
-            {/* CTA Buttons */}
+            {/* CTAs */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-wrap items-center gap-4 pt-1"
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="flex flex-wrap items-center gap-3 pt-1"
             >
               <Link
                 to="/categories"
-                className="bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg transition-all duration-200 active:scale-95 flex items-center gap-2"
+                className="btn-gradient px-6 py-3 rounded-xl font-medium text-sm flex items-center gap-2 group cursor-pointer"
               >
-                <span>Explore Items</span>
-                <ArrowRight className="h-4 w-4" />
+                <span>Browse Rental Gear</span>
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
-                to="/about"
-                className="border border-border bg-secondary hover:bg-secondary/80 text-foreground font-bold text-sm px-7 py-3.5 rounded-xl transition-all duration-200 active:scale-95 flex items-center gap-2"
+                to="/become-lender"
+                className="px-6 py-3 rounded-xl font-medium text-sm border border-border bg-secondary hover:bg-secondary/80 text-foreground transition-all flex items-center gap-2 cursor-pointer"
               >
-                <span>How It Works</span>
-                <Play className="h-3.5 w-3.5 fill-current text-foreground" />
+                <span>List Your Gear</span>
+                <Sparkles className="h-4 w-4 text-muted-foreground" />
               </Link>
             </motion.div>
 
-            {/* Stats Row */}
+            {/* Feature Highlights Row */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="grid grid-cols-3 gap-4 pt-6 max-w-lg border-t border-border"
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="pt-5 border-t border-border/60 grid grid-cols-3 gap-3"
             >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-[#FF5A5F] shrink-0">
-                  <Users className="h-5 w-5" />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Check className="h-3.5 w-3.5" />
+                  <span>ID-Verified Lenders</span>
                 </div>
-                <div>
-                  <h4 className="text-lg md:text-xl font-extrabold text-foreground">10K+</h4>
-                  <p className="text-[11px] text-muted-foreground font-medium">Active Users</p>
-                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">Verified profiles and identity check.</p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-[#FF5A5F] shrink-0">
-                  <Package className="h-5 w-5" />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Rental Protection</span>
                 </div>
-                <div>
-                  <h4 className="text-lg md:text-xl font-extrabold text-foreground">5K+</h4>
-                  <p className="text-[11px] text-muted-foreground font-medium">Items Listed</p>
-                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">Deposit-backed security flow.</p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-[#FF5A5F] shrink-0">
-                  <CheckCircle2 className="h-5 w-5" />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Flexible Terms</span>
                 </div>
-                <div>
-                  <h4 className="text-lg md:text-xl font-extrabold text-foreground">25K+</h4>
-                  <p className="text-[11px] text-muted-foreground font-medium">Successful Rentals</p>
-                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">Daily, weekly, or monthly rates.</p>
               </div>
             </motion.div>
+
           </div>
 
-          {/* Right Column: Visual Stage with Coral Circle & Auto-rotating Gear Showcase (2-sec cycle) */}
-          <div className="lg:col-span-5 relative flex items-center justify-center min-h-[420px] md:min-h-[500px]">
-            
-            {/* Giant Coral Circle Backdrop */}
+          {/* Right Column: Compact Featured Inventory Card */}
+          <div className="lg:col-span-5">
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="absolute w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] rounded-full bg-[#FF5A5F] shadow-2xl shadow-[#FF5A5F]/40"
-            />
-
-            {/* Central Animated Equipment Showcase (Rotates every 2 seconds) */}
-            <div className="relative z-10 w-[280px] sm:w-[350px] aspect-square rounded-full border-4 border-white/20 shadow-2xl overflow-hidden bg-slate-900 flex items-center justify-center">
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={activeItem.id}
-                  src={activeItem.image}
-                  alt={activeItem.title}
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.4 }}
-                  className="w-full h-full object-cover"
-                />
-              </AnimatePresence>
-
-              {/* Overlay Auto-Cycling Gear Badge */}
-              <div className="absolute top-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 flex items-center gap-2 text-[11px] font-bold text-white shadow-lg">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF5A5F] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF5A5F]"></span>
-                </span>
-                <span>Auto-Cycling Gear (2s)</span>
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="spatial-card relative p-3.5 sm:p-4.5 overflow-hidden rounded-2xl max-w-sm sm:max-w-md lg:max-w-none mx-auto"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between gap-2 pb-3 border-b border-border mb-3">
+                <div className="flex items-center gap-1.5">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Featured Inventory
+                  </span>
+                </div>
+                
+                {/* Gear Selector Tabs */}
+                <div className="flex items-center gap-1">
+                  {featuredGear.map((gear, idx) => (
+                    <button
+                      key={gear.id}
+                      onClick={() => setSelectedIndex(idx)}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all cursor-pointer ${
+                        selectedIndex === idx
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {gear.category.split(" ")[0]}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-            </div>
+              {/* Compact Display Image Card */}
+              <div className="relative aspect-[16/10] rounded-lg overflow-hidden bg-secondary border border-border mb-3 group">
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={activeGear.id}
+                    src={activeGear.image}
+                    alt={activeGear.title}
+                    initial={{ opacity: 0, scale: 1.04 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full object-cover object-center"
+                  />
+                </AnimatePresence>
 
-            {/* Floating Dynamic Badge 1: Top Right Active Item Card */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeItem.id + "-badge1"}
-                initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.8, x: 20 }}
-                transition={{ duration: 0.35 }}
-                className="absolute top-2 right-0 sm:-right-4 z-20 bg-white text-slate-900 p-3 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3"
-              >
-                <div className="h-10 w-10 rounded-xl bg-[#FF5A5F]/10 flex items-center justify-center text-[#FF5A5F] shrink-0">
-                  <ActiveIcon className="h-5 w-5" />
+                {/* Floating Verified Item Badge */}
+                <div className="absolute top-2.5 left-2.5 spatial-surface px-2.5 py-1 flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-foreground" />
+                  <span className="text-[10px] font-bold text-foreground">
+                    Verified Gear Item
+                  </span>
                 </div>
-                <div className="text-left overflow-hidden pr-2">
-                  <p className="text-[11px] font-bold text-slate-800 leading-tight truncate">
-                    {activeItem.category}
-                  </p>
-                  <p className="text-[10px] font-bold text-[#FF5A5F]">
-                    {activeItem.title}
-                  </p>
-                </div>
-              </motion.div>
-            </AnimatePresence>
 
-            {/* Floating Dynamic Badge 2: Left Active Renter */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeItem.id + "-badge2"}
-                initial={{ opacity: 0, scale: 0.8, x: -20 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.8, x: -20 }}
-                transition={{ duration: 0.35, delay: 0.05 }}
-                className="absolute top-24 -left-4 sm:-left-8 z-20 bg-white text-slate-900 p-3 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-2.5 w-36 rotate-[-3deg]"
-              >
-                <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-[#FF5A5F] shrink-0 text-xs font-bold border border-slate-200">
-                  {activeItem.renter.charAt(0)}
+                {/* Price Tag */}
+                <div className="absolute bottom-2.5 right-2.5 spatial-surface px-2.5 py-1 text-right">
+                  <span className="text-sm font-bold text-foreground font-display">
+                    {activeGear.price}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-medium">/{activeGear.period}</span>
                 </div>
-                <div className="text-left overflow-hidden">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">Top Lender</p>
-                  <p className="text-[11px] font-extrabold text-slate-800 truncate">
-                    {activeItem.renter}
-                  </p>
+              </div>
+
+              {/* Compact Specs Footer */}
+              <div className="space-y-2.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <ActiveIcon className="h-3.5 w-3.5 text-foreground" />
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {activeGear.category}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold text-foreground font-display mt-0.5">
+                      {activeGear.title}
+                    </h3>
+                  </div>
+
+                  <Link
+                    to="/categories"
+                    className="shrink-0 p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 border border-border text-foreground transition-colors"
+                    aria-label={`View ${activeGear.title}`}
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
-              </motion.div>
-            </AnimatePresence>
 
-            {/* Floating Dynamic Badge 3: Bottom Right Rating */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeItem.id + "-badge3"}
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                transition={{ duration: 0.35, delay: 0.1 }}
-                className="absolute bottom-4 right-0 sm:right-2 z-30 bg-white text-slate-900 px-3.5 py-2.5 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-2"
-              >
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                <div className="text-left">
-                  <p className="text-[10px] font-extrabold text-slate-800">
-                    {activeItem.rating} Rating
-                  </p>
-                  <p className="text-[9px] font-bold text-slate-400">Verified Rental</p>
+                {/* Specs Chips */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-border/50">
+                  {activeGear.specs.map((spec, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground border border-border/40"
+                    >
+                      {spec}
+                    </span>
+                  ))}
                 </div>
-              </motion.div>
-            </AnimatePresence>
+              </div>
 
-            {/* Gear Selector Dots at bottom */}
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30">
-              {showcaseItems.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setItemIndex(idx)}
-                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                    itemIndex === idx ? "w-6 bg-[#FF5A5F]" : "w-2 bg-white/30 hover:bg-white/50"
-                  }`}
-                  aria-label={`Show item ${idx + 1}`}
-                />
-              ))}
-            </div>
-
+            </motion.div>
           </div>
 
         </div>

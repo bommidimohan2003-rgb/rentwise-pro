@@ -84,26 +84,26 @@ export default function Notifications() {
   const getIcon = (type: string) => {
     switch (type) {
       case "success":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />;
       case "warning":
-        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+        return <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />;
       case "error":
-        return <AlertTriangle className="h-5 w-5 text-red-500" />;
+        return <AlertTriangle className="h-5 w-5 text-destructive" />;
       default:
-        return <Info className="h-5 w-5 text-blue-500" />;
+        return <Info className="h-5 w-5 text-foreground" />;
     }
   };
 
   const getBg = (type: string) => {
     switch (type) {
       case "success":
-        return "bg-green-500/10";
+        return "bg-emerald-500/10 border border-emerald-500/20";
       case "warning":
-        return "bg-amber-500/10";
+        return "bg-amber-500/10 border border-amber-500/20";
       case "error":
-        return "bg-red-500/10";
+        return "bg-destructive/10 border border-destructive/20";
       default:
-        return "bg-blue-500/10";
+        return "bg-secondary border border-border";
     }
   };
 

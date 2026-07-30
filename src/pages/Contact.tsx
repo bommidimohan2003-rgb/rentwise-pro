@@ -41,7 +41,7 @@ export default function Contact() {
               />
             </div>
             <Button type="submit" size="lg">
-              {sent ? "Message sent ✓" : "Send message"}
+              {sent ? "Message sent" : "Send message"}
             </Button>
           </form>
 

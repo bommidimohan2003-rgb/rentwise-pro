@@ -237,11 +237,10 @@ export default function Bookings() {
       render: (row) => (
         <span
           className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none",
-            row.status === "completed" && "bg-green-500/10 text-green-600 dark:text-green-400",
-            row.status === "active" && "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-            row.status === "pending" && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-            row.status === "cancelled" && "bg-red-500/10 text-red-600 dark:text-red-400",
+            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
+            (row.status === "completed" || row.status === "active") && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+            row.status === "pending" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+            row.status === "cancelled" && "bg-destructive/10 text-destructive border-destructive/20",
           )}
         >
           {row.status}
@@ -430,11 +429,10 @@ export default function Bookings() {
                   <p className="mt-0.5">
                     <span
                       className={cn(
-                        "inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full",
-                        selectedBooking.status === "completed" && "bg-green-500/10 text-green-600",
-                        selectedBooking.status === "active" && "bg-blue-500/10 text-blue-600",
-                        selectedBooking.status === "pending" && "bg-amber-500/10 text-amber-600",
-                        selectedBooking.status === "cancelled" && "bg-red-500/10 text-red-600",
+                        "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border",
+                        (selectedBooking.status === "completed" || selectedBooking.status === "active") && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+                        selectedBooking.status === "pending" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+                        selectedBooking.status === "cancelled" && "bg-destructive/10 text-destructive border-destructive/20",
                       )}
                     >
                       {selectedBooking.status}

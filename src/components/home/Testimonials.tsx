@@ -1,59 +1,59 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Quote, Star } from "lucide-react";
+import { Quote, Star, Tag } from "lucide-react";
 
 const testimonials = [
   {
     name: "Priya Sharma",
     role: "Freelance Photographer",
-    avatar: "👩‍🎨",
+    initials: "PS",
     quote:
-      "Payent saved me thousands on camera gear. I rented a professional camera for a wedding shoot at a fraction of the cost. The lender was super reliable and delivery was on time!",
+      "Payent saved me thousands on camera gear. I rented a 4K cinema camera for a weekend wedding shoot at a fraction of buying cost. Smooth process and verified lender!",
     rating: 5,
-    product: "Camera",
+    product: "Camera Kit",
   },
   {
     name: "Rohan Mehta",
     role: "Content Creator",
-    avatar: "🧑‍💻",
+    initials: "RM",
     quote:
-      "Rented a drone for my travel series. The booking process was instant, payments were secure, and the drone arrived perfectly packed. 10/10 experience!",
+      "Rented a drone for my travel series. Booking was instant, security flow gave me peace of mind, and the drone arrived in perfect working condition.",
     rating: 5,
-    product: "Drone",
+    product: "Aerial Cine Drone",
   },
   {
     name: "Anjali Nair",
-    role: "Event Planner",
-    avatar: "👩‍💼",
+    role: "Event Producer",
+    initials: "AN",
     quote:
-      "Used Payent to rent a 4K projector and portable speakers for a corporate event. Everything worked flawlessly. The 24/7 support was incredibly helpful!",
+      "Used Payent to rent a 4K projector and audio setup for a client showcase. Everything worked flawlessly on site. Highly recommended for creative teams.",
     rating: 5,
     product: "4K Laser Projector",
   },
   {
     name: "Vikram Patel",
     role: "Game Developer",
-    avatar: "🧑‍🔬",
+    initials: "VP",
     quote:
-      "Got a PS5 and gaming setup for two weeks while testing my game on real hardware. Payent made the whole process incredibly easy. Verified users, no sketchy dealings.",
+      "Rented a high-end workstation laptop for two weeks while testing hardware builds. Extremely straightforward, transparent pricing, and zero hassle.",
     rating: 5,
-    product: "PlayStation 5 + Controller",
+    product: "Pro Workstation Laptop",
   },
   {
     name: "Sana Khan",
-    role: "Architecture Student",
-    avatar: "👩‍🚀",
+    role: "Architecture Designer",
+    initials: "SK",
     quote:
-      "Rented a professional laptop with AutoCAD for my final project. Way cheaper than buying, and the lender even helped with initial setup tips. Amazing platform!",
+      "Needed a specialized CAD machine for a project deadline. Way cheaper than buying, and the owner was super responsive with handover coordination.",
     rating: 5,
-    product: "Dell XPS 15 + CAD Software",
+    product: "CAD Workstation",
   },
   {
     name: "Arjun Singh",
-    role: "Startup Founder",
-    avatar: "👨‍💼",
+    role: "Studio Producer",
+    initials: "AS",
     quote:
-      "We rent recording equipment for our podcast studio instead of buying. Payent has helped us scale content production without huge upfront costs. Game-changer!",
+      "We rent secondary podcast mics and lighting rigs when scaling up production. Payent has made gear access predictable and efficient.",
     rating: 5,
     product: "Podcast Recording Kit",
   },
@@ -65,8 +65,8 @@ const containerVariants = {
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: "easeOut" as const } },
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" as const } },
 };
 
 export function Testimonials() {
@@ -77,27 +77,24 @@ export function Testimonials() {
     <section
       id="testimonials"
       ref={ref}
-      className="relative py-28 px-4 sm:px-6 overflow-hidden bg-background text-foreground border-t border-border"
+      className="relative py-20 px-4 sm:px-6 overflow-hidden bg-background text-foreground border-t border-border"
     >
-      {/* Subtle Dot Grid */}
-      <div className="absolute inset-0 bg-[radial-gradient(#FF5A5F_1px,transparent_1px)] [background-size:32px_32px] opacity-5 pointer-events-none" />
-
       <div className="relative max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16 space-y-3"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-14 space-y-3"
         >
-          <p className="text-xs font-extrabold tracking-widest text-[#FF5A5F] uppercase">
-            TESTIMONIALS
+          <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+            COMMUNITY REVIEWS
           </p>
-          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground font-display">
-            Loved by <span className="text-[#FF5A5F]">50,000+</span> creators
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground font-display">
+            Trusted by creators &amp; production teams
           </h2>
           <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto font-normal">
-            Real stories from renters who discovered a smarter way to access premium gear.
+            Real feedback from verified renters and lenders using Payent for their projects.
           </p>
         </motion.div>
 
@@ -112,36 +109,37 @@ export function Testimonials() {
             <motion.div
               key={t.name}
               variants={cardVariants}
-              whileHover={{ y: -6 }}
-              className="group relative rounded-2xl p-7 flex flex-col bg-card border border-border hover:border-[#FF5A5F]/40 transition-all duration-300 shadow-xl"
+              whileHover={{ y: -4 }}
+              className="group spatial-card rounded-2xl p-6 flex flex-col bg-card border border-border transition-all duration-300"
             >
-              {/* Quote Icon */}
-              <Quote className="h-6 w-6 mb-4 text-[#FF5A5F] opacity-70 group-hover:opacity-100 transition-opacity" />
-
-              {/* Stars */}
-              <div className="flex items-center gap-0.5 mb-4">
-                {Array.from({ length: t.rating }).map((_, i) => (
-                  <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                ))}
+              {/* Top Row: Quote & Rating */}
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <Quote className="h-5 w-5 text-muted-foreground opacity-60" />
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: t.rating }).map((_, i) => (
+                    <Star key={i} className="h-3.5 w-3.5 fill-foreground text-foreground" />
+                  ))}
+                </div>
               </div>
 
               {/* Quote Text */}
-              <p className="text-sm text-muted-foreground leading-relaxed flex-1 italic group-hover:text-foreground transition-colors">
+              <p className="text-sm text-muted-foreground leading-relaxed flex-1 font-normal">
                 "{t.quote}"
               </p>
 
               {/* Product Badge */}
-              <div className="mt-4 inline-flex items-center self-start rounded-full px-3 py-1 text-[11px] font-bold bg-[#FF5A5F]/10 text-[#FF5A5F] border border-[#FF5A5F]/20">
-                🔖 {t.product}
+              <div className="mt-4 inline-flex items-center gap-1.5 self-start rounded-md px-2.5 py-1 text-xs font-medium bg-secondary text-foreground border border-border">
+                <Tag className="h-3 w-3 text-muted-foreground" />
+                <span>{t.product}</span>
               </div>
 
               {/* User Avatar & Info */}
-              <div className="mt-5 pt-5 border-t border-border flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-secondary border border-border flex items-center justify-center text-xl shrink-0">
-                  {t.avatar}
+              <div className="mt-5 pt-4 border-t border-border/60 flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-secondary border border-border flex items-center justify-center text-xs font-bold text-foreground shrink-0">
+                  {t.initials}
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-extrabold text-foreground">{t.name}</div>
+                  <div className="text-sm font-bold text-foreground">{t.name}</div>
                   <div className="text-xs text-muted-foreground font-medium">{t.role}</div>
                 </div>
               </div>

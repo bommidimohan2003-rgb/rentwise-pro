@@ -176,7 +176,7 @@ export default function Agents() {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-1">
-          <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+          <Star className="h-3.5 w-3.5 text-foreground fill-foreground" />
           <span className="text-xs font-bold">{row.rating.toFixed(1)}</span>
         </div>
       ),
@@ -344,7 +344,7 @@ export default function Agents() {
                 </span>
               </div>
               <div className="p-3.5 rounded-xl bg-secondary/45 border border-border/50 text-center">
-                <Calendar className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                <Calendar className="h-4 w-4 text-foreground mx-auto mb-1" />
                 <span className="text-[10px] font-bold text-muted-foreground block">
                   Total Rentals
                 </span>

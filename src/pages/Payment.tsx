@@ -132,7 +132,7 @@ export default function Payment() {
             setIsVerifying(false);
             toast.dismiss("pay-verify");
             setPaySuccess(true);
-            toast.success("Payment Completed Successfully! 🎉");
+            toast.success("Payment completed successfully.");
 
             setTimeout(() => {
               navigate({ to: "/orders" });
@@ -188,36 +188,36 @@ export default function Payment() {
       id: "phonepe",
       name: "PhonePe",
       color:
-        "bg-purple-600/10 hover:bg-purple-600/15 border-purple-500/20 text-purple-600 dark:text-purple-400",
-      iconColor: "text-purple-600 dark:text-purple-400",
-      accentBg: "bg-purple-600",
+        "bg-secondary hover:bg-secondary/80 border-border text-foreground",
+      iconColor: "text-foreground",
+      accentBg: "bg-primary text-primary-foreground",
       tagline: "Pay using saved cards or bank account on PhonePe",
     },
     {
       id: "gpay",
       name: "Google Pay",
       color:
-        "bg-blue-600/10 hover:bg-blue-600/15 border-blue-500/20 text-blue-600 dark:text-blue-400",
-      iconColor: "text-blue-600 dark:text-blue-400",
-      accentBg: "bg-blue-600",
+        "bg-secondary hover:bg-secondary/80 border-border text-foreground",
+      iconColor: "text-foreground",
+      accentBg: "bg-primary text-primary-foreground",
       tagline: "Direct bank transfer using Google Pay secure account",
     },
     {
       id: "bhim",
       name: "BHIM UPI",
       color:
-        "bg-emerald-600/10 hover:bg-emerald-600/15 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
-      iconColor: "text-emerald-600 dark:text-emerald-400",
-      accentBg: "bg-emerald-600",
+        "bg-secondary hover:bg-secondary/80 border-border text-foreground",
+      iconColor: "text-foreground",
+      accentBg: "bg-primary text-primary-foreground",
       tagline: "Unified Payments Interface of India official app",
     },
     {
       id: "paytm",
       name: "Paytm Wallet / UPI",
       color:
-        "bg-cyan-600/10 hover:bg-cyan-600/15 border-cyan-500/20 text-cyan-600 dark:text-cyan-400",
-      iconColor: "text-cyan-600 dark:text-cyan-400",
-      accentBg: "bg-cyan-600",
+        "bg-secondary hover:bg-secondary/80 border-border text-foreground",
+      iconColor: "text-foreground",
+      accentBg: "bg-primary text-primary-foreground",
       tagline: "Fast Checkout using Paytm Balance or linked accounts",
     },
   ];

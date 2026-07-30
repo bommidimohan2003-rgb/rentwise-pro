@@ -133,7 +133,7 @@ export default function Checkout() {
     setTimeout(() => {
       setUpiVerifying(false);
       setUpiVerified(true);
-      toast.success("UPI ID verified: John Doe ✅");
+      toast.success("UPI ID verified for John Doe.");
     }, 1200);
   };
 
@@ -202,7 +202,7 @@ export default function Checkout() {
 
             setIsVerifying(false);
             toast.dismiss("rzp-verify");
-            toast.success("Payment verified! Rental booking confirmed 🎉");
+            toast.success("Payment verified. Rental booking confirmed.");
 
             const confirmed: Order = {
               id: verifyRes.order_id || orderRes.order_id,
@@ -341,14 +341,14 @@ export default function Checkout() {
                 <div className="space-y-6">
                   {/* Visual Credit Card Preview */}
                   <div className="flex justify-center mb-6">
-                    <div className="w-full max-w-[340px] aspect-[1.586] rounded-2xl p-6 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 text-white relative shadow-xl overflow-hidden flex flex-col justify-between">
+                    <div className="w-full max-w-[340px] aspect-[1.586] rounded-2xl p-6 bg-gradient-to-br from-zinc-900 via-zinc-800 to-black text-white relative shadow-xl overflow-hidden flex flex-col justify-between border border-zinc-700/50">
                       {/* Grid overlay for aesthetic premium card texture */}
                       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent pointer-events-none" />
 
                       <div className="flex justify-between items-start relative z-10">
-                        {/* Golden Chip */}
-                        <div className="w-10 h-7 rounded-md bg-gradient-to-r from-amber-400 to-yellow-200 border border-amber-300 relative overflow-hidden">
-                          <div className="absolute inset-x-2 inset-y-1 border-r border-b border-amber-600/30 grid grid-cols-2 gap-0.5" />
+                        {/* Metallic Chip */}
+                        <div className="w-10 h-7 rounded-md bg-gradient-to-r from-zinc-300 to-zinc-100 border border-zinc-200 relative overflow-hidden">
+                          <div className="absolute inset-x-2 inset-y-1 border-r border-b border-zinc-400/30 grid grid-cols-2 gap-0.5" />
                         </div>
                         <span className="text-xs uppercase font-extrabold tracking-wider bg-white/10 px-2 py-1 rounded-md backdrop-blur-sm">
                           {cardBrand}
@@ -467,11 +467,11 @@ export default function Checkout() {
                           className="h-12 border-border"
                           disabled={upiVerified}
                         >
-                          {upiVerified ? "Verified ✓" : "Verify ID"}
+                          {upiVerified ? "Verified" : "Verify ID"}
                         </Button>
                       </div>
                       {upiVerified && (
-                        <div className="flex items-center gap-2 p-3 bg-emerald-500/10 text-emerald-600 rounded-xl text-xs font-semibold">
+                        <div className="flex items-center gap-2 p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-semibold">
                           <Check className="h-4 w-4 shrink-0" /> Associated Account: John Doe
                         </div>
                       )}
@@ -553,7 +553,7 @@ export default function Checkout() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              toast.success("UPI App success simulated! Proceeding... ✅");
+                              toast.success("UPI App payment verified. Proceeding...");
                               // Complete payment directly
                               const order: Order = {
                                 id: crypto.randomUUID(),
@@ -648,7 +648,9 @@ export default function Checkout() {
                 </Button>
               </div>
               {applied && (
-                <p className="text-xs text-emerald-600 font-medium">10% discount applied! 🎉</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                  <Check className="h-3.5 w-3.5" /> 10% discount applied.
+                </p>
               )}
 
               <div className="flex justify-between mt-4">

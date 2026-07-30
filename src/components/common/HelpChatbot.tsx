@@ -243,7 +243,7 @@ export function HelpChatbot() {
               className="relative"
             >
               <MessageSquare className="h-6 w-6" />
-              <span className="absolute -top-1.5 -right-1.5 h-3 w-3 bg-rose-500 border border-white rounded-full animate-pulse" />
+              <span className="absolute -top-1.5 -right-1.5 h-3 w-3 bg-destructive border border-background rounded-full animate-pulse" />
             </motion.div>
           )}
         </AnimatePresence>
