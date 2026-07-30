@@ -65,15 +65,14 @@ TWILIO_VERIFY_SERVICE_SID = os.getenv("TWILIO_VERIFY_SERVICE_SID", "")
 # Admin Registration Config
 ADMIN_SETUP_CODE = os.getenv("ADMIN_SETUP_CODE", "PAYENT-ADMIN-2026")
 
-# Payment Gateway (Razorpay) Config (Commented out / Inactive)
+# Payment Gateway (Razorpay) Config
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 
-# --- RAZORPAY BACKEND CONFIG COMMENTED OUT FOR NOW ---
-# if IS_PRODUCTION:
-#     if not os.getenv("RAZORPAY_KEY_ID") or not os.getenv("RAZORPAY_KEY_SECRET"):
-#         raise RuntimeError("FATAL SECURITY ERROR: RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set in environment for production!")
-#     if not os.getenv("RAZORPAY_WEBHOOK_SECRET"):
-#         raise RuntimeError("FATAL SECURITY ERROR: RAZORPAY_WEBHOOK_SECRET must be set in environment for production!")
+if IS_PRODUCTION:
+    if not RAZORPAY_KEY_ID or not RAZORPAY_KEY_SECRET:
+        print("Warning: Production RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is missing. Payment processing will operate in test fallback mode.")
+    if not RAZORPAY_WEBHOOK_SECRET:
+        print("Warning: Production RAZORPAY_WEBHOOK_SECRET is missing. Register webhook secret in backend environment variables.")
 
