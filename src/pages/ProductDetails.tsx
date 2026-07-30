@@ -262,20 +262,20 @@ export default function ProductDetails() {
                 <label className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block">
                   Select Rental Start Date
                 </label>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
                   {mockDates.map((item, idx) => (
                     <button
                       key={item.date}
                       onClick={() => setSelectedDate(idx)}
                       className={cn(
-                        "p-2.5 rounded-2xl text-center border transition-all cursor-pointer",
+                        "p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl text-center border transition-all cursor-pointer min-w-0",
                         selectedDate === idx
                           ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-md"
                           : "bg-card border-border text-foreground hover:border-[#FF5A5F]/50"
                       )}
                     >
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">{item.day}</p>
-                      <p className="text-xs font-extrabold mt-0.5">{item.date}</p>
+                      <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase truncate">{item.day}</p>
+                      <p className="text-xs font-extrabold mt-0.5 truncate">{item.date}</p>
                     </button>
                   ))}
                 </div>

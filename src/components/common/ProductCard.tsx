@@ -111,7 +111,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
                 <Link
                   to="/product/$id"
                   params={{ id: product.id }}
-                  className="border border-border hover:border-primary text-foreground bg-secondary/50 hover:bg-secondary rounded-lg h-8 text-[11px] font-bold inline-flex items-center justify-center transition-all active:scale-95"
+                  className="border border-border hover:border-primary text-foreground bg-secondary/50 hover:bg-secondary rounded-xl py-2 px-1 text-[10px] sm:text-[11px] font-bold inline-flex items-center justify-center transition-all active:scale-95 text-center min-w-0 truncate"
                 >
                   View Details
                 </Link>
@@ -134,7 +134,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
                       navigate({ to: "/login" });
                     }
                   }}
-                  className="bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 rounded-lg h-8 text-[11px] font-bold inline-flex items-center justify-center shadow-md active:scale-95 transition-all"
+                  className="bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 rounded-xl py-2 px-1 text-[10px] sm:text-[11px] font-bold inline-flex items-center justify-center shadow-md active:scale-95 transition-all text-center min-w-0 truncate"
                 >
                   List Yours
                 </Link>

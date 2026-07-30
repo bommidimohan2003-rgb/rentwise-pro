@@ -214,17 +214,11 @@ export default function Categories() {
             <span>Explore Marketplace</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground font-display">
-            Browse <span className="px-2 py-0.5 rounded-lg bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-sm">Reference</span> Premium Gear
+            Browse Premium Tech Gear
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">
             Rent high-performance cameras, laptops, drones, bikes, power banks, and electric tools from verified owners.
           </p>
-
-          {/* Functional Reference Notice */}
-          <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-card border-2 border-primary/30 text-xs text-foreground text-center font-medium shadow-sm max-w-xl mx-auto mt-2">
-            <Info className="h-4 w-4 text-primary shrink-0" />
-            <span>Listed items serve as <span className="font-extrabold px-1.5 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black text-[11px]">REFERENCE MODELS</span> for platform demonstration purposes only.</span>
-          </div>
         </div>
 
         {/* Top Control Bar: Category Dropdown at TOP LEFT CORNER + Intelligent Search Bar + Sort */}
