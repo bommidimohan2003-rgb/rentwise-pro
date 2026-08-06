@@ -19,7 +19,7 @@ export function NoSearchResults({
     <div
       className={cn(
         "flex flex-col items-center justify-center p-8 md:p-12 text-center rounded-2xl border border-dashed border-border/70 bg-card/30 backdrop-blur-sm transition-all",
-        className
+        className,
       )}
     >
       <div className="flex items-center justify-center h-16 w-16 rounded-2xl bg-secondary/80 text-muted-foreground mb-4 shadow-sm">

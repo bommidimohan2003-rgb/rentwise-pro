@@ -111,7 +111,8 @@ export function Stats() {
               <div
                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 style={{
-                  background: "radial-gradient(circle at 50% 0%, rgba(255,90,95,0.12), transparent 70%)",
+                  background:
+                    "radial-gradient(circle at 50% 0%, rgba(255,90,95,0.12), transparent 70%)",
                 }}
               />
 

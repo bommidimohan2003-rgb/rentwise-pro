@@ -1,15 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  Bell,
-  Heart,
-  LogIn,
-  LogOut,
-  Menu,
-  Moon,
-  Sun,
-  User as UserIcon,
-  X,
-} from "lucide-react";
+import { Bell, Heart, LogIn, LogOut, Menu, Moon, Sun, User as UserIcon, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,11 +54,10 @@ export function Navbar() {
     <header
       className={cn(
         "sticky top-0 z-50 w-full transition-all duration-300 border-b border-border bg-background/95 backdrop-blur-md",
-        scrolled ? "shadow-xl shadow-black/10 dark:shadow-black/40" : ""
+        scrolled ? "shadow-xl shadow-black/10 dark:shadow-black/40" : "",
       )}
     >
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-6">
-        
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group" id="nav-logo">
           <motion.div
@@ -144,7 +133,7 @@ export function Navbar() {
                 "h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer",
                 isHomePage
                   ? "text-slate-200 hover:text-white hover:bg-white/10"
-                  : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
+                  : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -161,10 +150,14 @@ export function Navbar() {
               "h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer",
               isHomePage
                 ? "text-slate-200 hover:text-white hover:bg-white/10"
-                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
+                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10",
             )}
           >
-            {theme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4 text-amber-400" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
           </button>
 
           {/* Auth Button / Profile */}
@@ -183,16 +176,18 @@ export function Navbar() {
                 id="nav-dashboard"
                 className="flex items-center gap-2 rounded-full pl-2 pr-4 h-10 transition-all border border-white/15 bg-white/10 hover:bg-white/20"
               >
-                <div
-                  className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold shrink-0 bg-black dark:bg-white dark:text-black"
-                >
+                <div className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold shrink-0 bg-black dark:bg-white dark:text-black">
                   {user.fullName.charAt(0)}
                 </div>
-                <span className="text-sm font-bold text-white">
-                  {user.fullName.split(" ")[0]}
-                </span>
+                <span className="text-sm font-bold text-white">{user.fullName.split(" ")[0]}</span>
               </Link>
-              <Button variant="ghost" size="icon" aria-label="Logout" onClick={logout} className="text-slate-200 hover:text-white">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Logout"
+                onClick={logout}
+                className="text-slate-200 hover:text-white"
+              >
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
@@ -220,7 +215,7 @@ export function Navbar() {
               "lg:hidden ml-1 h-9 w-9 flex items-center justify-center rounded-full transition-all cursor-pointer",
               isHomePage
                 ? "text-slate-200 hover:text-white hover:bg-white/10"
-                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10"
+                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10",
             )}
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
@@ -228,7 +223,6 @@ export function Navbar() {
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
-
       </div>
 
       {/* Mobile Dropdown Menu */}

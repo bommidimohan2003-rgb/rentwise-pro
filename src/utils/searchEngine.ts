@@ -3,7 +3,20 @@ import type { Product } from "@/types";
 // Synonym dictionary for intelligent keyword expansion
 const SYNONYM_MAP: Record<string, string[]> = {
   // Cameras
-  camera: ["cam", "dslr", "mirrorless", "cinema", "lens", "photo", "vlog", "video", "4k", "8k", "shooting", "shutter"],
+  camera: [
+    "cam",
+    "dslr",
+    "mirrorless",
+    "cinema",
+    "lens",
+    "photo",
+    "vlog",
+    "video",
+    "4k",
+    "8k",
+    "shooting",
+    "shutter",
+  ],
   cam: ["camera", "dslr", "mirrorless"],
   dslr: ["camera", "mirrorless", "canon", "nikon", "sony"],
   mirrorless: ["camera", "sony", "canon", "nikon", "fujifilm", "panasonic"],
@@ -13,7 +26,16 @@ const SYNONYM_MAP: Record<string, string[]> = {
   fujifilm: ["fuji", "x-t5", "x100v"],
 
   // Laptops
-  laptop: ["macbook", "notebook", "computer", "pc", "workstation", "gaming laptop", "touchscreen", "oled"],
+  laptop: [
+    "macbook",
+    "notebook",
+    "computer",
+    "pc",
+    "workstation",
+    "gaming laptop",
+    "touchscreen",
+    "oled",
+  ],
   mac: ["macbook", "apple", "m3", "m2", "air", "pro"],
   macbook: ["mac", "apple", "m3", "m2", "air", "pro"],
   apple: ["macbook", "mac", "air", "pro"],
@@ -23,25 +45,81 @@ const SYNONYM_MAP: Record<string, string[]> = {
   asus: ["rog", "zephyrus", "zenbook"],
 
   // Drones
-  drone: ["dji", "quadcopter", "fpv", "gimbal", "aerial", "mavic", "fly", "flight", "autel", "skydio"],
+  drone: [
+    "dji",
+    "quadcopter",
+    "fpv",
+    "gimbal",
+    "aerial",
+    "mavic",
+    "fly",
+    "flight",
+    "autel",
+    "skydio",
+  ],
   dji: ["mavic", "mini", "air", "inspire", "avata", "drone"],
   fpv: ["avata", "drone", "goggles"],
 
   // Bikes & Rides
-  bike: ["bicycle", "cycle", "motorcycle", "scooter", "ride", "mtb", "cruiser", "sports bike", "ev", "electric scooter"],
-  motorcycle: ["bike", "classic", "duke", "pulsar", "royal enfield", "ktm", "yamaha", "honda", "bajaj"],
+  bike: [
+    "bicycle",
+    "cycle",
+    "motorcycle",
+    "scooter",
+    "ride",
+    "mtb",
+    "cruiser",
+    "sports bike",
+    "ev",
+    "electric scooter",
+  ],
+  motorcycle: [
+    "bike",
+    "classic",
+    "duke",
+    "pulsar",
+    "royal enfield",
+    "ktm",
+    "yamaha",
+    "honda",
+    "bajaj",
+  ],
   scooter: ["activa", "ather", "ev", "honda", "ride"],
   trek: ["marlin", "mtb", "mountain bike"],
   royal: ["enfield", "classic", "himalayan"],
   ktm: ["duke", "sports bike"],
 
   // Power Banks
-  powerbank: ["charger", "battery", "power bank", "powercore", "magsafe", "fast charge", "pd", "140w", "65w", "mah"],
+  powerbank: [
+    "charger",
+    "battery",
+    "power bank",
+    "powercore",
+    "magsafe",
+    "fast charge",
+    "pd",
+    "140w",
+    "65w",
+    "mah",
+  ],
   charger: ["powerbank", "fast charge", "anker", "ambrane", "xiaomi", "urbn"],
   anker: ["powercore", "737", "537", "powerbank"],
 
   // Tools
-  tool: ["drill", "saw", "hammer", "wrench", "cordless", "impact", "washer", "vacuum", "bosch", "dewalt", "makita", "milwaukee"],
+  tool: [
+    "drill",
+    "saw",
+    "hammer",
+    "wrench",
+    "cordless",
+    "impact",
+    "washer",
+    "vacuum",
+    "bosch",
+    "dewalt",
+    "makita",
+    "milwaukee",
+  ],
   drill: ["hammer drill", "combi drill", "cordless", "bosch", "dewalt", "makita"],
   saw: ["circular saw", "blade", "dewalt", "makita"],
 };
@@ -67,8 +145,8 @@ function levenshteinDistance(a: string, b: string): number {
       } else {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1,     // insertion
-          matrix[i - 1][j] + 1      // deletion
+          matrix[i][j - 1] + 1, // insertion
+          matrix[i - 1][j] + 1, // deletion
         );
       }
     }

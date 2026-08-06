@@ -149,7 +149,10 @@ export default function Categories() {
 
   // Perform Intelligent Advanced & ML-Powered Search
   const filtered = useMemo(() => {
-    let list = mlResults !== null ? mlResults : products.filter((p) => (cat === "all" ? true : p.category === cat));
+    let list =
+      mlResults !== null
+        ? mlResults
+        : products.filter((p) => (cat === "all" ? true : p.category === cat));
 
     if (mlResults === null && q) {
       list = advancedSearch(list, q);
@@ -217,13 +220,13 @@ export default function Categories() {
             Browse Premium Tech Gear
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">
-            Rent high-performance cameras, laptops, drones, bikes, power banks, and electric tools from verified owners.
+            Rent high-performance cameras, laptops, drones, bikes, power banks, and electric tools
+            from verified owners.
           </p>
         </div>
 
         {/* Top Control Bar: Category Dropdown at TOP LEFT CORNER + Intelligent Search Bar + Sort */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-          
           {/* TOP LEFT CORNER: Category Dropdown Menu Button */}
           <div className="relative md:w-64 shrink-0" ref={dropdownRef}>
             <button
@@ -236,7 +239,9 @@ export default function Categories() {
                 <div className="p-1.5 rounded-lg bg-primary text-primary-foreground shrink-0">
                   <SelectedIcon className="h-4 w-4" />
                 </div>
-                <span className="text-xs font-black tracking-tight truncate">{selectedCatName}</span>
+                <span className="text-xs font-black tracking-tight truncate">
+                  {selectedCatName}
+                </span>
                 <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-white/20 dark:bg-black/20 text-white dark:text-black shrink-0">
                   {selectedCount}
                 </span>
@@ -245,7 +250,7 @@ export default function Categories() {
               <ChevronDown
                 className={cn(
                   "h-4 w-4 text-white/80 dark:text-black/80 shrink-0 transition-transform duration-300 ml-1",
-                  isDropdownOpen && "rotate-180"
+                  isDropdownOpen && "rotate-180",
                 )}
               />
             </button>
@@ -270,7 +275,7 @@ export default function Categories() {
                           "w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all cursor-pointer",
                           isSelected
                             ? "bg-primary text-primary-foreground shadow-md font-bold"
-                            : "hover:bg-secondary text-foreground hover:text-primary font-medium"
+                            : "hover:bg-secondary text-foreground hover:text-primary font-medium",
                         )}
                       >
                         <div className="flex items-center gap-2.5">
@@ -279,7 +284,7 @@ export default function Categories() {
                               "p-1.5 rounded-lg transition-all",
                               isSelected
                                 ? "bg-white/20 text-white"
-                                : "bg-secondary text-muted-foreground group-hover:text-primary"
+                                : "bg-secondary text-muted-foreground group-hover:text-primary",
                             )}
                           >
                             <IconComp className="h-3.5 w-3.5" />
@@ -293,7 +298,7 @@ export default function Categories() {
                               "text-[9px] font-extrabold px-2 py-0.5 rounded-full",
                               isSelected
                                 ? "bg-white/25 text-white"
-                                : "bg-secondary/80 text-muted-foreground"
+                                : "bg-secondary/80 text-muted-foreground",
                             )}
                           >
                             {opt.count} Items
@@ -386,7 +391,9 @@ export default function Categories() {
                             {item.title}
                           </p>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                            <span className="capitalize font-bold text-primary">{item.category}</span>
+                            <span className="capitalize font-bold text-primary">
+                              {item.category}
+                            </span>
                             <span>•</span>
                             <div className="flex items-center gap-0.5 text-amber-500 font-bold">
                               <Star className="h-3 w-3 fill-amber-400" />
@@ -421,7 +428,6 @@ export default function Categories() {
               <option value="rating">Top Rated</option>
             </select>
           </div>
-
         </div>
 
         {/* Spelling Typo Correction Chip ("Did you mean?") */}
@@ -444,7 +450,8 @@ export default function Categories() {
         {/* Results Info Subheader */}
         <div className="flex items-center justify-between px-1 pt-1">
           <p className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
-            Showing <span className="text-foreground font-black">{filtered.length}</span> rental listings
+            Showing <span className="text-foreground font-black">{filtered.length}</span> rental
+            listings
             {cat !== "all" && ` in ${categories.find((c) => c.id === cat)?.name || cat}`}
             {q && ` for "${q}"`}
           </p>

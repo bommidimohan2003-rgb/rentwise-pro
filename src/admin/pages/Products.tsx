@@ -19,7 +19,13 @@ import { AdminProduct } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
+import {
+  LoadingState,
+  ErrorState,
+  SlowConnectionIndicator,
+  NoSearchResults,
+  useSlowConnection,
+} from "@/components/states";
 
 import { adminWS } from "../services/websocket";
 
@@ -267,8 +273,10 @@ export default function Products() {
         <span
           className={cn(
             "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
-            row.status === "approved" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-            row.status === "pending" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+            row.status === "approved" &&
+              "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+            row.status === "pending" &&
+              "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
             row.status === "rejected" && "bg-destructive/10 text-destructive border-destructive/20",
           )}
         >
@@ -435,17 +443,15 @@ export default function Products() {
       </div>
 
       {/* Slow Connection Indicator */}
-      {isSlow && <SlowConnectionIndicator message="Product catalog is taking a bit longer to load..." />}
+      {isSlow && (
+        <SlowConnectionIndicator message="Product catalog is taking a bit longer to load..." />
+      )}
 
       {/* Products list body */}
       {loading ? (
         <LoadingState type={viewMode === "list" ? "table" : "grid"} count={6} />
       ) : error ? (
-        <ErrorState
-          title="Unable to load products"
-          error={error}
-          onRetry={fetchProducts}
-        />
+        <ErrorState title="Unable to load products" error={error} onRetry={fetchProducts} />
       ) : filteredProducts.length === 0 ? (
         <NoSearchResults
           query={search}
@@ -477,65 +483,63 @@ export default function Products() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {paginatedProducts.map((p) => (
-                <div
-                  key={p.id}
-                  className="card-premium bg-card/60 flex flex-col h-[380px] overflow-hidden relative group/card"
+              <div
+                key={p.id}
+                className="card-premium bg-card/60 flex flex-col h-[380px] overflow-hidden relative group/card"
+              >
+                {/* Status absolute badge */}
+                <span
+                  className={cn(
+                    "absolute top-3 left-3 z-10 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full select-none",
+                    p.status === "approved" && "bg-green-500/90 text-white",
+                    p.status === "pending" && "bg-amber-500/90 text-white",
+                    p.status === "rejected" && "bg-red-500/90 text-white",
+                  )}
                 >
-                  {/* Status absolute badge */}
-                  <span
-                    className={cn(
-                      "absolute top-3 left-3 z-10 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full select-none",
-                      p.status === "approved" && "bg-green-500/90 text-white",
-                      p.status === "pending" && "bg-amber-500/90 text-white",
-                      p.status === "rejected" && "bg-red-500/90 text-white",
-                    )}
-                  >
-                    {p.status}
-                  </span>
+                  {p.status}
+                </span>
 
-                  {/* Image cover */}
-                  <div className="h-44 w-full relative overflow-hidden bg-secondary">
-                    <img
-                      src={p.image}
-                      alt={p.title}
-                      className="h-full w-full object-cover group-hover/card:scale-105 transition-all duration-300"
-                    />
+                {/* Image cover */}
+                <div className="h-44 w-full relative overflow-hidden bg-secondary">
+                  <img
+                    src={p.image}
+                    alt={p.title}
+                    className="h-full w-full object-cover group-hover/card:scale-105 transition-all duration-300"
+                  />
+                </div>
+
+                {/* Content body */}
+                <div className="p-4 flex-1 flex flex-col justify-between min-h-0">
+                  <div className="min-h-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold text-primary uppercase">
+                        {p.category}
+                      </span>
+                      <div className="flex items-center gap-0.5 text-xs text-amber-500">
+                        <Star className="h-3 w-3 fill-current" />
+                        <span className="font-bold">{p.rating.toFixed(1)}</span>
+                      </div>
+                    </div>
+                    <h4 className="text-xs font-bold text-foreground truncate mt-1">{p.title}</h4>
+                    <p className="text-[11px] font-semibold text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                      {p.description}
+                    </p>
                   </div>
 
-                  {/* Content body */}
-                  <div className="p-4 flex-1 flex flex-col justify-between min-h-0">
-                    <div className="min-h-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-bold text-primary uppercase">
-                          {p.category}
-                        </span>
-                        <div className="flex items-center gap-0.5 text-xs text-amber-500">
-                          <Star className="h-3 w-3 fill-current" />
-                          <span className="font-bold">{p.rating.toFixed(1)}</span>
-                        </div>
-                      </div>
-                      <h4 className="text-xs font-bold text-foreground truncate mt-1">{p.title}</h4>
-                      <p className="text-[11px] font-semibold text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-                        {p.description}
-                      </p>
-                    </div>
-
-                    <div className="pt-3 border-t border-border/40 flex items-center justify-between mt-3 shrink-0">
-                      <span className="text-xs font-extrabold text-primary">₹{p.price}/day</span>
-                      <button
-                        onClick={() =>
-                          navigate({ to: "/admin/products/$id", params: { id: p.id } })
-                        }
-                        className="btn-gradient text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span>Inspect</span>
-                      </button>
-                    </div>
+                  <div className="pt-3 border-t border-border/40 flex items-center justify-between mt-3 shrink-0">
+                    <span className="text-xs font-extrabold text-primary">₹{p.price}/day</span>
+                    <button
+                      onClick={() => navigate({ to: "/admin/products/$id", params: { id: p.id } })}
+                      className="btn-gradient text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>Inspect</span>
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           <Pagination
             currentPage={currentPage}
             totalItems={filteredProducts.length}

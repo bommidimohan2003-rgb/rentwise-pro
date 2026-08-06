@@ -14,8 +14,16 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const locations = ["Indiranagar, Bangalore", "Bandra West, Mumbai", "Connaught Place, Delhi", "HSR Layout, Bangalore", "Jubilee Hills, Hyderabad"];
-  const isOwner = Boolean(user && (user.fullName === product.owner.name || user.email === product.owner.name));
+  const locations = [
+    "Indiranagar, Bangalore",
+    "Bandra West, Mumbai",
+    "Connaught Place, Delhi",
+    "HSR Layout, Bangalore",
+    "Jubilee Hills, Hyderabad",
+  ];
+  const isOwner = Boolean(
+    user && (user.fullName === product.owner.name || user.email === product.owner.name),
+  );
   const location = locations[parseInt(product.id.replace(/\D/g, "") || "0") % locations.length];
 
   return (
@@ -36,7 +44,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10 opacity-70 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none" />
-          
+
           {/* Top Left Verified / Reference Badge */}
           <div className="absolute top-2.5 left-2.5 flex items-center gap-1">
             {product.isReference ? (
@@ -66,7 +74,10 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             aria-label="Wishlist"
           >
             <Heart
-              className={cn("h-3.5 w-3.5 transition-colors", liked ? "fill-[#FF5A5F] text-[#FF5A5F]" : "text-slate-700 dark:text-slate-200")}
+              className={cn(
+                "h-3.5 w-3.5 transition-colors",
+                liked ? "fill-[#FF5A5F] text-[#FF5A5F]" : "text-slate-700 dark:text-slate-200",
+              )}
             />
           </button>
 
@@ -100,7 +111,9 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             <div className="flex items-baseline justify-between">
               <span className="text-[11px] text-muted-foreground font-semibold">Daily Rate</span>
               <div>
-                <span className="text-lg font-black text-[#FF5A5F] tracking-tight">₹{product.price}</span>
+                <span className="text-lg font-black text-[#FF5A5F] tracking-tight">
+                  ₹{product.price}
+                </span>
                 <span className="text-[10px] text-muted-foreground font-medium"> /day</span>
               </div>
             </div>

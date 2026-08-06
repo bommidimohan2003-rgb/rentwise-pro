@@ -25,13 +25,13 @@ export function EmptyState({
     <div
       className={cn(
         "flex flex-col items-center justify-center p-8 md:p-12 text-center rounded-2xl border border-dashed border-border/80 bg-card/40 backdrop-blur-sm transition-all",
-        className
+        className,
       )}
     >
       <div
         className={cn(
           "flex items-center justify-center h-14 w-14 rounded-2xl bg-secondary/80 text-muted-foreground mb-4 shadow-sm",
-          iconClassName
+          iconClassName,
         )}
       >
         <Icon className="h-7 w-7" />

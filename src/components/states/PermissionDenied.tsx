@@ -32,7 +32,7 @@ export function PermissionDenied({
     <div
       className={cn(
         "flex flex-col items-center justify-center p-8 md:p-16 text-center rounded-3xl border border-destructive/30 bg-card/60 backdrop-blur-md max-w-lg mx-auto my-8 shadow-xl",
-        className
+        className,
       )}
     >
       <div className="relative mb-6">
@@ -48,13 +48,9 @@ export function PermissionDenied({
         Role Restriction
       </span>
 
-      <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2 tracking-tight">
-        {title}
-      </h2>
+      <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2 tracking-tight">{title}</h2>
 
-      <p className="text-xs md:text-sm text-muted-foreground mb-6 leading-relaxed">
-        {description}
-      </p>
+      <p className="text-xs md:text-sm text-muted-foreground mb-6 leading-relaxed">{description}</p>
 
       <div className="p-3.5 rounded-xl bg-secondary/50 border border-border/50 text-xs text-muted-foreground w-full mb-6 text-left space-y-1">
         <div className="font-semibold text-foreground flex items-center gap-1.5">
@@ -62,7 +58,8 @@ export function PermissionDenied({
           <span>Access Requirement:</span>
         </div>
         <p className="pl-3.5">
-          Must be logged in with a validated <strong className="text-foreground">{requiredRole}</strong> account.
+          Must be logged in with a validated{" "}
+          <strong className="text-foreground">{requiredRole}</strong> account.
         </p>
       </div>
 

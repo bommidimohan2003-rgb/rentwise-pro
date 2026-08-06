@@ -59,7 +59,9 @@ export function RecommendationSection({
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-primary/10">{getIcon()}</div>
             <div>
-              <h3 className="text-base font-extrabold tracking-tight text-foreground font-display">{title}</h3>
+              <h3 className="text-base font-extrabold tracking-tight text-foreground font-display">
+                {title}
+              </h3>
               {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
             </div>
           </div>
@@ -89,7 +91,8 @@ export function RecommendationSection({
                   {product.title}
                 </h4>
                 <p className="text-[11px] font-extrabold text-foreground mt-0.5">
-                  ₹{product.price.toLocaleString("en-IN")}<span className="text-[10px] text-slate-400 font-normal">/day</span>
+                  ₹{product.price.toLocaleString("en-IN")}
+                  <span className="text-[10px] text-slate-400 font-normal">/day</span>
                 </p>
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
@@ -109,12 +112,21 @@ export function RecommendationSection({
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-2">
             {getIcon()}
-            <span>{badge || (type === "personalized" ? "Personalized For You" : type === "trending" ? "Trending Now" : "Recommended")}</span>
+            <span>
+              {badge ||
+                (type === "personalized"
+                  ? "Personalized For You"
+                  : type === "trending"
+                    ? "Trending Now"
+                    : "Recommended")}
+            </span>
           </div>
           <h2 className="text-2xl md:text-3xl font-black tracking-tight text-foreground font-display">
             {title}
           </h2>
-          {subtitle && <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">{subtitle}</p>}
+          {subtitle && (
+            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">{subtitle}</p>
+          )}
         </div>
       </div>
 
@@ -143,7 +155,9 @@ export function RecommendationSection({
                   aria-label="Wishlist item"
                   className={cn(
                     "absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md",
-                    isWishlisted ? "bg-[#FF5A5F] text-white" : "bg-black/40 text-white hover:bg-black/60"
+                    isWishlisted
+                      ? "bg-[#FF5A5F] text-white"
+                      : "bg-black/40 text-white hover:bg-black/60",
                   )}
                 >
                   <Heart className={cn("h-4 w-4", isWishlisted && "fill-white")} />
@@ -185,7 +199,9 @@ export function RecommendationSection({
                 {/* Footer / Price & Rent Button */}
                 <div className="pt-3 border-t border-border/60 flex items-center justify-between">
                   <div>
-                    <span className="text-xs text-muted-foreground font-medium block">Daily Rental</span>
+                    <span className="text-xs text-muted-foreground font-medium block">
+                      Daily Rental
+                    </span>
                     <span className="text-base md:text-lg font-black text-foreground">
                       ₹{product.price.toLocaleString("en-IN")}
                       <span className="text-xs font-normal text-muted-foreground">/day</span>
@@ -197,7 +213,10 @@ export function RecommendationSection({
                     params={{ id: product.id }}
                     onClick={() => tracker.recommendationClick(product.id, type)}
                   >
-                    <Button size="sm" className="rounded-xl font-bold bg-primary text-primary-foreground hover:opacity-90 gap-1 text-xs">
+                    <Button
+                      size="sm"
+                      className="rounded-xl font-bold bg-primary text-primary-foreground hover:opacity-90 gap-1 text-xs"
+                    >
                       <span>View</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>

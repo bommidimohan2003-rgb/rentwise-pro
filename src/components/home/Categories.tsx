@@ -39,7 +39,6 @@ export function Categories() {
   return (
     <section className="bg-background py-10 text-foreground border-y border-border/50">
       <div className="mx-auto max-w-7xl px-4 md:px-6 text-center space-y-6">
-        
         {/* Header */}
         <div className="space-y-2 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-black text-primary tracking-wider uppercase">
@@ -95,7 +94,6 @@ export function Categories() {
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-
       </div>
     </section>
   );

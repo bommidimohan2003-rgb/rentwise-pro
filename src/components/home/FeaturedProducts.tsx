@@ -40,7 +40,9 @@ export function FeaturedProducts() {
           subtitle={recommendationData.description}
           products={recommendationData.items}
           type={recommendationData.source === "personalized" ? "personalized" : "trending"}
-          badge={recommendationData.source === "personalized" ? "Recommended For You" : "Trending Now"}
+          badge={
+            recommendationData.source === "personalized" ? "Recommended For You" : "Trending Now"
+          }
         />
       )}
 
@@ -55,7 +57,10 @@ export function FeaturedProducts() {
               Hand-picked flagship cameras, laptops, and drones from top-rated verified lenders.
             </p>
           </div>
-          <Link to="/categories" className="text-xs md:text-sm font-bold text-primary hover:underline flex items-center gap-1">
+          <Link
+            to="/categories"
+            className="text-xs md:text-sm font-bold text-primary hover:underline flex items-center gap-1"
+          >
             Explore Marketplace →
           </Link>
         </div>

@@ -184,8 +184,10 @@ export default function Support() {
                             "inline-flex items-center text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full select-none border",
                             t.priority === "high" &&
                               "bg-destructive/10 text-destructive border-destructive/20 animate-pulse",
-                            t.priority === "medium" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-                            t.priority === "low" && "bg-secondary text-muted-foreground border-border",
+                            t.priority === "medium" &&
+                              "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+                            t.priority === "low" &&
+                              "bg-secondary text-muted-foreground border-border",
                           )}
                         >
                           {t.priority}

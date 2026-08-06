@@ -50,7 +50,9 @@ export default function Profile() {
         email: user.email || "",
         phone: user.phone || "+91 98765 43210",
         occupation: user.occupation || "Cinematographer & Drone Operator",
-        bio: user.bio || "Passionate filmmaker and aerial photographer. Renting out professional 4K cinema cameras, prime lenses, and workstation gear when off set.",
+        bio:
+          user.bio ||
+          "Passionate filmmaker and aerial photographer. Renting out professional 4K cinema cameras, prime lenses, and workstation gear when off set.",
         city: user.city || "Bengaluru, KA",
         pincode: user.pincode || "560001",
         website: user.website || "https://creators.payent.in/arjun",
@@ -68,14 +70,14 @@ export default function Profile() {
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-6xl">
-        
         {/* Page Header */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground font-display">
             Account & Profile
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-            Manage your personal details, creator credentials, payout settings, and verification status.
+            Manage your personal details, creator credentials, payout settings, and verification
+            status.
           </p>
         </div>
 
@@ -92,19 +94,26 @@ export default function Profile() {
 
           {/* User Header Details */}
           <div className="p-6 pt-0 relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 -mt-12 sm:-mt-14">
-            
             {/* Avatar & Identifiers */}
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
               <div className="relative">
                 <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-2xl bg-secondary border-4 border-card grid place-items-center text-foreground text-3xl font-extrabold shadow-xl overflow-hidden">
                   {user?.avatar ? (
-                    <img src={user.avatar} alt={user.fullName} className="w-full h-full object-cover" />
+                    <img
+                      src={user.avatar}
+                      alt={user.fullName}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <span>{user?.fullName?.charAt(0) ?? "U"}</span>
                   )}
                 </div>
                 <button
-                  onClick={() => toast.info("Avatar upload trigger: Select an image file to update profile picture.")}
+                  onClick={() =>
+                    toast.info(
+                      "Avatar upload trigger: Select an image file to update profile picture.",
+                    )
+                  }
                   className="absolute bottom-1 right-1 h-8 w-8 rounded-xl bg-primary text-primary-foreground border border-border grid place-items-center shadow-lg hover:scale-105 transition-transform cursor-pointer"
                   title="Change avatar"
                 >
@@ -137,7 +146,11 @@ export default function Profile() {
 
             {/* Quick Action Button */}
             <div className="self-stretch sm:self-auto flex items-center gap-2">
-              <Button onClick={saveProfile} size="sm" className="w-full sm:w-auto font-bold text-xs">
+              <Button
+                onClick={saveProfile}
+                size="sm"
+                className="w-full sm:w-auto font-bold text-xs"
+              >
                 Save Profile Updates
               </Button>
             </div>
@@ -147,38 +160,44 @@ export default function Profile() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 mx-6 mb-6 rounded-2xl bg-secondary/40 border border-border/60 text-center">
             <div className="space-y-0.5">
               <div className="text-lg font-black text-foreground font-display">14</div>
-              <div className="text-[11px] font-semibold text-muted-foreground">Completed Rentals</div>
+              <div className="text-[11px] font-semibold text-muted-foreground">
+                Completed Rentals
+              </div>
             </div>
             <div className="space-y-0.5">
               <div className="text-lg font-black text-foreground font-display flex items-center justify-center gap-1">
                 <Star className="h-4 w-4 fill-foreground text-foreground" />
                 <span>4.9</span>
               </div>
-              <div className="text-[11px] font-semibold text-muted-foreground">Lender Rating (18)</div>
+              <div className="text-[11px] font-semibold text-muted-foreground">
+                Lender Rating (18)
+              </div>
             </div>
             <div className="space-y-0.5">
               <div className="text-lg font-black text-foreground font-display flex items-center justify-center gap-1">
                 <Award className="h-4 w-4 text-foreground" />
                 <span>100%</span>
               </div>
-              <div className="text-[11px] font-semibold text-muted-foreground">On-Time Return Rate</div>
+              <div className="text-[11px] font-semibold text-muted-foreground">
+                On-Time Return Rate
+              </div>
             </div>
             <div className="space-y-0.5">
               <div className="text-lg font-black text-foreground font-display flex items-center justify-center gap-1">
                 <Clock className="h-4 w-4 text-foreground" />
                 <span>&lt; 1 hr</span>
               </div>
-              <div className="text-[11px] font-semibold text-muted-foreground">Avg Response Time</div>
+              <div className="text-[11px] font-semibold text-muted-foreground">
+                Avg Response Time
+              </div>
             </div>
           </div>
         </div>
 
         {/* Content Section Grid */}
         <div className="grid lg:grid-cols-3 gap-6">
-
           {/* Left 2 Columns: Profile Forms */}
           <div className="lg:col-span-2 space-y-6">
-
             {/* General Creator Information */}
             <div className="card-premium p-6 border border-border space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-border">
@@ -186,7 +205,9 @@ export default function Profile() {
                   <UserIcon className="h-4 w-4 text-foreground" />
                   <h3 className="font-bold text-base text-foreground">General Creator Details</h3>
                 </div>
-                <span className="text-[11px] text-muted-foreground font-semibold">Public Marketplace Info</span>
+                <span className="text-[11px] text-muted-foreground font-semibold">
+                  Public Marketplace Info
+                </span>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -206,7 +227,9 @@ export default function Profile() {
 
               {/* Bio Textarea */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Creator Bio / Inventory Notes</label>
+                <label className="text-xs font-bold text-muted-foreground">
+                  Creator Bio / Inventory Notes
+                </label>
                 <textarea
                   rows={3}
                   value={form.bio}
@@ -252,7 +275,9 @@ export default function Profile() {
                   <CreditCard className="h-4 w-4 text-foreground" />
                   <h3 className="font-bold text-base text-foreground">Contact & Payout Settings</h3>
                 </div>
-                <span className="text-[11px] text-muted-foreground font-semibold">Financial & Delivery</span>
+                <span className="text-[11px] text-muted-foreground font-semibold">
+                  Financial & Delivery
+                </span>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -283,12 +308,10 @@ export default function Profile() {
                 </Button>
               </div>
             </div>
-
           </div>
 
           {/* Right Column: Verification & Trust Badges */}
           <div className="space-y-6">
-
             {/* Verification Status Card */}
             <div className="card-premium p-5 border border-border space-y-4">
               <h3 className="font-bold text-sm text-foreground flex items-center gap-2 border-b border-border pb-3">
@@ -302,10 +325,14 @@ export default function Profile() {
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <div>
                       <p className="text-xs font-bold text-foreground">Govt ID Verification</p>
-                      <p className="text-[10px] text-muted-foreground font-medium">Aadhaar / Passport verified</p>
+                      <p className="text-[10px] text-muted-foreground font-medium">
+                        Aadhaar / Passport verified
+                      </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">Verified</span>
+                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                    Verified
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/60">
@@ -313,10 +340,14 @@ export default function Profile() {
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <div>
                       <p className="text-xs font-bold text-foreground">Phone & Email Check</p>
-                      <p className="text-[10px] text-muted-foreground font-medium">OTP SMS & Email confirmed</p>
+                      <p className="text-[10px] text-muted-foreground font-medium">
+                        OTP SMS & Email confirmed
+                      </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">Verified</span>
+                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                    Verified
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/60">
@@ -324,10 +355,14 @@ export default function Profile() {
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <div>
                       <p className="text-xs font-bold text-foreground">Payent Rental Shield</p>
-                      <p className="text-[10px] text-muted-foreground font-medium">₹5,00,000 Equipment Coverage</p>
+                      <p className="text-[10px] text-muted-foreground font-medium">
+                        ₹5,00,000 Equipment Coverage
+                      </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">Active</span>
+                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                    Active
+                  </span>
                 </div>
               </div>
             </div>
@@ -338,7 +373,7 @@ export default function Profile() {
                 <MapPin className="h-4 w-4 text-foreground" />
                 <span>Handover Preferences</span>
               </h3>
-              
+
               <div className="space-y-2 text-xs font-medium">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Handover Mode:</span>
@@ -350,16 +385,21 @@ export default function Profile() {
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Deposit Security:</span>
-                  <span className="font-bold text-foreground">Zero-Hold Razorpay Authorization</span>
+                  <span className="font-bold text-foreground">
+                    Zero-Hold Razorpay Authorization
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Support Callout */}
             <div className="card-premium p-5 border border-border bg-secondary/30 space-y-2 text-center">
-              <h4 className="text-xs font-bold text-foreground">Need help updating account credentials?</h4>
+              <h4 className="text-xs font-bold text-foreground">
+                Need help updating account credentials?
+              </h4>
               <p className="text-[11px] text-muted-foreground">
-                Contact Payent 24/7 Creator Support for GST billing updates or identity re-verification.
+                Contact Payent 24/7 Creator Support for GST billing updates or identity
+                re-verification.
               </p>
               <Button
                 variant="outline"
@@ -370,9 +410,7 @@ export default function Profile() {
                 Contact Support
               </Button>
             </div>
-
           </div>
-
         </div>
       </div>
     </DashboardLayout>

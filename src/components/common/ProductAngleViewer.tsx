@@ -76,7 +76,12 @@ export function ProductAngleViewer({
   const currentAngle = angles[activeIdx] || angles[0];
 
   return (
-    <div className="space-y-4" ref={containerRef} tabIndex={0} aria-label={`Angle viewer for ${productTitle}`}>
+    <div
+      className="space-y-4"
+      ref={containerRef}
+      tabIndex={0}
+      aria-label={`Angle viewer for ${productTitle}`}
+    >
       {/* Main Image Stage */}
       <div className="aspect-[4/3] rounded-3xl overflow-hidden relative group bg-card border border-border/80 shadow-xl transition-all duration-300">
         {/* Main Photo Display with Crossfade */}
@@ -88,7 +93,7 @@ export function ProductAngleViewer({
             className={cn(
               "absolute inset-0 h-full w-full object-cover object-center",
               isReducedMotion ? "transition-none" : "transition-opacity duration-300 ease-in-out",
-              idx === activeIdx ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+              idx === activeIdx ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none",
             )}
           />
         ))}
@@ -157,7 +162,7 @@ export function ProductAngleViewer({
                 "group relative aspect-[4/3] rounded-2xl overflow-hidden border-2 transition-all cursor-pointer bg-card flex flex-col items-center justify-between p-1",
                 activeIdx === idx
                   ? "border-primary ring-2 ring-primary/30 scale-105 shadow-md"
-                  : "border-border/50 opacity-75 hover:opacity-100 hover:border-primary/50"
+                  : "border-border/50 opacity-75 hover:opacity-100 hover:border-primary/50",
               )}
               aria-label={`Switch to ${angle.label} view`}
               aria-selected={activeIdx === idx}
@@ -172,7 +177,7 @@ export function ProductAngleViewer({
                   "absolute bottom-1 inset-x-1 py-0.5 text-center text-[10px] font-bold rounded-lg backdrop-blur-md transition-all",
                   activeIdx === idx
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-background/80 text-foreground/80 group-hover:bg-background"
+                    : "bg-background/80 text-foreground/80 group-hover:bg-background",
                 )}
               >
                 {angle.label}

@@ -80,7 +80,7 @@ export default function Payment() {
     if (appName) setSelectedMethod(appName);
     setPaymentError(null);
     const token = storage.get<string | null>(STORAGE_KEYS.token, null);
-    
+
     if (!token) {
       toast.error("Please log in to complete your payment.");
       navigate({ to: "/login" });
@@ -102,7 +102,7 @@ export default function Payment() {
 
       const user = storage.get<{ email?: string; fullName?: string; phone?: string } | null>(
         STORAGE_KEYS.currentUser,
-        null
+        null,
       );
 
       const options = {
@@ -127,7 +127,7 @@ export default function Payment() {
               token,
               response.razorpay_order_id,
               response.razorpay_payment_id,
-              response.razorpay_signature
+              response.razorpay_signature,
             );
             setIsVerifying(false);
             toast.dismiss("pay-verify");
@@ -163,7 +163,14 @@ export default function Payment() {
         },
       };
 
-      const rzp = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void; on: (event: string, handler: (resp: any) => void) => void } }).Razorpay(options);
+      const rzp = new (
+        window as unknown as {
+          Razorpay: new (opts: typeof options) => {
+            open: () => void;
+            on: (event: string, handler: (resp: unknown) => void) => void;
+          };
+        }
+      ).Razorpay(options);
 
       rzp.on("payment.failed", (resp: { error?: { description?: string } }) => {
         setIsProcessing(false);
@@ -187,8 +194,7 @@ export default function Payment() {
     {
       id: "phonepe",
       name: "PhonePe",
-      color:
-        "bg-secondary hover:bg-secondary/80 border-border text-foreground",
+      color: "bg-secondary hover:bg-secondary/80 border-border text-foreground",
       iconColor: "text-foreground",
       accentBg: "bg-primary text-primary-foreground",
       tagline: "Pay using saved cards or bank account on PhonePe",
@@ -196,8 +202,7 @@ export default function Payment() {
     {
       id: "gpay",
       name: "Google Pay",
-      color:
-        "bg-secondary hover:bg-secondary/80 border-border text-foreground",
+      color: "bg-secondary hover:bg-secondary/80 border-border text-foreground",
       iconColor: "text-foreground",
       accentBg: "bg-primary text-primary-foreground",
       tagline: "Direct bank transfer using Google Pay secure account",
@@ -205,8 +210,7 @@ export default function Payment() {
     {
       id: "bhim",
       name: "BHIM UPI",
-      color:
-        "bg-secondary hover:bg-secondary/80 border-border text-foreground",
+      color: "bg-secondary hover:bg-secondary/80 border-border text-foreground",
       iconColor: "text-foreground",
       accentBg: "bg-primary text-primary-foreground",
       tagline: "Unified Payments Interface of India official app",
@@ -214,8 +218,7 @@ export default function Payment() {
     {
       id: "paytm",
       name: "Paytm Wallet / UPI",
-      color:
-        "bg-secondary hover:bg-secondary/80 border-border text-foreground",
+      color: "bg-secondary hover:bg-secondary/80 border-border text-foreground",
       iconColor: "text-foreground",
       accentBg: "bg-primary text-primary-foreground",
       tagline: "Fast Checkout using Paytm Balance or linked accounts",
@@ -378,7 +381,11 @@ export default function Payment() {
               disabled={isProcessing || isVerifying}
               className="w-full font-bold"
             >
-              {isVerifying ? "Verifying Payment..." : isProcessing ? "Launching Razorpay..." : "Pay with Razorpay"}
+              {isVerifying
+                ? "Verifying Payment..."
+                : isProcessing
+                  ? "Launching Razorpay..."
+                  : "Pay with Razorpay"}
             </Button>
           </aside>
         </div>

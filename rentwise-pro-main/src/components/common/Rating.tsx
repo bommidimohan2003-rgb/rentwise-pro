@@ -19,9 +19,7 @@ export function Rating({
       <Star className="fill-amber-400 text-amber-400" style={{ width: size, height: size }} />
       <span className="font-medium">{value.toFixed(1)}</span>
       {count !== undefined && (
-        <span className={isWhite ? "text-white/70" : "text-muted-foreground"}>
-          ({count})
-        </span>
+        <span className={isWhite ? "text-white/70" : "text-muted-foreground"}>({count})</span>
       )}
     </div>
   );

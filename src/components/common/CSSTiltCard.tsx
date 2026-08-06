@@ -8,12 +8,7 @@ interface CSSTiltCardProps {
   scale?: number;
 }
 
-export function CSSTiltCard({
-  children,
-  className,
-  maxTilt = 10,
-  scale = 1.02,
-}: CSSTiltCardProps) {
+export function CSSTiltCard({ children, className, maxTilt = 10, scale = 1.02 }: CSSTiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [transformStyle, setTransformStyle] = useState<string>("");
   const [shadowStyle, setShadowStyle] = useState<string>("");
@@ -43,7 +38,9 @@ export function CSSTiltCard({
     const shadowX = (((x - centerX) / centerX) * -15).toFixed(1);
     const shadowY = (((y - centerY) / centerY) * -15).toFixed(1);
 
-    setTransformStyle(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(${scale}, ${scale}, ${scale})`);
+    setTransformStyle(
+      `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(${scale}, ${scale}, ${scale})`,
+    );
     setShadowStyle(`${shadowX}px ${shadowY}px 30px -5px rgba(0, 0, 0, 0.25)`);
   };
 

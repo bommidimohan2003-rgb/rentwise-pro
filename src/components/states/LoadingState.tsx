@@ -9,12 +9,7 @@ export interface LoadingStateProps {
   className?: string;
 }
 
-export function LoadingState({
-  type = "grid",
-  count = 6,
-  message,
-  className,
-}: LoadingStateProps) {
+export function LoadingState({ type = "grid", count = 6, message, className }: LoadingStateProps) {
   if (type === "spinner") {
     return (
       <div className={cn("flex flex-col items-center justify-center p-8 gap-3", className)}>
@@ -66,7 +61,12 @@ export function LoadingState({
 
   if (type === "table") {
     return (
-      <div className={cn("rounded-2xl border border-border/40 bg-card/40 overflow-hidden animate-pulse", className)}>
+      <div
+        className={cn(
+          "rounded-2xl border border-border/40 bg-card/40 overflow-hidden animate-pulse",
+          className,
+        )}
+      >
         <div className="h-12 bg-muted/50 border-b border-border/40 px-6 flex items-center gap-6">
           <div className="h-4 w-28 bg-muted/80 rounded" />
           <div className="h-4 w-24 bg-muted/70 rounded" />
@@ -108,7 +108,12 @@ export function LoadingState({
 
   // Default: Grid of product/item cards
   return (
-    <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6", className)}>
+    <div
+      className={cn(
+        "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6",
+        className,
+      )}
+    >
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}

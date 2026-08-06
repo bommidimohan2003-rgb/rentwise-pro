@@ -2,34 +2,34 @@ import { storage, STORAGE_KEYS } from "./storage";
 import type { Order, Product } from "@/types";
 import { ADMIN_SETUP_CODE } from "./adminSetup";
 
-const isLocal = typeof window !== "undefined" && (
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1"
-);
-const API_BASE = import.meta.env.VITE_API_URL !== undefined ? import.meta.env.VITE_API_URL : (isLocal ? "http://127.0.0.1:8000" : "");
+const isLocal =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+const API_BASE =
+  import.meta.env.VITE_API_URL !== undefined
+    ? import.meta.env.VITE_API_URL
+    : isLocal
+      ? "http://127.0.0.1:8000"
+      : "";
 
 export const api = {
   async registerRequest(email: string, phone: string) {
-    try {
-      const res = await fetch(`${API_BASE}/api/register/request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, phone }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || "Failed to request registration code.");
-      }
-      const data = await res.json();
-      if (data && data.otp) {
-        storage.set(STORAGE_KEYS.otp, data.otp);
-      } else {
-        storage.remove(STORAGE_KEYS.otp);
-      }
-      return data;
-    } catch (err) {
-      throw err;
+    const res = await fetch(`${API_BASE}/api/register/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, phone }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Failed to request registration code.");
     }
+    const data = await res.json();
+    if (data && data.otp) {
+      storage.set(STORAGE_KEYS.otp, data.otp);
+    } else {
+      storage.remove(STORAGE_KEYS.otp);
+    }
+    return data;
   },
 
   async registerVerify(
@@ -43,108 +43,90 @@ export const api = {
     city?: string,
     pincode?: string,
   ) {
-    try {
-      const res = await fetch(`${API_BASE}/api/register/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          phone,
-          otp,
-          password,
-          full_name: fullName || null,
-          admin_code: adminCode || null,
-          address: address || null,
-          city: city || null,
-          pincode: pincode || null,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || "Failed to verify registration.");
-      }
-      return await res.json();
-    } catch (err) {
-      throw err;
+    const res = await fetch(`${API_BASE}/api/register/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        phone,
+        otp,
+        password,
+        full_name: fullName || null,
+        admin_code: adminCode || null,
+        address: address || null,
+        city: city || null,
+        pincode: pincode || null,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Failed to verify registration.");
     }
+    return await res.json();
   },
 
   async login(email: string, password: string) {
-    try {
-      const res = await fetch(`${API_BASE}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || "Invalid email or password.");
-      }
-      return await res.json();
-    } catch (err) {
-      throw err;
+    const res = await fetch(`${API_BASE}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Invalid email or password.");
     }
+    return await res.json();
   },
 
   async forgotPasswordRequest(email: string) {
-    try {
-      const res = await fetch(`${API_BASE}/api/forgot-password/request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || "Failed to request password reset.");
-      }
-      const data = await res.json();
-      if (data && data.otp) {
-        storage.set(STORAGE_KEYS.otp, data.otp);
-      } else {
-        storage.remove(STORAGE_KEYS.otp);
-      }
-      return data;
-    } catch (err) {
-      throw err;
+    const res = await fetch(`${API_BASE}/api/forgot-password/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Failed to request password reset.");
     }
+    const data = await res.json();
+    if (data && data.otp) {
+      storage.set(STORAGE_KEYS.otp, data.otp);
+    } else {
+      storage.remove(STORAGE_KEYS.otp);
+    }
+    return data;
   },
 
   async forgotPasswordReset(email: string, otp: string, new_password: string) {
-    try {
-      const res = await fetch(`${API_BASE}/api/forgot-password/reset`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp, new_password }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || "Failed to reset password.");
-      }
-      return res.json();
-    } catch (err) {
-      throw err;
+    const res = await fetch(`${API_BASE}/api/forgot-password/reset`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp, new_password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Failed to reset password.");
     }
+    return res.json();
   },
 
   async getMe(token: string) {
-    try {
-      const res = await fetch(`${API_BASE}/api/me`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) {
-        if (res.status === 401 && typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("payent-session-expired", { detail: { loginPath: "/login" } }));
-        }
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || "Failed to fetch user profile.");
+    const res = await fetch(`${API_BASE}/api/me`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      if (res.status === 401 && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("payent-session-expired", { detail: { loginPath: "/login" } }),
+        );
       }
-      return await res.json();
-    } catch (err) {
-      throw err;
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Failed to fetch user profile.");
     }
+    return await res.json();
   },
 
   async getWishlist(token: string) {
@@ -293,7 +275,13 @@ export const api = {
     return res.json();
   },
 
-  async createRazorpayOrder(token: string, productId: string, startDate: string, endDate: string, couponCode?: string) {
+  async createRazorpayOrder(
+    token: string,
+    productId: string,
+    startDate: string,
+    endDate: string,
+    couponCode?: string,
+  ) {
     const res = await fetch(`${API_BASE}/api/payments/create-order`, {
       method: "POST",
       headers: {
@@ -314,7 +302,12 @@ export const api = {
     return res.json();
   },
 
-  async verifyRazorpayPayment(token: string, razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string) {
+  async verifyRazorpayPayment(
+    token: string,
+    razorpayOrderId: string,
+    razorpayPaymentId: string,
+    razorpaySignature: string,
+  ) {
     const res = await fetch(`${API_BASE}/api/payments/verify`, {
       method: "POST",
       headers: {
@@ -357,7 +350,9 @@ export const api = {
   // Recommendation Engine API Methods
   async getSimilarRecommendations(productId: string): Promise<Product[]> {
     try {
-      const res = await fetch(`${API_BASE}/api/recommendations/similar/${encodeURIComponent(productId)}`);
+      const res = await fetch(
+        `${API_BASE}/api/recommendations/similar/${encodeURIComponent(productId)}`,
+      );
       if (!res.ok) return [];
       return await res.json();
     } catch {
@@ -377,7 +372,9 @@ export const api = {
 
   async getFrequentlyTogetherRecommendations(productId: string): Promise<Product[]> {
     try {
-      const res = await fetch(`${API_BASE}/api/recommendations/frequently-together/${encodeURIComponent(productId)}`);
+      const res = await fetch(
+        `${API_BASE}/api/recommendations/frequently-together/${encodeURIComponent(productId)}`,
+      );
       if (!res.ok) return [];
       return await res.json();
     } catch {
@@ -410,7 +407,13 @@ export const api = {
     }
   },
 
-  async searchML(query: string, category?: string, userEmail?: string, sessionId?: string, limit: number = 20) {
+  async searchML(
+    query: string,
+    category?: string,
+    userEmail?: string,
+    sessionId?: string,
+    limit: number = 20,
+  ) {
     try {
       const res = await fetch(`${API_BASE}/api/search`, {
         method: "POST",

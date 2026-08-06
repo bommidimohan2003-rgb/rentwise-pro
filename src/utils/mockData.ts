@@ -82,12 +82,7 @@ export const categories: Category[] = [
   },
 ];
 
-export const sonyA7Frames: string[] = [
-  sonyA7FrontImg,
-  sonyA7TopImg,
-  sonyA7BackImg,
-  sonyA7SideImg,
-];
+export const sonyA7Frames: string[] = [sonyA7FrontImg, sonyA7TopImg, sonyA7BackImg, sonyA7SideImg];
 
 export const macbookProFrames: string[] = [
   macbookFrontImg,
@@ -96,12 +91,7 @@ export const macbookProFrames: string[] = [
   macbookSideImg,
 ];
 
-export const djiMavicFrames: string[] = [
-  droneFrontImg,
-  droneTopImg,
-  droneRemoteImg,
-  droneSideImg,
-];
+export const djiMavicFrames: string[] = [droneFrontImg, droneTopImg, droneRemoteImg, droneSideImg];
 
 export const powerbankFrames: string[] = [
   ankerPowerCoreImg,
@@ -129,7 +119,8 @@ const initialProducts: Product[] = [
   {
     id: "p1",
     title: "Camera",
-    description: "Full-frame 33MP hybrid camera. Perfect for cinema-quality video and stills. Includes 28-70mm lens, batteries, and protective hard case.",
+    description:
+      "Full-frame 33MP hybrid camera. Perfect for cinema-quality video and stills. Includes 28-70mm lens, batteries, and protective hard case.",
     price: 4500,
     image: sonyA7FrontImg,
     images: [sonyA7FrontImg, sonyA7TopImg, sonyA7BackImg, sonyA7SideImg],
@@ -137,21 +128,26 @@ const initialProducts: Product[] = [
       { label: "Front", image: sonyA7FrontImg },
       { label: "Top", image: sonyA7TopImg },
       { label: "Back", image: sonyA7BackImg },
-      { label: "Side", image: sonyA7SideImg }
+      { label: "Side", image: sonyA7SideImg },
     ],
     category: "cameras",
     rating: 4.9,
     reviews: 0,
     available: true,
     isReference: true,
-    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=12", rating: 5.0 },
+    owner: {
+      name: "Payent Reference Catalog",
+      avatar: "https://i.pravatar.cc/100?img=12",
+      rating: 5.0,
+    },
   },
 
   // --- 2. LAPTOPS CATEGORY (1 Product) ---
   {
     id: "p2",
     title: "Laptop",
-    description: "High-performance professional laptop with 16-core CPU, 40-core GPU, 64GB RAM, and 2TB SSD. Ideal for 8K video editing and 3D rendering.",
+    description:
+      "High-performance professional laptop with 16-core CPU, 40-core GPU, 64GB RAM, and 2TB SSD. Ideal for 8K video editing and 3D rendering.",
     price: 3500,
     image: macbookProImg,
     images: [macbookFrontImg, macbookTopImg, macbookKeyboardImg, macbookSideImg],
@@ -159,7 +155,7 @@ const initialProducts: Product[] = [
       { label: "Front", image: macbookFrontImg },
       { label: "Top", image: macbookTopImg },
       { label: "Keyboard", image: macbookKeyboardImg },
-      { label: "Side", image: macbookSideImg }
+      { label: "Side", image: macbookSideImg },
     ],
     rotationFrames: macbookProFrames,
     category: "laptops",
@@ -174,7 +170,8 @@ const initialProducts: Product[] = [
   {
     id: "p3",
     title: "Drone",
-    description: "Pro cinema aerial drone with 4/3 CMOS primary sensor, 4K video recording, 43-minute flight time, and omnidirectional sensing.",
+    description:
+      "Pro cinema aerial drone with 4/3 CMOS primary sensor, 4K video recording, 43-minute flight time, and omnidirectional sensing.",
     price: 5000,
     image: droneFrontImg,
     images: [droneFrontImg, droneTopImg, droneRemoteImg, droneSideImg],
@@ -182,7 +179,7 @@ const initialProducts: Product[] = [
       { label: "Front", image: droneFrontImg },
       { label: "Top", image: droneTopImg },
       { label: "Remote", image: droneRemoteImg },
-      { label: "Side", image: droneSideImg }
+      { label: "Side", image: droneSideImg },
     ],
     rotationFrames: djiMavicFrames,
     category: "drones",
@@ -190,88 +187,143 @@ const initialProducts: Product[] = [
     reviews: 0,
     available: true,
     isReference: true,
-    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=45", rating: 5.0 },
+    owner: {
+      name: "Payent Reference Catalog",
+      avatar: "https://i.pravatar.cc/100?img=45",
+      rating: 5.0,
+    },
   },
 
   // --- 4. BIKES & RIDES CATEGORY (1 Product) ---
   {
     id: "p9",
     title: "Motorcycle",
-    description: "Classic cruiser bike with 349cc engine, dual-channel ABS, teardrop fuel tank, and comfortable riding posture. Includes helmet & insurance.",
+    description:
+      "Classic cruiser bike with 349cc engine, dual-channel ABS, teardrop fuel tank, and comfortable riding posture. Includes helmet & insurance.",
     price: 1200,
     image: reClassic350Img,
     images: [
       reClassic350Img,
       "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=80",
       "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1000&q=80",
-      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1000&q=80"
+      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1000&q=80",
     ],
     angleImages: [
       { label: "Front Cruiser", image: reClassic350Img },
-      { label: "Side Profile", image: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=80" },
-      { label: "Rear Exhaust", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1000&q=80" },
-      { label: "3/4 Cockpit", image: "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1000&q=80" }
+      {
+        label: "Side Profile",
+        image:
+          "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=80",
+      },
+      {
+        label: "Rear Exhaust",
+        image:
+          "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1000&q=80",
+      },
+      {
+        label: "3/4 Cockpit",
+        image:
+          "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1000&q=80",
+      },
     ],
     category: "bikes",
     rating: 4.9,
     reviews: 0,
     available: true,
     isReference: true,
-    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=11", rating: 5.0 },
+    owner: {
+      name: "Payent Reference Catalog",
+      avatar: "https://i.pravatar.cc/100?img=11",
+      rating: 5.0,
+    },
   },
 
   // --- 5. ELECTRIC TOOLS CATEGORY (1 Product) ---
   {
     id: "p11",
     title: "Electric Tool",
-    description: "Professional 880W rotary hammer drill with 3.2 Joules impact energy, safety clutch, and variable speed control. Includes drill bits and heavy-duty case.",
+    description:
+      "Professional 880W rotary hammer drill with 3.2 Joules impact energy, safety clutch, and variable speed control. Includes drill bits and heavy-duty case.",
     price: 350,
     image: toolImg,
     images: [
       toolImg,
       "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1000&q=80",
       "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=1000&q=80",
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80"
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80",
     ],
     angleImages: [
       { label: "Main Drill", image: toolImg },
-      { label: "Side Grip", image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1000&q=80" },
-      { label: "Hammer Chuck", image: "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=1000&q=80" },
-      { label: "Carry Case", image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80" }
+      {
+        label: "Side Grip",
+        image:
+          "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1000&q=80",
+      },
+      {
+        label: "Hammer Chuck",
+        image:
+          "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=1000&q=80",
+      },
+      {
+        label: "Carry Case",
+        image:
+          "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1000&q=80",
+      },
     ],
     category: "tools",
     rating: 4.8,
     reviews: 0,
     available: true,
     isReference: true,
-    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=47", rating: 5.0 },
+    owner: {
+      name: "Payent Reference Catalog",
+      avatar: "https://i.pravatar.cc/100?img=47",
+      rating: 5.0,
+    },
   },
 
   // --- 6. POWER BANKS CATEGORY (1 Product) ---
   {
     id: "p4",
     title: "Power Bank",
-    description: "Ultra-high capacity 24,000mAh external battery pack with 140W fast charging and smart digital display for rapid device charging.",
+    description:
+      "Ultra-high capacity 24,000mAh external battery pack with 140W fast charging and smart digital display for rapid device charging.",
     price: 250,
     image: ankerPowerCoreImg,
     images: [
       ankerPowerCoreImg,
       "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?auto=format&fit=crop&w=1000&q=80",
       "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1000&q=80",
-      "https://images.unsplash.com/photo-1541877944-ac82a091518a?auto=format&fit=crop&w=1000&q=80"
+      "https://images.unsplash.com/photo-1541877944-ac82a091518a?auto=format&fit=crop&w=1000&q=80",
     ],
     angleImages: [
       { label: "Front Display", image: ankerPowerCoreImg },
-      { label: "140W Ports", image: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?auto=format&fit=crop&w=1000&q=80" },
-      { label: "Metal Casing", image: "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1000&q=80" },
-      { label: "Fast Charging", image: "https://images.unsplash.com/photo-1541877944-ac82a091518a?auto=format&fit=crop&w=1000&q=80" }
+      {
+        label: "140W Ports",
+        image:
+          "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?auto=format&fit=crop&w=1000&q=80",
+      },
+      {
+        label: "Metal Casing",
+        image:
+          "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=1000&q=80",
+      },
+      {
+        label: "Fast Charging",
+        image:
+          "https://images.unsplash.com/photo-1541877944-ac82a091518a?auto=format&fit=crop&w=1000&q=80",
+      },
     ],
     category: "powerbanks",
     rating: 4.9,
     reviews: 0,
     available: true,
     isReference: true,
-    owner: { name: "Payent Reference Catalog", avatar: "https://i.pravatar.cc/100?img=47", rating: 5.0 },
+    owner: {
+      name: "Payent Reference Catalog",
+      avatar: "https://i.pravatar.cc/100?img=47",
+      rating: 5.0,
+    },
   },
 ];
 
@@ -300,7 +352,8 @@ export const products: Product[] = [...getCustomProducts(), ...initialProducts].
     ...p,
     images: rawImages,
     angleImages: p.angleImages && p.angleImages.length >= 2 ? p.angleImages : angleImages,
-    rotationFrames: p.rotationFrames && p.rotationFrames.length >= 2 ? p.rotationFrames : defaultAngles,
+    rotationFrames:
+      p.rotationFrames && p.rotationFrames.length >= 2 ? p.rotationFrames : defaultAngles,
   };
 });
 

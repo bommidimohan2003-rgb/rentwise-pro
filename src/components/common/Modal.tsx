@@ -45,7 +45,9 @@ export function Modal({
             className={`relative w-full ${maxWidth} spatial-overlay overflow-hidden shadow-2xl z-10`}
           >
             <div className="flex items-center justify-between p-5 border-b border-border/60 bg-card/40">
-              <h3 className="text-base md:text-lg font-bold text-foreground tracking-tight">{title}</h3>
+              <h3 className="text-base md:text-lg font-bold text-foreground tracking-tight">
+                {title}
+              </h3>
               <button
                 onClick={onClose}
                 className="rounded-full p-2 hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors"

@@ -15,7 +15,10 @@ export interface ErrorStateProps {
  * Normalizes and sanitizes error objects into human-readable error messages.
  * Prevents raw stack traces or internal backend exception strings from leaking into the UI.
  */
-export function sanitizeErrorMessage(error: unknown, fallbackMessage = "Something went wrong while processing your request. Please try again."): string {
+export function sanitizeErrorMessage(
+  error: unknown,
+  fallbackMessage = "Something went wrong while processing your request. Please try again.",
+): string {
   if (!error) return fallbackMessage;
 
   let raw = "";
@@ -24,8 +27,12 @@ export function sanitizeErrorMessage(error: unknown, fallbackMessage = "Somethin
   } else if (error instanceof Error) {
     raw = error.message;
   } else if (typeof error === "object" && error !== null) {
-    const errObj = error as Record<string, any>;
-    raw = errObj.detail || errObj.message || errObj.error || "";
+    const errObj = error as Record<string, unknown>;
+    raw =
+      (typeof errObj.detail === "string" ? errObj.detail : "") ||
+      (typeof errObj.message === "string" ? errObj.message : "") ||
+      (typeof errObj.error === "string" ? errObj.error : "") ||
+      "";
   }
 
   if (!raw) return fallbackMessage;
@@ -46,7 +53,11 @@ export function sanitizeErrorMessage(error: unknown, fallbackMessage = "Somethin
   }
 
   // Network/Connection errors
-  if (raw.toLowerCase().includes("failed to fetch") || raw.toLowerCase().includes("network error") || raw.includes("ERR_NETWORK")) {
+  if (
+    raw.toLowerCase().includes("failed to fetch") ||
+    raw.toLowerCase().includes("network error") ||
+    raw.includes("ERR_NETWORK")
+  ) {
     return "Unable to connect to Payent servers. Please check your internet connection and try again.";
   }
 
@@ -68,7 +79,7 @@ export function ErrorState({
     <div
       className={cn(
         "flex flex-col items-center justify-center p-8 md:p-12 text-center rounded-2xl border border-destructive/20 bg-destructive/5 backdrop-blur-sm transition-all",
-        className
+        className,
       )}
     >
       <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-destructive/10 text-destructive mb-4 shadow-sm">

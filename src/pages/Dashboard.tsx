@@ -111,9 +111,7 @@ export default function Dashboard() {
               transition={{ delay: i * 0.05 }}
               className="card-premium p-5"
             >
-              <div
-                className="h-10 w-10 rounded-xl grid place-items-center bg-secondary border border-border text-foreground mb-3"
-              >
+              <div className="h-10 w-10 rounded-xl grid place-items-center bg-secondary border border-border text-foreground mb-3">
                 <s.icon className="h-5 w-5" />
               </div>
               <div className="text-2xl font-bold">{s.value}</div>

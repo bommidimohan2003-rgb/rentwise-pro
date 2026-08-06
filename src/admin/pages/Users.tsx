@@ -18,7 +18,13 @@ import { usersService } from "../services/users";
 import { AdminUser } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
+import {
+  LoadingState,
+  ErrorState,
+  SlowConnectionIndicator,
+  NoSearchResults,
+  useSlowConnection,
+} from "@/components/states";
 import { adminWS } from "../services/websocket";
 
 export default function Users() {
@@ -86,7 +92,7 @@ export default function Users() {
       if (updatedUser && (updatedUser.id || updatedUser.email)) {
         const key = updatedUser.id || updatedUser.email;
         setUsers((prev) =>
-          prev.map((u) => (u.id === key || u.email === key ? { ...u, ...updatedUser } : u))
+          prev.map((u) => (u.id === key || u.email === key ? { ...u, ...updatedUser } : u)),
         );
       }
     });
@@ -473,17 +479,15 @@ export default function Users() {
       </div>
 
       {/* Slow Connection Indicator */}
-      {isSlow && <SlowConnectionIndicator message="Fetching user records is taking a bit longer than usual..." />}
+      {isSlow && (
+        <SlowConnectionIndicator message="Fetching user records is taking a bit longer than usual..." />
+      )}
 
       {/* Main Table & States */}
       {loading ? (
         <LoadingState type="table" count={5} />
       ) : error ? (
-        <ErrorState
-          title="Unable to load user list"
-          error={error}
-          onRetry={fetchUsers}
-        />
+        <ErrorState title="Unable to load user list" error={error} onRetry={fetchUsers} />
       ) : filteredUsers.length === 0 ? (
         <NoSearchResults
           query={search}

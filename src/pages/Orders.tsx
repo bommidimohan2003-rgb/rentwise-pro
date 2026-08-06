@@ -65,11 +65,7 @@ export default function Orders() {
         {loading ? (
           <LoadingState type="list" count={4} />
         ) : error ? (
-          <ErrorState
-            title="Unable to load orders"
-            error={error}
-            onRetry={fetchOrders}
-          />
+          <ErrorState title="Unable to load orders" error={error} onRetry={fetchOrders} />
         ) : orders.length === 0 ? (
           <EmptyState
             title="No orders yet"

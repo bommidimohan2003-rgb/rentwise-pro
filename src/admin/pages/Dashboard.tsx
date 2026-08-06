@@ -41,7 +41,12 @@ import {
 import { StatsCard } from "../components/layout/StatsCard";
 import { ChartCard } from "../components/layout/ChartCard";
 import { Loader } from "../components/layout/Loader";
-import { notificationsService, DashboardStats, DashboardCharts, DashboardActivity } from "../services/notifications";
+import {
+  notificationsService,
+  DashboardStats,
+  DashboardCharts,
+  DashboardActivity,
+} from "../services/notifications";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { adminWS } from "../services/websocket";
@@ -89,17 +94,21 @@ export default function Dashboard() {
           id: `live-${Date.now()}`,
           type: event.type,
           title: `Live Event: ${event.type.replace(".", " ").toUpperCase()}`,
-          detail: (d.title || d.fullName || d.email || d.id || "Platform activity recorded") as string,
+          detail: (d.title ||
+            d.fullName ||
+            d.email ||
+            d.id ||
+            "Platform activity recorded") as string,
           time: "Just now",
           icon: event.type.includes("user")
             ? "UserPlus"
             : event.type.includes("booking")
-            ? "Calendar"
-            : event.type.includes("payment")
-            ? "CreditCard"
-            : event.type.includes("product")
-            ? "Camera"
-            : "Info",
+              ? "Calendar"
+              : event.type.includes("payment")
+                ? "CreditCard"
+                : event.type.includes("product")
+                  ? "Camera"
+                  : "Info",
         };
         setActivities((prev) => [newAct, ...prev.slice(0, 9)]);
       }
@@ -155,7 +164,10 @@ export default function Dashboard() {
   };
 
   const handleResetAnalytics = async () => {
-    if (!confirm("Are you sure you want to reset total revenue, active listings, and analytics to 0?")) return;
+    if (
+      !confirm("Are you sure you want to reset total revenue, active listings, and analytics to 0?")
+    )
+      return;
     try {
       await notificationsService.resetAnalytics();
       toast.success("Total revenue and active listings reset to 0.");

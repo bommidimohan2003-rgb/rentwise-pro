@@ -136,7 +136,12 @@ export function ProductRotationViewer({
   const currentAngleDegrees = Math.round((currentFrame / totalFrames) * 360);
 
   return (
-    <div className={cn("w-full h-[360px] md:h-[440px] relative spatial-surface rounded-3xl overflow-hidden group select-none bg-card/60 border border-border/80", className)}>
+    <div
+      className={cn(
+        "w-full h-[360px] md:h-[440px] relative spatial-surface rounded-3xl overflow-hidden group select-none bg-card/60 border border-border/80",
+        className,
+      )}
+    >
       {/* Header Badge */}
       <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
         <span className="px-3.5 py-1.5 rounded-full spatial-float text-xs font-bold text-primary flex items-center gap-1.5 border border-primary/30 shadow-md">
@@ -154,7 +159,9 @@ export function ProductRotationViewer({
           <RefreshCw className="h-8 w-8 text-primary animate-spin" />
           <div className="text-center space-y-1">
             <h4 className="text-sm font-bold text-foreground">Loading Real Product Photography</h4>
-            <p className="text-xs text-muted-foreground">Preloading turntable frames ({loadedCount}/{totalFrames})</p>
+            <p className="text-xs text-muted-foreground">
+              Preloading turntable frames ({loadedCount}/{totalFrames})
+            </p>
           </div>
           <div className="w-48 h-2 rounded-full bg-secondary overflow-hidden border border-border">
             <div
@@ -183,7 +190,7 @@ export function ProductRotationViewer({
         onPointerCancel={handlePointerUp}
         className={cn(
           "w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-center relative",
-          isDragging && "cursor-grabbing"
+          isDragging && "cursor-grabbing",
         )}
         tabIndex={0}
         role="slider"

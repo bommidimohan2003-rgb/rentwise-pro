@@ -32,7 +32,7 @@ export function SlowConnectionIndicator({
       <div
         className={cn(
           "inline-flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full animate-in fade-in duration-300",
-          className
+          className,
         )}
       >
         <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
@@ -45,7 +45,7 @@ export function SlowConnectionIndicator({
     <div
       className={cn(
         "flex items-center justify-center gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-300 my-3",
-        className
+        className,
       )}
     >
       <Clock className="h-4 w-4 shrink-0 animate-pulse" />

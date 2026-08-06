@@ -70,7 +70,6 @@ export function AuthLayout({ children, mode, title, subtitle }: AuthLayoutProps)
   return (
     <MainLayout>
       <section className="relative min-h-[calc(100vh-70px)] flex items-center p-4 md:p-8 overflow-hidden bg-black">
-        
         {/* CRYSTAL CLEAR HIGH-VISIBILITY FULL PAGE BACKGROUND IMAGE SLIDER */}
         <div className="absolute inset-0 w-full h-full z-0 overflow-hidden bg-black">
           <AnimatePresence mode="wait">
@@ -137,10 +136,9 @@ export function AuthLayout({ children, mode, title, subtitle }: AuthLayoutProps)
           <div
             className={cn(
               "w-full card-premium p-5 sm:p-6 shadow-2xl border-white/25 bg-background/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl space-y-4 transition-all duration-300",
-              mode === "register" ? "max-w-xl lg:max-w-2xl" : "max-w-md"
+              mode === "register" ? "max-w-xl lg:max-w-2xl" : "max-w-md",
             )}
           >
-            
             {/* Header Navigation Tabs: Sign In / Create Account */}
             {mode !== "forgot-password" && (
               <div className="flex items-center rounded-2xl bg-secondary/80 p-1.5 border border-border/80">
@@ -178,9 +176,7 @@ export function AuthLayout({ children, mode, title, subtitle }: AuthLayoutProps)
             </div>
 
             {/* Form Children */}
-            <div className="space-y-4">
-              {children}
-            </div>
+            <div className="space-y-4">{children}</div>
 
             {/* Security Footnote */}
             <div className="pt-4 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground font-medium">
@@ -190,10 +186,8 @@ export function AuthLayout({ children, mode, title, subtitle }: AuthLayoutProps)
               </span>
               <span>Instant Protection</span>
             </div>
-
           </div>
         </div>
-
       </section>
     </MainLayout>
   );

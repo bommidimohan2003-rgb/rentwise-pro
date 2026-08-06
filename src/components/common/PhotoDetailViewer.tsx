@@ -10,11 +10,7 @@ interface PhotoDetailViewerProps {
   isWishlisted?: boolean;
 }
 
-export function PhotoDetailViewer({
-  primaryImage,
-  productTitle,
-  angles,
-}: PhotoDetailViewerProps) {
+export function PhotoDetailViewer({ primaryImage, productTitle, angles }: PhotoDetailViewerProps) {
   const [activeAngleIndex, setActiveAngleIndex] = useState(0);
   const [transformStyle, setTransformStyle] = useState("");
   const [shadowStyle, setShadowStyle] = useState("");
@@ -48,7 +44,9 @@ export function PhotoDetailViewer({
     const shadowX = (((x - centerX) / centerX) * -24).toFixed(1);
     const shadowY = (((y - centerY) / centerY) * -24).toFixed(1);
 
-    setTransformStyle(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.025, 1.025, 1.025)`);
+    setTransformStyle(
+      `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.025, 1.025, 1.025)`,
+    );
     setShadowStyle(`${shadowX}px ${shadowY}px 40px -8px rgba(0, 0, 0, 0.3)`);
   };
 
@@ -101,7 +99,7 @@ export function PhotoDetailViewer({
                 "aspect-square rounded-2xl overflow-hidden border-2 transition-all spatial-surface cursor-pointer bg-card",
                 activeAngleIndex === idx
                   ? "border-primary ring-2 ring-primary/30 scale-105 opacity-100 shadow-md"
-                  : "border-border/40 opacity-75 hover:opacity-100 hover:border-primary/50"
+                  : "border-border/40 opacity-75 hover:opacity-100 hover:border-primary/50",
               )}
             >
               <img src={src} alt={`Angle ${idx + 1}`} className="h-full w-full object-cover" />

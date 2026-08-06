@@ -36,7 +36,7 @@ export function ProductCard({
       style={{ transitionDelay: `${index * 80}ms` }}
       className={cn(
         "card-premium overflow-hidden group cursor-pointer transition-all duration-300",
-        selected && "card-selected"
+        selected && "card-selected",
       )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
@@ -60,16 +60,20 @@ export function ProductCard({
             }}
             className={cn(
               "absolute top-3 transition-all duration-300 grid h-9 w-9 place-items-center rounded-full glass hover:scale-110",
-              selected ? "right-14" : "right-3"
+              selected ? "right-14" : "right-3",
             )}
             aria-label="Wishlist"
           >
             <Heart
               className={cn(
                 "h-4 w-4 transition-colors duration-300",
-                liked 
-                  ? (selected ? "fill-white text-white" : "fill-rose-500 text-rose-500") 
-                  : (selected ? "text-white" : "text-foreground")
+                liked
+                  ? selected
+                    ? "fill-white text-white"
+                    : "fill-rose-500 text-rose-500"
+                  : selected
+                    ? "text-white"
+                    : "text-foreground",
               )}
             />
           </button>
@@ -87,16 +91,57 @@ export function ProductCard({
       </div>
       <div className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className={cn("font-semibold text-base leading-tight line-clamp-2 transition-colors duration-300", selected ? "text-white" : "text-foreground")}>{product.title}</h3>
+          <h3
+            className={cn(
+              "font-semibold text-base leading-tight line-clamp-2 transition-colors duration-300",
+              selected ? "text-white" : "text-foreground",
+            )}
+          >
+            {product.title}
+          </h3>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <Rating value={product.rating} count={product.reviews} className={cn("transition-colors duration-300", selected ? "text-white" : "text-foreground")} />
-          <span className={cn("text-xs capitalize transition-colors duration-300", selected ? "text-white/80" : "text-muted-foreground")}>{product.category}</span>
+          <Rating
+            value={product.rating}
+            count={product.reviews}
+            className={cn(
+              "transition-colors duration-300",
+              selected ? "text-white" : "text-foreground",
+            )}
+          />
+          <span
+            className={cn(
+              "text-xs capitalize transition-colors duration-300",
+              selected ? "text-white/80" : "text-muted-foreground",
+            )}
+          >
+            {product.category}
+          </span>
         </div>
-        <div className={cn("flex items-center justify-between pt-2 border-t transition-colors duration-300", selected ? "border-white/20" : "border-border")}>
+        <div
+          className={cn(
+            "flex items-center justify-between pt-2 border-t transition-colors duration-300",
+            selected ? "border-white/20" : "border-border",
+          )}
+        >
           <div>
-            <span className={cn("text-xl font-bold transition-colors duration-300", selected ? "text-white" : "text-foreground")}>₹{product.price}</span>
-            <span className={cn("text-xs transition-colors duration-300", selected ? "text-white/80" : "text-muted-foreground")}> /day</span>
+            <span
+              className={cn(
+                "text-xl font-bold transition-colors duration-300",
+                selected ? "text-white" : "text-foreground",
+              )}
+            >
+              ₹{product.price}
+            </span>
+            <span
+              className={cn(
+                "text-xs transition-colors duration-300",
+                selected ? "text-white/80" : "text-muted-foreground",
+              )}
+            >
+              {" "}
+              /day
+            </span>
           </div>
           {isReference ? (
             <Link
@@ -123,7 +168,7 @@ export function ProductCard({
                 "rounded-full px-4 h-9 text-sm font-medium inline-flex items-center transition-all duration-300",
                 selected
                   ? "bg-white text-pink-600 hover:bg-white/90 shadow-md font-bold"
-                  : "border border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  : "border border-primary text-primary hover:bg-primary hover:text-primary-foreground",
               )}
             >
               List Yours
@@ -137,7 +182,7 @@ export function ProductCard({
                 "rounded-full px-4 h-9 text-sm font-medium inline-flex items-center transition-all duration-300",
                 selected
                   ? "bg-white text-pink-600 hover:bg-white/90 shadow-md font-bold"
-                  : "btn-gradient text-white"
+                  : "btn-gradient text-white",
               )}
             >
               Rent

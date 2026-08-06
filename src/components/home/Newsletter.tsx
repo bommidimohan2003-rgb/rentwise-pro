@@ -47,7 +47,10 @@ export function Newsletter() {
               <span>You're subscribed! Check your inbox soon.</span>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3 max-w-md mx-auto pt-2">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col sm:flex-row items-center gap-3 max-w-md mx-auto pt-2"
+            >
               <div className="relative w-full">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input

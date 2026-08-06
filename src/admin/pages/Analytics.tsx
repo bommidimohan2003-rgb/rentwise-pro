@@ -1,5 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
-import { BarChart3, TrendingUp, IndianRupee, Calendar, Users, ShoppingBag, Eye } from "lucide-react";
+import {
+  BarChart3,
+  TrendingUp,
+  IndianRupee,
+  Calendar,
+  Users,
+  ShoppingBag,
+  Eye,
+} from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -90,7 +98,11 @@ export default function Analytics() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Average Lease Value"
-          value={stats?.monthlyBookings ? `₹${(stats.monthlyRevenue / stats.monthlyBookings).toFixed(2)}` : "₹0.00"}
+          value={
+            stats?.monthlyBookings
+              ? `₹${(stats.monthlyRevenue / stats.monthlyBookings).toFixed(2)}`
+              : "₹0.00"
+          }
           change="+4.2%"
           trend="up"
           icon={IndianRupee}
@@ -98,7 +110,11 @@ export default function Analytics() {
         />
         <StatsCard
           title="Listing Conversion Rate"
-          value={stats?.totalProducts ? `${((stats.monthlyBookings / stats.totalProducts) * 100).toFixed(2)}%` : "0.00%"}
+          value={
+            stats?.totalProducts
+              ? `${((stats.monthlyBookings / stats.totalProducts) * 100).toFixed(2)}%`
+              : "0.00%"
+          }
           change="+0.9%"
           trend="up"
           icon={TrendingUp}
@@ -106,7 +122,9 @@ export default function Analytics() {
         />
         <StatsCard
           title="Customer Acq Cost (CAC)"
-          value={stats?.totalUsers ? `₹${Math.max(10, 150 - stats.totalUsers * 2).toFixed(2)}` : "₹0.00"}
+          value={
+            stats?.totalUsers ? `₹${Math.max(10, 150 - stats.totalUsers * 2).toFixed(2)}` : "₹0.00"
+          }
           change="-6.4%"
           trend="up" // Representing improvement (costs down)
           icon={Users}

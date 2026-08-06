@@ -2,11 +2,7 @@ import { cn } from "@/lib/utils";
 
 export function LogoIcon({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 32 32"
-      className={cn("fill-current", className)}
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 32 32" className={cn("fill-current", className)} aria-hidden="true">
       {/* Payent Infinity Exchange Loop Logo Mark */}
       <rect x="5" y="4" width="4" height="24" rx="2" />
       <path

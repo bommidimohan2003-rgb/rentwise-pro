@@ -23,7 +23,8 @@ const featuredGear = [
     category: "4K Cinema Camera",
     specs: ["33MP Full-Frame", "4K 60p HDR", "Dual SD Slots"],
     icon: Camera,
-    image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=700&q=80",
+    image:
+      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=700&q=80",
     owner: "Arjun Mehta",
     ownerRating: 4.9,
     verified: true,
@@ -34,7 +35,8 @@ const featuredGear = [
     category: "Aerial Cine Drone",
     specs: ["Tri-Camera System", "43 Min Flight", "Cine Sensor"],
     icon: Plane,
-    image: "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=700&q=80",
+    image:
+      "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=700&q=80",
     owner: "Ananya Roy",
     ownerRating: 5.0,
     verified: true,
@@ -45,7 +47,8 @@ const featuredGear = [
     category: "Edit Workstation",
     specs: ["128GB Unified RAM", "4TB NVMe", "Liquid Retina XDR"],
     icon: Laptop,
-    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80",
+    image:
+      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80",
     owner: "Vikram Patel",
     ownerRating: 4.8,
     verified: true,
@@ -83,10 +86,8 @@ export function Hero() {
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
-          
           {/* Left Column: Value Proposition & CTAs */}
           <div className="lg:col-span-7 space-y-5 text-left">
-            
             {/* Category Tag */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -106,9 +107,7 @@ export function Hero() {
               className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight leading-[1.08] font-display"
             >
               Professional gear on demand.{" "}
-              <span className="text-muted-foreground font-normal">
-                Earn when your kit is idle.
-              </span>
+              <span className="text-muted-foreground font-normal">Earn when your kit is idle.</span>
             </motion.h1>
 
             {/* Subheadline */}
@@ -118,7 +117,8 @@ export function Hero() {
               transition={{ duration: 0.4, delay: 0.2 }}
               className="text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed font-normal"
             >
-              Rent cinema cameras, aerial drones, studio audio, and workstation laptops directly from verified creators in your city — fully insured and ready for your next project.
+              Rent cinema cameras, aerial drones, studio audio, and workstation laptops directly
+              from verified creators in your city — fully insured and ready for your next project.
             </motion.p>
 
             {/* CTAs */}
@@ -156,7 +156,9 @@ export function Hero() {
                   <Check className="h-3.5 w-3.5" />
                   <span>ID-Verified Lenders</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-snug">Verified profiles and identity check.</p>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Verified profiles and identity check.
+                </p>
               </div>
 
               <div className="space-y-0.5">
@@ -164,7 +166,9 @@ export function Hero() {
                   <Check className="h-3.5 w-3.5" />
                   <span>Rental Protection</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-snug">Deposit-backed security flow.</p>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Deposit-backed security flow.
+                </p>
               </div>
 
               <div className="space-y-0.5">
@@ -172,10 +176,11 @@ export function Hero() {
                   <Check className="h-3.5 w-3.5" />
                   <span>Flexible Terms</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-snug">Daily, weekly, or monthly rates.</p>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Daily, weekly, or monthly rates.
+                </p>
               </div>
             </motion.div>
-
           </div>
 
           {/* Right Column: Compact Featured Inventory Card */}
@@ -194,7 +199,7 @@ export function Hero() {
                     Featured Inventory
                   </span>
                 </div>
-                
+
                 {/* Gear Selector Tabs */}
                 <div className="flex items-center gap-1">
                   {featuredGear.map((gear, idx) => (
@@ -231,9 +236,7 @@ export function Hero() {
                 {/* Floating Verified Item Badge */}
                 <div className="absolute top-2.5 left-2.5 spatial-surface px-2.5 py-1 flex items-center gap-1.5">
                   <ShieldCheck className="h-3.5 w-3.5 text-foreground" />
-                  <span className="text-[10px] font-bold text-foreground">
-                    Verified Gear Item
-                  </span>
+                  <span className="text-[10px] font-bold text-foreground">Verified Gear Item</span>
                 </div>
               </div>
 
@@ -270,10 +273,8 @@ export function Hero() {
                   ))}
                 </div>
               </div>
-
             </motion.div>
           </div>
-
         </div>
       </div>
     </section>

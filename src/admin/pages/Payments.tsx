@@ -8,7 +8,13 @@ import { paymentsService } from "../services/payments";
 import { AdminPayment } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
+import {
+  LoadingState,
+  ErrorState,
+  SlowConnectionIndicator,
+  NoSearchResults,
+  useSlowConnection,
+} from "@/components/states";
 
 import { adminWS } from "../services/websocket";
 
@@ -61,7 +67,7 @@ export default function Payments() {
       const refunded = event.data as AdminPayment;
       if (refunded && refunded.id) {
         setPayments((prev) =>
-          prev.map((p) => (p.id === refunded.id ? { ...p, status: "refunded" } : p))
+          prev.map((p) => (p.id === refunded.id ? { ...p, status: "refunded" } : p)),
         );
       }
     });
@@ -276,17 +282,15 @@ export default function Payments() {
       </div>
 
       {/* Slow Connection Indicator */}
-      {isSlow && <SlowConnectionIndicator message="Transaction ledger is taking a bit longer to load..." />}
+      {isSlow && (
+        <SlowConnectionIndicator message="Transaction ledger is taking a bit longer to load..." />
+      )}
 
       {/* Table grid */}
       {loading ? (
         <LoadingState type="table" count={5} />
       ) : error ? (
-        <ErrorState
-          title="Unable to load transactions"
-          error={error}
-          onRetry={fetchPayments}
-        />
+        <ErrorState title="Unable to load transactions" error={error} onRetry={fetchPayments} />
       ) : filteredPayments.length === 0 ? (
         <NoSearchResults
           query={search}

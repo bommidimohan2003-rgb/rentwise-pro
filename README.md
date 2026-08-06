@@ -9,6 +9,7 @@ This repository contains the premium peer-to-peer tech gear rental platform, fea
 The admin portal dashboard (`/admin`) is fully backed by the FastAPI backend server (`/api/admin/*`) and persists all details to a local MySQL instance.
 
 ### Data Model & Sync Design
+
 - **Users & Agents**: Agents are retrieved dynamically from the `users` table based on roles (`agent` or `lender`) or active product listings. Update, delete, suspend, and activate requests are processed and persisted in the MySQL database.
 - **Products & Categories**: Features like product approval/rejection, visibility hiding, and promotional feature flags are saved. Product documents and images arrays are serialized as JSON strings in the MySQL schema.
 - **Bookings & Payments**: Orders created on the public renter portal sync with the `payments` table. Admin actions like booking cancellation, completions, and transaction refunds directly update both order statuses and UPI/Card transaction records in MySQL.
@@ -23,7 +24,9 @@ The admin portal dashboard (`/admin`) is fully backed by the FastAPI backend ser
 When the database is initialized (`init_db` in `backend/database.py`), default data is seeded **only if the respective tables are empty**. This populates the interface with realistic test listings while keeping actual operations separate.
 
 ### Illustrative Seed Data (Seeded on Empty DB)
+
 ### Admin Account Creation
+
 - **Admin Registration**: Register a new account via `/register` providing your secure `ADMIN_SETUP_CODE` (configured in `backend/config.py`).
 - **Seed Listings**: Cameras, drones, laptops, audio recorders (IDs `p-1` through `p-6`).
 

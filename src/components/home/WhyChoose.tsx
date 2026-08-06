@@ -40,7 +40,9 @@ export function WhyChoose() {
                 </div>
                 <div className="text-left">
                   <h4 className="font-extrabold text-sm text-foreground">{item.title}</h4>
-                  <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{item.subtitle}</p>
+                  <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
+                    {item.subtitle}
+                  </p>
                 </div>
               </motion.div>
             );

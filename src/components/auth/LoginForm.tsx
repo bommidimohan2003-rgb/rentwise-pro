@@ -13,7 +13,10 @@ import type { User } from "@/types";
 
 const schema = z.object({
   email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
-  password: z.string().min(1, "Password is required").min(6, "Password must be at least 6 characters"),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(6, "Password must be at least 6 characters"),
   remember: z.boolean().optional(),
 });
 
@@ -83,7 +86,7 @@ export function LoginForm() {
           role: "admin",
           status: "active",
           verified: true,
-        })
+        }),
       );
       window.dispatchEvent(new Event("payent:admin:profile-updated"));
       navigate({ to: "/admin/dashboard" });

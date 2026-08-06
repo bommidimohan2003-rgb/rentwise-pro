@@ -75,8 +75,12 @@ export function Hero() {
 
             <div className="hero-anim-item hero-trust mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-white/80">
               <span className="trust-badge rounded-full bg-white/10 px-3 py-1">Verified users</span>
-              <span className="trust-badge rounded-full bg-white/10 px-3 py-1">Same-day delivery</span>
-              <span className="trust-badge rounded-full bg-white/10 px-3 py-1">Flexible pick-up</span>
+              <span className="trust-badge rounded-full bg-white/10 px-3 py-1">
+                Same-day delivery
+              </span>
+              <span className="trust-badge rounded-full bg-white/10 px-3 py-1">
+                Flexible pick-up
+              </span>
             </div>
 
             <motion.div

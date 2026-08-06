@@ -9,7 +9,6 @@ export function HowItWorks() {
     <section className="bg-background py-10 text-foreground overflow-hidden border-b border-border">
       <div className="mx-auto max-w-7xl px-4 md:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
           {/* Left Column: Mobile App Frame Preview */}
           <div className="lg:col-span-5 flex justify-center">
             <motion.div
@@ -20,7 +19,7 @@ export function HowItWorks() {
             >
               {/* Phone Notch */}
               <div className="h-4 w-28 bg-foreground rounded-b-xl mx-auto mb-3" />
-              
+
               {/* App Search Bar */}
               <div className="bg-secondary p-2.5 rounded-xl flex items-center gap-2 mb-4">
                 <Search className="h-4 w-4 text-muted-foreground" />
@@ -30,7 +29,7 @@ export function HowItWorks() {
               {/* App Section: Popular Nearby */}
               <div className="space-y-3 text-left">
                 <p className="text-xs font-bold text-foreground">Popular Nearby</p>
-                
+
                 {/* Product 1 */}
                 <div className="bg-secondary/50 p-2.5 rounded-xl border border-border flex items-center gap-3">
                   <img
@@ -90,7 +89,6 @@ export function HowItWorks() {
 
             {/* 3 Steps List */}
             <div className="space-y-6 max-w-xl">
-              
               {/* Step 1 */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -146,7 +144,6 @@ export function HowItWorks() {
                   </p>
                 </div>
               </motion.div>
-
             </div>
 
             {/* Button */}
@@ -158,9 +155,7 @@ export function HowItWorks() {
                 Start Renting Now
               </Link>
             </div>
-
           </div>
-
         </div>
       </div>
     </section>

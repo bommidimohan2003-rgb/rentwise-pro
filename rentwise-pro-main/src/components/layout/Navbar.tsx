@@ -163,7 +163,11 @@ export function Navbar() {
             </div>
           ) : (
             <div className="hidden md:flex items-center gap-2 ml-2">
-              <Button size="sm" onClick={handleGetStarted} className="rounded-full px-5 shadow-[0_12px_30px_-14px_rgba(255,79,154,0.8)]">
+              <Button
+                size="sm"
+                onClick={handleGetStarted}
+                className="rounded-full px-5 shadow-[0_12px_30px_-14px_rgba(255,79,154,0.8)]"
+              >
                 Sign Up
               </Button>
             </div>

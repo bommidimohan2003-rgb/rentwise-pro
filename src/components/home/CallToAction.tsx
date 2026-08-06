@@ -34,7 +34,8 @@ export function CallToAction() {
 
           {/* Subtitle */}
           <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto font-normal leading-relaxed">
-            Browse verified listings from creators near you or list your own camera gear and workstations to earn passive rental revenue.
+            Browse verified listings from creators near you or list your own camera gear and
+            workstations to earn passive rental revenue.
           </p>
 
           {/* CTA Buttons */}

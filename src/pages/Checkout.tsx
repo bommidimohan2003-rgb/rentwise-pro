@@ -1,5 +1,17 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { Check, ShieldCheck, Lock, Loader2, AlertTriangle, RefreshCw, Smartphone, CreditCard, Building2, Wallet, QrCode } from "lucide-react";
+import {
+  Check,
+  ShieldCheck,
+  Lock,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
+  Smartphone,
+  CreditCard,
+  Building2,
+  Wallet,
+  QrCode,
+} from "lucide-react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
@@ -158,7 +170,7 @@ export default function Checkout() {
   const handlePayWithRazorpay = async () => {
     setPaymentError(null);
     const token = storage.get<string | null>(STORAGE_KEYS.token, null);
-    
+
     if (!token) {
       toast.error("Please sign in to complete your gear rental.");
       navigate({ to: "/login" });
@@ -174,7 +186,7 @@ export default function Checkout() {
         product.id,
         start,
         end,
-        applied ? "SAVE10" : coupon
+        applied ? "SAVE10" : coupon,
       );
 
       // 2. Ensure Razorpay Checkout SDK is loaded
@@ -188,7 +200,7 @@ export default function Checkout() {
 
       const user = storage.get<{ email?: string; fullName?: string; phone?: string } | null>(
         STORAGE_KEYS.currentUser,
-        null
+        null,
       );
 
       // 3. Razorpay Options Config
@@ -214,7 +226,7 @@ export default function Checkout() {
               token,
               response.razorpay_order_id,
               response.razorpay_payment_id,
-              response.razorpay_signature
+              response.razorpay_signature,
             );
 
             setIsVerifying(false);
@@ -240,7 +252,9 @@ export default function Checkout() {
             setIsVerifying(false);
             toast.dismiss("rzp-verify");
             const err = verifyErr as { message?: string };
-            setPaymentError(err.message || "Payment signature verification failed. Please contact support.");
+            setPaymentError(
+              err.message || "Payment signature verification failed. Please contact support.",
+            );
             toast.error("Payment verification failed.");
           }
         },
@@ -266,15 +280,25 @@ export default function Checkout() {
         },
       };
 
-      const rzp = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void; on: (event: string, handler: (resp: any) => void) => void } }).Razorpay(options);
+      const rzp = new (
+        window as unknown as {
+          Razorpay: new (opts: typeof options) => {
+            open: () => void;
+            on: (event: string, handler: (resp: unknown) => void) => void;
+          };
+        }
+      ).Razorpay(options);
 
-      rzp.on("payment.failed", (response: { error?: { description?: string; code?: string; reason?: string } }) => {
-        setIsProcessing(false);
-        setIsVerifying(false);
-        const description = response.error?.description || "Payment attempt failed.";
-        setPaymentError(`Razorpay Payment Failed: ${description}`);
-        toast.error(`Payment failed: ${description}`);
-      });
+      rzp.on(
+        "payment.failed",
+        (response: { error?: { description?: string; code?: string; reason?: string } }) => {
+          setIsProcessing(false);
+          setIsVerifying(false);
+          const description = response.error?.description || "Payment attempt failed.";
+          setPaymentError(`Razorpay Payment Failed: ${description}`);
+          toast.error(`Payment failed: ${description}`);
+        },
+      );
 
       rzp.open();
     } catch (err) {
@@ -737,7 +761,8 @@ export default function Checkout() {
 
             {/* Secure Payment details */}
             <div className="flex items-center gap-2 justify-center text-[10px] text-muted-foreground mt-4 text-center">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> Razorpay 256-bit PCI-DSS encrypted payment gateway.
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> Razorpay 256-bit
+              PCI-DSS encrypted payment gateway.
             </div>
           </aside>
         </div>

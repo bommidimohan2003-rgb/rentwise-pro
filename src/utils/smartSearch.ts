@@ -17,11 +17,15 @@ export interface SearchStats {
   popularQueries: string[];
 }
 
-const isLocal = typeof window !== "undefined" && (
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1"
-);
-const API_BASE = import.meta.env.VITE_API_URL !== undefined ? import.meta.env.VITE_API_URL : (isLocal ? "http://127.0.0.1:8000" : "");
+const isLocal =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+const API_BASE =
+  import.meta.env.VITE_API_URL !== undefined
+    ? import.meta.env.VITE_API_URL
+    : isLocal
+      ? "http://127.0.0.1:8000"
+      : "";
 
 // Get current user email if logged in
 function getCurrentUserEmail(): string | undefined {
@@ -38,7 +42,7 @@ export async function searchWithML(
   productsList: Product[],
   query: string,
   category?: string,
-  limit: number = 20
+  limit: number = 20,
 ): Promise<MLSearchResult> {
   const trimmed = (query || "").trim();
   const selectedCat = category === "all" ? undefined : category;
@@ -60,14 +64,14 @@ export async function searchWithML(
       const data = await res.json();
       if (data.success && Array.isArray(data.results)) {
         // Map returned raw items to full Product objects or merge with local products list
-        const rawResults: any[] = data.results;
+        const rawResults: Record<string, unknown>[] = data.results;
         const matchedProducts: Product[] = rawResults.map((raw) => {
           const existing = productsList.find((p) => String(p.id) === String(raw.id));
           if (existing) return existing;
           return {
-            id: String(raw.id),
-            title: raw.title,
-            description: raw.description || "",
+            id: String(raw.id || ""),
+            title: String(raw.title || ""),
+            description: String(raw.description || ""),
             price: Number(raw.price || 0),
             image: raw.image,
             category: raw.category || "general",
@@ -87,7 +91,10 @@ export async function searchWithML(
       }
     }
   } catch (err) {
-    console.warn("[MLSearch] Backend ML search unavailable, using client-side engine fallback.", err);
+    console.warn(
+      "[MLSearch] Backend ML search unavailable, using client-side engine fallback.",
+      err,
+    );
   }
 
   // Fallback to client-side advanced search

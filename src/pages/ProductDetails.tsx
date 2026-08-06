@@ -1,5 +1,19 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { Calendar, Check, Heart, Shield, Truck, MessageSquare, MapPin, Star, Clock, ArrowRight, ShieldCheck, Info, Sparkles } from "lucide-react";
+import {
+  Calendar,
+  Check,
+  Heart,
+  Shield,
+  Truck,
+  MessageSquare,
+  MapPin,
+  Star,
+  Clock,
+  ArrowRight,
+  ShieldCheck,
+  Info,
+  Sparkles,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
@@ -39,7 +53,9 @@ export default function ProductDetails() {
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [frequentlyTogether, setFrequentlyTogether] = useState<Product[]>([]);
 
-  const isOwner = Boolean(user && product && (user.fullName === product.owner.name || user.email === product.owner.name));
+  const isOwner = Boolean(
+    user && product && (user.fullName === product.owner.name || user.email === product.owner.name),
+  );
 
   useEffect(() => {
     if (!product) return;
@@ -68,7 +84,10 @@ export default function ProductDetails() {
       <MainLayout>
         <div className="mx-auto max-w-3xl px-4 md:px-6 py-24 text-center">
           <h1 className="text-2xl font-bold">Product not found</h1>
-          <Button className="mt-6 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200" onClick={() => navigate({ to: "/categories" })}>
+          <Button
+            className="mt-6 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200"
+            onClick={() => navigate({ to: "/categories" })}
+          >
             Browse marketplace
           </Button>
         </div>
@@ -131,8 +150,8 @@ export default function ProductDetails() {
     product.images && product.images.length > 0
       ? product.images
       : product.rotationFrames && product.rotationFrames.length > 0
-      ? product.rotationFrames
-      : [product.image];
+        ? product.rotationFrames
+        : [product.image];
 
   return (
     <MainLayout>
@@ -140,7 +159,6 @@ export default function ProductDetails() {
       <JsonLd schema={breadcrumbSchema} />
       <section className="mx-auto max-w-7xl px-4 md:px-6 py-5 space-y-6">
         <div className="grid lg:grid-cols-12 gap-6 items-start">
-          
           {/* Left Column: Image Viewer */}
           <div className="lg:col-span-7 space-y-3 sticky top-20">
             {product.angleImages && product.angleImages.length >= 2 ? (
@@ -151,10 +169,7 @@ export default function ProductDetails() {
                 isWishlisted={has(product.id)}
               />
             ) : product.rotationFrames && product.rotationFrames.length >= 2 ? (
-              <ProductRotationViewer
-                frames={product.rotationFrames}
-                productTitle={product.title}
-              />
+              <ProductRotationViewer frames={product.rotationFrames} productTitle={product.title} />
             ) : (
               <PhotoDetailViewer
                 primaryImage={product.image}
@@ -172,12 +187,16 @@ export default function ProductDetails() {
             {product.isReference && (
               <div className="flex items-center gap-2.5 p-3 rounded-xl bg-card border-2 border-primary/30 text-xs text-foreground shadow-sm">
                 <Info className="h-4 w-4 text-primary shrink-0" />
-                <span><span className="font-extrabold px-1.5 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black text-[10px] tracking-wider uppercase mr-1">REFERENCE MODEL</span> This item serves as a reference model for demonstrating platform features.</span>
+                <span>
+                  <span className="font-extrabold px-1.5 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black text-[10px] tracking-wider uppercase mr-1">
+                    REFERENCE MODEL
+                  </span>{" "}
+                  This item serves as a reference model for demonstrating platform features.
+                </span>
               </div>
             )}
 
             <div className="rounded-2xl bg-card border border-border/80 p-4 md:p-5 space-y-4 shadow-lg text-left">
-              
               {/* Category & Availability Header */}
               <div className="flex items-center justify-between">
                 <span className="text-xs uppercase font-bold tracking-wider text-foreground px-3 py-1 rounded-md bg-secondary border border-border">
@@ -205,7 +224,9 @@ export default function ProductDetails() {
                     <span>{product.rating.toFixed(1)}</span>
                   </div>
                   {product.reviews > 0 && (
-                    <span className="text-muted-foreground">({product.reviews} verified reviews)</span>
+                    <span className="text-muted-foreground">
+                      ({product.reviews} verified reviews)
+                    </span>
                   )}
                 </div>
               </div>
@@ -224,7 +245,9 @@ export default function ProductDetails() {
                     className="h-12 w-12 rounded-full object-cover border-2 border-border"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-extrabold text-foreground truncate">{product.owner.name}</div>
+                    <div className="text-sm font-extrabold text-foreground truncate">
+                      {product.owner.name}
+                    </div>
                     <div className="text-xs text-muted-foreground mt-0.5 font-medium flex items-center gap-1">
                       <span>Verified Lender</span>
                       <span>·</span>
@@ -249,7 +272,9 @@ export default function ProductDetails() {
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-extrabold text-foreground uppercase tracking-wider">Payent Reference Model</div>
+                    <div className="text-xs font-extrabold text-foreground uppercase tracking-wider">
+                      Payent Reference Model
+                    </div>
                     <div className="text-xs text-muted-foreground mt-0.5 font-medium">
                       Standard specification item for lender guidance and reference booking.
                     </div>
@@ -271,10 +296,12 @@ export default function ProductDetails() {
                         "p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl text-center border transition-all cursor-pointer min-w-0",
                         selectedDate === idx
                           ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-md"
-                          : "bg-card border-border text-foreground hover:border-[#FF5A5F]/50"
+                          : "bg-card border-border text-foreground hover:border-[#FF5A5F]/50",
                       )}
                     >
-                      <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase truncate">{item.day}</p>
+                      <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase truncate">
+                        {item.day}
+                      </p>
                       <p className="text-xs font-extrabold mt-0.5 truncate">{item.date}</p>
                     </button>
                   ))}
@@ -295,7 +322,7 @@ export default function ProductDetails() {
                         "py-2 px-1 text-center rounded-xl border text-xs font-extrabold transition-all cursor-pointer",
                         selectedTime === time
                           ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-md"
-                          : "bg-card border-border text-foreground hover:border-black/50 dark:hover:border-white/50"
+                          : "bg-card border-border text-foreground hover:border-black/50 dark:hover:border-white/50",
                       )}
                     >
                       {time}
@@ -307,9 +334,13 @@ export default function ProductDetails() {
               {/* Pricing & Primary Action Button */}
               <div className="pt-4 border-t border-border space-y-4">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Rental Rate</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Total Rental Rate
+                  </span>
                   <div>
-                    <span className="text-3xl font-black text-foreground tracking-tight">₹{product.price}</span>
+                    <span className="text-3xl font-black text-foreground tracking-tight">
+                      ₹{product.price}
+                    </span>
                     <span className="text-xs text-slate-400 font-medium"> / day</span>
                   </div>
                 </div>
@@ -318,14 +349,24 @@ export default function ProductDetails() {
                   <div className="space-y-2">
                     <button
                       type="button"
-                      onClick={() => navigate({ to: "/become-lender", search: { title: product.title, category: product.category, price: product.price.toString() } as never })}
+                      onClick={() =>
+                        navigate({
+                          to: "/become-lender",
+                          search: {
+                            title: product.title,
+                            category: product.category,
+                            price: product.price.toString(),
+                          } as never,
+                        })
+                      }
                       className="w-full bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>List Your Gear</span>
                       <ArrowRight className="h-4 w-4" />
                     </button>
                     <p className="text-[11px] text-muted-foreground text-center font-medium">
-                      Reference item. Listed gear from community lenders includes instant Rent Now booking.
+                      Reference item. Listed gear from community lenders includes instant Rent Now
+                      booking.
                     </p>
                   </div>
                 ) : isOwner ? (
@@ -367,18 +408,21 @@ export default function ProductDetails() {
                   <ShieldCheck className="h-4 w-4 text-[#FF5A5F] shrink-0 mt-0.5" />
                   <div>
                     <div className="text-xs font-extrabold text-foreground">100% Insured</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Up to ₹5 Lakhs coverage</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5 font-medium">
+                      Up to ₹5 Lakhs coverage
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-secondary/40 border border-border/60">
                   <Truck className="h-4 w-4 text-[#FF5A5F] shrink-0 mt-0.5" />
                   <div>
                     <div className="text-xs font-extrabold text-foreground">Doorstep Delivery</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Same-day pickup option</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5 font-medium">
+                      Same-day pickup option
+                    </div>
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -411,19 +455,30 @@ export default function ProductDetails() {
         {/* Reviews Section - Hidden for reference catalog products */}
         {!product.isReference && product.reviews > 0 && (
           <div className="pt-10 border-t border-border/80">
-            <h2 className="text-2xl font-black tracking-tight mb-6 font-display">Verified Customer Reviews</h2>
+            <h2 className="text-2xl font-black tracking-tight mb-6 font-display">
+              Verified Customer Reviews
+            </h2>
             <div className="grid gap-5 md:grid-cols-3">
               {reviews.map((r) => (
-                <div key={r.id} className="rounded-3xl bg-card border border-border p-6 space-y-3 shadow-md">
+                <div
+                  key={r.id}
+                  className="rounded-3xl bg-card border border-border p-6 space-y-3 shadow-md"
+                >
                   <div className="flex items-center gap-3">
-                    <img src={r.avatar} alt={r.user} className="h-10 w-10 rounded-full object-cover border border-[#FF5A5F]" />
+                    <img
+                      src={r.avatar}
+                      alt={r.user}
+                      className="h-10 w-10 rounded-full object-cover border border-[#FF5A5F]"
+                    />
                     <div className="text-left">
                       <div className="text-sm font-extrabold text-foreground">{r.user}</div>
                       <div className="text-[10px] text-muted-foreground font-medium">{r.date}</div>
                     </div>
                   </div>
                   <Rating value={r.rating} />
-                  <p className="text-xs text-muted-foreground leading-relaxed font-medium">{r.comment}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed font-medium">
+                    {r.comment}
+                  </p>
                 </div>
               ))}
             </div>

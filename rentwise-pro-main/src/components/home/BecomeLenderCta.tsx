@@ -17,7 +17,8 @@ export function BecomeLenderCta() {
               Turn Your Unused Items Into Income
             </h2>
             <p className="mt-3 max-w-xl text-sm text-white/90 md:text-base">
-              List cameras, laptops, tools, bikes, or furniture in minutes and start earning from your unused inventory.
+              List cameras, laptops, tools, bikes, or furniture in minutes and start earning from
+              your unused inventory.
             </p>
           </div>
 

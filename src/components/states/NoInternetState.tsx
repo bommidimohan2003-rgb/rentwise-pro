@@ -20,7 +20,7 @@ export function NoInternetState({
   className,
 }: NoInternetStateProps) {
   const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true
+    typeof navigator !== "undefined" ? navigator.onLine : true,
   );
   const [retrying, setRetrying] = useState(false);
   const [reconnected, setReconnected] = useState(false);
@@ -55,7 +55,7 @@ export function NoInternetState({
     if (onRetry) {
       onRetry();
     }
-    
+
     // Quick delay to simulate/verify ping response
     setTimeout(() => {
       setRetrying(false);
@@ -96,7 +96,7 @@ export function NoInternetState({
       <div
         className={cn(
           "w-full bg-amber-500/15 border-b border-amber-500/30 text-amber-800 dark:text-amber-300 px-4 py-2.5 text-xs font-medium flex items-center justify-between gap-3 z-50",
-          className
+          className,
         )}
       >
         <div className="flex items-center gap-2.5">
@@ -133,7 +133,7 @@ export function NoInternetState({
     <div
       className={cn(
         "flex flex-col items-center justify-center p-8 md:p-12 text-center rounded-2xl border border-amber-500/30 bg-amber-500/5 backdrop-blur-sm transition-all",
-        className
+        className,
       )}
     >
       <div className="flex items-center justify-center h-16 w-16 rounded-2xl bg-amber-500/15 text-amber-500 mb-4 shadow-sm animate-bounce">

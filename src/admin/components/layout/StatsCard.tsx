@@ -24,18 +24,20 @@ export function StatsCard({
   const isDown = trend === "down";
 
   return (
-    <div
-      className={cn("spatial-card p-5 flex flex-col justify-between group", className)}
-    >
+    <div className={cn("spatial-card p-5 flex flex-col justify-between group", className)}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</span>
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+          {title}
+        </span>
         <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-secondary/80 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors shadow-xs">
           <Icon className="h-5 w-5" />
         </div>
       </div>
 
       <div className="mt-4">
-        <span className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">{value}</span>
+        <span className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
+          {value}
+        </span>
 
         {(change || subtext) && (
           <div className="flex items-center gap-1.5 mt-2">
@@ -53,7 +55,9 @@ export function StatsCard({
                 {change}
               </span>
             )}
-            {subtext && <span className="text-xs text-muted-foreground font-medium">{subtext}</span>}
+            {subtext && (
+              <span className="text-xs text-muted-foreground font-medium">{subtext}</span>
+            )}
           </div>
         )}
       </div>

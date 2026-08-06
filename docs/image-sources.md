@@ -3,6 +3,7 @@
 This document records the exact source, licensing terms, and camera angle breakdown for all product photography used in the Payent tech-gear rental marketplace.
 
 ## Licensing Compliance Guidelines
+
 - **Unsplash License / CC0**: Free for commercial and non-commercial use, no permission required.
 - **Wikimedia Commons CC-BY / Public Domain**: Openly licensed for commercial usage with attribution.
 - **Manufacturer Press Kits / Media Portals**: Verified media usage rights for retail and editorial presentation.
@@ -14,6 +15,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 ### 1. Cameras
 
 #### **Sony Alpha A7 IV Mirrorless Camera (`sony-a7-iv`)**
+
 - **Brand / Model**: Sony Alpha A7 IV (ILCE-7M4)
 - **Angles Sourced (4 Angles)**:
   - `Front`: Front 45-degree angle profile showcasing 28-70mm lens mount.
@@ -23,6 +25,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/sony-alpha-camera-p1`).
 
 #### **Sony FX3 Cinema Line Camera (`sony-fx3`)**
+
 - **Brand / Model**: Sony FX3 Full-Frame Cinema Camera
 - **Angles Sourced (4 Angles)**:
   - `Front`: Front cinema lens mount profile.
@@ -36,6 +39,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 ### 2. Laptops
 
 #### **Apple MacBook Pro 16" M3 Max (`macbook-pro-16`)**
+
 - **Brand / Model**: Apple MacBook Pro 16" (Space Black, M3 Max)
 - **Angles Sourced (4 Angles)**:
   - `Front`: Open display front view resting on desk.
@@ -45,6 +49,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/macbook-pro-m3`).
 
 #### **Dell XPS 15 Touchscreen Laptop (`dell-xps-15`)**
+
 - **Brand / Model**: Dell XPS 15 9530 (OLED Touchscreen)
 - **Angles Sourced (4 Angles)**:
   - `Front`: Open InfinityEdge display with silver chassis.
@@ -54,6 +59,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/dell-xps-15`).
 
 #### **Lenovo ThinkPad X1 Carbon (`lenovo-thinkpad-x1`)**
+
 - **Brand / Model**: Lenovo ThinkPad X1 Carbon Gen 11
 - **Angles Sourced (4 Angles)**:
   - `Front`: Matte black open display business profile.
@@ -63,6 +69,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/thinkpad-x1`).
 
 #### **Asus ROG Zephyrus G14 (`asus-rog-g14`)**
+
 - **Brand / Model**: Asus ROG Zephyrus G14 Gaming Laptop
 - **Angles Sourced (4 Angles)**:
   - `Front`: Open display with RGB backlit keyboard.
@@ -72,6 +79,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/asus-rog-g14`).
 
 #### **HP Spectre x360 Convertible (`hp-spectre-x360`)**
+
 - **Brand / Model**: HP Spectre x360 14 Convertible
 - **Angles Sourced (4 Angles)**:
   - `Front`: Touchscreen convertible display in laptop mode.
@@ -85,6 +93,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 ### 3. Drones
 
 #### **DJI Mavic 3 Pro Drone (`dji-mavic-3-pro`)**
+
 - **Brand / Model**: DJI Mavic 3 Pro Cine
 - **Angles Sourced (4 Angles)**:
   - `Front`: Hasselblad triple-camera gimbal lens view.
@@ -98,6 +107,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 ### 4. Power Banks & Chargers
 
 #### **Anker 737 PowerBank PowerCore 24K (`anker-powercore-24k`)**
+
 - **Brand / Model**: Anker 737 PowerBank (PowerCore 24K 140W)
 - **Angles Sourced (4 Angles)**:
   - `Front`: Smart digital OLED screen display.
@@ -107,6 +117,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/anker-powercore-24k`).
 
 #### **Ambrane PowerLit 50000mAh (`ambrane-powerlit-50k`)**
+
 - **Brand / Model**: Ambrane PowerLit 50000mAh Power Bank
 - **Angles Sourced (4 Angles)**:
   - `Front`: Rugged battery casing front view.
@@ -116,6 +127,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/ambrane-powerlit`).
 
 #### **Xiaomi Mi Boost Pro 30000mAh (`xiaomi-miboost-30k`)**
+
 - **Brand / Model**: Xiaomi Mi Power Bank Boost 30000mAh
 - **Angles Sourced (4 Angles)**:
   - `Front`: Metallic finish front view.
@@ -125,6 +137,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/xiaomi-miboost`).
 
 #### **URBN 20000mAh Ultra Compact (`urbn-20k`)**
+
 - **Brand / Model**: URBN 20000mAh Ultra Compact Battery
 - **Angles Sourced (4 Angles)**:
   - `Front`: Carbon texture front view.
@@ -138,6 +151,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 ### 5. Bikes & Rides
 
 #### **Royal Enfield Classic 350 (`royal-enfield-classic-350`)**
+
 - **Brand / Model**: Royal Enfield Classic 350
 - **Angles Sourced (4 Angles)**:
   - `Side`: Cruiser side profile.
@@ -147,6 +161,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/royal-enfield-classic-350`).
 
 #### **KTM Duke 390 (`ktm-duke-390`)**
+
 - **Brand / Model**: KTM Duke 390 Sports Bike
 - **Angles Sourced (4 Angles)**:
   - `Side`: Orange trellis frame sports bike profile.
@@ -156,6 +171,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/ktm-duke-390`).
 
 #### **Honda Activa 6G (`honda-activa-6g`)**
+
 - **Brand / Model**: Honda Activa 6G Scooter
 - **Angles Sourced (4 Angles)**:
   - `Side`: City scooter side profile.
@@ -165,6 +181,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/honda-activa-6g`).
 
 #### **Trek Marlin 7 (`trek-marlin-7`)**
+
 - **Brand / Model**: Trek Marlin 7 Mountain Bike
 - **Angles Sourced (4 Angles)**:
   - `Side`: Alloy mountain bike frame side view.
@@ -178,6 +195,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 ### 6. Electric Tools
 
 #### **Bosch Professional Hammer Drill (`bosch-hammer-drill`)**
+
 - **Brand / Model**: Bosch GBH 2-28 Professional Rotary Hammer Drill
 - **Angles Sourced (4 Angles)**:
   - `Front`: Heavy-duty chuck & drill bit angle.
@@ -187,6 +205,7 @@ This document records the exact source, licensing terms, and camera angle breakd
 - **Source & License**: Sourced under Unsplash Open Commercial License (`https://unsplash.com/photos/bosch-drill`).
 
 #### **DeWalt 20V Max Cordless Drill (`dewalt-cordless-drill`)**
+
 - **Brand / Model**: DeWalt DCD791B 20V MAX XR Cordless Drill
 - **Angles Sourced (4 Angles)**:
   - `Front`: Keyless metal ratcheting chuck view.

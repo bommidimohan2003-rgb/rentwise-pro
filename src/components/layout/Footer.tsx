@@ -54,7 +54,8 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-sm font-normal">
-              India's premier peer-to-peer tech gear rental platform. Access flagship cameras, drones, laptops, audio gear, and tools insured up to ₹5 Lakhs.
+              India's premier peer-to-peer tech gear rental platform. Access flagship cameras,
+              drones, laptops, audio gear, and tools insured up to ₹5 Lakhs.
             </p>
 
             <div className="space-y-2 pt-2 text-xs text-muted-foreground font-medium">

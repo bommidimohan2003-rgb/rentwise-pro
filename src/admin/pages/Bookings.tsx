@@ -16,7 +16,13 @@ import { bookingsService } from "../services/bookings";
 import { AdminBooking } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { LoadingState, ErrorState, SlowConnectionIndicator, NoSearchResults, useSlowConnection } from "@/components/states";
+import {
+  LoadingState,
+  ErrorState,
+  SlowConnectionIndicator,
+  NoSearchResults,
+  useSlowConnection,
+} from "@/components/states";
 import { adminWS } from "../services/websocket";
 
 export default function Bookings() {
@@ -75,7 +81,7 @@ export default function Bookings() {
       const cancelled = event.data as { id: string; status: string };
       if (cancelled && cancelled.id) {
         setBookings((prev) =>
-          prev.map((b) => (b.id === cancelled.id ? { ...b, status: "cancelled" } : b))
+          prev.map((b) => (b.id === cancelled.id ? { ...b, status: "cancelled" } : b)),
         );
       }
     });
@@ -238,9 +244,12 @@ export default function Bookings() {
         <span
           className={cn(
             "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
-            (row.status === "completed" || row.status === "active") && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-            row.status === "pending" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-            row.status === "cancelled" && "bg-destructive/10 text-destructive border-destructive/20",
+            (row.status === "completed" || row.status === "active") &&
+              "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+            row.status === "pending" &&
+              "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+            row.status === "cancelled" &&
+              "bg-destructive/10 text-destructive border-destructive/20",
           )}
         >
           {row.status}
@@ -336,17 +345,15 @@ export default function Bookings() {
       </div>
 
       {/* Slow Connection Indicator */}
-      {isSlow && <SlowConnectionIndicator message="Fetching rental records is taking a bit longer than expected..." />}
+      {isSlow && (
+        <SlowConnectionIndicator message="Fetching rental records is taking a bit longer than expected..." />
+      )}
 
       {/* Grid table */}
       {loading ? (
         <LoadingState type="table" count={5} />
       ) : error ? (
-        <ErrorState
-          title="Unable to load bookings"
-          error={error}
-          onRetry={fetchBookings}
-        />
+        <ErrorState title="Unable to load bookings" error={error} onRetry={fetchBookings} />
       ) : filteredBookings.length === 0 ? (
         <NoSearchResults
           query={search}
@@ -430,9 +437,13 @@ export default function Bookings() {
                     <span
                       className={cn(
                         "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border",
-                        (selectedBooking.status === "completed" || selectedBooking.status === "active") && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-                        selectedBooking.status === "pending" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-                        selectedBooking.status === "cancelled" && "bg-destructive/10 text-destructive border-destructive/20",
+                        (selectedBooking.status === "completed" ||
+                          selectedBooking.status === "active") &&
+                          "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+                        selectedBooking.status === "pending" &&
+                          "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+                        selectedBooking.status === "cancelled" &&
+                          "bg-destructive/10 text-destructive border-destructive/20",
                       )}
                     >
                       {selectedBooking.status}

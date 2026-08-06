@@ -24,11 +24,14 @@ export function SessionExpired({
 
     // Save flag for login page to pick up notice
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("payent_session_expired_notice", "Your session has expired. Please sign in again to continue.");
+      sessionStorage.setItem(
+        "payent_session_expired_notice",
+        "Your session has expired. Please sign in again to continue.",
+      );
     }
 
     // Redirect to login view
-    navigate({ to: loginUrl, search: { expired: "true" } as any });
+    navigate({ to: loginUrl, search: { expired: "true" } as Record<string, string> });
 
     if (onClose) onClose();
   };
@@ -37,20 +40,18 @@ export function SessionExpired({
     <div
       className={cn(
         "fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200",
-        className
+        className,
       )}
     >
       <div className="w-full max-w-md p-6 md:p-8 rounded-3xl bg-card border border-border shadow-2xl space-y-5 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-primary to-purple-600" />
-        
+
         <div className="flex items-center justify-center h-16 w-16 rounded-2xl bg-amber-500/10 text-amber-500 mx-auto shadow-inner">
           <LogOut className="h-8 w-8" />
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-xl font-bold text-foreground tracking-tight">
-            Session Expired
-          </h3>
+          <h3 className="text-xl font-bold text-foreground tracking-tight">Session Expired</h3>
           <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
             Your login session has timed out or authorization token is no longer valid.
           </p>
@@ -84,8 +85,6 @@ export function SessionExpired({
  */
 export function triggerSessionExpiredEvent(loginPath: "/login" | "/admin/login" = "/login") {
   if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent("payent-session-expired", { detail: { loginPath } })
-    );
+    window.dispatchEvent(new CustomEvent("payent-session-expired", { detail: { loginPath } }));
   }
 }

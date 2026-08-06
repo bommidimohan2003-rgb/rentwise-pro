@@ -144,7 +144,10 @@ export function OTPVerification() {
         const generatedOtp = storage.get<string | null>(STORAGE_KEYS.otp, null);
         return generatedOtp ? (
           <div className="bg-card border border-border text-foreground rounded-xl p-3.5 text-xs font-semibold text-center select-all shadow-sm">
-            Demo Mode Verification Code: <span className="font-mono text-sm tracking-widest text-foreground bg-secondary px-2 py-0.5 rounded border border-border ml-1.5">{generatedOtp}</span>
+            Demo Mode Verification Code:{" "}
+            <span className="font-mono text-sm tracking-widest text-foreground bg-secondary px-2 py-0.5 rounded border border-border ml-1.5">
+              {generatedOtp}
+            </span>
           </div>
         ) : null;
       })()}

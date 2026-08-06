@@ -118,7 +118,9 @@ export function NewsletterSection() {
 
             {error ? <p className="mt-3 text-sm text-rose-200">{error}</p> : null}
             {subscribed ? (
-              <p className="mt-3 text-sm text-emerald-200">Thanks for subscribing. We’ll keep you posted.</p>
+              <p className="mt-3 text-sm text-emerald-200">
+                Thanks for subscribing. We’ll keep you posted.
+              </p>
             ) : null}
           </form>
 

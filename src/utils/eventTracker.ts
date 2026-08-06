@@ -1,7 +1,14 @@
 import { storage, STORAGE_KEYS } from "./storage";
 
 export interface AnalyticsEvent {
-  event_type: "view_product" | "search" | "add_to_cart" | "booking_completed" | "category_browse" | "recommendation_click" | "recommendation_impression";
+  event_type:
+    | "view_product"
+    | "search"
+    | "add_to_cart"
+    | "booking_completed"
+    | "category_browse"
+    | "recommendation_click"
+    | "recommendation_impression";
   product_id?: string;
   category?: string;
   search_query?: string;
@@ -12,16 +19,20 @@ export interface AnalyticsEvent {
   timestamp?: string;
 }
 
-const isLocal = typeof window !== "undefined" && (
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1"
-);
-const API_BASE = import.meta.env.VITE_API_URL !== undefined ? import.meta.env.VITE_API_URL : (isLocal ? "http://127.0.0.1:8000" : "");
+const isLocal =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+const API_BASE =
+  import.meta.env.VITE_API_URL !== undefined
+    ? import.meta.env.VITE_API_URL
+    : isLocal
+      ? "http://127.0.0.1:8000"
+      : "";
 
 // Generate or retrieve persistent session ID for anonymous users
 export function getSessionId(): string {
   if (typeof window === "undefined") return "server-session";
-  
+
   let sessionId = localStorage.getItem("payent_session_id");
   if (!sessionId) {
     sessionId = `sess_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`;
@@ -76,7 +87,7 @@ export async function flushEvents() {
 // Track event with debouncing / batching
 export function trackEvent(
   eventType: AnalyticsEvent["event_type"],
-  payload: Partial<AnalyticsEvent> = {}
+  payload: Partial<AnalyticsEvent> = {},
 ) {
   const event: AnalyticsEvent = {
     event_type: eventType,
@@ -119,11 +130,17 @@ export const tracker = {
     trackEvent("category_browse", { category });
   },
   recommendationClick: (productId: string, recommendationType: string) => {
-    trackEvent("recommendation_click", { product_id: productId, recommendation_type: recommendationType });
+    trackEvent("recommendation_click", {
+      product_id: productId,
+      recommendation_type: recommendationType,
+    });
   },
   recommendationImpression: (productId: string, recommendationType: string) => {
-    trackEvent("recommendation_impression", { product_id: productId, recommendation_type: recommendationType });
-  }
+    trackEvent("recommendation_impression", {
+      product_id: productId,
+      recommendation_type: recommendationType,
+    });
+  },
 };
 
 // Automatic flush when user navigates away or hides page

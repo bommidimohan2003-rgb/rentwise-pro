@@ -1,4 +1,9 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const faqs = [
   {
@@ -28,7 +33,9 @@ export function FaqSection() {
     <section className="mx-auto max-w-5xl px-4 md:px-6 py-20">
       <div className="mb-10 text-center">
         <h2 className="text-3xl font-bold md:text-4xl">Frequently asked questions</h2>
-        <p className="mt-3 text-muted-foreground">Everything you need to know before your next rental.</p>
+        <p className="mt-3 text-muted-foreground">
+          Everything you need to know before your next rental.
+        </p>
       </div>
 
       <div className="rounded-[28px] border border-border bg-card/80 p-2 shadow-[0_18px_40px_-24px_rgba(255,79,154,0.35)] backdrop-blur-sm">

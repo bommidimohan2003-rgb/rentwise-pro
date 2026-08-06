@@ -15,7 +15,8 @@ export function PrivacyPolicy() {
             Privacy Policy
           </h1>
           <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto font-medium">
-            At Payent, we respect your privacy and are committed to protecting your personal information while providing personalized gear recommendations.
+            At Payent, we respect your privacy and are committed to protecting your personal
+            information while providing personalized gear recommendations.
           </p>
         </div>
 
@@ -30,12 +31,21 @@ export function PrivacyPolicy() {
               <h2>1. Information We Collect</h2>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground leading-relaxed pl-11 font-normal">
-              To operate our peer-to-peer rental marketplace and personalize product recommendations, Payent collects:
+              To operate our peer-to-peer rental marketplace and personalize product
+              recommendations, Payent collects:
             </p>
             <ul className="list-disc pl-16 text-xs md:text-sm text-muted-foreground space-y-1 font-normal">
-              <li>Account details (name, email address, phone number, address) provided during registration.</li>
-              <li>Transaction data (rental history, order timestamps, payment verification tokens).</li>
-              <li>First-party behavioral analytics data (product detail views, category browsing, search terms, cart additions, and recommendation interactions).</li>
+              <li>
+                Account details (name, email address, phone number, address) provided during
+                registration.
+              </li>
+              <li>
+                Transaction data (rental history, order timestamps, payment verification tokens).
+              </li>
+              <li>
+                First-party behavioral analytics data (product detail views, category browsing,
+                search terms, cart additions, and recommendation interactions).
+              </li>
             </ul>
           </section>
 
@@ -48,14 +58,25 @@ export function PrivacyPolicy() {
               <h2>2. Behavioral Analytics & Recommendation Engine</h2>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground leading-relaxed pl-11 font-normal">
-              We collect interaction events solely for providing relevant, context-aware gear recommendations (such as "Similar Items", "Frequently Booked Together", and "Recommended For You").
+              We collect interaction events solely for providing relevant, context-aware gear
+              recommendations (such as "Similar Items", "Frequently Booked Together", and
+              "Recommended For You").
             </p>
             <div className="bg-secondary/40 border border-border/60 rounded-2xl p-4 ml-11 text-xs text-muted-foreground space-y-2">
               <div className="font-bold text-foreground">Our Recommendation Privacy Guarantee:</div>
               <ul className="list-disc pl-5 space-y-1">
-                <li><strong>No Keystroke Tracking:</strong> We do not log individual keystrokes or unsubmitted form text.</li>
-                <li><strong>No Cross-Site Tracking:</strong> We do not track your activity on third-party websites or sell behavioral profiles.</li>
-                <li><strong>Anonymous Session Identifiers:</strong> For logged-out users, interaction signals are tied only to a pseudonymous browser session ID.</li>
+                <li>
+                  <strong>No Keystroke Tracking:</strong> We do not log individual keystrokes or
+                  unsubmitted form text.
+                </li>
+                <li>
+                  <strong>No Cross-Site Tracking:</strong> We do not track your activity on
+                  third-party websites or sell behavioral profiles.
+                </li>
+                <li>
+                  <strong>Anonymous Session Identifiers:</strong> For logged-out users, interaction
+                  signals are tied only to a pseudonymous browser session ID.
+                </li>
               </ul>
             </div>
           </section>
@@ -69,7 +90,10 @@ export function PrivacyPolicy() {
               <h2>3. Data Protection & Security</h2>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground leading-relaxed pl-11 font-normal">
-              All personal and behavioral event data is transmitted via TLS encryption and stored securely in indexed databases with role-based access control. Rental coverage verification and payments are processed via verified PCI-DSS compliant providers (e.g. Razorpay).
+              All personal and behavioral event data is transmitted via TLS encryption and stored
+              securely in indexed databases with role-based access control. Rental coverage
+              verification and payments are processed via verified PCI-DSS compliant providers (e.g.
+              Razorpay).
             </p>
           </section>
 
@@ -82,7 +106,9 @@ export function PrivacyPolicy() {
               <h2>4. Your Rights & Choices</h2>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground leading-relaxed pl-11 font-normal">
-              You may request a copy of your stored rental history or request deletion of your account and associated behavioral event data at any time by contacting our support team at <span className="font-semibold text-primary">payent_support@gmail.com</span>.
+              You may request a copy of your stored rental history or request deletion of your
+              account and associated behavioral event data at any time by contacting our support
+              team at <span className="font-semibold text-primary">payent_support@gmail.com</span>.
             </p>
           </section>
         </div>

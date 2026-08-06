@@ -38,9 +38,7 @@ class AdminWebSocketService {
       this.status = newStatus;
       this.statusListeners.forEach((listener) => listener(newStatus));
       if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("payent-admin-ws-status", { detail: newStatus })
-        );
+        window.dispatchEvent(new CustomEvent("payent-admin-ws-status", { detail: newStatus }));
       }
     }
   }
@@ -73,9 +71,10 @@ class AdminWebSocketService {
     this.setStatus("CONNECTING");
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-      ? "127.0.0.1:8000"
-      : window.location.host;
+    const host =
+      window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? "127.0.0.1:8000"
+        : window.location.host;
 
     const wsUrl = `${protocol}//${host}/api/admin/ws?token=${encodeURIComponent(token)}`;
 

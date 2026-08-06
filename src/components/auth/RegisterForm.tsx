@@ -1,6 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
-import { Eye, EyeOff, Lock, Mail, Phone, User, ArrowRight, ShieldCheck, MapPin, Building2, Compass } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Phone,
+  User,
+  ArrowRight,
+  ShieldCheck,
+  MapPin,
+  Building2,
+  Compass,
+} from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -13,14 +25,21 @@ import { toast } from "sonner";
 const schema = z
   .object({
     fullName: z.string().trim().min(2, "Enter your full name (at least 2 letters)").max(100),
-    email: z.string().trim().min(1, "Email is required").email("Enter a valid email address").max(255),
+    email: z
+      .string()
+      .trim()
+      .min(1, "Email is required")
+      .email("Enter a valid email address")
+      .max(255),
     phone: z.string().trim().min(7, "Enter a valid phone number (at least 7 digits)").max(20),
     address: z.string().trim().min(5, "Enter complete street address (at least 5 characters)"),
     city: z.string().trim().min(2, "Enter city name"),
     pincode: z.string().trim().min(6, "Enter valid 6-digit PIN code").max(10),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirm: z.string().min(1, "Please confirm your password"),
-    terms: z.literal(true, { errorMap: () => ({ message: "Please accept the Terms & Privacy Policy" }) }),
+    terms: z.literal(true, {
+      errorMap: () => ({ message: "Please accept the Terms & Privacy Policy" }),
+    }),
     isAdmin: z.boolean().optional(),
     adminCode: z.string().optional(),
   })
@@ -115,14 +134,13 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
-      
       {/* Section 1: Account & Contact Info */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
           <User className="h-3.5 w-3.5" />
           <span>Account & Contact Info</span>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             label="Full Name"
@@ -238,13 +256,7 @@ export function RegisterForm() {
               style={{
                 width: `${(level / 4) * 100}%`,
                 backgroundColor:
-                  level < 2
-                    ? "#E63946"
-                    : level < 3
-                      ? "#F59E0B"
-                      : level < 4
-                        ? "#3B82F6"
-                        : "#10B981",
+                  level < 2 ? "#E63946" : level < 3 ? "#F59E0B" : level < 4 ? "#3B82F6" : "#10B981",
               }}
             />
           </div>
@@ -306,7 +318,9 @@ export function RegisterForm() {
         </Button>
       </div>
 
-      {errors.terms && <p className="text-xs text-destructive font-medium">{errors.terms.message}</p>}
+      {errors.terms && (
+        <p className="text-xs text-destructive font-medium">{errors.terms.message}</p>
+      )}
       {error && <p className="text-xs text-destructive font-medium">{error}</p>}
     </form>
   );
