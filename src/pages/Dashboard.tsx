@@ -20,7 +20,9 @@ export default function Dashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [myListings, setMyListings] = useState<Product[]>([]);
   const [alertsList, setAlertsList] = useState<Notification[]>([]);
-  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(
+    null,
+  );
 
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
 
@@ -52,7 +54,9 @@ export default function Dashboard() {
       .cancelOrder(token, orderId)
       .then(() => {
         setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" as const } : o)),
+          prev.map((o) =>
+            o.id === orderId ? { ...o, status: "cancelled" as const } : o,
+          ),
         );
         toast.success("Order cancelled successfully!");
       })
@@ -100,7 +104,9 @@ export default function Dashboard() {
         <h1 className="text-3xl md:text-4xl font-bold">
           Welcome back{user ? `, ${user.fullName.split(" ")[0]}` : ""}
         </h1>
-        <p className="mt-2 text-muted-foreground">Here's what's happening with your rentals.</p>
+        <p className="mt-2 text-muted-foreground">
+          Here's what's happening with your rentals.
+        </p>
 
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((s, i) => (
@@ -124,7 +130,11 @@ export default function Dashboard() {
           <div className="lg:col-span-2 card-premium p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Recent rentals</h2>
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/orders" })}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate({ to: "/orders" })}
+              >
                 View all
               </Button>
             </div>
@@ -134,7 +144,11 @@ export default function Dashboard() {
                   key={o.id}
                   className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary transition-colors"
                 >
-                  <img src={o.productImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                  <img
+                    src={o.productImage}
+                    alt=""
+                    className="h-14 w-14 rounded-lg object-cover"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{o.productTitle}</div>
                     <div className="text-xs text-muted-foreground">
@@ -176,7 +190,9 @@ export default function Dashboard() {
             {/* My Listings Card */}
             <div className="card-premium p-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">My Listings ({myListings.length})</h2>
+                <h2 className="text-lg font-semibold">
+                  My Listings ({myListings.length})
+                </h2>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -189,9 +205,15 @@ export default function Dashboard() {
                 {myListings.length ? (
                   myListings.slice(0, 3).map((p) => (
                     <div key={p.id} className="flex items-center gap-3">
-                      <img src={p.image} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                      <img
+                        src={p.image}
+                        alt=""
+                        className="h-12 w-12 rounded-lg object-cover"
+                      />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{p.title}</div>
+                        <div className="text-sm font-medium truncate">
+                          {p.title}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           ₹{p.price}/day • {p.category}
                         </div>
@@ -199,7 +221,9 @@ export default function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">No items listed for rent yet.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No items listed for rent yet.
+                  </p>
                 )}
               </div>
             </div>
@@ -208,7 +232,11 @@ export default function Dashboard() {
             <div className="card-premium p-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Wishlist</h2>
-                <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/wishlist" })}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate({ to: "/wishlist" })}
+                >
                   See all
                 </Button>
               </div>
@@ -216,15 +244,25 @@ export default function Dashboard() {
                 {wishlistItems.length ? (
                   wishlistItems.map((p) => (
                     <div key={p.id} className="flex items-center gap-3">
-                      <img src={p.image} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                      <img
+                        src={p.image}
+                        alt=""
+                        className="h-12 w-12 rounded-lg object-cover"
+                      />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{p.title}</div>
-                        <div className="text-xs text-muted-foreground">₹{p.price}/day</div>
+                        <div className="text-sm font-medium truncate">
+                          {p.title}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          ₹{p.price}/day
+                        </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">No saved items yet.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No saved items yet.
+                  </p>
                 )}
               </div>
             </div>
@@ -251,14 +289,20 @@ export default function Dashboard() {
               className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-2xl backdrop-blur-xl z-10"
             >
               <div className="flex flex-col gap-2">
-                <h3 className="text-xl font-bold text-foreground">Cancel Gear Rental</h3>
+                <h3 className="text-xl font-bold text-foreground">
+                  Cancel Gear Rental
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Are you sure you want to cancel this gear rental? Once cancelled, the reservation
-                  holds will be released back to the lender. This action cannot be undone.
+                  Are you sure you want to cancel this gear rental? Once
+                  cancelled, the reservation holds will be released back to the
+                  lender. This action cannot be undone.
                 </p>
               </div>
               <div className="mt-6 flex justify-end gap-3">
-                <Button variant="ghost" onClick={() => setCancellingOrderId(null)}>
+                <Button
+                  variant="ghost"
+                  onClick={() => setCancellingOrderId(null)}
+                >
                   Keep Rental
                 </Button>
                 <Button

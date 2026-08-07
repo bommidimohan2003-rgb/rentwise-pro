@@ -7,7 +7,8 @@ export const Route = createFileRoute("/wishlist")({
   head: () =>
     getSeoMetadata({
       title: "Your Wishlist | Payent",
-      description: "View and manage the premium tech gear you have saved to rent later.",
+      description:
+        "View and manage the premium tech gear you have saved to rent later.",
       path: "/wishlist",
     }),
   component: () => (

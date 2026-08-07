@@ -10,7 +10,13 @@ interface ModalProps {
   size?: "sm" | "md" | "lg" | "xl";
 }
 
-export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = "md",
+}: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -52,7 +58,9 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 bg-card/40">
-              <h2 className="text-base font-bold text-foreground tracking-tight">{title}</h2>
+              <h2 className="text-base font-bold text-foreground tracking-tight">
+                {title}
+              </h2>
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
@@ -63,7 +71,9 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 no-scrollbar">{children}</div>
+            <div className="flex-1 overflow-y-auto p-6 no-scrollbar">
+              {children}
+            </div>
           </motion.div>
         </div>
       )}

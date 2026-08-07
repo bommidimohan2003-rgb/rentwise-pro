@@ -64,7 +64,10 @@ export const notificationsService = {
     return response.data;
   },
 
-  async replyToTicket(id: string, message: string): Promise<AdminSupportTicket> {
+  async replyToTicket(
+    id: string,
+    message: string,
+  ): Promise<AdminSupportTicket> {
     const response = await adminApi.post(`/support/${id}/reply`, { message });
     return response.data;
   },
@@ -140,7 +143,10 @@ export const notificationsService = {
     return response.data;
   },
 
-  async updatePassword(data: { currentPassword?: string; newPassword?: string }): Promise<unknown> {
+  async updatePassword(data: {
+    currentPassword?: string;
+    newPassword?: string;
+  }): Promise<unknown> {
     const response = await adminApi.post("/profile/password", data);
     return response.data;
   },

@@ -68,7 +68,9 @@ export default function Notifications() {
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        (n) => n.title.toLowerCase().includes(q) || n.message.toLowerCase().includes(q),
+        (n) =>
+          n.title.toLowerCase().includes(q) ||
+          n.message.toLowerCase().includes(q),
       );
     }
 
@@ -84,9 +86,13 @@ export default function Notifications() {
   const getIcon = (type: string) => {
     switch (type) {
       case "success":
-        return <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />;
+        return (
+          <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        );
       case "warning":
-        return <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />;
+        return (
+          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+        );
       case "error":
         return <AlertTriangle className="h-5 w-5 text-destructive" />;
       default:
@@ -112,7 +118,9 @@ export default function Notifications() {
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Notification Center</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            Notification Center
+          </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Monitor system alarms, user triggers, and administrative alerts.
           </p>
@@ -176,18 +184,27 @@ export default function Notifications() {
               key={n.id}
               className={cn(
                 "card-premium p-5 bg-card/60 flex items-start gap-4 relative overflow-hidden group/item border-l-4",
-                n.read ? "border-l-transparent" : "border-l-primary bg-primary/5",
+                n.read
+                  ? "border-l-transparent"
+                  : "border-l-primary bg-primary/5",
               )}
             >
               {/* Alert symbol */}
-              <div className={cn("p-2.5 rounded-2xl shrink-0 mt-0.5", getBg(n.type))}>
+              <div
+                className={cn(
+                  "p-2.5 rounded-2xl shrink-0 mt-0.5",
+                  getBg(n.type),
+                )}
+              >
                 {getIcon(n.type)}
               </div>
 
               {/* Title & Msg */}
               <div className="flex-1 min-w-0 pr-12">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h4 className="text-xs font-bold text-foreground">{n.title}</h4>
+                  <h4 className="text-xs font-bold text-foreground">
+                    {n.title}
+                  </h4>
                   <span className="text-[9px] font-semibold text-muted-foreground/60">
                     {new Date(n.createdAt).toLocaleString()}
                   </span>

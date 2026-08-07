@@ -54,7 +54,9 @@ export default function BecomeLender() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        toast.error("Image file is too large. Please select a file smaller than 2MB.");
+        toast.error(
+          "Image file is too large. Please select a file smaller than 2MB.",
+        );
         return;
       }
       const reader = new FileReader();
@@ -100,7 +102,8 @@ export default function BecomeLender() {
       title: title.trim(),
       description: description.trim(),
       price: priceNum,
-      image: image || stockCategoryImages[category] || stockCategoryImages.cameras,
+      image:
+        image || stockCategoryImages[category] || stockCategoryImages.cameras,
       category: category,
       rating: 5.0,
       reviews: 0,
@@ -154,7 +157,10 @@ export default function BecomeLender() {
 
         <div className="mt-14 grid md:grid-cols-3 gap-6">
           {perks.map((p) => (
-            <div key={p.title} className="card-premium overflow-hidden group flex flex-col h-full">
+            <div
+              key={p.title}
+              className="card-premium overflow-hidden group flex flex-col h-full"
+            >
               <div className="relative h-32 w-full overflow-hidden bg-secondary">
                 <img
                   src={`https://images.unsplash.com/photo-${p.image}?auto=format&fit=crop&w=600&q=80`}
@@ -189,7 +195,9 @@ export default function BecomeLender() {
             />
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Category</label>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">
+                  Category
+                </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -229,7 +237,11 @@ export default function BecomeLender() {
               <label className="text-sm font-medium block mb-1.5">Photo</label>
               {image ? (
                 <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-secondary border border-border group">
-                  <img src={image} alt="Preview" className="h-full w-full object-cover" />
+                  <img
+                    src={image}
+                    alt="Preview"
+                    className="h-full w-full object-cover"
+                  />
                   <button
                     type="button"
                     onClick={() => setImage("")}

@@ -15,7 +15,8 @@ export default function Wishlist() {
     <MainLayout>
       <section className="mx-auto max-w-7xl px-4 md:px-6 py-10">
         <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
-          <Heart className="h-7 w-7 text-foreground fill-foreground" /> Your wishlist
+          <Heart className="h-7 w-7 text-foreground fill-foreground" /> Your
+          wishlist
         </h1>
         <p className="mt-2 text-muted-foreground">{items.length} saved items</p>
 
@@ -28,8 +29,13 @@ export default function Wishlist() {
         ) : (
           <div className="mt-10 card-premium p-16 text-center">
             <Heart className="h-10 w-10 mx-auto text-muted-foreground" />
-            <p className="mt-4 text-muted-foreground">Your wishlist is empty.</p>
-            <Button className="mt-6" onClick={() => navigate({ to: "/categories" })}>
+            <p className="mt-4 text-muted-foreground">
+              Your wishlist is empty.
+            </p>
+            <Button
+              className="mt-6"
+              onClick={() => navigate({ to: "/categories" })}
+            >
               Browse marketplace
             </Button>
           </div>

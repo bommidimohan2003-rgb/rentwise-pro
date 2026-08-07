@@ -8,7 +8,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./styles.css";
 
-const el = typeof document !== "undefined" ? document.getElementById("root") : null;
+const el =
+  typeof document !== "undefined" ? document.getElementById("root") : null;
 if (el) {
   createRoot(el).render(
     <StrictMode>

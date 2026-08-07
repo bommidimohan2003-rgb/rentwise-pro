@@ -28,7 +28,9 @@ export function useWishlist() {
       if (!token) return;
       // Optimistic UI update
       setIds((prev) => {
-        const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+        const next = prev.includes(id)
+          ? prev.filter((x) => x !== id)
+          : [...prev, id];
         storage.set(STORAGE_KEYS.wishlist, next);
         return next;
       });

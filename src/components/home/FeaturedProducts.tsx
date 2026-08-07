@@ -20,7 +20,10 @@ export function FeaturedProducts() {
   useEffect(() => {
     let isMounted = true;
     async function loadRecommendations() {
-      const res = await api.getPersonalizedRecommendations(user?.email, getSessionId());
+      const res = await api.getPersonalizedRecommendations(
+        user?.email,
+        getSessionId(),
+      );
       if (isMounted && res && res.items && res.items.length > 0) {
         setRecommendationData(res);
       }
@@ -39,9 +42,15 @@ export function FeaturedProducts() {
           title={recommendationData.title}
           subtitle={recommendationData.description}
           products={recommendationData.items}
-          type={recommendationData.source === "personalized" ? "personalized" : "trending"}
+          type={
+            recommendationData.source === "personalized"
+              ? "personalized"
+              : "trending"
+          }
           badge={
-            recommendationData.source === "personalized" ? "Recommended For You" : "Trending Now"
+            recommendationData.source === "personalized"
+              ? "Recommended For You"
+              : "Trending Now"
           }
         />
       )}
@@ -54,7 +63,8 @@ export function FeaturedProducts() {
               Featured Gear This Week
             </h2>
             <p className="mt-1 text-xs md:text-sm text-muted-foreground font-medium">
-              Hand-picked flagship cameras, laptops, and drones from top-rated verified lenders.
+              Hand-picked flagship cameras, laptops, and drones from top-rated
+              verified lenders.
             </p>
           </div>
           <Link

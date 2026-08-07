@@ -13,7 +13,8 @@ export const Route = createFileRoute("/admin")({
   head: () =>
     getSeoMetadata({
       title: "Admin Portal | Payent",
-      description: "Manage platform inventory, orders, payments, verification requests, and users.",
+      description:
+        "Manage platform inventory, orders, payments, verification requests, and users.",
       path: "/admin",
     }),
   component: AdminLayout,
@@ -51,7 +52,10 @@ function AdminLayout() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <LoadingState type="spinner" message="Validating admin authorization..." />
+        <LoadingState
+          type="spinner"
+          message="Validating admin authorization..."
+        />
       </div>
     );
   }

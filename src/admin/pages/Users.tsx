@@ -56,7 +56,9 @@ export default function Users() {
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editRole, setEditRole] = useState<"admin" | "agent" | "user">("user");
-  const [editStatus, setEditStatus] = useState<"active" | "suspended">("active");
+  const [editStatus, setEditStatus] = useState<"active" | "suspended">(
+    "active",
+  );
   const [editVerified, setEditVerified] = useState(false);
 
   const fetchUsers = async (silent = false) => {
@@ -83,7 +85,9 @@ export default function Users() {
           if (prev.some((u) => u.email === newUser.email)) return prev;
           return [newUser, ...prev];
         });
-        toast.info(`Live: New user ${newUser.fullName || newUser.email} registered!`);
+        toast.info(
+          `Live: New user ${newUser.fullName || newUser.email} registered!`,
+        );
       }
     });
 
@@ -92,7 +96,9 @@ export default function Users() {
       if (updatedUser && (updatedUser.id || updatedUser.email)) {
         const key = updatedUser.id || updatedUser.email;
         setUsers((prev) =>
-          prev.map((u) => (u.id === key || u.email === key ? { ...u, ...updatedUser } : u)),
+          prev.map((u) =>
+            u.id === key || u.email === key ? { ...u, ...updatedUser } : u,
+          ),
         );
       }
     });
@@ -182,7 +188,9 @@ export default function Users() {
         verified: editVerified,
       });
 
-      setUsers((prev) => prev.map((u) => (u.id === selectedUser.id ? updated : u)));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === selectedUser.id ? updated : u)),
+      );
       setEditModalOpen(false);
       toast.success("User details updated successfully.");
     } catch (err) {
@@ -217,7 +225,10 @@ export default function Users() {
 
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.map((x) => `"${x}"`).join(","))].join("\n");
+      [
+        headers.join(","),
+        ...rows.map((e) => e.map((x) => `"${x}"`).join(",")),
+      ].join("\n");
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -260,7 +271,9 @@ export default function Users() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc"
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -296,8 +309,12 @@ export default function Users() {
             className="h-9 w-9 rounded-full object-cover border border-border"
           />
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-foreground truncate">{row.fullName}</span>
-            <span className="text-[10px] text-muted-foreground mt-0.5">{row.email}</span>
+            <span className="text-xs font-bold text-foreground truncate">
+              {row.fullName}
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5">
+              {row.email}
+            </span>
           </div>
         </div>
       ),
@@ -306,7 +323,9 @@ export default function Users() {
       key: "phone",
       label: "Phone",
       sortable: true,
-      render: (row) => <span className="text-xs font-semibold">{row.phone}</span>,
+      render: (row) => (
+        <span className="text-xs font-semibold">{row.phone}</span>
+      ),
     },
     {
       key: "role",
@@ -316,9 +335,12 @@ export default function Users() {
         <span
           className={cn(
             "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
-            row.role === "admin" && "bg-primary text-primary-foreground border-primary",
-            row.role === "agent" && "bg-secondary text-foreground border-border",
-            row.role === "user" && "bg-secondary text-muted-foreground border-border/60",
+            row.role === "admin" &&
+              "bg-primary text-primary-foreground border-primary",
+            row.role === "agent" &&
+              "bg-secondary text-foreground border-border",
+            row.role === "user" &&
+              "bg-secondary text-muted-foreground border-border/60",
           )}
         >
           {row.role}
@@ -426,7 +448,8 @@ export default function Users() {
         <div>
           <h1 className="text-xl font-bold text-foreground">User Management</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Audit roles, status, verified credentials, and edit membership options.
+            Audit roles, status, verified credentials, and edit membership
+            options.
           </p>
         </div>
 
@@ -487,7 +510,11 @@ export default function Users() {
       {loading ? (
         <LoadingState type="table" count={5} />
       ) : error ? (
-        <ErrorState title="Unable to load user list" error={error} onRetry={fetchUsers} />
+        <ErrorState
+          title="Unable to load user list"
+          error={error}
+          onRetry={fetchUsers}
+        />
       ) : filteredUsers.length === 0 ? (
         <NoSearchResults
           query={search}
@@ -532,8 +559,12 @@ export default function Users() {
                 className="h-16 w-16 rounded-full object-cover border border-primary/20"
               />
               <div className="flex flex-col">
-                <span className="text-base font-bold text-foreground">{selectedUser.fullName}</span>
-                <span className="text-xs text-muted-foreground mt-0.5">{selectedUser.email}</span>
+                <span className="text-base font-bold text-foreground">
+                  {selectedUser.fullName}
+                </span>
+                <span className="text-xs text-muted-foreground mt-0.5">
+                  {selectedUser.email}
+                </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-primary mt-1.5">
                   {selectedUser.role}
                 </span>
@@ -542,17 +573,25 @@ export default function Users() {
 
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="text-muted-foreground font-semibold">User ID</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedUser.id}</p>
+                <span className="text-muted-foreground font-semibold">
+                  User ID
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedUser.id}
+                </p>
               </div>
               <div>
-                <span className="text-muted-foreground font-semibold">Phone Number</span>
+                <span className="text-muted-foreground font-semibold">
+                  Phone Number
+                </span>
                 <p className="font-bold text-foreground mt-0.5">
                   {selectedUser.phone || "Not set"}
                 </p>
               </div>
               <div>
-                <span className="text-muted-foreground font-semibold">Status</span>
+                <span className="text-muted-foreground font-semibold">
+                  Status
+                </span>
                 <p className="mt-0.5">
                   <span
                     className={cn(
@@ -567,13 +606,17 @@ export default function Users() {
                 </p>
               </div>
               <div>
-                <span className="text-muted-foreground font-semibold">KYC Verification</span>
+                <span className="text-muted-foreground font-semibold">
+                  KYC Verification
+                </span>
                 <p className="font-bold text-foreground mt-0.5">
                   {selectedUser.verified ? "Verified" : "Pending Verification"}
                 </p>
               </div>
               <div>
-                <span className="text-muted-foreground font-semibold">Registration Date</span>
+                <span className="text-muted-foreground font-semibold">
+                  Registration Date
+                </span>
                 <p className="font-bold text-foreground mt-0.5">
                   {new Date(selectedUser.createdAt!).toLocaleString()}
                 </p>
@@ -617,7 +660,9 @@ export default function Users() {
 
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground tracking-wide">Email</label>
+              <label className="text-xs font-bold text-muted-foreground tracking-wide">
+                Email
+              </label>
               <input
                 type="email"
                 required
@@ -648,7 +693,9 @@ export default function Users() {
               </label>
               <select
                 value={editRole}
-                onChange={(e) => setEditRole(e.target.value as "admin" | "agent" | "user")}
+                onChange={(e) =>
+                  setEditRole(e.target.value as "admin" | "agent" | "user")
+                }
                 className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
               >
                 <option value="user">Renter (User)</option>
@@ -664,7 +711,9 @@ export default function Users() {
               </label>
               <select
                 value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value as "active" | "suspended")}
+                onChange={(e) =>
+                  setEditStatus(e.target.value as "active" | "suspended")
+                }
                 className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
               >
                 <option value="active">Active</option>
@@ -698,7 +747,10 @@ export default function Users() {
             >
               Cancel
             </button>
-            <button type="submit" className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold">
+            <button
+              type="submit"
+              className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold"
+            >
               Save Changes
             </button>
           </div>

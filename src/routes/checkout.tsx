@@ -7,10 +7,13 @@ export const Route = createFileRoute("/checkout")({
   head: () =>
     getSeoMetadata({
       title: "Secure Checkout | Payent",
-      description: "Complete your secure rental booking with insurance options on Payent.",
+      description:
+        "Complete your secure rental booking with insurance options on Payent.",
       path: "/checkout",
     }),
-  validateSearch: (s: Record<string, unknown>) => ({ id: (s.id as string) ?? undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    id: (s.id as string) ?? undefined,
+  }),
   component: () => (
     <ProtectedRoute>
       <Checkout />

@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { User, ShieldAlert, Key, UserCheck, Shield, UploadCloud } from "lucide-react";
+import {
+  User,
+  ShieldAlert,
+  Key,
+  UserCheck,
+  Shield,
+  UploadCloud,
+} from "lucide-react";
 import { notificationsService } from "../services/notifications";
 import { authService } from "../services/auth";
 import { AdminUser } from "../services/api";
@@ -48,7 +55,12 @@ export default function Profile() {
     e.preventDefault();
     setUpdatingProfile(true);
     try {
-      await notificationsService.updateProfile({ fullName, email, phone, avatar });
+      await notificationsService.updateProfile({
+        fullName,
+        email,
+        phone,
+        avatar,
+      });
       // Dispatch profile updated event so topbar avatar dynamically syncs
       window.dispatchEvent(new Event("payent:admin:profile-updated"));
       toast.success("Profile details updated successfully.");
@@ -68,7 +80,10 @@ export default function Profile() {
 
     setUpdatingPassword(true);
     try {
-      await notificationsService.updatePassword({ currentPassword, newPassword });
+      await notificationsService.updatePassword({
+        currentPassword,
+        newPassword,
+      });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -81,7 +96,9 @@ export default function Profile() {
   };
 
   if (loading) {
-    return <Loader message="Accessing admin profile credentials..." size="lg" />;
+    return (
+      <Loader message="Accessing admin profile credentials..." size="lg" />
+    );
   }
 
   if (!profile) return null;
@@ -92,7 +109,8 @@ export default function Profile() {
       <div>
         <h1 className="text-xl font-bold text-foreground">Admin Profile</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Manage personal credentials, update avatars, and override security passwords.
+          Manage personal credentials, update avatars, and override security
+          passwords.
         </p>
       </div>
 
@@ -104,8 +122,12 @@ export default function Profile() {
             alt={fullName}
             className="h-28 w-28 rounded-full object-cover border-2 border-primary/20 shadow-lg"
           />
-          <h2 className="text-base font-bold text-foreground mt-4">{fullName}</h2>
-          <span className="text-xs text-muted-foreground font-medium">{email}</span>
+          <h2 className="text-base font-bold text-foreground mt-4">
+            {fullName}
+          </h2>
+          <span className="text-xs text-muted-foreground font-medium">
+            {email}
+          </span>
           <span className="mt-3.5 inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
             {profile.role} account
           </span>
@@ -134,7 +156,10 @@ export default function Profile() {
         {/* Right 2 Columns: Forms */}
         <div className="lg:col-span-2 space-y-6">
           {/* General Information */}
-          <form onSubmit={handleUpdateProfile} className="card-premium bg-card/60 p-6 space-y-4">
+          <form
+            onSubmit={handleUpdateProfile}
+            className="card-premium bg-card/60 p-6 space-y-4"
+          >
             <h3 className="text-sm font-bold text-foreground pb-2 border-b border-border/40 flex items-center gap-2">
               <User className="h-4.5 w-4.5 text-primary" />
               <span>Personal Information</span>
@@ -142,7 +167,9 @@ export default function Profile() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Full Name</label>
+                <label className="text-xs font-bold text-muted-foreground">
+                  Full Name
+                </label>
                 <input
                   type="text"
                   required
@@ -152,7 +179,9 @@ export default function Profile() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Email Address</label>
+                <label className="text-xs font-bold text-muted-foreground">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   required
@@ -162,7 +191,9 @@ export default function Profile() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Phone Number</label>
+                <label className="text-xs font-bold text-muted-foreground">
+                  Phone Number
+                </label>
                 <input
                   type="text"
                   required
@@ -172,7 +203,9 @@ export default function Profile() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Avatar Image Link</label>
+                <label className="text-xs font-bold text-muted-foreground">
+                  Avatar Image Link
+                </label>
                 <input
                   type="text"
                   required
@@ -196,7 +229,10 @@ export default function Profile() {
           </form>
 
           {/* Change Password */}
-          <form onSubmit={handleUpdatePassword} className="card-premium bg-card/60 p-6 space-y-4">
+          <form
+            onSubmit={handleUpdatePassword}
+            className="card-premium bg-card/60 p-6 space-y-4"
+          >
             <h3 className="text-sm font-bold text-foreground pb-2 border-b border-border/40 flex items-center gap-2">
               <Key className="h-4.5 w-4.5 text-primary" />
               <span>Change Security Password</span>
@@ -204,7 +240,9 @@ export default function Profile() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-semibold">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">Current Password</label>
+                <label className="text-xs font-bold text-muted-foreground">
+                  Current Password
+                </label>
                 <input
                   type="password"
                   required
@@ -214,7 +252,9 @@ export default function Profile() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">New Password</label>
+                <label className="text-xs font-bold text-muted-foreground">
+                  New Password
+                </label>
                 <input
                   type="password"
                   required

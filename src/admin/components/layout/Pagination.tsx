@@ -44,15 +44,20 @@ export function Pagination({
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-1">
       <div className="text-xs font-semibold text-muted-foreground order-2 sm:order-1">
-        Showing <span className="text-foreground">{totalItems === 0 ? 0 : startIdx}</span> to{" "}
-        <span className="text-foreground">{endIdx}</span> of{" "}
+        Showing{" "}
+        <span className="text-foreground">
+          {totalItems === 0 ? 0 : startIdx}
+        </span>{" "}
+        to <span className="text-foreground">{endIdx}</span> of{" "}
         <span className="text-foreground">{totalItems}</span> entries
       </div>
 
       <div className="flex items-center gap-4 order-1 sm:order-2">
         {onItemsPerPageChange && (
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground">Rows per page:</span>
+            <span className="text-xs font-semibold text-muted-foreground">
+              Rows per page:
+            </span>
             <select
               value={itemsPerPage}
               onChange={(e) => onItemsPerPageChange(Number(e.target.value))}

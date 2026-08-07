@@ -1,5 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Github, Instagram, Twitter, Youtube, Mail, MapPin, Phone } from "lucide-react";
+import {
+  Github,
+  Instagram,
+  Twitter,
+  Youtube,
+  Mail,
+  MapPin,
+  Phone,
+} from "lucide-react";
 import { LogoIcon } from "@/components/common/LogoIcon";
 
 const quickLinks = [
@@ -36,7 +44,8 @@ export function Footer() {
       <div
         className="absolute top-0 inset-x-0 h-px"
         style={{
-          background: "linear-gradient(to right, transparent, rgba(255,90,95,0.6), transparent)",
+          background:
+            "linear-gradient(to right, transparent, rgba(255,90,95,0.6), transparent)",
         }}
       />
 
@@ -54,8 +63,9 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-sm font-normal">
-              India's premier peer-to-peer tech gear rental platform. Access flagship cameras,
-              drones, laptops, audio gear, and tools insured up to ₹5 Lakhs.
+              India's premier peer-to-peer tech gear rental platform. Access
+              flagship cameras, drones, laptops, audio gear, and tools insured
+              up to ₹5 Lakhs.
             </p>
 
             <div className="space-y-2 pt-2 text-xs text-muted-foreground font-medium">
@@ -143,7 +153,10 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-medium">
-          <p>© {new Date().getFullYear()} Payent Technologies Inc. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} Payent Technologies Inc. All rights
+            reserved.
+          </p>
 
           <div className="flex items-center gap-4">
             {socials.map((s) => {

@@ -87,7 +87,10 @@ export default function Agents() {
 
   // Navigate to Products page, passing agent name as search filter
   const handleViewProducts = (agentName: string) => {
-    navigate({ to: "/admin/products", search: { search: agentName } as { search?: string } });
+    navigate({
+      to: "/admin/products",
+      search: { search: agentName } as { search?: string },
+    });
   };
 
   const filteredAgents = useMemo(() => {
@@ -96,7 +99,9 @@ export default function Agents() {
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        (a) => a.fullName.toLowerCase().includes(q) || a.email.toLowerCase().includes(q),
+        (a) =>
+          a.fullName.toLowerCase().includes(q) ||
+          a.email.toLowerCase().includes(q),
       );
     }
 
@@ -109,7 +114,9 @@ export default function Agents() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc"
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -142,8 +149,12 @@ export default function Agents() {
             className="h-9 w-9 rounded-full object-cover border border-border"
           />
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-foreground truncate">{row.fullName}</span>
-            <span className="text-[10px] text-muted-foreground mt-0.5">{row.email}</span>
+            <span className="text-xs font-bold text-foreground truncate">
+              {row.fullName}
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5">
+              {row.email}
+            </span>
           </div>
         </div>
       ),
@@ -152,14 +163,20 @@ export default function Agents() {
       key: "productsCount",
       label: "Uploads",
       sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.productsCount} gear items</span>,
+      render: (row) => (
+        <span className="text-xs font-bold">
+          {row.productsCount} gear items
+        </span>
+      ),
       align: "center",
     },
     {
       key: "bookingsCount",
       label: "Rentals",
       sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.bookingsCount} orders</span>,
+      render: (row) => (
+        <span className="text-xs font-bold">{row.bookingsCount} orders</span>
+      ),
       align: "center",
     },
     {
@@ -167,7 +184,9 @@ export default function Agents() {
       label: "Revenue",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-extrabold text-primary">₹{row.revenue.toLocaleString()}</span>
+        <span className="text-xs font-extrabold text-primary">
+          ₹{row.revenue.toLocaleString()}
+        </span>
       ),
     },
     {
@@ -250,8 +269,8 @@ export default function Agents() {
       <div>
         <h1 className="text-xl font-bold text-foreground">Agent Management</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Moderate verified lender agents, track products cataloged, total rental count, and revenue
-          commissions.
+          Moderate verified lender agents, track products cataloged, total
+          rental count, and revenue commissions.
         </p>
       </div>
 
@@ -324,7 +343,9 @@ export default function Agents() {
                 <span className="text-base font-bold text-foreground">
                   {selectedAgent.fullName}
                 </span>
-                <span className="text-xs text-muted-foreground mt-0.5">{selectedAgent.email}</span>
+                <span className="text-xs text-muted-foreground mt-0.5">
+                  {selectedAgent.email}
+                </span>
                 <div className="flex items-center gap-1.5 mt-2 bg-primary/10 text-primary text-[10px] font-extrabold px-2 py-0.5 rounded-full w-fit">
                   <Star className="h-3 w-3 fill-primary" />
                   <span>Agent Rating: {selectedAgent.rating.toFixed(1)}</span>
@@ -365,13 +386,17 @@ export default function Agents() {
 
             <div className="text-xs space-y-2.5 p-4 rounded-xl bg-secondary/20 border border-border/40">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">Verification Date</span>
+                <span className="text-muted-foreground font-semibold">
+                  Verification Date
+                </span>
                 <span className="font-bold text-foreground">
                   {new Date(selectedAgent.createdAt).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">Account Status</span>
+                <span className="text-muted-foreground font-semibold">
+                  Account Status
+                </span>
                 <span
                   className={cn(
                     "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full",

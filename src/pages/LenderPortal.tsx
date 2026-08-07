@@ -36,7 +36,9 @@ export default function LenderPortal() {
   const { user, ready } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<"listings" | "bookings">("listings");
+  const [activeTab, setActiveTab] = useState<"listings" | "bookings">(
+    "listings",
+  );
   const [listings, setListings] = useState<Product[]>([]);
   const [bookings, setBookings] = useState<LenderOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +77,9 @@ export default function LenderPortal() {
     try {
       const res = await api.toggleCustomProductAvailability(token, productId);
       setListings((prev) =>
-        prev.map((p) => (p.id === productId ? { ...p, available: res.available } : p)),
+        prev.map((p) =>
+          p.id === productId ? { ...p, available: res.available } : p,
+        ),
       );
       toast.success(
         res.available
@@ -83,7 +87,8 @@ export default function LenderPortal() {
           : "Listing paused. It won't accept new bookings.",
       );
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "Failed to toggle availability.";
+      const errMsg =
+        err instanceof Error ? err.message : "Failed to toggle availability.";
       toast.error(errMsg);
     }
   };
@@ -96,14 +101,17 @@ export default function LenderPortal() {
       toast.success("Listing deleted successfully.");
       setConfirmDeleteId(null);
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "Failed to delete listing.";
+      const errMsg =
+        err instanceof Error ? err.message : "Failed to delete listing.";
       toast.error(errMsg);
     }
   };
 
   // Calculations for Stats
   const activeListingsCount = listings.filter((l) => l.available).length;
-  const activeBookings = bookings.filter((b) => b.status === "active" || b.status === "pending");
+  const activeBookings = bookings.filter(
+    (b) => b.status === "active" || b.status === "pending",
+  );
   const totalEarnings = bookings
     .filter((b) => b.status === "completed" || b.status === "active")
     .reduce((sum, b) => sum + b.total, 0);
@@ -114,7 +122,9 @@ export default function LenderPortal() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Lender Portal</h1>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Lender Portal
+            </h1>
             <p className="mt-2 text-muted-foreground">
               Manage your gear listings and view incoming rental bookings.
             </p>
@@ -156,7 +166,9 @@ export default function LenderPortal() {
             </div>
             <div>
               <div className="text-2xl font-bold">{activeBookings.length}</div>
-              <div className="text-sm text-muted-foreground">Active Rentals</div>
+              <div className="text-sm text-muted-foreground">
+                Active Rentals
+              </div>
             </div>
           </motion.div>
 
@@ -170,8 +182,12 @@ export default function LenderPortal() {
               <IndianRupee className="h-6 w-6" />
             </div>
             <div>
-              <div className="text-2xl font-bold">₹{totalEarnings.toLocaleString("en-IN")}</div>
-              <div className="text-sm text-muted-foreground">Total Earnings</div>
+              <div className="text-2xl font-bold">
+                ₹{totalEarnings.toLocaleString("en-IN")}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Total Earnings
+              </div>
             </div>
           </motion.div>
         </div>
@@ -218,7 +234,9 @@ export default function LenderPortal() {
                 {listings.length === 0 ? (
                   <div className="card-premium p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
                     <Info className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm">You haven't listed any tech gear yet.</p>
+                    <p className="text-sm">
+                      You haven't listed any tech gear yet.
+                    </p>
                     <Button
                       size="sm"
                       onClick={() => navigate({ to: "/become-lender" })}
@@ -307,7 +325,9 @@ export default function LenderPortal() {
                 {bookings.length === 0 ? (
                   <div className="card-premium p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
                     <Calendar className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm">No bookings have been placed on your gear yet.</p>
+                    <p className="text-sm">
+                      No bookings have been placed on your gear yet.
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -330,7 +350,8 @@ export default function LenderPortal() {
                             <div className="flex items-center gap-2 mt-1.5">
                               <span
                                 className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
-                                  booking.status === "active" || booking.status === "completed"
+                                  booking.status === "active" ||
+                                  booking.status === "completed"
                                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                                     : booking.status === "pending"
                                       ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
@@ -357,13 +378,19 @@ export default function LenderPortal() {
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
                             <Mail className="h-3.5 w-3.5" />
-                            <a href={`mailto:${booking.renter.email}`} className="hover:underline">
+                            <a
+                              href={`mailto:${booking.renter.email}`}
+                              className="hover:underline"
+                            >
                               {booking.renter.email}
                             </a>
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
                             <Phone className="h-3.5 w-3.5" />
-                            <a href={`tel:${booking.renter.phone}`} className="hover:underline">
+                            <a
+                              href={`tel:${booking.renter.phone}`}
+                              className="hover:underline"
+                            >
                               {booking.renter.phone}
                             </a>
                           </div>
@@ -416,11 +443,15 @@ export default function LenderPortal() {
               >
                 <h3 className="text-xl font-bold">Delete Listing?</h3>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Are you sure you want to delete this listing? This action is permanent, and the
-                  item will be removed from the rental catalog immediately.
+                  Are you sure you want to delete this listing? This action is
+                  permanent, and the item will be removed from the rental
+                  catalog immediately.
                 </p>
                 <div className="mt-6 flex justify-end gap-3">
-                  <Button variant="ghost" onClick={() => setConfirmDeleteId(null)}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setConfirmDeleteId(null)}
+                  >
                     Cancel
                   </Button>
                   <Button

@@ -13,7 +13,9 @@ export default function Contact() {
         <span className="text-xs uppercase tracking-wider text-primary font-semibold">
           Get in touch
         </span>
-        <h1 className="mt-3 text-4xl md:text-6xl font-bold">We'd love to hear from you.</h1>
+        <h1 className="mt-3 text-4xl md:text-6xl font-bold">
+          We'd love to hear from you.
+        </h1>
         <p className="mt-4 text-muted-foreground text-lg">
           Questions, feedback, partnerships — reach out anytime.
         </p>
@@ -69,7 +71,9 @@ export default function Contact() {
             <div className="card-premium p-6">
               <MapPin className="h-5 w-5 text-primary" />
               <div className="mt-2 font-medium">Office</div>
-              <p className="text-sm text-muted-foreground">Vizag, Andhra Pradesh</p>
+              <p className="text-sm text-muted-foreground">
+                Vizag, Andhra Pradesh
+              </p>
             </div>
           </aside>
         </div>

@@ -124,13 +124,17 @@ export default function Dashboard() {
       case "product_uploaded":
         return <Camera className="h-4 w-4 text-foreground" />;
       case "product_approved":
-        return <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />;
+        return (
+          <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+        );
       case "product_rejected":
         return <XCircle className="h-4 w-4 text-destructive" />;
       case "booking_created":
         return <Calendar className="h-4 w-4 text-foreground" />;
       case "payment_success":
-        return <CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />;
+        return (
+          <CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+        );
       case "review_submitted":
         return <Star className="h-4 w-4 text-foreground" fill="currentColor" />;
       case "product_reported":
@@ -165,7 +169,9 @@ export default function Dashboard() {
 
   const handleResetAnalytics = async () => {
     if (
-      !confirm("Are you sure you want to reset total revenue, active listings, and analytics to 0?")
+      !confirm(
+        "Are you sure you want to reset total revenue, active listings, and analytics to 0?",
+      )
     )
       return;
     try {
@@ -186,9 +192,12 @@ export default function Dashboard() {
       {/* Top Welcome Title */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Operational Overview</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            Operational Overview
+          </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Monitor listings, rentals, payouts, and user verification requests across Payent.
+            Monitor listings, rentals, payouts, and user verification requests
+            across Payent.
           </p>
         </div>
 
@@ -249,7 +258,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Area Chart: Revenue Trend */}
         <div className="lg:col-span-2">
-          <ChartCard title="Revenue Trend" description="Monthly transaction revenue performance">
+          <ChartCard
+            title="Revenue Trend"
+            description="Monthly transaction revenue performance"
+          >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={charts?.revenueChart}
@@ -268,7 +280,12 @@ export default function Dashboard() {
                   tickLine={false}
                   axisLine={false}
                 />
-                <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis
+                  stroke="#888888"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "var(--color-card)",
@@ -276,7 +293,10 @@ export default function Dashboard() {
                     borderRadius: "0.8rem",
                   }}
                   labelStyle={{ fontSize: "11px", fontWeight: "bold" }}
-                  itemStyle={{ fontSize: "11px", color: "var(--color-primary)" }}
+                  itemStyle={{
+                    fontSize: "11px",
+                    color: "var(--color-primary)",
+                  }}
                 />
                 <Area
                   type="monotone"
@@ -293,7 +313,10 @@ export default function Dashboard() {
 
         {/* Category distribution */}
         <div>
-          <ChartCard title="Category Distribution" description="Items listed by category share">
+          <ChartCard
+            title="Category Distribution"
+            description="Items listed by category share"
+          >
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -306,9 +329,13 @@ export default function Dashboard() {
                   dataKey="value"
                 >
                   {(
-                    charts?.categoryDistribution as { name: string; value: number }[] | undefined
+                    charts?.categoryDistribution as
+                      { name: string; value: number }[] | undefined
                   )?.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip
@@ -335,7 +362,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Bookings & Users growth */}
         <div className="lg:col-span-2">
-          <ChartCard title="Growth Trend" description="Comparing User Growth and Product Listings">
+          <ChartCard
+            title="Growth Trend"
+            description="Comparing User Growth and Product Listings"
+          >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={charts?.userGrowth}
@@ -348,7 +378,12 @@ export default function Dashboard() {
                   tickLine={false}
                   axisLine={false}
                 />
-                <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis
+                  stroke="#888888"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "var(--color-card)",
@@ -386,20 +421,27 @@ export default function Dashboard() {
         {/* Top performing products list */}
         <div>
           <div className="card-premium bg-card/60 p-5 flex flex-col h-[350px]">
-            <h3 className="text-sm font-bold text-foreground mb-3">Top Listings</h3>
+            <h3 className="text-sm font-bold text-foreground mb-3">
+              Top Listings
+            </h3>
             <div className="flex-1 overflow-y-auto no-scrollbar space-y-4">
               {(
                 charts?.topProducts as
-                  { name: string; rentals: number; revenue: number }[] | undefined
+                  | { name: string; rentals: number; revenue: number }[]
+                  | undefined
               )?.map((p, idx) => (
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex flex-col min-w-0 pr-2">
-                    <span className="text-xs font-bold text-foreground truncate">{p.name}</span>
+                    <span className="text-xs font-bold text-foreground truncate">
+                      {p.name}
+                    </span>
                     <span className="text-[10px] font-semibold text-muted-foreground mt-0.5">
                       {p.rentals} rentals
                     </span>
                   </div>
-                  <span className="text-xs font-extrabold text-primary shrink-0">₹{p.revenue}</span>
+                  <span className="text-xs font-extrabold text-primary shrink-0">
+                    ₹{p.revenue}
+                  </span>
                 </div>
               ))}
             </div>
@@ -412,7 +454,9 @@ export default function Dashboard() {
         {/* Live Activity Feed */}
         <div className="lg:col-span-2 card-premium bg-card/60 p-5 flex flex-col h-[400px]">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-foreground">Live Activity Feed</h3>
+            <h3 className="text-sm font-bold text-foreground">
+              Live Activity Feed
+            </h3>
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -422,12 +466,19 @@ export default function Dashboard() {
           <div className="flex-1 overflow-y-auto no-scrollbar space-y-4">
             {activities.map((act) => (
               <div key={act.id} className="flex items-start gap-3">
-                <div className={cn("p-2 rounded-xl shrink-0 mt-0.5", getActivityBg(act.type))}>
+                <div
+                  className={cn(
+                    "p-2 rounded-xl shrink-0 mt-0.5",
+                    getActivityBg(act.type),
+                  )}
+                >
                   {getActivityIcon(act.type)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-bold text-foreground truncate">{act.title}</p>
+                    <p className="text-xs font-bold text-foreground truncate">
+                      {act.title}
+                    </p>
                     <span className="text-[9px] font-semibold text-muted-foreground/60 shrink-0">
                       {act.time}
                     </span>
@@ -444,35 +495,45 @@ export default function Dashboard() {
         {/* Quick Actions Panel */}
         <div className="card-premium bg-card/60 p-5 flex flex-col h-[400px] justify-between">
           <div>
-            <h3 className="text-sm font-bold text-foreground mb-4">System Shortcuts</h3>
+            <h3 className="text-sm font-bold text-foreground mb-4">
+              System Shortcuts
+            </h3>
             <div className="grid grid-cols-2 gap-3">
               <Link
                 to="/admin/products"
                 className="flex flex-col items-center justify-center p-4 rounded-2xl bg-secondary/30 border border-border/40 hover:bg-primary/5 hover:border-primary/30 transition-all text-center group"
               >
                 <Package className="h-5 w-5 text-primary mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-[11px] font-bold text-foreground">Review Products</span>
+                <span className="text-[11px] font-bold text-foreground">
+                  Review Products
+                </span>
               </Link>
               <Link
                 to="/admin/reports"
                 className="flex flex-col items-center justify-center p-4 rounded-2xl bg-secondary/30 border border-border/40 hover:bg-primary/5 hover:border-primary/30 transition-all text-center group"
               >
                 <AlertTriangle className="h-5 w-5 text-destructive mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-[11px] font-bold text-foreground">Flagged Listings</span>
+                <span className="text-[11px] font-bold text-foreground">
+                  Flagged Listings
+                </span>
               </Link>
               <Link
                 to="/admin/support"
                 className="flex flex-col items-center justify-center p-4 rounded-2xl bg-secondary/30 border border-border/40 hover:bg-primary/5 hover:border-primary/30 transition-all text-center group"
               >
                 <Users className="h-5 w-5 text-foreground mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-[11px] font-bold text-foreground">Open Tickets</span>
+                <span className="text-[11px] font-bold text-foreground">
+                  Open Tickets
+                </span>
               </Link>
               <Link
                 to="/admin/settings"
                 className="flex flex-col items-center justify-center p-4 rounded-2xl bg-secondary/30 border border-border/40 hover:bg-primary/5 hover:border-primary/30 transition-all text-center group"
               >
                 <Settings className="h-5 w-5 text-muted-foreground mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-[11px] font-bold text-foreground">Site Settings</span>
+                <span className="text-[11px] font-bold text-foreground">
+                  Site Settings
+                </span>
               </Link>
             </div>
           </div>
@@ -481,7 +542,9 @@ export default function Dashboard() {
             <div className="flex items-center gap-2.5">
               <ShieldCheck className="h-5 w-5 text-primary" />
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-foreground">Platform Security</span>
+                <span className="text-xs font-bold text-foreground">
+                  Platform Security
+                </span>
                 <span className="text-[9px] font-semibold text-muted-foreground mt-0.5">
                   All services active & stable
                 </span>

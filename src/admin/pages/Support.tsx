@@ -21,10 +21,11 @@ export default function Support() {
   const [tickets, setTickets] = useState<AdminSupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusTab, setStatusTab] = useState<"all" | "open" | "pending" | "resolved" | "closed">(
-    "open",
-  );
-  const [selectedTicket, setSelectedTicket] = useState<AdminSupportTicket | null>(null);
+  const [statusTab, setStatusTab] = useState<
+    "all" | "open" | "pending" | "resolved" | "closed"
+  >("open");
+  const [selectedTicket, setSelectedTicket] =
+    useState<AdminSupportTicket | null>(null);
 
   // Message reply content
   const [reply, setReply] = useState("");
@@ -60,8 +61,13 @@ export default function Support() {
 
     setSubmittingReply(true);
     try {
-      const updated = await notificationsService.replyToTicket(selectedTicket.id, reply);
-      setTickets((prev) => prev.map((t) => (t.id === selectedTicket.id ? updated : t)));
+      const updated = await notificationsService.replyToTicket(
+        selectedTicket.id,
+        reply,
+      );
+      setTickets((prev) =>
+        prev.map((t) => (t.id === selectedTicket.id ? updated : t)),
+      );
       setSelectedTicket(updated);
       setReply("");
       toast.success("Response sent to customer.");
@@ -76,8 +82,13 @@ export default function Support() {
     if (!selectedTicket) return;
 
     try {
-      const updated = await notificationsService.updateTicketStatus(selectedTicket.id, status);
-      setTickets((prev) => prev.map((t) => (t.id === selectedTicket.id ? updated : t)));
+      const updated = await notificationsService.updateTicketStatus(
+        selectedTicket.id,
+        status,
+      );
+      setTickets((prev) =>
+        prev.map((t) => (t.id === selectedTicket.id ? updated : t)),
+      );
       setSelectedTicket(updated);
       toast.info(`Ticket status updated to ${status}.`);
     } catch {
@@ -112,7 +123,8 @@ export default function Support() {
       <div>
         <h1 className="text-xl font-bold text-foreground">Support Center</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Verify lender/renter dispute tickets, reply to issues, and assign resolutions.
+          Verify lender/renter dispute tickets, reply to issues, and assign
+          resolutions.
         </p>
       </div>
 
@@ -138,7 +150,9 @@ export default function Support() {
 
               {/* Status scroll tabs */}
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar bg-secondary/30 p-1 rounded-xl border border-border/50">
-                {(["all", "open", "pending", "resolved", "closed"] as const).map((tab) => (
+                {(
+                  ["all", "open", "pending", "resolved", "closed"] as const
+                ).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setStatusTab(tab)}
@@ -198,7 +212,9 @@ export default function Support() {
                       </h4>
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-3 font-semibold">
                         <span>{t.userName}</span>
-                        <span>{new Date(t.createdAt).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(t.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                   );
@@ -214,9 +230,12 @@ export default function Support() {
                 {/* Thread header */}
                 <div className="flex items-start justify-between border-b border-border/40 pb-4 shrink-0">
                   <div>
-                    <h3 className="text-sm font-bold text-foreground">{selectedTicket.subject}</h3>
+                    <h3 className="text-sm font-bold text-foreground">
+                      {selectedTicket.subject}
+                    </h3>
                     <p className="text-[10px] font-semibold text-muted-foreground mt-0.5">
-                      Client: {selectedTicket.userName} ({selectedTicket.userEmail}) • Category:{" "}
+                      Client: {selectedTicket.userName} (
+                      {selectedTicket.userEmail}) • Category:{" "}
                       {selectedTicket.category}
                     </p>
                   </div>
@@ -257,7 +276,9 @@ export default function Support() {
                         <div
                           className={cn(
                             "p-2 rounded-xl shrink-0 mt-0.5",
-                            isAdmin ? "bg-primary text-white" : "bg-secondary text-foreground",
+                            isAdmin
+                              ? "bg-primary text-white"
+                              : "bg-secondary text-foreground",
                           )}
                         >
                           {isAdmin ? (
@@ -295,7 +316,8 @@ export default function Support() {
                 </div>
 
                 {/* Chat text box reply */}
-                {selectedTicket.status !== "closed" && selectedTicket.status !== "resolved" ? (
+                {selectedTicket.status !== "closed" &&
+                selectedTicket.status !== "resolved" ? (
                   <form
                     onSubmit={handleSendReply}
                     className="flex items-center gap-2.5 border-t border-border/40 pt-4 shrink-0"
@@ -319,7 +341,10 @@ export default function Support() {
                 ) : (
                   <div className="flex items-center gap-2 p-3 bg-secondary/35 border border-dashed rounded-xl shrink-0 justify-center text-xs text-muted-foreground font-semibold">
                     <AlertCircle className="h-4.5 w-4.5 text-muted-foreground" />
-                    <span>This support ticket has been {selectedTicket.status} and locked.</span>
+                    <span>
+                      This support ticket has been {selectedTicket.status} and
+                      locked.
+                    </span>
                   </div>
                 )}
               </div>

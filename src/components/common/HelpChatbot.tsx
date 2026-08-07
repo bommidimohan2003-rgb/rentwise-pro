@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, X, Send, Bot, Sparkles, AlertCircle } from "lucide-react";
+import {
+  MessageSquare,
+  X,
+  Send,
+  Bot,
+  Sparkles,
+  AlertCircle,
+} from "lucide-react";
 import { products, categories } from "@/utils/mockData";
 import { Button } from "@/components/common/Button";
 
@@ -26,7 +33,8 @@ export function HelpChatbot() {
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
     window.addEventListener("open-payent-help-chat", handleOpen);
-    return () => window.removeEventListener("open-payent-help-chat", handleOpen);
+    return () =>
+      window.removeEventListener("open-payent-help-chat", handleOpen);
   }, []);
 
   useEffect(() => {
@@ -71,8 +79,12 @@ export function HelpChatbot() {
       /payent|rent|lend|price|rate|cost|gear|deposit|insur|deliver|city|cities|owner|earn|product|list|item/i.test(
         q,
       ) ||
-      categories.some((cat) => q.includes(cat.id) || q.includes(cat.name.toLowerCase())) ||
-      products.some((p) => q.includes(p.title.toLowerCase()) || q.includes(p.category));
+      categories.some(
+        (cat) => q.includes(cat.id) || q.includes(cat.name.toLowerCase()),
+      ) ||
+      products.some(
+        (p) => q.includes(p.title.toLowerCase()) || q.includes(p.category),
+      );
 
     if (!isPayentRelated && !/hi|hello|hey|namaste|help/i.test(q)) {
       return "I am the Payent AI Assistant, trained specifically to assist with peer-to-peer rentals on the Payent platform. I can only answer questions related to our gear listings, daily rental rates, owner earnings, platform cities, and insurance coverage. How can I help you with your rental today?";
@@ -89,7 +101,8 @@ export function HelpChatbot() {
       q.includes("activa")
     ) {
       const bikes = products.filter((p) => p.category === "bikes");
-      let bikeListText = "We have multiple premium rides available for rent on Payent:\n";
+      let bikeListText =
+        "We have multiple premium rides available for rent on Payent:\n";
       bikes.forEach((b) => {
         bikeListText += `• *${b.title}* - ₹${b.price}/day (${b.description.slice(0, 60)}...)\n`;
       });
@@ -114,7 +127,8 @@ export function HelpChatbot() {
         toolListText += `• *${t.title}* - ₹${t.price}/day (Perfect for drilling, grinding, or sawing)\n`;
       });
       return (
-        toolListText + "\nAll tools include standard handles, cables, and basic safety accessories."
+        toolListText +
+        "\nAll tools include standard handles, cables, and basic safety accessories."
       );
     }
 
@@ -128,11 +142,15 @@ export function HelpChatbot() {
       q.includes("battery")
     ) {
       const powerbanks = products.filter((p) => p.category === "powerbanks");
-      let pbListText = "We have high-capacity power banks perfect for outdoor shoots or trips:\n";
+      let pbListText =
+        "We have high-capacity power banks perfect for outdoor shoots or trips:\n";
       powerbanks.forEach((pb) => {
         pbListText += `• *${pb.title}* - ₹${pb.price}/day\n`;
       });
-      return pbListText + "\nKeep your cameras, drones, or laptops charged on the go!";
+      return (
+        pbListText +
+        "\nKeep your cameras, drones, or laptops charged on the go!"
+      );
     }
 
     // 4. Cameras
@@ -269,7 +287,9 @@ export function HelpChatbot() {
                     Payent AI Assistant
                     <Sparkles className="h-3 w-3 text-yellow-300 animate-pulse" />
                   </h4>
-                  <span className="text-[11px] text-white/80">Support Online</span>
+                  <span className="text-[11px] text-white/80">
+                    Support Online
+                  </span>
                 </div>
               </div>
               <button

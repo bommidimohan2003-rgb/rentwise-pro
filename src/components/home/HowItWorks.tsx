@@ -23,12 +23,16 @@ export function HowItWorks() {
               {/* App Search Bar */}
               <div className="bg-secondary p-2.5 rounded-xl flex items-center gap-2 mb-4">
                 <Search className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground font-medium">Search items...</span>
+                <span className="text-xs text-muted-foreground font-medium">
+                  Search items...
+                </span>
               </div>
 
               {/* App Section: Popular Nearby */}
               <div className="space-y-3 text-left">
-                <p className="text-xs font-bold text-foreground">Popular Nearby</p>
+                <p className="text-xs font-bold text-foreground">
+                  Popular Nearby
+                </p>
 
                 {/* Product 1 */}
                 <div className="bg-secondary/50 p-2.5 rounded-xl border border-border flex items-center gap-3">
@@ -38,8 +42,12 @@ export function HowItWorks() {
                     className="h-12 w-12 rounded-lg object-cover"
                   />
                   <div className="flex-1">
-                    <p className="text-xs font-extrabold text-foreground">Canon EOS 2000</p>
-                    <p className="text-[10px] font-bold text-[#FF5A5F]">₹900 / day</p>
+                    <p className="text-xs font-extrabold text-foreground">
+                      Canon EOS 2000
+                    </p>
+                    <p className="text-[10px] font-bold text-[#FF5A5F]">
+                      ₹900 / day
+                    </p>
                     <div className="flex items-center gap-1 text-[9px] text-amber-500 font-bold">
                       <Star className="h-2.5 w-2.5 fill-amber-400" />
                       <span>4.9 • 2.1 km away</span>
@@ -55,8 +63,12 @@ export function HowItWorks() {
                     className="h-12 w-12 rounded-lg object-cover"
                   />
                   <div className="flex-1">
-                    <p className="text-xs font-extrabold text-foreground">MacBook Air M1</p>
-                    <p className="text-[10px] font-bold text-[#FF5A5F]">₹1,200 / day</p>
+                    <p className="text-xs font-extrabold text-foreground">
+                      MacBook Air M1
+                    </p>
+                    <p className="text-[10px] font-bold text-[#FF5A5F]">
+                      ₹1,200 / day
+                    </p>
                     <div className="flex items-center gap-1 text-[9px] text-amber-500 font-bold">
                       <Star className="h-2.5 w-2.5 fill-amber-400" />
                       <span>4.8 • 3.5 km away</span>
@@ -100,7 +112,9 @@ export function HowItWorks() {
                   <Search className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-foreground">1. Discover</h3>
+                  <h3 className="text-base font-extrabold text-foreground">
+                    1. Discover
+                  </h3>
                   <p className="text-xs md:text-sm text-muted-foreground font-normal mt-1 leading-relaxed">
                     Find items you need from trusted local owners in your city.
                   </p>
@@ -119,9 +133,12 @@ export function HowItWorks() {
                   <ClipboardList className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-foreground">2. Book</h3>
+                  <h3 className="text-base font-extrabold text-foreground">
+                    2. Book
+                  </h3>
                   <p className="text-xs md:text-sm text-muted-foreground font-normal mt-1 leading-relaxed">
-                    Send a request and get instant confirmation from verified lenders.
+                    Send a request and get instant confirmation from verified
+                    lenders.
                   </p>
                 </div>
               </motion.div>
@@ -138,9 +155,12 @@ export function HowItWorks() {
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-foreground">3. Enjoy</h3>
+                  <h3 className="text-base font-extrabold text-foreground">
+                    3. Enjoy
+                  </h3>
                   <p className="text-xs md:text-sm text-muted-foreground font-normal mt-1 leading-relaxed">
-                    Use the item, create amazing work, and return it safely when done.
+                    Use the item, create amazing work, and return it safely when
+                    done.
                   </p>
                 </div>
               </motion.div>

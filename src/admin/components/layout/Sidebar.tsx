@@ -51,14 +51,29 @@ const menuItems = [
       { to: "/admin/bookings", icon: Calendar, label: "Bookings" },
       { to: "/admin/payments", icon: CreditCard, label: "Payments" },
       { to: "/admin/reviews", icon: Star, label: "Reviews" },
-      { to: "/admin/reports", icon: Flag, label: "Reports", badgeKey: "reports" },
+      {
+        to: "/admin/reports",
+        icon: Flag,
+        label: "Reports",
+        badgeKey: "reports",
+      },
     ],
   },
   {
     group: "Security & Support",
     items: [
-      { to: "/admin/notifications", icon: Bell, label: "Notifications", badgeKey: "notifications" },
-      { to: "/admin/support", icon: LifeBuoy, label: "Support", badgeKey: "support" },
+      {
+        to: "/admin/notifications",
+        icon: Bell,
+        label: "Notifications",
+        badgeKey: "notifications",
+      },
+      {
+        to: "/admin/support",
+        icon: LifeBuoy,
+        label: "Support",
+        badgeKey: "support",
+      },
       { to: "/admin/activity-logs", icon: Shield, label: "Activity Logs" },
     ],
   },
@@ -75,7 +90,11 @@ export function Sidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [badges, setBadges] = useState({ reports: 0, notifications: 0, support: 0 });
+  const [badges, setBadges] = useState({
+    reports: 0,
+    notifications: 0,
+    support: 0,
+  });
   const navigate = useNavigate();
 
   const fetchBadges = async () => {
@@ -137,7 +156,9 @@ export function Sidebar() {
               <it.icon
                 className={cn(
                   "h-4 w-4 shrink-0",
-                  active ? "scale-105" : "group-hover:scale-105 transition-transform",
+                  active
+                    ? "scale-105"
+                    : "group-hover:scale-105 transition-transform",
                 )}
               />
               {!collapsed && <span className="truncate">{it.label}</span>}
@@ -164,7 +185,11 @@ export function Sidebar() {
           onClick={() => setMobileOpen(!mobileOpen)}
           className="p-2 rounded-xl bg-card border border-border/80 text-foreground shadow-md"
         >
-          {mobileOpen ? <X className="h-4.5 w-4.5" /> : <Menu className="h-4.5 w-4.5" />}
+          {mobileOpen ? (
+            <X className="h-4.5 w-4.5" />
+          ) : (
+            <Menu className="h-4.5 w-4.5" />
+          )}
         </button>
       </div>
 
@@ -219,7 +244,9 @@ export function Sidebar() {
         </div>
 
         {/* Scrollable Navigation */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">{renderNavItems()}</div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
+          {renderNavItems()}
+        </div>
 
         {/* Logout Area */}
         <div className="p-4 border-t border-border/40 bg-secondary/10">

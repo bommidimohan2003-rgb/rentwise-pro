@@ -63,7 +63,11 @@ export default function Settings() {
           <h3 className="font-semibold text-lg flex items-center gap-2">
             <Lock className="h-5 w-5" /> Security
           </h3>
-          <Button variant="outline" className="mt-4" onClick={() => navigate({ to: "/profile" })}>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => navigate({ to: "/profile" })}
+          >
             Change password
           </Button>
         </div>
@@ -71,7 +75,9 @@ export default function Settings() {
           <h3 className="font-semibold text-lg text-destructive flex items-center gap-2">
             <Trash2 className="h-5 w-5" /> Danger zone
           </h3>
-          <p className="text-sm text-muted-foreground mt-2">Log out of this session.</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Log out of this session.
+          </p>
           <Button
             variant="destructive"
             className="mt-4"

@@ -7,7 +7,8 @@ export const Route = createFileRoute("/notifications")({
   head: () =>
     getSeoMetadata({
       title: "Notifications | Payent",
-      description: "Stay updated with booking requests, order updates, and messages.",
+      description:
+        "Stay updated with booking requests, order updates, and messages.",
       path: "/notifications",
     }),
   component: () => (

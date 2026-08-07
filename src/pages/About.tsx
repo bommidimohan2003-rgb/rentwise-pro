@@ -8,11 +8,13 @@ export default function About() {
         <span className="text-xs uppercase tracking-wider text-primary font-semibold">
           About us
         </span>
-        <h1 className="mt-3 text-4xl md:text-6xl font-bold">Access, not ownership.</h1>
+        <h1 className="mt-3 text-4xl md:text-6xl font-bold">
+          Access, not ownership.
+        </h1>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
-          We started Payent in 2026 with a simple idea: most premium tech sits idle 95% of the time.
-          By connecting owners with people who need gear for a few days, we're building a more
-          sustainable way to create.
+          We started Payent in 2026 with a simple idea: most premium tech sits
+          idle 95% of the time. By connecting owners with people who need gear
+          for a few days, we're building a more sustainable way to create.
         </p>
 
         <div className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -34,7 +36,9 @@ export default function About() {
 
               {/* Content */}
               <div className="relative z-10">
-                <div className="text-3xl font-extrabold text-white tracking-tight">{s.value}</div>
+                <div className="text-3xl font-extrabold text-white tracking-tight">
+                  {s.value}
+                </div>
                 <div className="text-xs font-semibold text-white/85 mt-1 uppercase tracking-wider">
                   {s.label}
                 </div>
@@ -47,8 +51,8 @@ export default function About() {
           <div>
             <h2 className="text-2xl font-bold">Our mission</h2>
             <p className="mt-3 text-muted-foreground">
-              Democratize access to professional-grade tech. Reduce e-waste. Empower every creator,
-              everywhere.
+              Democratize access to professional-grade tech. Reduce e-waste.
+              Empower every creator, everywhere.
             </p>
           </div>
           <div>

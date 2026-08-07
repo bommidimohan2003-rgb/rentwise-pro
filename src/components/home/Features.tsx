@@ -1,6 +1,13 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { ShieldCheck, Zap, RotateCcw, Sparkles, Search, Headphones } from "lucide-react";
+import {
+  ShieldCheck,
+  Zap,
+  RotateCcw,
+  Sparkles,
+  Search,
+  Headphones,
+} from "lucide-react";
 
 const features = [
   {
@@ -90,11 +97,12 @@ export function Features() {
             WHY PAYENT
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-display">
-            Everything you need to <span className="text-[#FF5A5F]">rent smarter</span>
+            Everything you need to{" "}
+            <span className="text-[#FF5A5F]">rent smarter</span>
           </h2>
           <p className="mt-2 text-muted-foreground text-xs md:text-sm max-w-xl mx-auto font-normal">
-            We've built every feature to make renting tech gear effortless, safe, and surprisingly
-            affordable.
+            We've built every feature to make renting tech gear effortless,
+            safe, and surprisingly affordable.
           </p>
         </motion.div>
 

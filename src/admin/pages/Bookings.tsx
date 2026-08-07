@@ -37,7 +37,9 @@ export default function Bookings() {
   const [sortKey, setSortKey] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(
+    null,
+  );
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const fetchBookings = async (silent = false) => {
@@ -73,7 +75,9 @@ export default function Bookings() {
     const unsubUpdated = adminWS.subscribe("booking.updated", (event) => {
       const updated = event.data as AdminBooking;
       if (updated && updated.id) {
-        setBookings((prev) => prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)));
+        setBookings((prev) =>
+          prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)),
+        );
       }
     });
 
@@ -81,7 +85,9 @@ export default function Bookings() {
       const cancelled = event.data as { id: string; status: string };
       if (cancelled && cancelled.id) {
         setBookings((prev) =>
-          prev.map((b) => (b.id === cancelled.id ? { ...b, status: "cancelled" } : b)),
+          prev.map((b) =>
+            b.id === cancelled.id ? { ...b, status: "cancelled" } : b,
+          ),
         );
       }
     });
@@ -165,7 +171,9 @@ export default function Bookings() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc"
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -213,13 +221,17 @@ export default function Bookings() {
       key: "customerName",
       label: "Customer",
       sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.customerName}</span>,
+      render: (row) => (
+        <span className="text-xs font-bold">{row.customerName}</span>
+      ),
     },
     {
       key: "ownerName",
       label: "Lender",
       sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.ownerName}</span>,
+      render: (row) => (
+        <span className="text-xs font-bold">{row.ownerName}</span>
+      ),
     },
     {
       key: "startDate",
@@ -234,7 +246,11 @@ export default function Bookings() {
       key: "amount",
       label: "Total Amount",
       sortable: true,
-      render: (row) => <span className="text-xs font-extrabold text-primary">₹{row.amount}</span>,
+      render: (row) => (
+        <span className="text-xs font-extrabold text-primary">
+          ₹{row.amount}
+        </span>
+      ),
     },
     {
       key: "status",
@@ -312,7 +328,8 @@ export default function Bookings() {
       <div>
         <h1 className="text-xl font-bold text-foreground">Rental Bookings</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Moderate active lease schedules, override booking statuses, and process refunds.
+          Moderate active lease schedules, override booking statuses, and
+          process refunds.
         </p>
       </div>
 
@@ -353,7 +370,11 @@ export default function Bookings() {
       {loading ? (
         <LoadingState type="table" count={5} />
       ) : error ? (
-        <ErrorState title="Unable to load bookings" error={error} onRetry={fetchBookings} />
+        <ErrorState
+          title="Unable to load bookings"
+          error={error}
+          onRetry={fetchBookings}
+        />
       ) : filteredBookings.length === 0 ? (
         <NoSearchResults
           query={search}
@@ -397,7 +418,9 @@ export default function Bookings() {
                 className="h-12 w-16 rounded-xl object-cover border"
               />
               <div>
-                <span className="text-xs text-primary font-bold">Booking Details</span>
+                <span className="text-xs text-primary font-bold">
+                  Booking Details
+                </span>
                 <h4 className="text-sm font-bold text-foreground">
                   {selectedBooking.productTitle}
                 </h4>
@@ -407,32 +430,58 @@ export default function Bookings() {
             {/* Specific values grid */}
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="text-muted-foreground font-semibold">Booking ID</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedBooking.id}</p>
+                <span className="text-muted-foreground font-semibold">
+                  Booking ID
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedBooking.id}
+                </p>
               </div>
               <div>
-                <span className="text-muted-foreground font-semibold">Product ID</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedBooking.productId}</p>
+                <span className="text-muted-foreground font-semibold">
+                  Product ID
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedBooking.productId}
+                </p>
               </div>
               <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">Customer (Renter)</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedBooking.customerName}</p>
+                <span className="text-muted-foreground font-semibold">
+                  Customer (Renter)
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedBooking.customerName}
+                </p>
               </div>
               <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">Lender (Agent)</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedBooking.ownerName}</p>
+                <span className="text-muted-foreground font-semibold">
+                  Lender (Agent)
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedBooking.ownerName}
+                </p>
               </div>
               <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">Rental Start Date</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedBooking.startDate}</p>
+                <span className="text-muted-foreground font-semibold">
+                  Rental Start Date
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedBooking.startDate}
+                </p>
               </div>
               <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">Rental End Date</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedBooking.endDate}</p>
+                <span className="text-muted-foreground font-semibold">
+                  Rental End Date
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedBooking.endDate}
+                </p>
               </div>
               <div className="border-t border-border/40 pt-3 col-span-2 flex items-center justify-between">
                 <div>
-                  <span className="text-muted-foreground font-semibold">Lease State</span>
+                  <span className="text-muted-foreground font-semibold">
+                    Lease State
+                  </span>
                   <p className="mt-0.5">
                     <span
                       className={cn(
@@ -451,7 +500,9 @@ export default function Bookings() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-muted-foreground font-semibold">Total Lease Cost</span>
+                  <span className="text-muted-foreground font-semibold">
+                    Total Lease Cost
+                  </span>
                   <p className="text-sm font-extrabold text-primary mt-0.5">
                     ₹{selectedBooking.amount}
                   </p>

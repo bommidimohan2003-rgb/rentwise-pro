@@ -19,7 +19,8 @@ export interface SearchStats {
 
 const isLocal =
   typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1");
 const API_BASE =
   import.meta.env.VITE_API_URL !== undefined
     ? import.meta.env.VITE_API_URL
@@ -30,7 +31,10 @@ const API_BASE =
 // Get current user email if logged in
 function getCurrentUserEmail(): string | undefined {
   if (typeof window === "undefined") return undefined;
-  const user = storage.get<{ email?: string } | null>(STORAGE_KEYS.currentUser, null);
+  const user = storage.get<{ email?: string } | null>(
+    STORAGE_KEYS.currentUser,
+    null,
+  );
   return user?.email;
 }
 
@@ -66,7 +70,9 @@ export async function searchWithML(
         // Map returned raw items to full Product objects or merge with local products list
         const rawResults: Record<string, unknown>[] = data.results;
         const matchedProducts: Product[] = rawResults.map((raw) => {
-          const existing = productsList.find((p) => String(p.id) === String(raw.id));
+          const existing = productsList.find(
+            (p) => String(p.id) === String(raw.id),
+          );
           if (existing) return existing;
           return {
             id: String(raw.id || ""),
@@ -80,7 +86,11 @@ export async function searchWithML(
             available: Boolean(raw.available ?? true),
             owner:
               typeof raw.owner === "object" && raw.owner !== null
-                ? (raw.owner as { name: string; avatar: string; rating: number })
+                ? (raw.owner as {
+                    name: string;
+                    avatar: string;
+                    rating: number;
+                  })
                 : { name: "Payent Lender", avatar: "", rating: 4.9 },
           };
         });
@@ -101,7 +111,9 @@ export async function searchWithML(
   }
 
   // Fallback to client-side advanced search
-  let filtered = productsList.filter((p) => (!selectedCat ? true : p.category === selectedCat));
+  let filtered = productsList.filter((p) =>
+    !selectedCat ? true : p.category === selectedCat,
+  );
   if (trimmed) {
     filtered = advancedSearch(filtered, trimmed);
   }
@@ -126,7 +138,9 @@ export async function getSearchStats(): Promise<SearchStats> {
         isIndexed: Boolean(data.is_indexed),
         indexedProductsCount: Number(data.indexed_products_count || 0),
         vocabularySize: Number(data.vocabulary_size || 0),
-        popularQueries: Array.isArray(data.popular_queries) ? data.popular_queries : [],
+        popularQueries: Array.isArray(data.popular_queries)
+          ? data.popular_queries
+          : [],
       };
     }
   } catch (err) {
@@ -137,6 +151,12 @@ export async function getSearchStats(): Promise<SearchStats> {
     isIndexed: false,
     indexedProductsCount: 0,
     vocabularySize: 0,
-    popularQueries: ["Sony Alpha", "MacBook Pro", "DJI Mavic", "Royal Enfield", "DeWalt Drill"],
+    popularQueries: [
+      "Sony Alpha",
+      "MacBook Pro",
+      "DJI Mavic",
+      "Royal Enfield",
+      "DeWalt Drill",
+    ],
   };
 }

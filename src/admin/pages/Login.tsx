@@ -50,8 +50,8 @@ export default function Login() {
     } catch (err: unknown) {
       console.error(err);
       const errMsg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Invalid email or password.";
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Invalid email or password.";
       setServerError(errMsg);
       toast.error(errMsg);
     } finally {

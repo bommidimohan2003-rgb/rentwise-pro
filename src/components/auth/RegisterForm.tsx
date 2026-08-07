@@ -24,15 +24,26 @@ import { toast } from "sonner";
 
 const schema = z
   .object({
-    fullName: z.string().trim().min(2, "Enter your full name (at least 2 letters)").max(100),
+    fullName: z
+      .string()
+      .trim()
+      .min(2, "Enter your full name (at least 2 letters)")
+      .max(100),
     email: z
       .string()
       .trim()
       .min(1, "Email is required")
       .email("Enter a valid email address")
       .max(255),
-    phone: z.string().trim().min(7, "Enter a valid phone number (at least 7 digits)").max(20),
-    address: z.string().trim().min(5, "Enter complete street address (at least 5 characters)"),
+    phone: z
+      .string()
+      .trim()
+      .min(7, "Enter a valid phone number (at least 7 digits)")
+      .max(20),
+    address: z
+      .string()
+      .trim()
+      .min(5, "Enter complete street address (at least 5 characters)"),
     city: z.string().trim().min(2, "Enter city name"),
     pincode: z.string().trim().min(6, "Enter valid 6-digit PIN code").max(10),
     password: z.string().min(8, "Password must be at least 8 characters"),
@@ -43,7 +54,10 @@ const schema = z
     isAdmin: z.boolean().optional(),
     adminCode: z.string().optional(),
   })
-  .refine((d) => d.password === d.confirm, { path: ["confirm"], message: "Passwords don't match" })
+  .refine((d) => d.password === d.confirm, {
+    path: ["confirm"],
+    message: "Passwords don't match",
+  })
   .refine((d) => !d.isAdmin || (d.adminCode && d.adminCode.trim().length > 0), {
     path: ["adminCode"],
     message: "Admin setup code is required",
@@ -92,7 +106,10 @@ export function RegisterForm() {
     if (typeof window === "undefined") return false;
     const params = new URLSearchParams(window.location.search);
     for (const [key, value] of params.entries()) {
-      if (key.trim().toLowerCase() === "admin" && value.trim().toLowerCase() === "true") {
+      if (
+        key.trim().toLowerCase() === "admin" &&
+        value.trim().toLowerCase() === "true"
+      ) {
         return true;
       }
     }
@@ -225,7 +242,11 @@ export function RegisterForm() {
                 onClick={() => setShowPw((v) => !v)}
                 className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
               >
-                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPw ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             }
             error={errors.password?.message}
@@ -247,7 +268,9 @@ export function RegisterForm() {
       {pw && (
         <div className="space-y-1 p-2.5 rounded-xl bg-secondary/50 border border-border/60">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground font-medium">Password Security:</span>
+            <span className="text-muted-foreground font-medium">
+              Password Security:
+            </span>
             <span className="font-bold text-foreground">{labels[level]}</span>
           </div>
           <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
@@ -256,7 +279,13 @@ export function RegisterForm() {
               style={{
                 width: `${(level / 4) * 100}%`,
                 backgroundColor:
-                  level < 2 ? "#E63946" : level < 3 ? "#F59E0B" : level < 4 ? "#3B82F6" : "#10B981",
+                  level < 2
+                    ? "#E63946"
+                    : level < 3
+                      ? "#F59E0B"
+                      : level < 4
+                        ? "#3B82F6"
+                        : "#10B981",
               }}
             />
           </div>
@@ -313,13 +342,17 @@ export function RegisterForm() {
           loading={isSubmitting}
           disabled={isSubmitting}
         >
-          <span>{isSubmitting ? "Creating..." : "Create Account & Verify"}</span>
+          <span>
+            {isSubmitting ? "Creating..." : "Create Account & Verify"}
+          </span>
           {!isSubmitting && <ArrowRight className="h-3.5 w-3.5" />}
         </Button>
       </div>
 
       {errors.terms && (
-        <p className="text-xs text-destructive font-medium">{errors.terms.message}</p>
+        <p className="text-xs text-destructive font-medium">
+          {errors.terms.message}
+        </p>
       )}
       {error && <p className="text-xs text-destructive font-medium">{error}</p>}
     </form>

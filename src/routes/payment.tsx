@@ -7,7 +7,8 @@ export const Route = createFileRoute("/payment")({
   head: () =>
     getSeoMetadata({
       title: "Secure Payment | Payent",
-      description: "Pay securely via PhonePe, BHIM UPI, Google Pay, or Paytm on Payent.",
+      description:
+        "Pay securely via PhonePe, BHIM UPI, Google Pay, or Paytm on Payent.",
       path: "/payment",
     }),
   validateSearch: (s: Record<string, unknown>) => ({

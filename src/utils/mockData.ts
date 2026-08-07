@@ -82,7 +82,12 @@ export const categories: Category[] = [
   },
 ];
 
-export const sonyA7Frames: string[] = [sonyA7FrontImg, sonyA7TopImg, sonyA7BackImg, sonyA7SideImg];
+export const sonyA7Frames: string[] = [
+  sonyA7FrontImg,
+  sonyA7TopImg,
+  sonyA7BackImg,
+  sonyA7SideImg,
+];
 
 export const macbookProFrames: string[] = [
   macbookFrontImg,
@@ -91,7 +96,12 @@ export const macbookProFrames: string[] = [
   macbookSideImg,
 ];
 
-export const djiMavicFrames: string[] = [droneFrontImg, droneTopImg, droneRemoteImg, droneSideImg];
+export const djiMavicFrames: string[] = [
+  droneFrontImg,
+  droneTopImg,
+  droneRemoteImg,
+  droneSideImg,
+];
 
 export const powerbankFrames: string[] = [
   ankerPowerCoreImg,
@@ -150,7 +160,12 @@ const initialProducts: Product[] = [
       "High-performance professional laptop with 16-core CPU, 40-core GPU, 64GB RAM, and 2TB SSD. Ideal for 8K video editing and 3D rendering.",
     price: 3500,
     image: macbookProImg,
-    images: [macbookFrontImg, macbookTopImg, macbookKeyboardImg, macbookSideImg],
+    images: [
+      macbookFrontImg,
+      macbookTopImg,
+      macbookKeyboardImg,
+      macbookSideImg,
+    ],
     angleImages: [
       { label: "Front", image: macbookFrontImg },
       { label: "Top", image: macbookTopImg },
@@ -163,7 +178,11 @@ const initialProducts: Product[] = [
     reviews: 0,
     available: true,
     isReference: true,
-    owner: { name: "Priya Shah", avatar: "https://i.pravatar.cc/100?img=32", rating: 4.8 },
+    owner: {
+      name: "Priya Shah",
+      avatar: "https://i.pravatar.cc/100?img=32",
+      rating: 4.8,
+    },
   },
 
   // --- 3. DRONES CATEGORY (1 Product) ---
@@ -333,7 +352,10 @@ const getCustomProducts = (): Product[] => {
   return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
 };
 
-export const products: Product[] = [...getCustomProducts(), ...initialProducts].map((p) => {
+export const products: Product[] = [
+  ...getCustomProducts(),
+  ...initialProducts,
+].map((p) => {
   let defaultAngles = sonyA7Frames;
   if (p.category === "laptops") defaultAngles = macbookProFrames;
   else if (p.category === "drones") defaultAngles = djiMavicFrames;
@@ -351,9 +373,12 @@ export const products: Product[] = [...getCustomProducts(), ...initialProducts].
   return {
     ...p,
     images: rawImages,
-    angleImages: p.angleImages && p.angleImages.length >= 2 ? p.angleImages : angleImages,
+    angleImages:
+      p.angleImages && p.angleImages.length >= 2 ? p.angleImages : angleImages,
     rotationFrames:
-      p.rotationFrames && p.rotationFrames.length >= 2 ? p.rotationFrames : defaultAngles,
+      p.rotationFrames && p.rotationFrames.length >= 2
+        ? p.rotationFrames
+        : defaultAngles,
   };
 });
 
@@ -391,7 +416,8 @@ export const testimonials = [
     avatar:
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&h=120&q=80",
     cover: stockImg("1616469829581-73993eb86b02"),
-    quote: "Payent saved my shoot when my camera failed. Booked and delivered in hours.",
+    quote:
+      "Payent saved my shoot when my camera failed. Booked and delivered in hours.",
   },
   {
     name: "Marcus Lee",
@@ -399,7 +425,8 @@ export const testimonials = [
     avatar:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&h=120&q=80",
     cover: stockImg("1498050108023-c5249f4df085"),
-    quote: "Renting a MacBook for my remote hire was seamless. Insurance made me comfortable.",
+    quote:
+      "Renting a MacBook for my remote hire was seamless. Insurance made me comfortable.",
   },
   {
     name: "Chloe Bennet",

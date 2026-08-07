@@ -18,8 +18,15 @@ export function ProfileDropdown() {
 
     // Listen to profile updates
     const handleProfileUpdate = () => loadUser();
-    window.addEventListener("payent:admin:profile-updated", handleProfileUpdate);
-    return () => window.removeEventListener("payent:admin:profile-updated", handleProfileUpdate);
+    window.addEventListener(
+      "payent:admin:profile-updated",
+      handleProfileUpdate,
+    );
+    return () =>
+      window.removeEventListener(
+        "payent:admin:profile-updated",
+        handleProfileUpdate,
+      );
   }, []);
 
   const handleLogout = async () => {
@@ -57,7 +64,10 @@ export function ProfileDropdown() {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
           <div className="absolute right-0 mt-2.5 w-56 glass bg-card/95 rounded-2xl shadow-xl border border-border/80 z-50 overflow-hidden py-1">
             {/* Header info */}
             <div className="px-4 py-3 border-b border-border/50 flex flex-col">

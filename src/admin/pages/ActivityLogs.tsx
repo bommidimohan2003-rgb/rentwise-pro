@@ -66,7 +66,9 @@ export default function ActivityLogs() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc"
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -107,13 +109,17 @@ export default function ActivityLogs() {
       key: "userName",
       label: "Triggered By",
       sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.userName}</span>,
+      render: (row) => (
+        <span className="text-xs font-bold">{row.userName}</span>
+      ),
     },
     {
       key: "action",
       label: "System Event / Action",
       sortable: true,
-      render: (row) => <span className="text-xs font-bold text-foreground">{row.action}</span>,
+      render: (row) => (
+        <span className="text-xs font-bold text-foreground">{row.action}</span>
+      ),
     },
     {
       key: "module",
@@ -130,7 +136,9 @@ export default function ActivityLogs() {
       label: "IP Address",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-bold text-muted-foreground">{row.ipAddress}</span>
+        <span className="text-xs font-bold text-muted-foreground">
+          {row.ipAddress}
+        </span>
       ),
     },
   ];
@@ -139,10 +147,12 @@ export default function ActivityLogs() {
     <div className="space-y-6">
       {/* Header bar */}
       <div>
-        <h1 className="text-xl font-bold text-foreground">Security Activity Logs</h1>
+        <h1 className="text-xl font-bold text-foreground">
+          Security Activity Logs
+        </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Audit administrative modifications, authenticate logins, and trace system modifications
-          events.
+          Audit administrative modifications, authenticate logins, and trace
+          system modifications events.
         </p>
       </div>
 

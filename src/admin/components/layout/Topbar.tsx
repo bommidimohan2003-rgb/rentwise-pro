@@ -19,7 +19,10 @@ export function Topbar() {
       setOffline(e.detail);
     };
 
-    window.addEventListener("payent-admin-offline-change", offlineHandler as EventListener);
+    window.addEventListener(
+      "payent-admin-offline-change",
+      offlineHandler as EventListener,
+    );
 
     // Subscribe to WebSocket connection status
     const unsubscribe = adminWS.onStatusChange((status) => {
@@ -27,7 +30,10 @@ export function Topbar() {
     });
 
     return () => {
-      window.removeEventListener("payent-admin-offline-change", offlineHandler as EventListener);
+      window.removeEventListener(
+        "payent-admin-offline-change",
+        offlineHandler as EventListener,
+      );
       unsubscribe();
     };
   }, []);
@@ -73,7 +79,11 @@ export function Topbar() {
           className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all active:scale-95 cursor-pointer"
           title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
         >
-          {theme === "dark" ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
+          {theme === "dark" ? (
+            <Sun className="h-4.5 w-4.5" />
+          ) : (
+            <Moon className="h-4.5 w-4.5" />
+          )}
         </button>
 
         {/* Notification dropdown */}

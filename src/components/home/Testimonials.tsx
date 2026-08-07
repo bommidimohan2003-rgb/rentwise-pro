@@ -66,7 +66,11 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" as const } },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: "easeOut" as const },
+  },
 };
 
 export function Testimonials() {
@@ -94,7 +98,8 @@ export function Testimonials() {
             Trusted by creators &amp; production teams
           </h2>
           <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto font-normal">
-            Real feedback from verified renters and lenders using Payent for their projects.
+            Real feedback from verified renters and lenders using Payent for
+            their projects.
           </p>
         </motion.div>
 
@@ -117,7 +122,10 @@ export function Testimonials() {
                 <Quote className="h-5 w-5 text-muted-foreground opacity-60" />
                 <div className="flex items-center gap-0.5">
                   {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-foreground text-foreground" />
+                    <Star
+                      key={i}
+                      className="h-3.5 w-3.5 fill-foreground text-foreground"
+                    />
                   ))}
                 </div>
               </div>
@@ -139,8 +147,12 @@ export function Testimonials() {
                   {t.initials}
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-bold text-foreground">{t.name}</div>
-                  <div className="text-xs text-muted-foreground font-medium">{t.role}</div>
+                  <div className="text-sm font-bold text-foreground">
+                    {t.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground font-medium">
+                    {t.role}
+                  </div>
                 </div>
               </div>
             </motion.div>

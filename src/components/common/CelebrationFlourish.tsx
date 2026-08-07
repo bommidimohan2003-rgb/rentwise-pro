@@ -7,7 +7,10 @@ interface CelebrationFlourishProps {
   productTitle: string;
 }
 
-export function CelebrationFlourish({ productImage, productTitle }: CelebrationFlourishProps) {
+export function CelebrationFlourish({
+  productImage,
+  productTitle,
+}: CelebrationFlourishProps) {
   return (
     <div className="relative py-4 flex flex-col items-center justify-center">
       {/* Background Pulse Glow */}

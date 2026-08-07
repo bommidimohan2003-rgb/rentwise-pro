@@ -6,7 +6,8 @@ export const Route = createFileRoute("/forgot-password")({
   head: () =>
     getSeoMetadata({
       title: "Reset Password | Payent",
-      description: "Request a password reset link to recover access to your Payent account.",
+      description:
+        "Request a password reset link to recover access to your Payent account.",
       path: "/forgot-password",
     }),
   component: ForgotPassword,

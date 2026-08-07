@@ -31,7 +31,10 @@ export function SessionExpired({
     }
 
     // Redirect to login view
-    navigate({ to: loginUrl, search: { expired: "true" } as Record<string, string> });
+    navigate({
+      to: loginUrl,
+      search: { expired: "true" } as Record<string, string>,
+    });
 
     if (onClose) onClose();
   };
@@ -51,16 +54,21 @@ export function SessionExpired({
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-xl font-bold text-foreground tracking-tight">Session Expired</h3>
+          <h3 className="text-xl font-bold text-foreground tracking-tight">
+            Session Expired
+          </h3>
           <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-            Your login session has timed out or authorization token is no longer valid.
+            Your login session has timed out or authorization token is no longer
+            valid.
           </p>
         </div>
 
         {savedFormKey && (
           <div className="p-3 rounded-xl bg-secondary/60 border border-border/50 text-xs text-muted-foreground flex items-center gap-2 text-left">
             <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0" />
-            <span>Your unsaved form progress has been temporarily preserved.</span>
+            <span>
+              Your unsaved form progress has been temporarily preserved.
+            </span>
           </div>
         )}
 
@@ -83,8 +91,12 @@ export function SessionExpired({
 /**
  * Custom Event Helper to trigger global session expired modal
  */
-export function triggerSessionExpiredEvent(loginPath: "/login" | "/admin/login" = "/login") {
+export function triggerSessionExpiredEvent(
+  loginPath: "/login" | "/admin/login" = "/login",
+) {
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("payent-session-expired", { detail: { loginPath } }));
+    window.dispatchEvent(
+      new CustomEvent("payent-session-expired", { detail: { loginPath } }),
+    );
   }
 }

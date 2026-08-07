@@ -21,7 +21,8 @@ export interface AnalyticsEvent {
 
 const isLocal =
   typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1");
 const API_BASE =
   import.meta.env.VITE_API_URL !== undefined
     ? import.meta.env.VITE_API_URL
@@ -44,7 +45,10 @@ export function getSessionId(): string {
 // Get logged in user email if present
 function getCurrentUserEmail(): string | undefined {
   if (typeof window === "undefined") return undefined;
-  const user = storage.get<{ email?: string } | null>(STORAGE_KEYS.currentUser, null);
+  const user = storage.get<{ email?: string } | null>(
+    STORAGE_KEYS.currentUser,
+    null,
+  );
   return user?.email;
 }
 

@@ -31,9 +31,14 @@ export function OTPVerification() {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
   const email = storage.get<string>(STORAGE_KEYS.otpEmail, "your email");
 
-  const pendingUser = storage.get<PendingUser | null>(STORAGE_KEYS.pendingUser, null);
+  const pendingUser = storage.get<PendingUser | null>(
+    STORAGE_KEYS.pendingUser,
+    null,
+  );
   const isResetFlow = !pendingUser;
-  const targetContact = isResetFlow ? email : pendingUser?.phone || "your phone number";
+  const targetContact = isResetFlow
+    ? email
+    : pendingUser?.phone || "your phone number";
 
   // Timer countdown
   useEffect(() => {
@@ -128,10 +133,15 @@ export function OTPVerification() {
       <div className="bg-card border border-border rounded-xl p-4 text-sm flex gap-3 items-start shadow-sm">
         <Info className="h-5 w-5 text-foreground shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold text-foreground">SMS Verification</span>
+          <span className="font-semibold text-foreground">
+            SMS Verification
+          </span>
           <p className="text-muted-foreground mt-0.5 text-xs">
             We sent a verification code via SMS to{" "}
-            <span className="font-semibold text-foreground">{targetContact}</span>.
+            <span className="font-semibold text-foreground">
+              {targetContact}
+            </span>
+            .
           </p>
           <p className="text-muted-foreground text-xs mt-1.5 italic">
             Check your mobile device for the SMS verification code from Twilio.
@@ -180,7 +190,9 @@ export function OTPVerification() {
 
       {isResetFlow && (
         <div className="space-y-4 pt-2 border-t border-border">
-          <h3 className="font-semibold text-foreground text-sm">Set your new password</h3>
+          <h3 className="font-semibold text-foreground text-sm">
+            Set your new password
+          </h3>
           <Input
             label="New Password"
             type={showPw ? "text" : "password"}
@@ -193,7 +205,11 @@ export function OTPVerification() {
                 onClick={() => setShowPw((v) => !v)}
                 className="p-1 text-muted-foreground hover:text-foreground"
               >
-                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPw ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             }
           />
@@ -219,7 +235,10 @@ export function OTPVerification() {
             Resend in <span className="font-medium">{seconds}s</span>
           </>
         ) : (
-          <button onClick={resend} className="text-primary hover:underline font-medium">
+          <button
+            onClick={resend}
+            className="text-primary hover:underline font-medium"
+          >
             Resend code
           </button>
         )}

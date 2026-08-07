@@ -29,7 +29,10 @@ export function SearchBar({
         placeholder="Search cameras, drones, MacBooks..."
         className="flex-1 bg-transparent outline-none text-sm"
       />
-      <button type="submit" className="btn-gradient rounded-full px-5 h-9 text-sm font-medium">
+      <button
+        type="submit"
+        className="btn-gradient rounded-full px-5 h-9 text-sm font-medium"
+      >
         Search
       </button>
     </form>

@@ -36,7 +36,9 @@ export default function Products() {
   const isSlow = useSlowConnection(loading);
 
   // Search & Filters from router search query if available
-  const routerSearch = useSearch({ from: "/admin/products" }) as { search?: string };
+  const routerSearch = useSearch({ from: "/admin/products" }) as {
+    search?: string;
+  };
   const [search, setSearch] = useState(routerSearch?.search || "");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -81,14 +83,18 @@ export default function Products() {
           if (prev.some((p) => p.id === newProd.id)) return prev;
           return [newProd, ...prev];
         });
-        toast.info(`Live: New product "${newProd.title || newProd.id}" submitted!`);
+        toast.info(
+          `Live: New product "${newProd.title || newProd.id}" submitted!`,
+        );
       }
     });
 
     const unsubUpdated = adminWS.subscribe("product.updated", (event) => {
       const updated = event.data as AdminProduct;
       if (updated && updated.id) {
-        setProducts((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+        setProducts((prev) =>
+          prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)),
+        );
       }
     });
 
@@ -142,7 +148,9 @@ export default function Products() {
       const updated = await productsService.toggleFeatureProduct(id);
       setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
       toast.success(
-        updated.featured ? "Product featured on homepage." : "Product removed from features.",
+        updated.featured
+          ? "Product featured on homepage."
+          : "Product removed from features.",
       );
     } catch (err) {
       console.error(err);
@@ -154,7 +162,11 @@ export default function Products() {
     try {
       const updated = await productsService.toggleHideProduct(id);
       setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
-      toast.info(updated.hidden ? "Product hidden from catalog." : "Product visible in catalog.");
+      toast.info(
+        updated.hidden
+          ? "Product hidden from catalog."
+          : "Product visible in catalog.",
+      );
     } catch (err) {
       console.error(err);
       toast.error("Failed to update visibility state.");
@@ -162,7 +174,8 @@ export default function Products() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this listing permanently?")) return;
+    if (!confirm("Are you sure you want to delete this listing permanently?"))
+      return;
     try {
       await productsService.deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -199,7 +212,9 @@ export default function Products() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc"
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -238,8 +253,12 @@ export default function Products() {
             className="h-10 w-12 rounded-lg object-cover border border-border shrink-0"
           />
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-foreground truncate">{row.title}</span>
-            <span className="text-[10px] text-muted-foreground mt-0.5">{row.category}</span>
+            <span className="text-xs font-bold text-foreground truncate">
+              {row.title}
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5">
+              {row.category}
+            </span>
           </div>
         </div>
       ),
@@ -255,7 +274,9 @@ export default function Products() {
             alt={row.owner.name}
             className="h-6 w-6 rounded-full object-cover"
           />
-          <span className="text-xs font-bold text-foreground truncate">{row.owner.name}</span>
+          <span className="text-xs font-bold text-foreground truncate">
+            {row.owner.name}
+          </span>
         </div>
       ),
     },
@@ -263,7 +284,11 @@ export default function Products() {
       key: "price",
       label: "Price (Day)",
       sortable: true,
-      render: (row) => <span className="text-xs font-extrabold text-primary">₹{row.price}</span>,
+      render: (row) => (
+        <span className="text-xs font-extrabold text-primary">
+          ₹{row.price}
+        </span>
+      ),
     },
     {
       key: "status",
@@ -277,7 +302,8 @@ export default function Products() {
               "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
             row.status === "pending" &&
               "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-            row.status === "rejected" && "bg-destructive/10 text-destructive border-destructive/20",
+            row.status === "rejected" &&
+              "bg-destructive/10 text-destructive border-destructive/20",
           )}
         >
           {row.status}
@@ -300,7 +326,9 @@ export default function Products() {
       render: (row) => (
         <div className="flex items-center gap-1">
           <button
-            onClick={() => navigate({ to: "/admin/products/$id", params: { id: row.id } })}
+            onClick={() =>
+              navigate({ to: "/admin/products/$id", params: { id: row.id } })
+            }
             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
             title="View details"
           >
@@ -336,7 +364,9 @@ export default function Products() {
             )}
             title={row.featured ? "Remove from featured" : "Feature listing"}
           >
-            <Heart className={cn("h-4 w-4", row.featured && "fill-amber-500")} />
+            <Heart
+              className={cn("h-4 w-4", row.featured && "fill-amber-500")}
+            />
           </button>
 
           <button
@@ -371,10 +401,12 @@ export default function Products() {
       {/* Header bar */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Product Management</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            Product Management
+          </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Approve lender listings, regulate feature highlights, and audit insurance validation
-            papers.
+            Approve lender listings, regulate feature highlights, and audit
+            insurance validation papers.
           </p>
         </div>
 
@@ -451,7 +483,11 @@ export default function Products() {
       {loading ? (
         <LoadingState type={viewMode === "list" ? "table" : "grid"} count={6} />
       ) : error ? (
-        <ErrorState title="Unable to load products" error={error} onRetry={fetchProducts} />
+        <ErrorState
+          title="Unable to load products"
+          error={error}
+          onRetry={fetchProducts}
+        />
       ) : filteredProducts.length === 0 ? (
         <NoSearchResults
           query={search}
@@ -520,16 +556,25 @@ export default function Products() {
                         <span className="font-bold">{p.rating.toFixed(1)}</span>
                       </div>
                     </div>
-                    <h4 className="text-xs font-bold text-foreground truncate mt-1">{p.title}</h4>
+                    <h4 className="text-xs font-bold text-foreground truncate mt-1">
+                      {p.title}
+                    </h4>
                     <p className="text-[11px] font-semibold text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                       {p.description}
                     </p>
                   </div>
 
                   <div className="pt-3 border-t border-border/40 flex items-center justify-between mt-3 shrink-0">
-                    <span className="text-xs font-extrabold text-primary">₹{p.price}/day</span>
+                    <span className="text-xs font-extrabold text-primary">
+                      ₹{p.price}/day
+                    </span>
                     <button
-                      onClick={() => navigate({ to: "/admin/products/$id", params: { id: p.id } })}
+                      onClick={() =>
+                        navigate({
+                          to: "/admin/products/$id",
+                          params: { id: p.id },
+                        })
+                      }
                       className="btn-gradient text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
                     >
                       <Eye className="h-3.5 w-3.5" />

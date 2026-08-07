@@ -30,7 +30,10 @@ import { tracker } from "@/utils/eventTracker";
 
 type Sort = "featured" | "price_asc" | "price_desc" | "rating";
 
-const categoryIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+const categoryIconMap: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
   all: Layers,
   cameras: Camera,
   laptops: Laptop,
@@ -41,7 +44,10 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
 };
 
 export default function Categories() {
-  const search = useSearch({ from: "/categories" }) as { q?: string; cat?: string };
+  const search = useSearch({ from: "/categories" }) as {
+    q?: string;
+    cat?: string;
+  };
   const navigate = useNavigate();
 
   const cat = search.cat || "all";
@@ -110,10 +116,16 @@ export default function Categories() {
   // Click outside listener for category dropdown and search suggestions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
-      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target as Node)) {
+      if (
+        searchBoxRef.current &&
+        !searchBoxRef.current.contains(event.target as Node)
+      ) {
         setIsSearchFocused(false);
       }
     };
@@ -125,7 +137,10 @@ export default function Categories() {
     setLocalQ(val);
     navigate({
       to: "/categories",
-      search: (prev: Record<string, unknown>) => ({ ...prev, q: val || undefined }),
+      search: (prev: Record<string, unknown>) => ({
+        ...prev,
+        q: val || undefined,
+      }),
       replace: true,
     });
   };
@@ -192,13 +207,19 @@ export default function Categories() {
 
   // Selected Category Info
   const selectedCatObj = categories.find((c) => c.id === cat);
-  const selectedCatName = cat === "all" ? "All Categories" : selectedCatObj?.name || cat;
+  const selectedCatName =
+    cat === "all" ? "All Categories" : selectedCatObj?.name || cat;
   const SelectedIcon = categoryIconMap[cat] || Layers;
   const selectedCount = categoryCounts[cat] || 0;
 
   // List of all options for the vertical dropdown
   const allCategoryOptions = [
-    { id: "all", name: "All Categories", icon: Layers, count: categoryCounts.all },
+    {
+      id: "all",
+      name: "All Categories",
+      icon: Layers,
+      count: categoryCounts.all,
+    },
     ...categories.map((c) => ({
       id: c.id,
       name: c.name,
@@ -220,8 +241,8 @@ export default function Categories() {
             Browse Premium Tech Gear
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">
-            Rent high-performance cameras, laptops, drones, bikes, power banks, and electric tools
-            from verified owners.
+            Rent high-performance cameras, laptops, drones, bikes, power banks,
+            and electric tools from verified owners.
           </p>
         </div>
 
@@ -289,7 +310,9 @@ export default function Categories() {
                           >
                             <IconComp className="h-3.5 w-3.5" />
                           </div>
-                          <span className="text-xs font-extrabold">{opt.name}</span>
+                          <span className="text-xs font-extrabold">
+                            {opt.name}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -303,7 +326,9 @@ export default function Categories() {
                           >
                             {opt.count} Items
                           </span>
-                          {isSelected && <Check className="h-3.5 w-3.5 text-white shrink-0" />}
+                          {isSelected && (
+                            <Check className="h-3.5 w-3.5 text-white shrink-0" />
+                          )}
                         </div>
                       </button>
                     );
@@ -343,7 +368,9 @@ export default function Categories() {
                     <Sparkles className="h-3 w-3 text-primary" />
                     Trending & Popular Searches
                   </span>
-                  <span className="text-[9px] text-primary font-bold">ML Powered</span>
+                  <span className="text-[9px] text-primary font-bold">
+                    ML Powered
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {popularQueries.map((pq) => (
@@ -367,7 +394,9 @@ export default function Categories() {
                 <div className="px-3 py-1.5 flex items-center justify-between text-[10px] uppercase font-black tracking-wider text-muted-foreground border-b border-border/50">
                   <span>Live Search Matches ({liveSuggestions.length})</span>
                   <span className="text-[9px] text-primary font-bold">
-                    {isMLActive ? "TF-IDF ML Engine Active" : "Fuzzy & Synonym Engine Active"}
+                    {isMLActive
+                      ? "TF-IDF ML Engine Active"
+                      : "Fuzzy & Synonym Engine Active"}
                   </span>
                 </div>
 
@@ -404,7 +433,9 @@ export default function Categories() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-black text-primary">₹{item.price}/day</span>
+                        <span className="text-xs font-black text-primary">
+                          ₹{item.price}/day
+                        </span>
                         <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </Link>
@@ -450,9 +481,13 @@ export default function Categories() {
         {/* Results Info Subheader */}
         <div className="flex items-center justify-between px-1 pt-1">
           <p className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider">
-            Showing <span className="text-foreground font-black">{filtered.length}</span> rental
-            listings
-            {cat !== "all" && ` in ${categories.find((c) => c.id === cat)?.name || cat}`}
+            Showing{" "}
+            <span className="text-foreground font-black">
+              {filtered.length}
+            </span>{" "}
+            rental listings
+            {cat !== "all" &&
+              ` in ${categories.find((c) => c.id === cat)?.name || cat}`}
             {q && ` for "${q}"`}
           </p>
 

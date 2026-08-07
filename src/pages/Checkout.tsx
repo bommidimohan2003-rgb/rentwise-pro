@@ -28,7 +28,10 @@ import { CelebrationFlourish } from "@/components/common/CelebrationFlourish";
 
 const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
-    if (typeof window !== "undefined" && (window as unknown as { Razorpay?: unknown }).Razorpay) {
+    if (
+      typeof window !== "undefined" &&
+      (window as unknown as { Razorpay?: unknown }).Razorpay
+    ) {
       return resolve(true);
     }
     const script = document.createElement("script");
@@ -46,7 +49,9 @@ export default function Checkout() {
 
   // Dates
   const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
-  const [end, setEnd] = useState(new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10));
+  const [end, setEnd] = useState(
+    new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10),
+  );
 
   // Promos
   const [coupon, setCoupon] = useState("");
@@ -94,15 +99,26 @@ export default function Checkout() {
   const qrTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Rental Calculations
-  const days = Math.max(1, Math.ceil((+new Date(end) - +new Date(start)) / 86400000));
+  const days = Math.max(
+    1,
+    Math.ceil((+new Date(end) - +new Date(start)) / 86400000),
+  );
   const subtotal = product.price * days;
   const discount = applied ? subtotal * 0.1 : 0;
   const tax = (subtotal - discount) * 0.08;
-  const total = useMemo(() => subtotal - discount + tax, [subtotal, discount, tax]);
+  const total = useMemo(
+    () => subtotal - discount + tax,
+    [subtotal, discount, tax],
+  );
 
   // QR Timer Countdown Handler
   useEffect(() => {
-    if (paymentMethod === "upi" && upiType === "qr" && qrActive && qrCountdown > 0) {
+    if (
+      paymentMethod === "upi" &&
+      upiType === "qr" &&
+      qrActive &&
+      qrCountdown > 0
+    ) {
       qrTimerRef.current = setTimeout(() => {
         setQrCountdown((prev) => prev - 1);
       }, 1000);
@@ -193,15 +209,18 @@ export default function Checkout() {
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         setIsProcessing(false);
-        setPaymentError("Failed to load Razorpay Payment Gateway. Check your network connection.");
+        setPaymentError(
+          "Failed to load Razorpay Payment Gateway. Check your network connection.",
+        );
         toast.error("Razorpay SDK failed to load.");
         return;
       }
 
-      const user = storage.get<{ email?: string; fullName?: string; phone?: string } | null>(
-        STORAGE_KEYS.currentUser,
-        null,
-      );
+      const user = storage.get<{
+        email?: string;
+        fullName?: string;
+        phone?: string;
+      } | null>(STORAGE_KEYS.currentUser, null);
 
       // 3. Razorpay Options Config
       const options = {
@@ -219,7 +238,9 @@ export default function Checkout() {
         }) => {
           setIsProcessing(false);
           setIsVerifying(true);
-          toast.loading("Verifying payment security signature...", { id: "rzp-verify" });
+          toast.loading("Verifying payment security signature...", {
+            id: "rzp-verify",
+          });
 
           try {
             const verifyRes = await api.verifyRazorpayPayment(
@@ -253,7 +274,8 @@ export default function Checkout() {
             toast.dismiss("rzp-verify");
             const err = verifyErr as { message?: string };
             setPaymentError(
-              err.message || "Payment signature verification failed. Please contact support.",
+              err.message ||
+                "Payment signature verification failed. Please contact support.",
             );
             toast.error("Payment verification failed.");
           }
@@ -262,7 +284,9 @@ export default function Checkout() {
           ondismiss: () => {
             setIsProcessing(false);
             setIsVerifying(false);
-            setPaymentError("Payment window was closed before completing the transaction.");
+            setPaymentError(
+              "Payment window was closed before completing the transaction.",
+            );
             toast.info("Payment window closed.");
           },
         },
@@ -287,7 +311,11 @@ export default function Checkout() {
             on: (
               event: string,
               handler: (response: {
-                error?: { description?: string; code?: string; reason?: string };
+                error?: {
+                  description?: string;
+                  code?: string;
+                  reason?: string;
+                };
               }) => void,
             ) => void;
           };
@@ -296,10 +324,13 @@ export default function Checkout() {
 
       rzp.on(
         "payment.failed",
-        (response: { error?: { description?: string; code?: string; reason?: string } }) => {
+        (response: {
+          error?: { description?: string; code?: string; reason?: string };
+        }) => {
           setIsProcessing(false);
           setIsVerifying(false);
-          const description = response.error?.description || "Payment attempt failed.";
+          const description =
+            response.error?.description || "Payment attempt failed.";
           setPaymentError(`Razorpay Payment Failed: ${description}`);
           toast.error(`Payment failed: ${description}`);
         },
@@ -310,7 +341,9 @@ export default function Checkout() {
       setIsProcessing(false);
       setIsVerifying(false);
       const error = err as { message?: string };
-      setPaymentError(error.message || "Could not initiate payment. Please try again.");
+      setPaymentError(
+        error.message || "Could not initiate payment. Please try again.",
+      );
       toast.error(error.message || "Failed to create payment order.");
     }
   };
@@ -325,7 +358,9 @@ export default function Checkout() {
   return (
     <MainLayout>
       <section className="mx-auto max-w-5xl px-4 md:px-6 py-10">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Checkout</h1>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+          Checkout
+        </h1>
         <p className="text-muted-foreground mt-1">
           Review dates and complete your payment securely.
         </p>
@@ -416,8 +451,12 @@ export default function Checkout() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-[10px] text-white/60 tracking-tight">Expires</div>
-                          <div className="font-semibold">{cardExpiry || "MM/YY"}</div>
+                          <div className="text-[10px] text-white/60 tracking-tight">
+                            Expires
+                          </div>
+                          <div className="font-semibold">
+                            {cardExpiry || "MM/YY"}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -519,7 +558,8 @@ export default function Checkout() {
                       </div>
                       {upiVerified && (
                         <div className="flex items-center gap-2 p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-semibold">
-                          <Check className="h-4 w-4 shrink-0" /> Associated Account: John Doe
+                          <Check className="h-4 w-4 shrink-0" /> Associated
+                          Account: John Doe
                         </div>
                       )}
 
@@ -529,22 +569,24 @@ export default function Checkout() {
                           Popular handles
                         </label>
                         <div className="flex flex-wrap gap-2 mt-1.5">
-                          {["@okaxis", "@okicici", "@ybl", "@paytm"].map((handle) => (
-                            <button
-                              type="button"
-                              key={handle}
-                              onClick={() => {
-                                const base = upiId.includes("@")
-                                  ? upiId.split("@")[0]
-                                  : upiId || "user";
-                                setUpiId(base + handle);
-                                setUpiVerified(false);
-                              }}
-                              className="px-2.5 py-1 text-xs rounded-full border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                            >
-                              {handle}
-                            </button>
-                          ))}
+                          {["@okaxis", "@okicici", "@ybl", "@paytm"].map(
+                            (handle) => (
+                              <button
+                                type="button"
+                                key={handle}
+                                onClick={() => {
+                                  const base = upiId.includes("@")
+                                    ? upiId.split("@")[0]
+                                    : upiId || "user";
+                                  setUpiId(base + handle);
+                                  setUpiVerified(false);
+                                }}
+                                className="px-2.5 py-1 text-xs rounded-full border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                              >
+                                {handle}
+                              </button>
+                            ),
+                          )}
                         </div>
                       </div>
                     </div>
@@ -557,20 +599,77 @@ export default function Checkout() {
                         <>
                           <div className="p-4 bg-white rounded-2xl shadow-inner border border-border relative overflow-hidden flex flex-col items-center">
                             {/* SVG QR Code Simulation */}
-                            <svg className="w-48 h-48 text-black" viewBox="0 0 100 100">
+                            <svg
+                              className="w-48 h-48 text-black"
+                              viewBox="0 0 100 100"
+                            >
                               <rect width="100" height="100" fill="white" />
                               {/* Position boxes */}
-                              <rect x="5" y="5" width="25" height="25" fill="black" />
-                              <rect x="10" y="10" width="15" height="15" fill="white" />
-                              <rect x="13" y="13" width="9" height="9" fill="black" />
+                              <rect
+                                x="5"
+                                y="5"
+                                width="25"
+                                height="25"
+                                fill="black"
+                              />
+                              <rect
+                                x="10"
+                                y="10"
+                                width="15"
+                                height="15"
+                                fill="white"
+                              />
+                              <rect
+                                x="13"
+                                y="13"
+                                width="9"
+                                height="9"
+                                fill="black"
+                              />
 
-                              <rect x="70" y="5" width="25" height="25" fill="black" />
-                              <rect x="75" y="10" width="15" height="15" fill="white" />
-                              <rect x="78" y="13" width="9" height="9" fill="black" />
+                              <rect
+                                x="70"
+                                y="5"
+                                width="25"
+                                height="25"
+                                fill="black"
+                              />
+                              <rect
+                                x="75"
+                                y="10"
+                                width="15"
+                                height="15"
+                                fill="white"
+                              />
+                              <rect
+                                x="78"
+                                y="13"
+                                width="9"
+                                height="9"
+                                fill="black"
+                              />
 
-                              <rect x="5" y="70" width="25" height="25" fill="black" />
-                              <rect x="10" y="75" width="15" height="15" fill="white" />
-                              <rect x="13" y="78" width="9" height="9" fill="black" />
+                              <rect
+                                x="5"
+                                y="70"
+                                width="25"
+                                height="25"
+                                fill="black"
+                              />
+                              <rect
+                                x="10"
+                                y="75"
+                                width="15"
+                                height="15"
+                                fill="white"
+                              />
+                              <rect
+                                x="13"
+                                y="78"
+                                width="9"
+                                height="9"
+                                fill="black"
+                              />
 
                               {/* Tiny dots block simulation */}
                               <path
@@ -583,8 +682,8 @@ export default function Checkout() {
 
                           <div className="space-y-1.5">
                             <p className="text-sm font-semibold flex items-center justify-center gap-1.5 text-primary">
-                              <Smartphone className="h-4.5 w-4.5 animate-bounce" /> Scan using any
-                              UPI App
+                              <Smartphone className="h-4.5 w-4.5 animate-bounce" />{" "}
+                              Scan using any UPI App
                             </p>
                             <div className="text-xl font-bold font-mono tracking-wider">
                               {formatTime(qrCountdown)}
@@ -600,7 +699,9 @@ export default function Checkout() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              toast.success("UPI App payment verified. Proceeding...");
+                              toast.success(
+                                "UPI App payment verified. Proceeding...",
+                              );
                               // Complete payment directly
                               const order: Order = {
                                 id: crypto.randomUUID(),
@@ -613,12 +714,18 @@ export default function Checkout() {
                                 status: "active",
                                 createdAt: new Date().toISOString(),
                               };
-                              const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+                              const token = storage.get<string | null>(
+                                STORAGE_KEYS.token,
+                                null,
+                              );
                               if (token) {
                                 api
                                   .createOrder(token, order)
                                   .catch((err) =>
-                                    console.error("Failed to create order on backend:", err),
+                                    console.error(
+                                      "Failed to create order on backend:",
+                                      err,
+                                    ),
                                   );
                               }
                               setOpen(true);
@@ -634,7 +741,9 @@ export default function Checkout() {
                             <QrCode className="h-8 w-8 text-primary" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold">Generate payment QR Code</p>
+                            <p className="text-sm font-semibold">
+                              Generate payment QR Code
+                            </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               Generate a dynamic secure QR for scan and pay
                             </p>
@@ -662,7 +771,9 @@ export default function Checkout() {
                   className="h-16 w-16 rounded-xl object-cover border border-border"
                 />
                 <div className="min-w-0">
-                  <div className="font-semibold truncate text-sm">{product.title}</div>
+                  <div className="font-semibold truncate text-sm">
+                    {product.title}
+                  </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
                     ₹{product.price}/day × {days} day(s)
                   </div>
@@ -716,7 +827,9 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between pt-3 border-t border-border font-bold text-base text-foreground">
                 <span>Total</span>
-                <span className="text-primary font-extrabold">₹{total.toFixed(2)}</span>
+                <span className="text-primary font-extrabold">
+                  ₹{total.toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -753,11 +866,13 @@ export default function Checkout() {
             >
               {isVerifying ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Verifying Security...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Verifying
+                  Security...
                 </span>
               ) : isProcessing ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Launching Razorpay...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Launching
+                  Razorpay...
                 </span>
               ) : (
                 `Pay with Razorpay ₹${total.toFixed(0)}`
@@ -766,8 +881,8 @@ export default function Checkout() {
 
             {/* Secure Payment details */}
             <div className="flex items-center gap-2 justify-center text-[10px] text-muted-foreground mt-4 text-center">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> Razorpay 256-bit
-              PCI-DSS encrypted payment gateway.
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />{" "}
+              Razorpay 256-bit PCI-DSS encrypted payment gateway.
             </div>
           </aside>
         </div>
@@ -796,15 +911,20 @@ export default function Checkout() {
         >
           <div className="text-center py-4 relative overflow-hidden">
             {open && (
-              <CelebrationFlourish productImage={product.image} productTitle={product.title} />
+              <CelebrationFlourish
+                productImage={product.image}
+                productTitle={product.title}
+              />
             )}
             <div className="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 grid place-items-center relative z-10">
               <Check className="h-8 w-8 text-emerald-500" />
             </div>
-            <h3 className="mt-4 font-bold text-xl text-foreground">Your rental is booked!</h3>
+            <h3 className="mt-4 font-bold text-xl text-foreground">
+              Your rental is booked!
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground px-4">
-              We've processed your payment and sent a booking confirmation receipt to your email
-              address.
+              We've processed your payment and sent a booking confirmation
+              receipt to your email address.
             </p>
             <div className="mt-6 flex flex-col gap-2">
               <Button

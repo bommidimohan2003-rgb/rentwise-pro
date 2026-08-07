@@ -291,7 +291,8 @@ initDB();
 
 const isLocal =
   typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1");
 const API_BASE =
   import.meta.env.VITE_API_URL !== undefined
     ? import.meta.env.VITE_API_URL
@@ -319,7 +320,9 @@ const setOfflineMode = (val: boolean) => {
   if (offlineMode !== val) {
     offlineMode = val;
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("payent-admin-offline-change", { detail: val }));
+      window.dispatchEvent(
+        new CustomEvent("payent-admin-offline-change", { detail: val }),
+      );
     }
   }
 };
@@ -342,20 +345,27 @@ adminApi.interceptors.response.use(
     }
 
     const isNetworkError =
-      !error.response || error.code === "ERR_NETWORK" || error.message === "Network Error";
+      !error.response ||
+      error.code === "ERR_NETWORK" ||
+      error.message === "Network Error";
 
     if (isNetworkError) {
       setOfflineMode(true);
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("payent-network-offline"));
       }
-      console.warn("Admin API unreachable. Falling back to offline demo mode.", error);
+      console.warn(
+        "Admin API unreachable. Falling back to offline demo mode.",
+        error,
+      );
 
       const config = error.config;
       if (!config) return Promise.reject(error);
       let urlPath = config.url;
       if (urlPath.includes("/api/admin")) {
-        urlPath = urlPath.slice(urlPath.indexOf("/api/admin") + "/api/admin".length);
+        urlPath = urlPath.slice(
+          urlPath.indexOf("/api/admin") + "/api/admin".length,
+        );
       } else {
         urlPath = urlPath.replace("/api/admin", "");
       }
@@ -381,7 +391,10 @@ adminApi.interceptors.response.use(
               role?: string;
               fullName?: string;
               phone?: string;
-            }) => u.email === email && u.password === password && u.role === "admin",
+            }) =>
+              u.email === email &&
+              u.password === password &&
+              u.role === "admin",
           );
 
           if (matchedUser) {
@@ -393,12 +406,16 @@ adminApi.interceptors.response.use(
               role: "admin",
               status: "active",
               verified: true,
-              avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+              avatar:
+                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
               createdAt: new Date().toISOString(),
             };
 
             localStorage.setItem("payent:admin:token", "mock-admin-token");
-            localStorage.setItem("payent:admin:current_user", JSON.stringify(adminProfile));
+            localStorage.setItem(
+              "payent:admin:current_user",
+              JSON.stringify(adminProfile),
+            );
 
             // Log activity
             const logs = getDB<AdminActivityLog[]>("logs", INITIAL_LOGS);
@@ -414,7 +431,11 @@ adminApi.interceptors.response.use(
 
             return {
               status: 200,
-              data: { success: true, token: "mock-admin-token", user: adminProfile },
+              data: {
+                success: true,
+                token: "mock-admin-token",
+                user: adminProfile,
+              },
               headers: {},
               config,
             };
@@ -437,9 +458,16 @@ adminApi.interceptors.response.use(
         if (url === "/auth/me" && method === "GET") {
           const rawUser = localStorage.getItem("payent:admin:current_user");
           if (rawUser) {
-            return { status: 200, data: JSON.parse(rawUser), headers: {}, config };
+            return {
+              status: 200,
+              data: JSON.parse(rawUser),
+              headers: {},
+              config,
+            };
           }
-          return Promise.reject({ response: { status: 401, data: { message: "Unauthorized" } } });
+          return Promise.reject({
+            response: { status: 401, data: { message: "Unauthorized" } },
+          });
         }
 
         // DASHBOARD METRICS
@@ -447,29 +475,49 @@ adminApi.interceptors.response.use(
           const users = getDB<AdminUser[]>("users", INITIAL_USERS);
           const agents = getDB<AdminAgent[]>("agents", INITIAL_AGENTS);
           const products = getDB<AdminProduct[]>("products", INITIAL_PRODUCTS);
-          const categories = getDB<AdminCategory[]>("categories", INITIAL_CATEGORIES);
+          const categories = getDB<AdminCategory[]>(
+            "categories",
+            INITIAL_CATEGORIES,
+          );
           const bookings = getDB<AdminBooking[]>("bookings", INITIAL_BOOKINGS);
           const reports = getDB<AdminReport[]>("reports", INITIAL_REPORTS);
-          const notifications = getDB<AdminNotification[]>("notifications", INITIAL_NOTIFICATIONS);
+          const notifications = getDB<AdminNotification[]>(
+            "notifications",
+            INITIAL_NOTIFICATIONS,
+          );
 
-          const pendingProducts = products.filter((p) => p.status === "pending").length;
-          const approvedProducts = products.filter((p) => p.status === "approved").length;
-          const rejectedProducts = products.filter((p) => p.status === "rejected").length;
+          const pendingProducts = products.filter(
+            (p) => p.status === "pending",
+          ).length;
+          const approvedProducts = products.filter(
+            (p) => p.status === "approved",
+          ).length;
+          const rejectedProducts = products.filter(
+            (p) => p.status === "rejected",
+          ).length;
 
           const bookingsToday = bookings.filter(
-            (b) => b.createdAt.startsWith("2026-07-18") || b.createdAt.startsWith("2026-07-17"),
+            (b) =>
+              b.createdAt.startsWith("2026-07-18") ||
+              b.createdAt.startsWith("2026-07-17"),
           ).length;
           const monthlyBookings = bookings.length;
 
           const revenueToday = bookings
             .filter(
-              (b) => b.createdAt.startsWith("2026-07-18") || b.createdAt.startsWith("2026-07-17"),
+              (b) =>
+                b.createdAt.startsWith("2026-07-18") ||
+                b.createdAt.startsWith("2026-07-17"),
             )
             .reduce((sum, b) => sum + b.amount, 0);
           const monthlyRevenue = bookings.reduce((sum, b) => sum + b.amount, 0);
 
-          const pendingReports = reports.filter((r) => r.status === "open").length;
-          const unreadNotifications = notifications.filter((n) => !n.read).length;
+          const pendingReports = reports.filter(
+            (r) => r.status === "open",
+          ).length;
+          const unreadNotifications = notifications.filter(
+            (n) => !n.read,
+          ).length;
 
           return {
             status: 200,
@@ -650,11 +698,16 @@ adminApi.interceptors.response.use(
           const rawUser = localStorage.getItem("payent:admin:current_user");
           const body = JSON.parse(config.data || "{}");
           const users = readDb("users") as AdminUser[];
-          const idx = users.findIndex((u) => u.id === (rawUser ? JSON.parse(rawUser).id : ""));
+          const idx = users.findIndex(
+            (u) => u.id === (rawUser ? JSON.parse(rawUser).id : ""),
+          );
           if (idx !== -1) {
             users[idx] = { ...users[idx], ...body };
             writeDb("users", users);
-            localStorage.setItem("payent:admin:current_user", JSON.stringify(users[idx]));
+            localStorage.setItem(
+              "payent:admin:current_user",
+              JSON.stringify(users[idx]),
+            );
             return { status: 200, data: users[idx], headers: {}, config };
           }
         }
@@ -669,10 +722,16 @@ adminApi.interceptors.response.use(
             setDB("users", users);
             return { status: 200, data: users[idx], headers: {}, config };
           }
-          return Promise.reject({ response: { status: 404, data: { message: "User not found" } } });
+          return Promise.reject({
+            response: { status: 404, data: { message: "User not found" } },
+          });
         }
 
-        if (url.startsWith("/users/") && url.endsWith("/suspend") && method === "POST") {
+        if (
+          url.startsWith("/users/") &&
+          url.endsWith("/suspend") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const users = getDB<AdminUser[]>("users", INITIAL_USERS);
           const idx = users.findIndex((u) => u.id === id);
@@ -681,10 +740,16 @@ adminApi.interceptors.response.use(
             setDB("users", users);
             return { status: 200, data: users[idx], headers: {}, config };
           }
-          return Promise.reject({ response: { status: 404, data: { message: "User not found" } } });
+          return Promise.reject({
+            response: { status: 404, data: { message: "User not found" } },
+          });
         }
 
-        if (url.startsWith("/users/") && url.endsWith("/activate") && method === "POST") {
+        if (
+          url.startsWith("/users/") &&
+          url.endsWith("/activate") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const users = getDB<AdminUser[]>("users", INITIAL_USERS);
           const idx = users.findIndex((u) => u.id === id);
@@ -693,7 +758,9 @@ adminApi.interceptors.response.use(
             setDB("users", users);
             return { status: 200, data: users[idx], headers: {}, config };
           }
-          return Promise.reject({ response: { status: 404, data: { message: "User not found" } } });
+          return Promise.reject({
+            response: { status: 404, data: { message: "User not found" } },
+          });
         }
 
         // AGENTS ENDPOINTS
@@ -710,7 +777,11 @@ adminApi.interceptors.response.use(
           return { status: 200, data: { success: true }, headers: {}, config };
         }
 
-        if (url.startsWith("/agents/") && url.endsWith("/suspend") && method === "POST") {
+        if (
+          url.startsWith("/agents/") &&
+          url.endsWith("/suspend") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const agents = getDB<AdminAgent[]>("agents", INITIAL_AGENTS);
           const idx = agents.findIndex((a) => a.id === id);
@@ -765,7 +836,11 @@ adminApi.interceptors.response.use(
           return { status: 200, data: { success: true }, headers: {}, config };
         }
 
-        if (url.startsWith("/products/") && url.endsWith("/approve") && method === "POST") {
+        if (
+          url.startsWith("/products/") &&
+          url.endsWith("/approve") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const products = getDB<AdminProduct[]>("products", INITIAL_PRODUCTS);
           const idx = products.findIndex((p) => p.id === id);
@@ -780,7 +855,11 @@ adminApi.interceptors.response.use(
           });
         }
 
-        if (url.startsWith("/products/") && url.endsWith("/reject") && method === "POST") {
+        if (
+          url.startsWith("/products/") &&
+          url.endsWith("/reject") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const products = getDB<AdminProduct[]>("products", INITIAL_PRODUCTS);
           const idx = products.findIndex((p) => p.id === id);
@@ -795,7 +874,11 @@ adminApi.interceptors.response.use(
           });
         }
 
-        if (url.startsWith("/products/") && url.endsWith("/toggle-feature") && method === "POST") {
+        if (
+          url.startsWith("/products/") &&
+          url.endsWith("/toggle-feature") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const products = getDB<AdminProduct[]>("products", INITIAL_PRODUCTS);
           const idx = products.findIndex((p) => p.id === id);
@@ -809,7 +892,11 @@ adminApi.interceptors.response.use(
           });
         }
 
-        if (url.startsWith("/products/") && url.endsWith("/toggle-hide") && method === "POST") {
+        if (
+          url.startsWith("/products/") &&
+          url.endsWith("/toggle-hide") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const products = getDB<AdminProduct[]>("products", INITIAL_PRODUCTS);
           const idx = products.findIndex((p) => p.id === id);
@@ -825,13 +912,19 @@ adminApi.interceptors.response.use(
 
         // CATEGORIES ENDPOINTS
         if (url === "/categories" && method === "GET") {
-          const categories = getDB<AdminCategory[]>("categories", INITIAL_CATEGORIES);
+          const categories = getDB<AdminCategory[]>(
+            "categories",
+            INITIAL_CATEGORIES,
+          );
           return { status: 200, data: categories, headers: {}, config };
         }
 
         if (url === "/categories" && method === "POST") {
           const categoryData = JSON.parse(config.data || "{}");
-          const categories = getDB<AdminCategory[]>("categories", INITIAL_CATEGORIES);
+          const categories = getDB<AdminCategory[]>(
+            "categories",
+            INITIAL_CATEGORIES,
+          );
           const newCat: AdminCategory = {
             id: `cat-${Date.now()}`,
             name: categoryData.name,
@@ -848,7 +941,10 @@ adminApi.interceptors.response.use(
         if (url.startsWith("/categories/") && method === "PUT") {
           const id = url.split("/")[2];
           const patch = JSON.parse(config.data || "{}");
-          const categories = getDB<AdminCategory[]>("categories", INITIAL_CATEGORIES);
+          const categories = getDB<AdminCategory[]>(
+            "categories",
+            INITIAL_CATEGORIES,
+          );
           const idx = categories.findIndex((c) => c.id === id);
           if (idx !== -1) {
             categories[idx] = { ...categories[idx], ...patch };
@@ -862,7 +958,10 @@ adminApi.interceptors.response.use(
 
         if (url.startsWith("/categories/") && method === "DELETE") {
           const id = url.split("/")[2];
-          let categories = getDB<AdminCategory[]>("categories", INITIAL_CATEGORIES);
+          let categories = getDB<AdminCategory[]>(
+            "categories",
+            INITIAL_CATEGORIES,
+          );
           categories = categories.filter((c) => c.id !== id);
           setDB("categories", categories);
           return { status: 200, data: { success: true }, headers: {}, config };
@@ -874,7 +973,11 @@ adminApi.interceptors.response.use(
           return { status: 200, data: bookings, headers: {}, config };
         }
 
-        if (url.startsWith("/bookings/") && url.endsWith("/cancel") && method === "POST") {
+        if (
+          url.startsWith("/bookings/") &&
+          url.endsWith("/cancel") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const bookings = getDB<AdminBooking[]>("bookings", INITIAL_BOOKINGS);
           const idx = bookings.findIndex((b) => b.id === id);
@@ -888,7 +991,11 @@ adminApi.interceptors.response.use(
           });
         }
 
-        if (url.startsWith("/bookings/") && url.endsWith("/complete") && method === "POST") {
+        if (
+          url.startsWith("/bookings/") &&
+          url.endsWith("/complete") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const bookings = getDB<AdminBooking[]>("bookings", INITIAL_BOOKINGS);
           const idx = bookings.findIndex((b) => b.id === id);
@@ -902,7 +1009,11 @@ adminApi.interceptors.response.use(
           });
         }
 
-        if (url.startsWith("/bookings/") && url.endsWith("/refund") && method === "POST") {
+        if (
+          url.startsWith("/bookings/") &&
+          url.endsWith("/refund") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const bookings = getDB<AdminBooking[]>("bookings", INITIAL_BOOKINGS);
           const idx = bookings.findIndex((b) => b.id === id);
@@ -911,7 +1022,10 @@ adminApi.interceptors.response.use(
             setDB("bookings", bookings);
 
             // Update related payment to refunded
-            const payments = getDB<AdminPayment[]>("payments", INITIAL_PAYMENTS);
+            const payments = getDB<AdminPayment[]>(
+              "payments",
+              INITIAL_PAYMENTS,
+            );
             const payIdx = payments.findIndex((p) => p.bookingId === id);
             if (payIdx !== -1) {
               payments[payIdx].status = "refunded";
@@ -931,7 +1045,11 @@ adminApi.interceptors.response.use(
           return { status: 200, data: payments, headers: {}, config };
         }
 
-        if (url.startsWith("/payments/") && url.endsWith("/refund") && method === "POST") {
+        if (
+          url.startsWith("/payments/") &&
+          url.endsWith("/refund") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const payments = getDB<AdminPayment[]>("payments", INITIAL_PAYMENTS);
           const idx = payments.findIndex((p) => p.id === id);
@@ -940,8 +1058,13 @@ adminApi.interceptors.response.use(
             setDB("payments", payments);
 
             // Update booking to cancelled
-            const bookings = getDB<AdminBooking[]>("bookings", INITIAL_BOOKINGS);
-            const bookIdx = bookings.findIndex((b) => b.id === payments[idx].bookingId);
+            const bookings = getDB<AdminBooking[]>(
+              "bookings",
+              INITIAL_BOOKINGS,
+            );
+            const bookIdx = bookings.findIndex(
+              (b) => b.id === payments[idx].bookingId,
+            );
             if (bookIdx !== -1) {
               bookings[bookIdx].status = "cancelled";
               setDB("bookings", bookings);
@@ -950,7 +1073,10 @@ adminApi.interceptors.response.use(
             return { status: 200, data: payments[idx], headers: {}, config };
           }
           return Promise.reject({
-            response: { status: 404, data: { message: "Payment transaction not found" } },
+            response: {
+              status: 404,
+              data: { message: "Payment transaction not found" },
+            },
           });
         }
 
@@ -968,7 +1094,11 @@ adminApi.interceptors.response.use(
           return { status: 200, data: { success: true }, headers: {}, config };
         }
 
-        if (url.startsWith("/reviews/") && url.endsWith("/toggle-hide") && method === "POST") {
+        if (
+          url.startsWith("/reviews/") &&
+          url.endsWith("/toggle-hide") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const reviews = getDB<AdminReview[]>("reviews", INITIAL_REVIEWS);
           const idx = reviews.findIndex((r) => r.id === id);
@@ -988,7 +1118,11 @@ adminApi.interceptors.response.use(
           return { status: 200, data: reports, headers: {}, config };
         }
 
-        if (url.startsWith("/reports/") && url.endsWith("/resolve") && method === "POST") {
+        if (
+          url.startsWith("/reports/") &&
+          url.endsWith("/resolve") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const reports = getDB<AdminReport[]>("reports", INITIAL_REPORTS);
           const idx = reports.findIndex((r) => r.id === id);
@@ -1002,7 +1136,11 @@ adminApi.interceptors.response.use(
           });
         }
 
-        if (url.startsWith("/reports/") && url.endsWith("/dismiss") && method === "POST") {
+        if (
+          url.startsWith("/reports/") &&
+          url.endsWith("/dismiss") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const reports = getDB<AdminReport[]>("reports", INITIAL_REPORTS);
           const idx = reports.findIndex((r) => r.id === id);
@@ -1016,7 +1154,11 @@ adminApi.interceptors.response.use(
           });
         }
 
-        if (url.startsWith("/reports/") && url.endsWith("/suspend-product") && method === "POST") {
+        if (
+          url.startsWith("/reports/") &&
+          url.endsWith("/suspend-product") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const reports = getDB<AdminReport[]>("reports", INITIAL_REPORTS);
           const idx = reports.findIndex((r) => r.id === id);
@@ -1025,8 +1167,13 @@ adminApi.interceptors.response.use(
             setDB("reports", reports);
 
             // Suspend product
-            const products = getDB<AdminProduct[]>("products", INITIAL_PRODUCTS);
-            const pIdx = products.findIndex((p) => p.id === reports[idx].productId);
+            const products = getDB<AdminProduct[]>(
+              "products",
+              INITIAL_PRODUCTS,
+            );
+            const pIdx = products.findIndex(
+              (p) => p.id === reports[idx].productId,
+            );
             if (pIdx !== -1) {
               products[pIdx].status = "rejected";
               products[pIdx].available = false;
@@ -1040,7 +1187,11 @@ adminApi.interceptors.response.use(
           });
         }
 
-        if (url.startsWith("/reports/") && url.endsWith("/ban-user") && method === "POST") {
+        if (
+          url.startsWith("/reports/") &&
+          url.endsWith("/ban-user") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const reports = getDB<AdminReport[]>("reports", INITIAL_REPORTS);
           const idx = reports.findIndex((r) => r.id === id);
@@ -1073,12 +1224,18 @@ adminApi.interceptors.response.use(
 
         // NOTIFICATIONS ENDPOINTS
         if (url === "/notifications" && method === "GET") {
-          const notifications = getDB<AdminNotification[]>("notifications", INITIAL_NOTIFICATIONS);
+          const notifications = getDB<AdminNotification[]>(
+            "notifications",
+            INITIAL_NOTIFICATIONS,
+          );
           return { status: 200, data: notifications, headers: {}, config };
         }
 
         if (url === "/notifications/mark-read" && method === "POST") {
-          const notifications = getDB<AdminNotification[]>("notifications", INITIAL_NOTIFICATIONS);
+          const notifications = getDB<AdminNotification[]>(
+            "notifications",
+            INITIAL_NOTIFICATIONS,
+          );
           notifications.forEach((n) => {
             n.read = true;
           });
@@ -1088,7 +1245,10 @@ adminApi.interceptors.response.use(
 
         if (url.startsWith("/notifications/") && method === "DELETE") {
           const id = url.split("/")[2];
-          let notifications = getDB<AdminNotification[]>("notifications", INITIAL_NOTIFICATIONS);
+          let notifications = getDB<AdminNotification[]>(
+            "notifications",
+            INITIAL_NOTIFICATIONS,
+          );
           notifications = notifications.filter((n) => n.id !== id);
           setDB("notifications", notifications);
           return { status: 200, data: { success: true }, headers: {}, config };
@@ -1096,14 +1256,24 @@ adminApi.interceptors.response.use(
 
         // SUPPORT ENDPOINTS
         if (url === "/support" && method === "GET") {
-          const tickets = getDB<AdminSupportTicket[]>("tickets", INITIAL_TICKETS);
+          const tickets = getDB<AdminSupportTicket[]>(
+            "tickets",
+            INITIAL_TICKETS,
+          );
           return { status: 200, data: tickets, headers: {}, config };
         }
 
-        if (url.startsWith("/support/") && url.endsWith("/reply") && method === "POST") {
+        if (
+          url.startsWith("/support/") &&
+          url.endsWith("/reply") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const { message } = JSON.parse(config.data || "{}");
-          const tickets = getDB<AdminSupportTicket[]>("tickets", INITIAL_TICKETS);
+          const tickets = getDB<AdminSupportTicket[]>(
+            "tickets",
+            INITIAL_TICKETS,
+          );
           const idx = tickets.findIndex((t) => t.id === id);
           if (idx !== -1) {
             tickets[idx].messages.push({
@@ -1121,10 +1291,17 @@ adminApi.interceptors.response.use(
           });
         }
 
-        if (url.startsWith("/support/") && url.endsWith("/status") && method === "POST") {
+        if (
+          url.startsWith("/support/") &&
+          url.endsWith("/status") &&
+          method === "POST"
+        ) {
           const id = url.split("/")[2];
           const { status } = JSON.parse(config.data || "{}");
-          const tickets = getDB<AdminSupportTicket[]>("tickets", INITIAL_TICKETS);
+          const tickets = getDB<AdminSupportTicket[]>(
+            "tickets",
+            INITIAL_TICKETS,
+          );
           const idx = tickets.findIndex((t) => t.id === id);
           if (idx !== -1) {
             tickets[idx].status = status;
@@ -1155,9 +1332,16 @@ adminApi.interceptors.response.use(
         if (url === "/profile" && method === "GET") {
           const rawUser = localStorage.getItem("payent:admin:current_user");
           if (rawUser) {
-            return { status: 200, data: JSON.parse(rawUser), headers: {}, config };
+            return {
+              status: 200,
+              data: JSON.parse(rawUser),
+              headers: {},
+              config,
+            };
           }
-          return Promise.reject({ response: { status: 401, data: { message: "Unauthorized" } } });
+          return Promise.reject({
+            response: { status: 401, data: { message: "Unauthorized" } },
+          });
         }
 
         if (url === "/profile" && method === "POST") {
@@ -1170,12 +1354,18 @@ adminApi.interceptors.response.use(
             if (idx !== -1) {
               users[idx] = { ...users[idx], ...patch };
               setDB("users", users);
-              localStorage.setItem("payent:admin:current_user", JSON.stringify(users[idx]));
+              localStorage.setItem(
+                "payent:admin:current_user",
+                JSON.stringify(users[idx]),
+              );
               return { status: 200, data: users[idx], headers: {}, config };
             }
           }
           return Promise.reject({
-            response: { status: 404, data: { message: "User profile not found" } },
+            response: {
+              status: 404,
+              data: { message: "User profile not found" },
+            },
           });
         }
 
@@ -1205,7 +1395,10 @@ adminApi.interceptors.response.use(
         return Promise.reject({
           response: {
             status: 500,
-            data: { message: e instanceof Error ? e.message : "Internal Mock Server Error" },
+            data: {
+              message:
+                e instanceof Error ? e.message : "Internal Mock Server Error",
+            },
           },
         });
       }

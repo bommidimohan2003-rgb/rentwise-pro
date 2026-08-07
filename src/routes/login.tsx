@@ -6,7 +6,8 @@ export const Route = createFileRoute("/login")({
   head: () =>
     getSeoMetadata({
       title: "Sign In | Payent",
-      description: "Log in to your Payent account to manage listings, orders, and messages.",
+      description:
+        "Log in to your Payent account to manage listings, orders, and messages.",
       path: "/login",
     }),
   component: Login,

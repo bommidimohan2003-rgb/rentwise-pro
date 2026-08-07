@@ -52,11 +52,17 @@
 
   /* Spatial UI Elevation System Tokens */
   --elevation-0-shadow: none;
-  --elevation-1-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --elevation-2-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
-  --elevation-3-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12), 0 8px 20px -4px rgba(0, 0, 0, 0.08);
-  --elevation-4-shadow: 0 32px 70px -14px rgba(0, 0, 0, 0.16), 0 12px 28px -6px rgba(0, 0, 0, 0.1);
-  --rim-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), inset 0 -1px 0 0 rgba(0, 0, 0, 0.05);
+  --elevation-1-shadow:
+    0 2px 8px -2px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --elevation-2-shadow:
+    0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+  --elevation-3-shadow:
+    0 20px 40px -10px rgba(0, 0, 0, 0.12), 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+  --elevation-4-shadow:
+    0 32px 70px -14px rgba(0, 0, 0, 0.16), 0 12px 28px -6px rgba(0, 0, 0, 0.1);
+  --rim-highlight:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.05);
 }
 
 .dark {
@@ -80,10 +86,15 @@
 
   /* Dark Mode Spatial Elevation Tokens */
   --elevation-1-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.8);
-  --elevation-2-shadow: 0 14px 32px -6px rgba(0, 0, 0, 0.9), 0 4px 14px -2px rgba(0, 0, 0, 0.5);
-  --elevation-3-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.95), 0 8px 24px -4px rgba(0, 0, 0, 0.6);
-  --elevation-4-shadow: 0 36px 80px -12px rgba(0, 0, 0, 0.98), 0 16px 36px -6px rgba(0, 0, 0, 0.7);
-  --rim-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 0 rgba(0, 0, 0, 0.8);
+  --elevation-2-shadow:
+    0 14px 32px -6px rgba(0, 0, 0, 0.9), 0 4px 14px -2px rgba(0, 0, 0, 0.5);
+  --elevation-3-shadow:
+    0 24px 48px -8px rgba(0, 0, 0, 0.95), 0 8px 24px -4px rgba(0, 0, 0, 0.6);
+  --elevation-4-shadow:
+    0 36px 80px -12px rgba(0, 0, 0, 0.98), 0 16px 36px -6px rgba(0, 0, 0, 0.7);
+  --rim-highlight:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.8);
 }
 
 @layer base {
@@ -127,7 +138,11 @@
   &:hover {
     transform: translateY(-4px) scale(1.006);
     box-shadow: var(--elevation-3-shadow), var(--rim-highlight);
-    border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+    border-color: color-mix(
+      in srgb,
+      var(--color-primary) 40%,
+      var(--color-border)
+    );
   }
 
   &:active {
@@ -201,7 +216,11 @@
 .dark .btn-gradient,
 :where(.dark) .btn-gradient {
   background-color: #ffffff !important;
-  background-image: linear-gradient(135deg, #ffffff 0%, #f4f4f5 100%) !important;
+  background-image: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #f4f4f5 100%
+  ) !important;
   color: #000000 !important;
   box-shadow:
     0 10px 25px -5px rgba(255, 255, 255, 0.2),
@@ -210,7 +229,11 @@
 
 .dark .btn-gradient:hover,
 :where(.dark) .btn-gradient:hover {
-  background-image: linear-gradient(135deg, #f4f4f5 0%, #e4e4e7 100%) !important;
+  background-image: linear-gradient(
+    135deg,
+    #f4f4f5 0%,
+    #e4e4e7 100%
+  ) !important;
   box-shadow:
     0 18px 40px -10px rgba(255, 255, 255, 0.3),
     inset 0 1px 0 0 rgba(255, 255, 255, 1) !important;
@@ -228,7 +251,11 @@
   &:hover {
     transform: translateY(-4px);
     box-shadow: var(--elevation-3-shadow), var(--rim-highlight);
-    border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+    border-color: color-mix(
+      in srgb,
+      var(--color-primary) 40%,
+      var(--color-border)
+    );
   }
   @media (prefers-reduced-motion: reduce) {
     &:hover {

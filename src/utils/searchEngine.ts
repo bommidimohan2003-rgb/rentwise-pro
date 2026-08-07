@@ -120,7 +120,14 @@ const SYNONYM_MAP: Record<string, string[]> = {
     "makita",
     "milwaukee",
   ],
-  drill: ["hammer drill", "combi drill", "cordless", "bosch", "dewalt", "makita"],
+  drill: [
+    "hammer drill",
+    "combi drill",
+    "cordless",
+    "bosch",
+    "dewalt",
+    "makita",
+  ],
   saw: ["circular saw", "blade", "dewalt", "makita"],
 };
 
@@ -172,7 +179,10 @@ export interface SearchResult {
 /**
  * Advanced Multi-token, Fuzzy, Synonym-aware & Ranked Search Engine
  */
-export function advancedSearch(productsList: Product[], query: string): Product[] {
+export function advancedSearch(
+  productsList: Product[],
+  query: string,
+): Product[] {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) return productsList;
 
@@ -226,7 +236,11 @@ export function advancedSearch(productsList: Product[], query: string): Product[
       if (!tokenMatched) {
         const synonyms = SYNONYM_MAP[token] || [];
         for (const syn of synonyms) {
-          if (titleLower.includes(syn) || catLower.includes(syn) || descLower.includes(syn)) {
+          if (
+            titleLower.includes(syn) ||
+            catLower.includes(syn) ||
+            descLower.includes(syn)
+          ) {
             tokenScore += 4;
             tokenMatched = true;
             break;

@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { MainLayout } from "@/layouts/MainLayout";
-import { CheckCircle2, ChevronLeft, ChevronRight, Camera, Laptop, Bike, Plane } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Camera,
+  Laptop,
+  Bike,
+  Plane,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import sonyA7FrontImg from "@/assets/images/sony_a7_front.png";
@@ -48,7 +56,12 @@ const BACKGROUND_GEAR_PHOTOS = [
   },
 ];
 
-export function AuthLayout({ children, mode, title, subtitle }: AuthLayoutProps) {
+export function AuthLayout({
+  children,
+  mode,
+  title,
+  subtitle,
+}: AuthLayoutProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const location = useLocation();
 
@@ -60,9 +73,12 @@ export function AuthLayout({ children, mode, title, subtitle }: AuthLayoutProps)
     return () => clearInterval(timer);
   }, []);
 
-  const nextPhoto = () => setActiveIdx((prev) => (prev + 1) % BACKGROUND_GEAR_PHOTOS.length);
+  const nextPhoto = () =>
+    setActiveIdx((prev) => (prev + 1) % BACKGROUND_GEAR_PHOTOS.length);
   const prevPhoto = () =>
-    setActiveIdx((prev) => (prev > 0 ? prev - 1 : BACKGROUND_GEAR_PHOTOS.length - 1));
+    setActiveIdx((prev) =>
+      prev > 0 ? prev - 1 : BACKGROUND_GEAR_PHOTOS.length - 1,
+    );
 
   const currentGear = BACKGROUND_GEAR_PHOTOS[activeIdx];
   const IconComp = currentGear.icon;
@@ -111,7 +127,9 @@ export function AuthLayout({ children, mode, title, subtitle }: AuthLayoutProps)
                 key={idx}
                 onClick={() => setActiveIdx(idx)}
                 className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                  activeIdx === idx ? "w-5 bg-primary" : "w-2 bg-white/40 hover:bg-white/80"
+                  activeIdx === idx
+                    ? "w-5 bg-primary"
+                    : "w-2 bg-white/40 hover:bg-white/80"
                 }`}
                 aria-label={`View photo ${idx + 1}`}
               />

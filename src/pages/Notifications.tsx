@@ -54,7 +54,9 @@ export default function Notifications() {
         setList((prev) => prev.map((n) => ({ ...n, read: true })));
         toast.success("All notifications marked as read!");
       })
-      .catch((err) => toast.error(err.message || "Failed to mark notifications as read."));
+      .catch((err) =>
+        toast.error(err.message || "Failed to mark notifications as read."),
+      );
   };
 
   return (
@@ -87,9 +89,13 @@ export default function Notifications() {
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">{n.title}</h3>
-                  <span className="text-xs text-muted-foreground">{n.createdAt}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {n.createdAt}
+                  </span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">{n.message}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {n.message}
+                </p>
               </div>
             </div>
           ))}

@@ -62,26 +62,43 @@ export default function Messages() {
                 onClick={() => setActive(c.id)}
                 className={`w-full flex items-center gap-3 p-4 text-left hover:bg-secondary transition-colors ${active === c.id ? "bg-secondary" : ""}`}
               >
-                <img src={c.avatar} alt={c.from} className="h-10 w-10 rounded-full" />
+                <img
+                  src={c.avatar}
+                  alt={c.from}
+                  className="h-10 w-10 rounded-full"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between">
                     <span className="font-medium text-sm">{c.from}</span>
-                    <span className="text-xs text-muted-foreground">{c.time}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {c.time}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{c.preview}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {c.preview}
+                  </p>
                 </div>
-                {c.unread && <span className="h-2 w-2 rounded-full bg-primary" />}
+                {c.unread && (
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                )}
               </button>
             ))}
           </div>
           <div className="flex flex-col">
             <div className="p-4 border-b border-border flex items-center gap-3">
-              <img src={current.avatar} className="h-9 w-9 rounded-full" alt="" />
+              <img
+                src={current.avatar}
+                className="h-9 w-9 rounded-full"
+                alt=""
+              />
               <span className="font-medium">{current.from}</span>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-3">
               {thread.map((m, i) => (
-                <div key={i} className={`flex ${m.me ? "justify-end" : "justify-start"}`}>
+                <div
+                  key={i}
+                  className={`flex ${m.me ? "justify-end" : "justify-start"}`}
+                >
                   <div
                     className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${m.me ? "btn-gradient" : "bg-secondary"}`}
                   >

@@ -38,9 +38,14 @@ export function Breadcrumb() {
           <div key={to} className="flex items-center gap-2">
             <ChevronRight className="h-3 w-3 opacity-60" />
             {last ? (
-              <span className="text-foreground font-bold tracking-wide">{formattedValue}</span>
+              <span className="text-foreground font-bold tracking-wide">
+                {formattedValue}
+              </span>
             ) : (
-              <Link to={to as "/admin"} className="hover:text-foreground transition-colors">
+              <Link
+                to={to as "/admin"}
+                className="hover:text-foreground transition-colors"
+              >
                 {formattedValue}
               </Link>
             )}

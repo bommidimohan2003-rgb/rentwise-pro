@@ -13,6 +13,7 @@ This repository contains the source code for the Payent premium peer-to-peer tec
 Payent is a peer-to-peer tech-gear rental marketplace. It is a working prototype mixing real backend routes, local persistence, mock storefront data, and experimental ML modules.
 
 Key directory layout:
+
 - `src/` — Customer frontend
 - `src/admin/` — Separate admin app (own routes, own services, own storage keys)
 - `backend/` — FastAPI service
@@ -27,6 +28,7 @@ Always inspect `docs/project-report.md` before planning tasks.
 Work through the technical-debt and integration backlog in priority order:
 
 ### Phase 1 — Dead code & duplicate removal (isolated PR)
+
 - Remove `rentwise-pro-main/` (stale duplicate snapshot; confirm first it's not referenced anywhere outside `eslint.config.js`, then delete and drop the ignore entry).
 - Remove `api/index.py` (orphaned serverless function wrapper, if present and unreferenced).
 - Remove or explicitly archive `scratch/update_catalog.py` (orphaned maintenance script) — verify logic before deleting.
@@ -34,6 +36,7 @@ Work through the technical-debt and integration backlog in priority order:
 - Consolidate duplicate `requirements.txt` / hosting config artifacts into a single source of truth.
 
 ### Phase 2 — Security & config hardening
+
 - Replace hardcoded `JWT_SECRET_KEY` and `MYSQL_PASSWORD` defaults in backend config with required env variables (fail fast at startup if unset in prod mode).
 - Enable real Razorpay SDK path (`razorpay_client`). Wire up credentials via env vars; keep manual HMAC path as fallback.
 - Configure Twilio properly so OTP mock fallback in `backend/main.py` is not default in production.
@@ -41,17 +44,21 @@ Work through the technical-debt and integration backlog in priority order:
 - Remove `mock-admin-token` fallback in `src/components/auth/LoginForm.tsx`.
 
 ### Phase 3 — Mock-to-real data migration
+
 Replace mock storefront data with existing real backend routes:
+
 1. Catalog (`src/utils/mockData.ts` → real product/catalog endpoint)
 2. Categories (`src/utils/mockData.ts` → real endpoint)
 3. Testimonials/stats (`src/utils/mockData.ts` → real endpoint or flag missing backend route)
 4. Messages (`src/utils/mockData.ts` → real endpoint or flag unbacked)
 5. Wishlist — reconcile mixed frontend/backend state so backend is source of truth with optimistic local cache.
 
-*Note: Do not modify Auth, Orders, Notifications, Payments, Recommendations, Lender products, or Search without verifying current integration status.*
+_Note: Do not modify Auth, Orders, Notifications, Payments, Recommendations, Lender products, or Search without verifying current integration status._
 
 ### Phase 4 — Documentation sync
+
 After each phase lands, update `docs/project-report.md`:
+
 - Integration-status table
 - Technical-debt list
 - Repository-facts section

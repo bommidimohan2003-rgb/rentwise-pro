@@ -1,6 +1,13 @@
 import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
-import { Star, Sparkles, TrendingUp, Layers, Heart, ArrowRight } from "lucide-react";
+import {
+  Star,
+  Sparkles,
+  TrendingUp,
+  Layers,
+  Heart,
+  ArrowRight,
+} from "lucide-react";
 import type { Product } from "@/types";
 import { tracker } from "@/utils/eventTracker";
 import { useWishlist } from "@/hooks/useWishlist";
@@ -54,7 +61,9 @@ export function RecommendationSection({
 
   if (layout === "compact") {
     return (
-      <div className={cn("space-y-4 pt-6 border-t border-border/80", className)}>
+      <div
+        className={cn("space-y-4 pt-6 border-t border-border/80", className)}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-primary/10">{getIcon()}</div>
@@ -62,7 +71,9 @@ export function RecommendationSection({
               <h3 className="text-base font-extrabold tracking-tight text-foreground font-display">
                 {title}
               </h3>
-              {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+              {subtitle && (
+                <p className="text-xs text-muted-foreground">{subtitle}</p>
+              )}
             </div>
           </div>
           {badge && (
@@ -92,11 +103,15 @@ export function RecommendationSection({
                 </h4>
                 <p className="text-[11px] font-extrabold text-foreground mt-0.5">
                   ₹{product.price.toLocaleString("en-IN")}
-                  <span className="text-[10px] text-slate-400 font-normal">/day</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    /day
+                  </span>
                 </p>
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
-                  <span className="text-[11px] font-bold text-foreground">{product.rating}</span>
+                  <span className="text-[11px] font-bold text-foreground">
+                    {product.rating}
+                  </span>
                 </div>
               </div>
             </Link>
@@ -125,7 +140,9 @@ export function RecommendationSection({
             {title}
           </h2>
           {subtitle && (
-            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">{subtitle}</p>
+            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">
+              {subtitle}
+            </p>
           )}
         </div>
       </div>
@@ -160,7 +177,9 @@ export function RecommendationSection({
                       : "bg-black/40 text-white hover:bg-black/60",
                   )}
                 >
-                  <Heart className={cn("h-4 w-4", isWishlisted && "fill-white")} />
+                  <Heart
+                    className={cn("h-4 w-4", isWishlisted && "fill-white")}
+                  />
                 </button>
 
                 <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider">
@@ -183,7 +202,9 @@ export function RecommendationSection({
                   <Link
                     to="/product/$id"
                     params={{ id: product.id }}
-                    onClick={() => tracker.recommendationClick(product.id, type)}
+                    onClick={() =>
+                      tracker.recommendationClick(product.id, type)
+                    }
                     className="block group-hover:text-primary transition-colors"
                   >
                     <h3 className="font-extrabold text-sm md:text-base text-foreground line-clamp-1">
@@ -204,14 +225,18 @@ export function RecommendationSection({
                     </span>
                     <span className="text-base md:text-lg font-black text-foreground">
                       ₹{product.price.toLocaleString("en-IN")}
-                      <span className="text-xs font-normal text-muted-foreground">/day</span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        /day
+                      </span>
                     </span>
                   </div>
 
                   <Link
                     to="/product/$id"
                     params={{ id: product.id }}
-                    onClick={() => tracker.recommendationClick(product.id, type)}
+                    onClick={() =>
+                      tracker.recommendationClick(product.id, type)
+                    }
                   >
                     <Button
                       size="sm"

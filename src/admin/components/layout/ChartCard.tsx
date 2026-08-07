@@ -19,9 +19,13 @@ export function ChartCard({
     <div className="spatial-card p-5 flex flex-col h-[350px]">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-bold text-foreground tracking-tight">{title}</h3>
+          <h3 className="text-sm font-bold text-foreground tracking-tight">
+            {title}
+          </h3>
           {description && (
-            <p className="text-xs text-muted-foreground mt-0.5 font-medium">{description}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+              {description}
+            </p>
           )}
         </div>
         {action && <div className="flex items-center gap-1.5">{action}</div>}

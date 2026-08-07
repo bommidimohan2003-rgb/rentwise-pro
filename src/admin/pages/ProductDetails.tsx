@@ -93,7 +93,11 @@ export default function ProductDetails() {
     try {
       const updated = await productsService.toggleFeatureProduct(product.id);
       setProduct(updated);
-      toast.success(updated.featured ? "Listing featured." : "Listing removed from featured.");
+      toast.success(
+        updated.featured
+          ? "Listing featured."
+          : "Listing removed from featured.",
+      );
     } catch {
       toast.error("Failed to toggle featured.");
     }
@@ -128,7 +132,8 @@ export default function ProductDetails() {
                     "bg-green-500/10 text-green-600 dark:text-green-400",
                   product.status === "pending" &&
                     "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-                  product.status === "rejected" && "bg-red-500/10 text-red-600 dark:text-red-400",
+                  product.status === "rejected" &&
+                    "bg-red-500/10 text-red-600 dark:text-red-400",
                 )}
               >
                 {product.status}
@@ -182,7 +187,11 @@ export default function ProductDetails() {
                 : "bg-card hover:bg-secondary text-foreground/80 border-border/80",
             )}
           >
-            {product.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {product.hidden ? (
+              <EyeOff className="h-3.5 w-3.5" />
+            ) : (
+              <Eye className="h-3.5 w-3.5" />
+            )}
             <span>{product.hidden ? "Hidden" : "Hide"}</span>
           </button>
         </div>
@@ -195,7 +204,11 @@ export default function ProductDetails() {
           {/* Media Frame */}
           <div className="card-premium bg-card/60 p-4 space-y-3">
             <div className="h-96 w-full rounded-xl overflow-hidden bg-secondary">
-              <img src={activeImage} alt={product.title} className="h-full w-full object-cover" />
+              <img
+                src={activeImage}
+                alt={product.title}
+                className="h-full w-full object-cover"
+              />
             </div>
 
             {/* Thumbnails */}
@@ -212,7 +225,11 @@ export default function ProductDetails() {
                         : "border-transparent opacity-75 hover:opacity-100",
                     )}
                   >
-                    <img src={img} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={img}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   </button>
                 ))}
               </div>
@@ -239,7 +256,9 @@ export default function ProductDetails() {
                     <FileText className="h-4.5 w-4.5" />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-foreground truncate">{doc}</span>
+                    <span className="text-xs font-bold text-foreground truncate">
+                      {doc}
+                    </span>
                     <span className="text-[10px] text-muted-foreground mt-0.5">
                       Click to preview document
                     </span>
@@ -251,7 +270,9 @@ export default function ProductDetails() {
 
           {/* Rental history */}
           <div className="card-premium bg-card/60 p-5 space-y-3">
-            <h3 className="text-sm font-bold text-foreground">Rental History</h3>
+            <h3 className="text-sm font-bold text-foreground">
+              Rental History
+            </h3>
             <div className="overflow-x-auto no-scrollbar">
               <table className="w-full border-collapse text-left text-xs font-medium">
                 <thead>
@@ -281,7 +302,9 @@ export default function ProductDetails() {
                         <td className="py-3 text-muted-foreground">
                           {b.startDate} to {b.endDate}
                         </td>
-                        <td className="py-3 font-extrabold text-primary">₹{b.amount}</td>
+                        <td className="py-3 font-extrabold text-primary">
+                          ₹{b.amount}
+                        </td>
                         <td className="py-3 text-right">
                           <span
                             className={cn(
@@ -312,18 +335,30 @@ export default function ProductDetails() {
         <div className="space-y-6">
           {/* Details specs */}
           <div className="card-premium bg-card/60 p-5 space-y-4">
-            <h3 className="text-sm font-bold text-foreground">Specifications</h3>
+            <h3 className="text-sm font-bold text-foreground">
+              Specifications
+            </h3>
             <div className="space-y-3.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">Price per Day</span>
-                <span className="font-extrabold text-primary text-sm">₹{product.price}</span>
+                <span className="text-muted-foreground font-semibold">
+                  Price per Day
+                </span>
+                <span className="font-extrabold text-primary text-sm">
+                  ₹{product.price}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">Category</span>
-                <span className="font-bold text-foreground">{product.category}</span>
+                <span className="text-muted-foreground font-semibold">
+                  Category
+                </span>
+                <span className="font-bold text-foreground">
+                  {product.category}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">Availability</span>
+                <span className="text-muted-foreground font-semibold">
+                  Availability
+                </span>
                 <span className="flex items-center gap-1">
                   <span
                     className={cn(
@@ -337,13 +372,17 @@ export default function ProductDetails() {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">Listed Date</span>
+                <span className="text-muted-foreground font-semibold">
+                  Listed Date
+                </span>
                 <span className="font-bold text-foreground">
                   {new Date(product.createdAt).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex flex-col border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold mb-1">Item Description</span>
+                <span className="text-muted-foreground font-semibold mb-1">
+                  Item Description
+                </span>
                 <p className="text-[11px] font-semibold text-foreground/90 leading-relaxed">
                   {product.description}
                 </p>
@@ -353,7 +392,9 @@ export default function ProductDetails() {
 
           {/* Owner details */}
           <div className="card-premium bg-card/60 p-5 space-y-4">
-            <h3 className="text-sm font-bold text-foreground">Lender Information</h3>
+            <h3 className="text-sm font-bold text-foreground">
+              Lender Information
+            </h3>
             <div className="flex items-center gap-3">
               <img
                 src={product.owner.avatar}

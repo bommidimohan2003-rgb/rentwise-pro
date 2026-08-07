@@ -25,7 +25,11 @@ import {
 import { ChartCard } from "../components/layout/ChartCard";
 import { StatsCard } from "../components/layout/StatsCard";
 import { Loader } from "../components/layout/Loader";
-import { notificationsService, DashboardStats, DashboardCharts } from "../services/notifications";
+import {
+  notificationsService,
+  DashboardStats,
+  DashboardCharts,
+} from "../services/notifications";
 import { toast } from "sonner";
 
 export default function Analytics() {
@@ -75,9 +79,12 @@ export default function Analytics() {
       {/* Title bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Analytics Reports</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            Analytics Reports
+          </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Audit conversion benchmarks, monthly transaction volumes, and lender acquisitions.
+            Audit conversion benchmarks, monthly transaction volumes, and lender
+            acquisitions.
           </p>
         </div>
 
@@ -123,7 +130,9 @@ export default function Analytics() {
         <StatsCard
           title="Customer Acq Cost (CAC)"
           value={
-            stats?.totalUsers ? `₹${Math.max(10, 150 - stats.totalUsers * 2).toFixed(2)}` : "₹0.00"
+            stats?.totalUsers
+              ? `₹${Math.max(10, 150 - stats.totalUsers * 2).toFixed(2)}`
+              : "₹0.00"
           }
           change="-6.4%"
           trend="up" // Representing improvement (costs down)
@@ -171,7 +180,12 @@ export default function Analytics() {
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis
+                stroke="#888888"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "var(--color-card)",
@@ -215,7 +229,12 @@ export default function Analytics() {
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis
+                stroke="#888888"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "var(--color-card)",
@@ -224,7 +243,12 @@ export default function Analytics() {
                   fontSize: "11px",
                 }}
               />
-              <Bar name="Bookings" dataKey="bookings" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar
+                name="Bookings"
+                dataKey="bookings"
+                fill="#10b981"
+                radius={[4, 4, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -240,7 +264,11 @@ export default function Analytics() {
                 data={combinedGrowthData}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.4} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--color-border)"
+                  opacity={0.4}
+                />
                 <XAxis
                   dataKey="name"
                   stroke="#888888"
@@ -248,7 +276,12 @@ export default function Analytics() {
                   tickLine={false}
                   axisLine={false}
                 />
-                <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis
+                  stroke="#888888"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "var(--color-card)",

@@ -10,19 +10,28 @@ interface PhotoDetailViewerProps {
   isWishlisted?: boolean;
 }
 
-export function PhotoDetailViewer({ primaryImage, productTitle, angles }: PhotoDetailViewerProps) {
+export function PhotoDetailViewer({
+  primaryImage,
+  productTitle,
+  angles,
+}: PhotoDetailViewerProps) {
   const [activeAngleIndex, setActiveAngleIndex] = useState(0);
   const [transformStyle, setTransformStyle] = useState("");
   const [shadowStyle, setShadowStyle] = useState("");
   const [isDisabled, setIsDisabled] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const activeSrc = angles && angles.length > 0 ? angles[activeAngleIndex] : primaryImage;
+  const activeSrc =
+    angles && angles.length > 0 ? angles[activeAngleIndex] : primaryImage;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const isTouch = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      const isTouch =
+        window.matchMedia("(pointer: coarse)").matches ||
+        "ontouchstart" in window;
       setIsDisabled(reducedMotion || isTouch);
     }
   }, []);
@@ -52,7 +61,9 @@ export function PhotoDetailViewer({ primaryImage, productTitle, angles }: PhotoD
 
   const handleMouseLeave = () => {
     if (isDisabled) return;
-    setTransformStyle("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
+    setTransformStyle(
+      "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
+    );
     setShadowStyle("0 20px 40px -10px rgba(0, 0, 0, 0.15)");
   };
 
@@ -102,7 +113,11 @@ export function PhotoDetailViewer({ primaryImage, productTitle, angles }: PhotoD
                   : "border-border/40 opacity-75 hover:opacity-100 hover:border-primary/50",
               )}
             >
-              <img src={src} alt={`Angle ${idx + 1}`} className="h-full w-full object-cover" />
+              <img
+                src={src}
+                alt={`Angle ${idx + 1}`}
+                className="h-full w-full object-cover"
+              />
             </button>
           ))}
         </div>

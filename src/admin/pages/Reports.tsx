@@ -1,5 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
-import { Search, ShieldAlert, CheckCircle, XCircle, UserX, AlertTriangle, Eye } from "lucide-react";
+import {
+  Search,
+  ShieldAlert,
+  CheckCircle,
+  XCircle,
+  UserX,
+  AlertTriangle,
+  Eye,
+} from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
 import { Modal } from "../components/layout/Modal";
@@ -19,7 +27,9 @@ export default function Reports() {
   const [sortKey, setSortKey] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const [selectedReport, setSelectedReport] = useState<AdminReport | null>(null);
+  const [selectedReport, setSelectedReport] = useState<AdminReport | null>(
+    null,
+  );
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const fetchReports = async () => {
@@ -126,7 +136,9 @@ export default function Reports() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc"
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -152,7 +164,9 @@ export default function Reports() {
       label: "Reported Item",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-bold text-foreground">{row.productTitle}</span>
+        <span className="text-xs font-bold text-foreground">
+          {row.productTitle}
+        </span>
       ),
     },
     {
@@ -171,13 +185,17 @@ export default function Reports() {
       key: "reporterName",
       label: "Reporter",
       sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.reporterName}</span>,
+      render: (row) => (
+        <span className="text-xs font-bold">{row.reporterName}</span>
+      ),
     },
     {
       key: "ownerName",
       label: "Listing Owner",
       sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.ownerName}</span>,
+      render: (row) => (
+        <span className="text-xs font-bold">{row.ownerName}</span>
+      ),
     },
     {
       key: "status",
@@ -191,7 +209,8 @@ export default function Reports() {
               "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse",
             row.status === "resolved" &&
               "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-            row.status === "dismissed" && "bg-secondary text-muted-foreground border-border",
+            row.status === "dismissed" &&
+              "bg-secondary text-muted-foreground border-border",
           )}
         >
           {row.status}
@@ -254,7 +273,8 @@ export default function Reports() {
       <div>
         <h1 className="text-xl font-bold text-foreground">Flagged Listings</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Moderate catalog disputes, inspect evidence claims, and override user/product statuses.
+          Moderate catalog disputes, inspect evidence claims, and override
+          user/product statuses.
         </p>
       </div>
 
@@ -322,8 +342,12 @@ export default function Reports() {
                 <AlertTriangle className="h-6 w-6" />
               </div>
               <div>
-                <span className="text-xs text-destructive font-bold">Reported Listing:</span>
-                <h4 className="text-sm font-bold text-foreground">{selectedReport.productTitle}</h4>
+                <span className="text-xs text-destructive font-bold">
+                  Reported Listing:
+                </span>
+                <h4 className="text-sm font-bold text-foreground">
+                  {selectedReport.productTitle}
+                </h4>
               </div>
             </div>
 
@@ -331,17 +355,27 @@ export default function Reports() {
             <div className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-muted-foreground font-semibold">Filed by (Reporter)</span>
-                  <p className="font-bold text-foreground mt-0.5">{selectedReport.reporterName}</p>
+                  <span className="text-muted-foreground font-semibold">
+                    Filed by (Reporter)
+                  </span>
+                  <p className="font-bold text-foreground mt-0.5">
+                    {selectedReport.reporterName}
+                  </p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground font-semibold">Owner of Listing</span>
-                  <p className="font-bold text-foreground mt-0.5">{selectedReport.ownerName}</p>
+                  <span className="text-muted-foreground font-semibold">
+                    Owner of Listing
+                  </span>
+                  <p className="font-bold text-foreground mt-0.5">
+                    {selectedReport.ownerName}
+                  </p>
                 </div>
               </div>
 
               <div className="flex flex-col border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">Dispute Reason</span>
+                <span className="text-muted-foreground font-semibold">
+                  Dispute Reason
+                </span>
                 <p className="font-bold text-foreground/95 mt-1 leading-normal">
                   {selectedReport.reason}
                 </p>
@@ -359,7 +393,9 @@ export default function Reports() {
               )}
 
               <div className="flex items-center justify-between border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">Status of Claim</span>
+                <span className="text-muted-foreground font-semibold">
+                  Status of Claim
+                </span>
                 <span
                   className={cn(
                     "text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border",

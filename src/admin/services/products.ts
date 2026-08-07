@@ -11,7 +11,10 @@ export const productsService = {
     return response.data;
   },
 
-  async updateProduct(id: string, data: Partial<AdminProduct>): Promise<AdminProduct> {
+  async updateProduct(
+    id: string,
+    data: Partial<AdminProduct>,
+  ): Promise<AdminProduct> {
     const response = await adminApi.put(`/products/${id}`, data);
     return response.data;
   },
@@ -55,7 +58,10 @@ export const productsService = {
     return response.data;
   },
 
-  async updateCategory(id: string, data: Partial<AdminCategory>): Promise<AdminCategory> {
+  async updateCategory(
+    id: string,
+    data: Partial<AdminCategory>,
+  ): Promise<AdminCategory> {
     const response = await adminApi.put(`/categories/${id}`, data);
     return response.data;
   },

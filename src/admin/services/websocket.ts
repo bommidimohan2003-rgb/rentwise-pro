@@ -38,12 +38,16 @@ class AdminWebSocketService {
       this.status = newStatus;
       this.statusListeners.forEach((listener) => listener(newStatus));
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("payent-admin-ws-status", { detail: newStatus }));
+        window.dispatchEvent(
+          new CustomEvent("payent-admin-ws-status", { detail: newStatus }),
+        );
       }
     }
   }
 
-  public onStatusChange(callback: (status: ConnectionStatus) => void): () => void {
+  public onStatusChange(
+    callback: (status: ConnectionStatus) => void,
+  ): () => void {
     this.statusListeners.add(callback);
     callback(this.status);
     return () => {
@@ -62,7 +66,8 @@ class AdminWebSocketService {
 
     if (
       this.ws &&
-      (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)
+      (this.ws.readyState === WebSocket.CONNECTING ||
+        this.ws.readyState === WebSocket.OPEN)
     ) {
       return;
     }
@@ -72,7 +77,8 @@ class AdminWebSocketService {
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host =
-      window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
         ? "127.0.0.1:8000"
         : window.location.host;
 
@@ -105,7 +111,9 @@ class AdminWebSocketService {
         this.setStatus("DISCONNECTED");
 
         if (event.code === 4003) {
-          console.warn("WebSocket rejected with Forbidden (4003). Check admin token.");
+          console.warn(
+            "WebSocket rejected with Forbidden (4003). Check admin token.",
+          );
           return;
         }
 

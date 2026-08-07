@@ -54,7 +54,9 @@ export default function ProductDetails() {
   const [frequentlyTogether, setFrequentlyTogether] = useState<Product[]>([]);
 
   const isOwner = Boolean(
-    user && product && (user.fullName === product.owner.name || user.email === product.owner.name),
+    user &&
+    product &&
+    (user.fullName === product.owner.name || user.email === product.owner.name),
   );
 
   useEffect(() => {
@@ -169,7 +171,10 @@ export default function ProductDetails() {
                 isWishlisted={has(product.id)}
               />
             ) : product.rotationFrames && product.rotationFrames.length >= 2 ? (
-              <ProductRotationViewer frames={product.rotationFrames} productTitle={product.title} />
+              <ProductRotationViewer
+                frames={product.rotationFrames}
+                productTitle={product.title}
+              />
             ) : (
               <PhotoDetailViewer
                 primaryImage={product.image}
@@ -191,7 +196,8 @@ export default function ProductDetails() {
                   <span className="font-extrabold px-1.5 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black text-[10px] tracking-wider uppercase mr-1">
                     REFERENCE MODEL
                   </span>{" "}
-                  This item serves as a reference model for demonstrating platform features.
+                  This item serves as a reference model for demonstrating
+                  platform features.
                 </span>
               </div>
             )}
@@ -259,7 +265,9 @@ export default function ProductDetails() {
                   <Button
                     variant="outline"
                     size="sm"
-                    leftIcon={<MessageSquare className="h-3.5 w-3.5 text-foreground" />}
+                    leftIcon={
+                      <MessageSquare className="h-3.5 w-3.5 text-foreground" />
+                    }
                     onClick={() => navigate({ to: "/messages" })}
                     className="font-bold text-xs border-border hover:border-primary"
                   >
@@ -276,7 +284,8 @@ export default function ProductDetails() {
                       Payent Reference Model
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5 font-medium">
-                      Standard specification item for lender guidance and reference booking.
+                      Standard specification item for lender guidance and
+                      reference booking.
                     </div>
                   </div>
                 </div>
@@ -302,7 +311,9 @@ export default function ProductDetails() {
                       <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase truncate">
                         {item.day}
                       </p>
-                      <p className="text-xs font-extrabold mt-0.5 truncate">{item.date}</p>
+                      <p className="text-xs font-extrabold mt-0.5 truncate">
+                        {item.date}
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -341,7 +352,10 @@ export default function ProductDetails() {
                     <span className="text-3xl font-black text-foreground tracking-tight">
                       ₹{product.price}
                     </span>
-                    <span className="text-xs text-slate-400 font-medium"> / day</span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      {" "}
+                      / day
+                    </span>
                   </div>
                 </div>
 
@@ -365,8 +379,8 @@ export default function ProductDetails() {
                       <ArrowRight className="h-4 w-4" />
                     </button>
                     <p className="text-[11px] text-muted-foreground text-center font-medium">
-                      Reference item. Listed gear from community lenders includes instant Rent Now
-                      booking.
+                      Reference item. Listed gear from community lenders
+                      includes instant Rent Now booking.
                     </p>
                   </div>
                 ) : isOwner ? (
@@ -379,7 +393,8 @@ export default function ProductDetails() {
                       <span>Your Listed Item</span>
                     </button>
                     <p className="text-[11px] text-muted-foreground text-center font-medium">
-                      You are the owner of this listing and cannot book your own item.
+                      You are the owner of this listing and cannot book your own
+                      item.
                     </p>
                   </div>
                 ) : (
@@ -392,7 +407,10 @@ export default function ProductDetails() {
                         navigate({ to: "/login" });
                         return;
                       }
-                      navigate({ to: "/checkout", search: { id: product.id } as never });
+                      navigate({
+                        to: "/checkout",
+                        search: { id: product.id } as never,
+                      });
                     }}
                     className="w-full bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50 text-white dark:text-black font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                   >
@@ -407,7 +425,9 @@ export default function ProductDetails() {
                 <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-secondary/40 border border-border/60">
                   <ShieldCheck className="h-4 w-4 text-[#FF5A5F] shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-xs font-extrabold text-foreground">100% Insured</div>
+                    <div className="text-xs font-extrabold text-foreground">
+                      100% Insured
+                    </div>
                     <div className="text-[10px] text-slate-400 mt-0.5 font-medium">
                       Up to ₹5 Lakhs coverage
                     </div>
@@ -416,7 +436,9 @@ export default function ProductDetails() {
                 <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-secondary/40 border border-border/60">
                   <Truck className="h-4 w-4 text-[#FF5A5F] shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-xs font-extrabold text-foreground">Doorstep Delivery</div>
+                    <div className="text-xs font-extrabold text-foreground">
+                      Doorstep Delivery
+                    </div>
                     <div className="text-[10px] text-slate-400 mt-0.5 font-medium">
                       Same-day pickup option
                     </div>
@@ -471,8 +493,12 @@ export default function ProductDetails() {
                       className="h-10 w-10 rounded-full object-cover border border-[#FF5A5F]"
                     />
                     <div className="text-left">
-                      <div className="text-sm font-extrabold text-foreground">{r.user}</div>
-                      <div className="text-[10px] text-muted-foreground font-medium">{r.date}</div>
+                      <div className="text-sm font-extrabold text-foreground">
+                        {r.user}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-medium">
+                        {r.date}
+                      </div>
                     </div>
                   </div>
                   <Rating value={r.rating} />

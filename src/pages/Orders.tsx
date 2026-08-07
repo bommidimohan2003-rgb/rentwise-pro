@@ -14,7 +14,9 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(
+    null,
+  );
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
   const navigate = useNavigate();
 
@@ -47,7 +49,9 @@ export default function Orders() {
       .cancelOrder(token, orderId)
       .then(() => {
         setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" as const } : o)),
+          prev.map((o) =>
+            o.id === orderId ? { ...o, status: "cancelled" as const } : o,
+          ),
         );
         toast.success("Order cancelled successfully!");
       })
@@ -59,13 +63,19 @@ export default function Orders() {
       <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
         <Package className="h-7 w-7 text-primary" /> Orders
       </h1>
-      <p className="mt-2 text-muted-foreground">Track and manage all your gear rentals.</p>
+      <p className="mt-2 text-muted-foreground">
+        Track and manage all your gear rentals.
+      </p>
 
       <div className="mt-8">
         {loading ? (
           <LoadingState type="list" count={4} />
         ) : error ? (
-          <ErrorState title="Unable to load orders" error={error} onRetry={fetchOrders} />
+          <ErrorState
+            title="Unable to load orders"
+            error={error}
+            onRetry={fetchOrders}
+          />
         ) : orders.length === 0 ? (
           <EmptyState
             title="No orders yet"
@@ -88,7 +98,11 @@ export default function Orders() {
                 key={o.id}
                 className="grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 items-center border-b border-border last:border-0"
               >
-                <img src={o.productImage} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                <img
+                  src={o.productImage}
+                  alt=""
+                  className="h-14 w-14 rounded-lg object-cover"
+                />
                 <div className="font-medium">{o.productTitle}</div>
                 <div className="text-sm text-muted-foreground">
                   {o.startDate} – {o.endDate}
@@ -143,14 +157,20 @@ export default function Orders() {
               className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-2xl backdrop-blur-xl z-10"
             >
               <div className="flex flex-col gap-2">
-                <h3 className="text-xl font-bold text-foreground">Cancel Gear Rental</h3>
+                <h3 className="text-xl font-bold text-foreground">
+                  Cancel Gear Rental
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Are you sure you want to cancel this gear rental? Once cancelled, the reservation
-                  holds will be released back to the lender. This action cannot be undone.
+                  Are you sure you want to cancel this gear rental? Once
+                  cancelled, the reservation holds will be released back to the
+                  lender. This action cannot be undone.
                 </p>
               </div>
               <div className="mt-6 flex justify-end gap-3">
-                <Button variant="ghost" onClick={() => setCancellingOrderId(null)}>
+                <Button
+                  variant="ghost"
+                  onClick={() => setCancellingOrderId(null)}
+                >
                   Keep Rental
                 </Button>
                 <Button

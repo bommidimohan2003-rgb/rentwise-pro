@@ -113,20 +113,20 @@ There is a notable drift between the frontend type definitions in `src/types/ind
 
 The project has a mixed integration state. Some customer-facing features are backed by real backend routes, while others are still served by mock storefront data.
 
-| Customer route or feature | Data source | Status |
-| --- | --- | --- |
-| Auth | Backend auth routes and JWT flow | Real |
-| Orders | Backend orders and order persistence routes | Real |
-| Notifications | Backend notifications routes | Real |
-| Payments | Backend payment routes and payment records | Real |
-| Recommendations | Backend recommendation engine and event tracking | Real |
-| Lender products | Backend custom product routes | Real |
-| Search | Backend `/api/search` with ML search engine | Real |
-| Wishlist items | Backend wishlist routes (`/api/wishlist`) & optimistic local cache | Real |
-| Catalog | `GET /api/products/custom/public` & fallback static catalog | Mixed |
-| Categories | Static storefront data (no public backend route) | Unbacked / Mock |
-| Testimonials and stats | Static storefront data (no public backend route) | Unbacked / Mock |
-| Messages | Static storefront data (no public backend route) | Unbacked / Mock |
+| Customer route or feature | Data source                                                        | Status          |
+| ------------------------- | ------------------------------------------------------------------ | --------------- |
+| Auth                      | Backend auth routes and JWT flow                                   | Real            |
+| Orders                    | Backend orders and order persistence routes                        | Real            |
+| Notifications             | Backend notifications routes                                       | Real            |
+| Payments                  | Backend payment routes and payment records                         | Real            |
+| Recommendations           | Backend recommendation engine and event tracking                   | Real            |
+| Lender products           | Backend custom product routes                                      | Real            |
+| Search                    | Backend `/api/search` with ML search engine                        | Real            |
+| Wishlist items            | Backend wishlist routes (`/api/wishlist`) & optimistic local cache | Real            |
+| Catalog                   | `GET /api/products/custom/public` & fallback static catalog        | Mixed           |
+| Categories                | Static storefront data (no public backend route)                   | Unbacked / Mock |
+| Testimonials and stats    | Static storefront data (no public backend route)                   | Unbacked / Mock |
+| Messages                  | Static storefront data (no public backend route)                   | Unbacked / Mock |
 
 The OTP flow has a mock fallback path in `backend/main.py` when Twilio credentials are absent. The checkout path also includes mock pricing and titles through `mock_prices` and `mock_titles` in the backend payment code path.
 

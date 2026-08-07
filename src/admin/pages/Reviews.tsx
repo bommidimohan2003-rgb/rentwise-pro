@@ -48,7 +48,9 @@ export default function Reviews() {
       const updated = await notificationsService.toggleHideReview(id);
       setReviews((prev) => prev.map((r) => (r.id === id ? updated : r)));
       toast.info(
-        updated.hidden ? "Review comment hidden from public catalog." : "Review comment visible.",
+        updated.hidden
+          ? "Review comment hidden from public catalog."
+          : "Review comment visible.",
       );
     } catch {
       toast.error("Failed to toggle visibility status.");
@@ -89,7 +91,9 @@ export default function Reviews() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc"
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -115,7 +119,9 @@ export default function Reviews() {
       label: "Listed Product",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-bold text-foreground">{row.productTitle}</span>
+        <span className="text-xs font-bold text-foreground">
+          {row.productTitle}
+        </span>
       ),
     },
     {
@@ -129,7 +135,9 @@ export default function Reviews() {
             alt=""
             className="h-6 w-6 rounded-full object-cover border shrink-0"
           />
-          <span className="text-xs font-bold text-foreground truncate">{row.userName}</span>
+          <span className="text-xs font-bold text-foreground truncate">
+            {row.userName}
+          </span>
         </div>
       ),
     },
@@ -144,7 +152,9 @@ export default function Reviews() {
               key={i}
               className={cn(
                 "h-3.5 w-3.5",
-                i < row.rating ? "text-amber-500 fill-amber-500" : "text-muted-foreground/30",
+                i < row.rating
+                  ? "text-amber-500 fill-amber-500"
+                  : "text-muted-foreground/30",
               )}
             />
           ))}
@@ -188,7 +198,11 @@ export default function Reviews() {
             )}
             title={row.hidden ? "Show Review" : "Hide Review"}
           >
-            {row.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {row.hidden ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
           </button>
           <button
             onClick={() => handleDelete(row.id)}
@@ -207,9 +221,12 @@ export default function Reviews() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-foreground">Reviews Moderation</h1>
+        <h1 className="text-xl font-bold text-foreground">
+          Reviews Moderation
+        </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Audit customer rental feedbacks, filter star evaluations, and moderate listing visibility.
+          Audit customer rental feedbacks, filter star evaluations, and moderate
+          listing visibility.
         </p>
       </div>
 

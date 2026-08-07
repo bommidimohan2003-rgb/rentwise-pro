@@ -7,7 +7,14 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist", ".output", ".vinxi", ".venv", "node_modules", ".tanstack"],
+    ignores: [
+      "dist",
+      ".output",
+      ".vinxi",
+      ".venv",
+      "node_modules",
+      ".tanstack",
+    ],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -34,8 +41,12 @@ export default tseslint.config(
           ],
         },
       ],
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true },
+      ],
       "@typescript-eslint/no-unused-vars": "off",
+      "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },
   eslintPluginPrettier,

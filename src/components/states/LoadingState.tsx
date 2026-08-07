@@ -9,19 +9,38 @@ export interface LoadingStateProps {
   className?: string;
 }
 
-export function LoadingState({ type = "grid", count = 6, message, className }: LoadingStateProps) {
+export function LoadingState({
+  type = "grid",
+  count = 6,
+  message,
+  className,
+}: LoadingStateProps) {
   if (type === "spinner") {
     return (
-      <div className={cn("flex flex-col items-center justify-center p-8 gap-3", className)}>
+      <div
+        className={cn(
+          "flex flex-col items-center justify-center p-8 gap-3",
+          className,
+        )}
+      >
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        {message && <p className="text-xs font-semibold text-muted-foreground">{message}</p>}
+        {message && (
+          <p className="text-xs font-semibold text-muted-foreground">
+            {message}
+          </p>
+        )}
       </div>
     );
   }
 
   if (type === "stats") {
     return (
-      <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4", className)}>
+      <div
+        className={cn(
+          "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4",
+          className,
+        )}
+      >
         {Array.from({ length: count }).map((_, i) => (
           <div
             key={i}
@@ -74,7 +93,10 @@ export function LoadingState({ type = "grid", count = 6, message, className }: L
           <div className="h-4 w-16 bg-muted/50 rounded ml-auto" />
         </div>
         {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className="h-14 border-b border-border/30 px-6 flex items-center gap-6">
+          <div
+            key={i}
+            className="h-14 border-b border-border/30 px-6 flex items-center gap-6"
+          >
             <div className="h-9 w-9 rounded-full bg-muted/70 shrink-0" />
             <div className="h-4 w-36 bg-muted/70 rounded" />
             <div className="h-4 w-24 bg-muted/50 rounded" />
@@ -87,7 +109,12 @@ export function LoadingState({ type = "grid", count = 6, message, className }: L
 
   if (type === "details") {
     return (
-      <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-8 animate-pulse", className)}>
+      <div
+        className={cn(
+          "grid grid-cols-1 lg:grid-cols-12 gap-8 animate-pulse",
+          className,
+        )}
+      >
         <div className="lg:col-span-7 space-y-4">
           <div className="h-96 rounded-3xl bg-muted/70 w-full" />
           <div className="grid grid-cols-4 gap-3">

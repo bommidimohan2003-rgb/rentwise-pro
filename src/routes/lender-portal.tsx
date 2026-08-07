@@ -7,7 +7,8 @@ export const Route = createFileRoute("/lender-portal")({
   head: () =>
     getSeoMetadata({
       title: "Lender Portal | Payent",
-      description: "Manage your listed tech gear and view incoming renter bookings.",
+      description:
+        "Manage your listed tech gear and view incoming renter bookings.",
       path: "/lender-portal",
     }),
   component: () => (

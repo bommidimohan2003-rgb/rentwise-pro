@@ -76,8 +76,8 @@ export default function Profile() {
             Account & Profile
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-            Manage your personal details, creator credentials, payout settings, and verification
-            status.
+            Manage your personal details, creator credentials, payout settings,
+            and verification status.
           </p>
         </div>
 
@@ -159,7 +159,9 @@ export default function Profile() {
           {/* Marketplace Stats Row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 mx-6 mb-6 rounded-2xl bg-secondary/40 border border-border/60 text-center">
             <div className="space-y-0.5">
-              <div className="text-lg font-black text-foreground font-display">14</div>
+              <div className="text-lg font-black text-foreground font-display">
+                14
+              </div>
               <div className="text-[11px] font-semibold text-muted-foreground">
                 Completed Rentals
               </div>
@@ -203,7 +205,9 @@ export default function Profile() {
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <UserIcon className="h-4 w-4 text-foreground" />
-                  <h3 className="font-bold text-base text-foreground">General Creator Details</h3>
+                  <h3 className="font-bold text-base text-foreground">
+                    General Creator Details
+                  </h3>
                 </div>
                 <span className="text-[11px] text-muted-foreground font-semibold">
                   Public Marketplace Info
@@ -215,13 +219,17 @@ export default function Profile() {
                   label="Full Name"
                   icon={<UserIcon className="h-4 w-4" />}
                   value={form.fullName}
-                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, fullName: e.target.value })
+                  }
                 />
                 <Input
                   label="Role / Occupation"
                   icon={<Briefcase className="h-4 w-4" />}
                   value={form.occupation}
-                  onChange={(e) => setForm({ ...form, occupation: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, occupation: e.target.value })
+                  }
                 />
               </div>
 
@@ -250,7 +258,9 @@ export default function Profile() {
                   label="Pincode"
                   icon={<MapPin className="h-4 w-4" />}
                   value={form.pincode}
-                  onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, pincode: e.target.value })
+                  }
                 />
               </div>
 
@@ -262,7 +272,11 @@ export default function Profile() {
               />
 
               <div className="pt-2 flex justify-end">
-                <Button onClick={saveProfile} size="sm" className="font-bold text-xs">
+                <Button
+                  onClick={saveProfile}
+                  size="sm"
+                  className="font-bold text-xs"
+                >
                   Save Details
                 </Button>
               </div>
@@ -273,7 +287,9 @@ export default function Profile() {
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-foreground" />
-                  <h3 className="font-bold text-base text-foreground">Contact & Payout Settings</h3>
+                  <h3 className="font-bold text-base text-foreground">
+                    Contact & Payout Settings
+                  </h3>
                 </div>
                 <span className="text-[11px] text-muted-foreground font-semibold">
                   Financial & Delivery
@@ -303,7 +319,11 @@ export default function Profile() {
               />
 
               <div className="pt-2 flex justify-end">
-                <Button onClick={saveProfile} size="sm" className="font-bold text-xs">
+                <Button
+                  onClick={saveProfile}
+                  size="sm"
+                  className="font-bold text-xs"
+                >
                   Update Payout Info
                 </Button>
               </div>
@@ -324,7 +344,9 @@ export default function Profile() {
                   <div className="flex items-center gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <div>
-                      <p className="text-xs font-bold text-foreground">Govt ID Verification</p>
+                      <p className="text-xs font-bold text-foreground">
+                        Govt ID Verification
+                      </p>
                       <p className="text-[10px] text-muted-foreground font-medium">
                         Aadhaar / Passport verified
                       </p>
@@ -339,7 +361,9 @@ export default function Profile() {
                   <div className="flex items-center gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <div>
-                      <p className="text-xs font-bold text-foreground">Phone & Email Check</p>
+                      <p className="text-xs font-bold text-foreground">
+                        Phone & Email Check
+                      </p>
                       <p className="text-[10px] text-muted-foreground font-medium">
                         OTP SMS & Email confirmed
                       </p>
@@ -354,7 +378,9 @@ export default function Profile() {
                   <div className="flex items-center gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <div>
-                      <p className="text-xs font-bold text-foreground">Payent Rental Shield</p>
+                      <p className="text-xs font-bold text-foreground">
+                        Payent Rental Shield
+                      </p>
                       <p className="text-[10px] text-muted-foreground font-medium">
                         ₹5,00,000 Equipment Coverage
                       </p>
@@ -377,11 +403,15 @@ export default function Profile() {
               <div className="space-y-2 text-xs font-medium">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Handover Mode:</span>
-                  <span className="font-bold text-foreground">Self Pickup / Local Courier</span>
+                  <span className="font-bold text-foreground">
+                    Self Pickup / Local Courier
+                  </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Pickup Operating Hours:</span>
-                  <span className="font-bold text-foreground">09:00 AM - 08:00 PM</span>
+                  <span className="font-bold text-foreground">
+                    09:00 AM - 08:00 PM
+                  </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Deposit Security:</span>
@@ -398,8 +428,8 @@ export default function Profile() {
                 Need help updating account credentials?
               </h4>
               <p className="text-[11px] text-muted-foreground">
-                Contact Payent 24/7 Creator Support for GST billing updates or identity
-                re-verification.
+                Contact Payent 24/7 Creator Support for GST billing updates or
+                identity re-verification.
               </p>
               <Button
                 variant="outline"

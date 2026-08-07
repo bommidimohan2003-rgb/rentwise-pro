@@ -31,7 +31,9 @@ export function ProductRotationViewer({
   // Detect prefers-reduced-motion
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
       setPrefersReducedMotion(reducedMotion);
     }
   }, []);
@@ -78,14 +80,28 @@ export function ProductRotationViewer({
 
   // Optional auto-rotate mode respecting prefers-reduced-motion
   useEffect(() => {
-    if (!autoRotate || !isLoaded || isDragging || hasInteracted || prefersReducedMotion) return;
+    if (
+      !autoRotate ||
+      !isLoaded ||
+      isDragging ||
+      hasInteracted ||
+      prefersReducedMotion
+    )
+      return;
 
     const interval = setInterval(() => {
       setCurrentFrame((prev) => (prev + 1) % totalFrames);
     }, 180);
 
     return () => clearInterval(interval);
-  }, [autoRotate, isLoaded, isDragging, hasInteracted, totalFrames, prefersReducedMotion]);
+  }, [
+    autoRotate,
+    isLoaded,
+    isDragging,
+    hasInteracted,
+    totalFrames,
+    prefersReducedMotion,
+  ]);
 
   // Keyboard Left/Right Arrow Navigation
   useEffect(() => {
@@ -132,7 +148,8 @@ export function ProductRotationViewer({
     }
   };
 
-  const loadPercentage = totalFrames > 0 ? Math.round((loadedCount / totalFrames) * 100) : 100;
+  const loadPercentage =
+    totalFrames > 0 ? Math.round((loadedCount / totalFrames) * 100) : 100;
   const currentAngleDegrees = Math.round((currentFrame / totalFrames) * 360);
 
   return (
@@ -158,7 +175,9 @@ export function ProductRotationViewer({
         <div className="absolute inset-0 z-30 bg-card/90 backdrop-blur-md flex flex-col items-center justify-center p-6 space-y-4">
           <RefreshCw className="h-8 w-8 text-primary animate-spin" />
           <div className="text-center space-y-1">
-            <h4 className="text-sm font-bold text-foreground">Loading Real Product Photography</h4>
+            <h4 className="text-sm font-bold text-foreground">
+              Loading Real Product Photography
+            </h4>
             <p className="text-xs text-muted-foreground">
               Preloading turntable frames ({loadedCount}/{totalFrames})
             </p>
@@ -169,7 +188,9 @@ export function ProductRotationViewer({
               style={{ width: `${loadPercentage}%` }}
             />
           </div>
-          <span className="text-xs font-bold text-primary">{loadPercentage}%</span>
+          <span className="text-xs font-bold text-primary">
+            {loadPercentage}%
+          </span>
         </div>
       )}
 

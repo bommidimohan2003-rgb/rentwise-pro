@@ -16,7 +16,8 @@ const variants: Record<Variant, string> = {
   primary: "btn-gradient",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
   ghost: "hover:bg-secondary text-foreground",
-  outline: "border border-border bg-transparent hover:bg-secondary text-foreground",
+  outline:
+    "border border-border bg-transparent hover:bg-secondary text-foreground",
   destructive: "bg-destructive text-white hover:opacity-90",
 };
 
@@ -27,39 +28,41 @@ const sizes: Record<Size, string> = {
   icon: "h-10 w-10 rounded-full grid place-items-center",
 };
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  {
-    className,
-    variant = "primary",
-    size = "md",
-    loading,
-    leftIcon,
-    rightIcon,
-    children,
-    disabled,
-    ...rest
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(
+    {
+      className,
+      variant = "primary",
+      size = "md",
+      loading,
+      leftIcon,
+      rightIcon,
+      children,
+      disabled,
+      ...rest
+    },
+    ref,
+  ) {
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || loading}
+        className={cn(
+          "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          variants[variant],
+          sizes[size],
+          className,
+        )}
+        {...rest}
+      >
+        {loading ? (
+          <span className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+        ) : (
+          leftIcon
+        )}
+        {children}
+        {!loading && rightIcon}
+      </button>
+    );
   },
-  ref,
-) {
-  return (
-    <button
-      ref={ref}
-      disabled={disabled || loading}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        variants[variant],
-        sizes[size],
-        className,
-      )}
-      {...rest}
-    >
-      {loading ? (
-        <span className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-      ) : (
-        leftIcon
-      )}
-      {children}
-      {!loading && rightIcon}
-    </button>
-  );
-});
+);

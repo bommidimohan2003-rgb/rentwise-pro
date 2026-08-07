@@ -107,7 +107,9 @@ export function Hero() {
               className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight leading-[1.08] font-display"
             >
               Professional gear on demand.{" "}
-              <span className="text-muted-foreground font-normal">Earn when your kit is idle.</span>
+              <span className="text-muted-foreground font-normal">
+                Earn when your kit is idle.
+              </span>
             </motion.h1>
 
             {/* Subheadline */}
@@ -117,8 +119,9 @@ export function Hero() {
               transition={{ duration: 0.4, delay: 0.2 }}
               className="text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed font-normal"
             >
-              Rent cinema cameras, aerial drones, studio audio, and workstation laptops directly
-              from verified creators in your city — fully insured and ready for your next project.
+              Rent cinema cameras, aerial drones, studio audio, and workstation
+              laptops directly from verified creators in your city — fully
+              insured and ready for your next project.
             </motion.p>
 
             {/* CTAs */}
@@ -236,7 +239,9 @@ export function Hero() {
                 {/* Floating Verified Item Badge */}
                 <div className="absolute top-2.5 left-2.5 spatial-surface px-2.5 py-1 flex items-center gap-1.5">
                   <ShieldCheck className="h-3.5 w-3.5 text-foreground" />
-                  <span className="text-[10px] font-bold text-foreground">Verified Gear Item</span>
+                  <span className="text-[10px] font-bold text-foreground">
+                    Verified Gear Item
+                  </span>
                 </div>
               </div>
 

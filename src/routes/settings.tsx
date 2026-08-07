@@ -7,7 +7,8 @@ export const Route = createFileRoute("/settings")({
   head: () =>
     getSeoMetadata({
       title: "Account Settings | Payent",
-      description: "Manage your account credentials, notification options, and rental preferences.",
+      description:
+        "Manage your account credentials, notification options, and rental preferences.",
       path: "/settings",
     }),
   component: () => (

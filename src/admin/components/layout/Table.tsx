@@ -94,12 +94,18 @@ export function Table<T>({
             ) : data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="p-8">
-                  <EmptyState title={emptyTitle} description={emptyDescription} />
+                  <EmptyState
+                    title={emptyTitle}
+                    description={emptyDescription}
+                  />
                 </td>
               </tr>
             ) : (
               data.map((row, rIdx) => (
-                <tr key={rIdx} className="hover:bg-secondary/20 transition-colors group/row">
+                <tr
+                  key={rIdx}
+                  className="hover:bg-secondary/20 transition-colors group/row"
+                >
                   {columns.map((col) => {
                     const alignClass = {
                       left: "text-left",
@@ -117,7 +123,9 @@ export function Table<T>({
                       >
                         {col.render
                           ? col.render(row, rIdx)
-                          : ((row as Record<string, unknown>)[col.key] as React.ReactNode)}
+                          : ((row as Record<string, unknown>)[
+                              col.key
+                            ] as React.ReactNode)}
                       </td>
                     );
                   })}

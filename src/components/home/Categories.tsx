@@ -1,6 +1,15 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { Camera, Laptop, Plane, Bike, Hammer, Zap, ArrowRight, Sparkles } from "lucide-react";
+import {
+  Camera,
+  Laptop,
+  Plane,
+  Bike,
+  Hammer,
+  Zap,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 
 const baseCategories = [
   {
@@ -49,7 +58,8 @@ export function Categories() {
             Find What <span className="text-primary">You Need</span>
           </h2>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">
-            Explore insured cameras, laptops, drones, bikes, power banks, and electric tools nearby.
+            Explore insured cameras, laptops, drones, bikes, power banks, and
+            electric tools nearby.
           </p>
         </div>
 

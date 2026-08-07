@@ -6,7 +6,11 @@ interface LoaderProps {
   fullPage?: boolean;
 }
 
-export function Loader({ message = "Loading...", size = "md", fullPage = false }: LoaderProps) {
+export function Loader({
+  message = "Loading...",
+  size = "md",
+  fullPage = false,
+}: LoaderProps) {
   const sizeClasses = {
     sm: "h-5 w-5",
     md: "h-8 w-8",
@@ -17,7 +21,9 @@ export function Loader({ message = "Loading...", size = "md", fullPage = false }
     <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
       <Loader2 className={`animate-spin text-primary ${sizeClasses[size]}`} />
       {message && (
-        <p className="text-sm font-medium text-muted-foreground animate-pulse">{message}</p>
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">
+          {message}
+        </p>
       )}
     </div>
   );

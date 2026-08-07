@@ -30,7 +30,9 @@ export default function Payments() {
   const [sortKey, setSortKey] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(
+    null,
+  );
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
   const fetchPayments = async (silent = false) => {
@@ -59,7 +61,9 @@ export default function Payments() {
           if (prev.some((p) => p.id === newPay.id)) return prev;
           return [newPay, ...prev];
         });
-        toast.info(`Live: New payment transaction ₹${newPay.amount || 0} received!`);
+        toast.info(
+          `Live: New payment transaction ₹${newPay.amount || 0} received!`,
+        );
       }
     });
 
@@ -67,7 +71,9 @@ export default function Payments() {
       const refunded = event.data as AdminPayment;
       if (refunded && refunded.id) {
         setPayments((prev) =>
-          prev.map((p) => (p.id === refunded.id ? { ...p, status: "refunded" } : p)),
+          prev.map((p) =>
+            p.id === refunded.id ? { ...p, status: "refunded" } : p,
+          ),
         );
       }
     });
@@ -88,7 +94,10 @@ export default function Payments() {
   };
 
   const handleRefund = async (id: string) => {
-    if (!confirm("Are you sure you want to issue a refund for this transaction?")) return;
+    if (
+      !confirm("Are you sure you want to issue a refund for this transaction?")
+    )
+      return;
     try {
       const updated = await paymentsService.refundPayment(id);
       setPayments((prev) => prev.map((p) => (p.id === id ? updated : p)));
@@ -130,7 +139,9 @@ export default function Payments() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc"
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -161,20 +172,28 @@ export default function Payments() {
       key: "customerName",
       label: "Customer / Renter",
       sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.customerName}</span>,
+      render: (row) => (
+        <span className="text-xs font-bold">{row.customerName}</span>
+      ),
     },
     {
       key: "amount",
       label: "Charged Amount",
       sortable: true,
-      render: (row) => <span className="text-xs font-extrabold text-primary">₹{row.amount}</span>,
+      render: (row) => (
+        <span className="text-xs font-extrabold text-primary">
+          ₹{row.amount}
+        </span>
+      ),
     },
     {
       key: "method",
       label: "Gateway Method",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-bold text-muted-foreground">{row.method}</span>
+        <span className="text-xs font-bold text-muted-foreground">
+          {row.method}
+        </span>
       ),
     },
     {
@@ -185,8 +204,10 @@ export default function Payments() {
         <span
           className={cn(
             "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none",
-            row.status === "successful" && "bg-green-500/10 text-green-600 dark:text-green-400",
-            row.status === "refunded" && "bg-red-500/10 text-red-600 dark:text-red-400",
+            row.status === "successful" &&
+              "bg-green-500/10 text-green-600 dark:text-green-400",
+            row.status === "refunded" &&
+              "bg-red-500/10 text-red-600 dark:text-red-400",
             row.status === "failed" && "bg-muted text-muted-foreground",
           )}
         >
@@ -247,10 +268,12 @@ export default function Payments() {
     <div className="space-y-6">
       {/* Header bar */}
       <div>
-        <h1 className="text-xl font-bold text-foreground">Transactions Register</h1>
+        <h1 className="text-xl font-bold text-foreground">
+          Transactions Register
+        </h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Audit customer payment events, issue payouts, track stripe/paypal statuses, and download
-          invoice archives.
+          Audit customer payment events, issue payouts, track stripe/paypal
+          statuses, and download invoice archives.
         </p>
       </div>
 
@@ -290,7 +313,11 @@ export default function Payments() {
       {loading ? (
         <LoadingState type="table" count={5} />
       ) : error ? (
-        <ErrorState title="Unable to load transactions" error={error} onRetry={fetchPayments} />
+        <ErrorState
+          title="Unable to load transactions"
+          error={error}
+          onRetry={fetchPayments}
+        />
       ) : filteredPayments.length === 0 ? (
         <NoSearchResults
           query={search}
@@ -332,7 +359,9 @@ export default function Payments() {
                 <CreditCard className="h-6 w-6" />
               </div>
               <div>
-                <span className="text-xs text-primary font-bold">Transaction Record</span>
+                <span className="text-xs text-primary font-bold">
+                  Transaction Record
+                </span>
                 <h4 className="text-sm font-bold text-foreground">
                   Charged to {selectedPayment.customerName}
                 </h4>
@@ -342,33 +371,52 @@ export default function Payments() {
             {/* Content specifications */}
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="text-muted-foreground font-semibold">Payment ID</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedPayment.id}</p>
+                <span className="text-muted-foreground font-semibold">
+                  Payment ID
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedPayment.id}
+                </p>
               </div>
               <div>
-                <span className="text-muted-foreground font-semibold">Booking ID</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedPayment.bookingId}</p>
+                <span className="text-muted-foreground font-semibold">
+                  Booking ID
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedPayment.bookingId}
+                </p>
               </div>
               <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">Billing Method</span>
-                <p className="font-bold text-foreground mt-0.5">{selectedPayment.method}</p>
+                <span className="text-muted-foreground font-semibold">
+                  Billing Method
+                </span>
+                <p className="font-bold text-foreground mt-0.5">
+                  {selectedPayment.method}
+                </p>
               </div>
               <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">Processed Date</span>
+                <span className="text-muted-foreground font-semibold">
+                  Processed Date
+                </span>
                 <p className="font-bold text-foreground mt-0.5">
                   {new Date(selectedPayment.createdAt).toLocaleString()}
                 </p>
               </div>
               <div className="border-t border-border/40 pt-3 col-span-2 flex items-center justify-between">
                 <div>
-                  <span className="text-muted-foreground font-semibold">Gateway Status</span>
+                  <span className="text-muted-foreground font-semibold">
+                    Gateway Status
+                  </span>
                   <p className="mt-0.5">
                     <span
                       className={cn(
                         "inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full",
-                        selectedPayment.status === "successful" && "bg-green-500/10 text-green-600",
-                        selectedPayment.status === "refunded" && "bg-red-500/10 text-red-600",
-                        selectedPayment.status === "failed" && "bg-muted text-muted-foreground",
+                        selectedPayment.status === "successful" &&
+                          "bg-green-500/10 text-green-600",
+                        selectedPayment.status === "refunded" &&
+                          "bg-red-500/10 text-red-600",
+                        selectedPayment.status === "failed" &&
+                          "bg-muted text-muted-foreground",
                       )}
                     >
                       {selectedPayment.status}
@@ -376,7 +424,9 @@ export default function Payments() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-muted-foreground font-semibold">Billed Total</span>
+                  <span className="text-muted-foreground font-semibold">
+                    Billed Total
+                  </span>
                   <p className="text-sm font-extrabold text-primary mt-0.5">
                     ₹{selectedPayment.amount}
                   </p>

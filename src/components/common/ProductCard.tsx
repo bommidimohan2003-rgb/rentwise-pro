@@ -8,7 +8,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { CSSTiltCard } from "./CSSTiltCard";
 
-export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
+export function ProductCard({
+  product,
+  index = 0,
+}: {
+  product: Product;
+  index?: number;
+}) {
   const { has, toggle } = useWishlist();
   const liked = has(product.id);
   const { user } = useAuth();
@@ -22,9 +28,13 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
     "Jubilee Hills, Hyderabad",
   ];
   const isOwner = Boolean(
-    user && (user.fullName === product.owner.name || user.email === product.owner.name),
+    user &&
+    (user.fullName === product.owner.name || user.email === product.owner.name),
   );
-  const location = locations[parseInt(product.id.replace(/\D/g, "") || "0") % locations.length];
+  const location =
+    locations[
+      parseInt(product.id.replace(/\D/g, "") || "0") % locations.length
+    ];
 
   return (
     <CSSTiltCard className="h-full">
@@ -32,7 +42,11 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
         initial={{ opacity: 0, y: 24, scale: 0.98 }}
         whileInView={{ opacity: 1, y: 0, scale: 1 }}
         viewport={{ once: true }}
-        transition={{ delay: index * 0.04, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        transition={{
+          delay: index * 0.04,
+          duration: 0.35,
+          ease: [0.16, 1, 0.3, 1],
+        }}
         className="rounded-3xl bg-card border border-border/80 hover:border-[#FF5A5F]/40 overflow-hidden group flex flex-col h-full relative shadow-lg hover:shadow-2xl hover:shadow-[#FF5A5F]/10 transition-all duration-300"
       >
         {/* Image Stage */}
@@ -76,7 +90,9 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             <Heart
               className={cn(
                 "h-3.5 w-3.5 transition-colors",
-                liked ? "fill-[#FF5A5F] text-[#FF5A5F]" : "text-slate-700 dark:text-slate-200",
+                liked
+                  ? "fill-[#FF5A5F] text-[#FF5A5F]"
+                  : "text-slate-700 dark:text-slate-200",
               )}
             />
           </button>
@@ -85,7 +101,9 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 rounded-full bg-slate-950/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 font-bold border border-white/20 shadow-md">
             <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
             <span>{product.rating.toFixed(1)}</span>
-            {product.reviews > 0 && <span className="text-slate-400">({product.reviews})</span>}
+            {product.reviews > 0 && (
+              <span className="text-slate-400">({product.reviews})</span>
+            )}
           </div>
         </div>
 
@@ -109,12 +127,17 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
 
           <div className="space-y-2 pt-2 border-t border-border/60">
             <div className="flex items-baseline justify-between">
-              <span className="text-[11px] text-muted-foreground font-semibold">Daily Rate</span>
+              <span className="text-[11px] text-muted-foreground font-semibold">
+                Daily Rate
+              </span>
               <div>
                 <span className="text-lg font-black text-[#FF5A5F] tracking-tight">
                   ₹{product.price}
                 </span>
-                <span className="text-[10px] text-muted-foreground font-medium"> /day</span>
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  {" "}
+                  /day
+                </span>
               </div>
             </div>
 
@@ -169,7 +192,10 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
                     navigate({ to: "/login" });
                     return;
                   }
-                  navigate({ to: "/checkout", search: { id: product.id } as never });
+                  navigate({
+                    to: "/checkout",
+                    search: { id: product.id } as never,
+                  });
                 }}
                 className="w-full bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 rounded-lg h-8 text-[11px] font-bold inline-flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer"
               >

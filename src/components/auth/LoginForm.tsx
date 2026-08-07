@@ -12,7 +12,11 @@ import { toast } from "sonner";
 import type { User } from "@/types";
 
 const schema = z.object({
-  email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Enter a valid email address"),
   password: z
     .string()
     .min(1, "Password is required")
@@ -63,7 +67,10 @@ export function LoginForm() {
       const msg = res.error ?? "Invalid email or password.";
       if (msg.toLowerCase().includes("password")) {
         setError("password", { type: "server", message: msg });
-      } else if (msg.toLowerCase().includes("email") || msg.toLowerCase().includes("user")) {
+      } else if (
+        msg.toLowerCase().includes("email") ||
+        msg.toLowerCase().includes("user")
+      ) {
         setError("email", { type: "server", message: msg });
       } else {
         setErrorState(msg);
@@ -73,7 +80,10 @@ export function LoginForm() {
 
     toast.success("Signed in successfully!");
 
-    const currentUser = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
+    const currentUser = storage.get<User | null>(
+      STORAGE_KEYS.currentUser,
+      null,
+    );
     if (currentUser?.role === "admin") {
       const userToken = storage.get<string | null>(STORAGE_KEYS.token, null);
       if (userToken) {
@@ -125,7 +135,11 @@ export function LoginForm() {
             onClick={() => setShowPw((v) => !v)}
             className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
           >
-            {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {showPw ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
           </button>
         }
         error={errors.password?.message}

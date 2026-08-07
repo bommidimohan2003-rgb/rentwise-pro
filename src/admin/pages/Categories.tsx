@@ -19,9 +19,18 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // Helper to dynamic load lucide icons safely
-function IconRenderer({ name, className }: { name: string; className?: string }) {
+function IconRenderer({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
   const IconComponent = (
-    LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>
+    LucideIcons as unknown as Record<
+      string,
+      React.ComponentType<{ className?: string }>
+    >
   )[name];
   if (!IconComponent) {
     return <CircleHelp className={className} />;
@@ -41,7 +50,9 @@ export default function Categories() {
   // Form State
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("Camera");
-  const [color, setColor] = useState("bg-secondary text-foreground border border-border");
+  const [color, setColor] = useState(
+    "bg-secondary text-foreground border border-border",
+  );
 
   const fetchCats = async () => {
     try {
@@ -64,7 +75,11 @@ export default function Categories() {
     if (!name.trim()) return;
 
     try {
-      const created = await productsService.createCategory({ name, icon, color });
+      const created = await productsService.createCategory({
+        name,
+        icon,
+        color,
+      });
       setCategories((prev) => [...prev, created]);
       setCreateModalOpen(false);
       setName("");
@@ -92,7 +107,9 @@ export default function Categories() {
         icon,
         color,
       });
-      setCategories((prev) => prev.map((c) => (c.id === selectedCat.id ? updated : c)));
+      setCategories((prev) =>
+        prev.map((c) => (c.id === selectedCat.id ? updated : c)),
+      );
       setEditModalOpen(false);
       toast.success("Category details updated.");
     } catch {
@@ -128,10 +145,12 @@ export default function Categories() {
       {/* Title block */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Category Management</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            Category Management
+          </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Configure listed tech categories, disable inactive paths, and assign lucide iconography
-            styles.
+            Configure listed tech categories, disable inactive paths, and assign
+            lucide iconography styles.
           </p>
         </div>
 
@@ -159,7 +178,9 @@ export default function Categories() {
               key={cat.id}
               className={cn(
                 "card-premium bg-card/60 p-5 flex items-center justify-between border-l-4 relative overflow-hidden group",
-                cat.enabled ? "border-l-primary" : "border-l-muted-foreground opacity-60",
+                cat.enabled
+                  ? "border-l-primary"
+                  : "border-l-muted-foreground opacity-60",
               )}
             >
               {/* Category info */}
@@ -173,7 +194,9 @@ export default function Categories() {
                   <IconRenderer name={cat.icon} className="h-5 w-5" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-bold text-foreground truncate">{cat.name}</span>
+                  <span className="text-xs font-bold text-foreground truncate">
+                    {cat.name}
+                  </span>
                   <span className="text-[10px] text-muted-foreground mt-0.5">
                     {cat.count} listings
                   </span>
@@ -223,7 +246,9 @@ export default function Categories() {
           <div className="space-y-4 text-xs font-semibold">
             {/* Category Name */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Category Name</label>
+              <label className="text-xs font-bold text-muted-foreground">
+                Category Name
+              </label>
               <input
                 type="text"
                 required
@@ -236,7 +261,9 @@ export default function Categories() {
 
             {/* Icon Select */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Lucide Icon Class</label>
+              <label className="text-xs font-bold text-muted-foreground">
+                Lucide Icon Class
+              </label>
               <select
                 value={icon}
                 onChange={(e) => setIcon(e.target.value)}
@@ -263,17 +290,29 @@ export default function Categories() {
 
             {/* Color Class */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Color Badge Styling</label>
+              <label className="text-xs font-bold text-muted-foreground">
+                Color Badge Styling
+              </label>
               <select
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
               >
-                <option value="bg-purple-500/10 text-purple-500">Purple Accent</option>
-                <option value="bg-blue-500/10 text-blue-500">Blue Accent</option>
-                <option value="bg-green-500/10 text-green-500">Green Accent</option>
-                <option value="bg-pink-500/10 text-pink-500">Pink Accent</option>
-                <option value="bg-orange-500/10 text-orange-500">Orange Accent</option>
+                <option value="bg-purple-500/10 text-purple-500">
+                  Purple Accent
+                </option>
+                <option value="bg-blue-500/10 text-blue-500">
+                  Blue Accent
+                </option>
+                <option value="bg-green-500/10 text-green-500">
+                  Green Accent
+                </option>
+                <option value="bg-pink-500/10 text-pink-500">
+                  Pink Accent
+                </option>
+                <option value="bg-orange-500/10 text-orange-500">
+                  Orange Accent
+                </option>
               </select>
             </div>
           </div>
@@ -286,7 +325,10 @@ export default function Categories() {
             >
               Cancel
             </button>
-            <button type="submit" className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold">
+            <button
+              type="submit"
+              className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold"
+            >
               Create
             </button>
           </div>
@@ -303,7 +345,9 @@ export default function Categories() {
           <div className="space-y-4 text-xs font-semibold">
             {/* Category Name */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Category Name</label>
+              <label className="text-xs font-bold text-muted-foreground">
+                Category Name
+              </label>
               <input
                 type="text"
                 required
@@ -315,7 +359,9 @@ export default function Categories() {
 
             {/* Icon Select */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Lucide Icon Class</label>
+              <label className="text-xs font-bold text-muted-foreground">
+                Lucide Icon Class
+              </label>
               <select
                 value={icon}
                 onChange={(e) => setIcon(e.target.value)}
@@ -342,17 +388,29 @@ export default function Categories() {
 
             {/* Color Class */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">Color Badge Styling</label>
+              <label className="text-xs font-bold text-muted-foreground">
+                Color Badge Styling
+              </label>
               <select
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
               >
-                <option value="bg-purple-500/10 text-purple-500">Purple Accent</option>
-                <option value="bg-blue-500/10 text-blue-500">Blue Accent</option>
-                <option value="bg-green-500/10 text-green-500">Green Accent</option>
-                <option value="bg-pink-500/10 text-pink-500">Pink Accent</option>
-                <option value="bg-orange-500/10 text-orange-500">Orange Accent</option>
+                <option value="bg-purple-500/10 text-purple-500">
+                  Purple Accent
+                </option>
+                <option value="bg-blue-500/10 text-blue-500">
+                  Blue Accent
+                </option>
+                <option value="bg-green-500/10 text-green-500">
+                  Green Accent
+                </option>
+                <option value="bg-pink-500/10 text-pink-500">
+                  Pink Accent
+                </option>
+                <option value="bg-orange-500/10 text-orange-500">
+                  Orange Accent
+                </option>
               </select>
             </div>
           </div>
@@ -365,7 +423,10 @@ export default function Categories() {
             >
               Cancel
             </button>
-            <button type="submit" className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold">
+            <button
+              type="submit"
+              className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold"
+            >
               Save Changes
             </button>
           </div>

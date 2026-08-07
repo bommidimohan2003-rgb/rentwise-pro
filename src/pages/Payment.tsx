@@ -29,7 +29,10 @@ interface PaymentSearch {
 
 const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
-    if (typeof window !== "undefined" && (window as unknown as { Razorpay?: unknown }).Razorpay) {
+    if (
+      typeof window !== "undefined" &&
+      (window as unknown as { Razorpay?: unknown }).Razorpay
+    ) {
       return resolve(true);
     }
     const script = document.createElement("script");
@@ -49,7 +52,9 @@ export default function Payment() {
 
   const totalAmount = Number(search.total) || 0;
   const start = search.start || new Date().toISOString().slice(0, 10);
-  const end = search.end || new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10);
+  const end =
+    search.end ||
+    new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10);
 
   // States
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
@@ -90,7 +95,12 @@ export default function Payment() {
     setIsProcessing(true);
 
     try {
-      const orderRes = await api.createRazorpayOrder(token, product.id, start, end);
+      const orderRes = await api.createRazorpayOrder(
+        token,
+        product.id,
+        start,
+        end,
+      );
       const loaded = await loadRazorpayScript();
 
       if (!loaded) {
@@ -100,10 +110,11 @@ export default function Payment() {
         return;
       }
 
-      const user = storage.get<{ email?: string; fullName?: string; phone?: string } | null>(
-        STORAGE_KEYS.currentUser,
-        null,
-      );
+      const user = storage.get<{
+        email?: string;
+        fullName?: string;
+        phone?: string;
+      } | null>(STORAGE_KEYS.currentUser, null);
 
       const options = {
         key: orderRes.key_id,
@@ -120,7 +131,9 @@ export default function Payment() {
         }) => {
           setIsProcessing(false);
           setIsVerifying(true);
-          toast.loading("Verifying payment security signature...", { id: "pay-verify" });
+          toast.loading("Verifying payment security signature...", {
+            id: "pay-verify",
+          });
 
           try {
             await api.verifyRazorpayPayment(
@@ -141,7 +154,9 @@ export default function Payment() {
             setIsVerifying(false);
             toast.dismiss("pay-verify");
             const error = err as { message?: string };
-            setPaymentError(error.message || "Razorpay payment verification failed.");
+            setPaymentError(
+              error.message || "Razorpay payment verification failed.",
+            );
             toast.error("Verification failed.");
           }
         },
@@ -188,7 +203,9 @@ export default function Payment() {
       setIsProcessing(false);
       setIsVerifying(false);
       const error = err as { message?: string };
-      setPaymentError(error.message || "Failed to initialize Razorpay checkout.");
+      setPaymentError(
+        error.message || "Failed to initialize Razorpay checkout.",
+      );
       toast.error("Failed to start payment.");
     }
   };
@@ -232,7 +249,9 @@ export default function Payment() {
     <MainLayout>
       <section className="mx-auto max-w-4xl px-4 md:px-6 py-10">
         <button
-          onClick={() => navigate({ to: `/checkout`, search: { id: product.id } as never })}
+          onClick={() =>
+            navigate({ to: `/checkout`, search: { id: product.id } as never })
+          }
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Checkout
@@ -248,7 +267,9 @@ export default function Payment() {
                     <ShieldCheck className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold tracking-tight">Secure Payment Portal</h2>
+                    <h2 className="text-xl font-bold tracking-tight">
+                      Secure Payment Portal
+                    </h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Powered by Payent Encrypted Gateways
                     </p>
@@ -257,7 +278,9 @@ export default function Payment() {
                 {/* Timer */}
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 w-fit self-start sm:self-center">
                   <Clock className="h-4 w-4 animate-pulse" />
-                  <span className="text-xs font-mono font-bold">{formatTimer(timeLeft)}</span>
+                  <span className="text-xs font-mono font-bold">
+                    {formatTimer(timeLeft)}
+                  </span>
                 </div>
               </div>
 
@@ -330,7 +353,9 @@ export default function Payment() {
                   >
                     <Building className="h-4.5 w-4.5 text-muted-foreground" />
                     <div>
-                      <div className="font-semibold text-foreground">Net Banking</div>
+                      <div className="font-semibold text-foreground">
+                        Net Banking
+                      </div>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         All major Indian banks
                       </p>
@@ -341,7 +366,8 @@ export default function Payment() {
 
               <div className="flex items-center gap-2 justify-center text-[10px] text-muted-foreground mt-6 border-t border-border/40 pt-4">
                 <Lock className="h-3.5 w-3.5 text-emerald-500" />
-                Transactions encrypted using Razorpay 256-bit bank-grade PCI-DSS standards.
+                Transactions encrypted using Razorpay 256-bit bank-grade PCI-DSS
+                standards.
               </div>
             </div>
           </div>
@@ -357,7 +383,9 @@ export default function Payment() {
                   className="h-14 w-14 rounded-xl object-cover border border-border shrink-0"
                 />
                 <div className="min-w-0">
-                  <div className="font-bold truncate text-sm text-foreground">{product.title}</div>
+                  <div className="font-bold truncate text-sm text-foreground">
+                    {product.title}
+                  </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
                     Category: {product.category.toUpperCase()}
                   </div>
@@ -374,7 +402,9 @@ export default function Payment() {
               </div>
               <div className="flex justify-between pt-2 border-t border-border/40 font-bold text-base">
                 <span>To Pay</span>
-                <span className="text-primary font-extrabold">₹{totalAmount.toFixed(0)}</span>
+                <span className="text-primary font-extrabold">
+                  ₹{totalAmount.toFixed(0)}
+                </span>
               </div>
             </div>
 
@@ -410,17 +440,22 @@ export default function Payment() {
               </h3>
               <p className="text-xs text-muted-foreground mt-1.5 px-2">
                 We've requested a secure checkout payment of{" "}
-                <span className="font-bold text-foreground">₹{totalAmount.toFixed(0)}</span> on your{" "}
-                <span className="font-semibold text-primary">{selectedMethod}</span> mobile app.
-                Please approve the request on your phone.
+                <span className="font-bold text-foreground">
+                  ₹{totalAmount.toFixed(0)}
+                </span>{" "}
+                on your{" "}
+                <span className="font-semibold text-primary">
+                  {selectedMethod}
+                </span>{" "}
+                mobile app. Please approve the request on your phone.
               </p>
             </div>
 
             <div className="bg-secondary/40 p-3 rounded-xl border border-border/40 flex items-start gap-2.5 text-[10px] text-muted-foreground text-left leading-relaxed">
               <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
               <div>
-                Do not refresh this page or close the tab. This simulated gateway will automatically
-                prompt to complete the process.
+                Do not refresh this page or close the tab. This simulated
+                gateway will automatically prompt to complete the process.
               </div>
             </div>
 
@@ -440,10 +475,12 @@ export default function Payment() {
               <CheckCircle2 className="h-10 w-10 text-emerald-500 animate-bounce" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">Payment Successful!</h2>
+              <h2 className="text-2xl font-black text-white tracking-tight">
+                Payment Successful!
+              </h2>
               <p className="text-sm text-white/70 mt-2 px-4">
-                Thank you! Your transaction of ₹{totalAmount.toFixed(0)} was processed securely.
-                Redirecting to your Orders...
+                Thank you! Your transaction of ₹{totalAmount.toFixed(0)} was
+                processed securely. Redirecting to your Orders...
               </p>
             </div>
             <div className="h-1 w-24 bg-border/20 mx-auto rounded-full overflow-hidden">

@@ -19,7 +19,9 @@ export default function Settings() {
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"general" | "branding" | "seo" | "social">("general");
+  const [activeTab, setActiveTab] = useState<
+    "general" | "branding" | "seo" | "social"
+  >("general");
 
   const { theme, toggle } = useTheme();
 
@@ -76,7 +78,8 @@ export default function Settings() {
       <div>
         <h1 className="text-xl font-bold text-foreground">Platform Settings</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Configure Payent parameters, change branding details, set SEO tags, and sync color themes.
+          Configure Payent parameters, change branding details, set SEO tags,
+          and sync color themes.
         </p>
       </div>
 
@@ -134,10 +137,15 @@ export default function Settings() {
         </div>
 
         {/* Configurations Fields Area */}
-        <form onSubmit={handleSave} className="md:col-span-3 card-premium bg-card/60 p-6 space-y-5">
+        <form
+          onSubmit={handleSave}
+          className="md:col-span-3 card-premium bg-card/60 p-6 space-y-5"
+        >
           {activeTab === "general" && (
             <div className="space-y-4 text-xs font-semibold">
-              <h3 className="text-sm font-bold text-foreground pb-2 border-b">General Profile</h3>
+              <h3 className="text-sm font-bold text-foreground pb-2 border-b">
+                General Profile
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5">
                   <label className="text-xs font-bold text-muted-foreground">
@@ -147,7 +155,9 @@ export default function Settings() {
                     type="text"
                     required
                     value={settings.websiteName}
-                    onChange={(e) => handleFieldChange("websiteName", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("websiteName", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
@@ -159,7 +169,9 @@ export default function Settings() {
                     type="email"
                     required
                     value={settings.contactEmail}
-                    onChange={(e) => handleFieldChange("contactEmail", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("contactEmail", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
@@ -171,7 +183,9 @@ export default function Settings() {
                     type="text"
                     required
                     value={settings.contactPhone}
-                    onChange={(e) => handleFieldChange("contactPhone", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("contactPhone", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
@@ -182,7 +196,9 @@ export default function Settings() {
                   <input
                     type="text"
                     value={settings.homepageBannerText}
-                    onChange={(e) => handleFieldChange("homepageBannerText", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("homepageBannerText", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
@@ -193,7 +209,9 @@ export default function Settings() {
                   <input
                     type="text"
                     value={settings.footerText}
-                    onChange={(e) => handleFieldChange("footerText", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("footerText", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
@@ -203,15 +221,21 @@ export default function Settings() {
 
           {activeTab === "branding" && (
             <div className="space-y-4 text-xs font-semibold">
-              <h3 className="text-sm font-bold text-foreground pb-2 border-b">Theme & Logo</h3>
+              <h3 className="text-sm font-bold text-foreground pb-2 border-b">
+                Theme & Logo
+              </h3>
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Asset Logo URL</label>
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Asset Logo URL
+                  </label>
                   <input
                     type="text"
                     required
                     value={settings.logoUrl}
-                    onChange={(e) => handleFieldChange("logoUrl", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("logoUrl", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
@@ -251,7 +275,9 @@ export default function Settings() {
                     type="text"
                     required
                     value={settings.seoTitle}
-                    onChange={(e) => handleFieldChange("seoTitle", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("seoTitle", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
@@ -263,7 +289,9 @@ export default function Settings() {
                     rows={4}
                     required
                     value={settings.seoDescription}
-                    onChange={(e) => handleFieldChange("seoDescription", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("seoDescription", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
@@ -278,11 +306,15 @@ export default function Settings() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Facebook Link</label>
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Facebook Link
+                  </label>
                   <input
                     type="text"
                     value={settings.socialFacebook}
-                    onChange={(e) => handleFieldChange("socialFacebook", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("socialFacebook", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
@@ -293,16 +325,22 @@ export default function Settings() {
                   <input
                     type="text"
                     value={settings.socialTwitter}
-                    onChange={(e) => handleFieldChange("socialTwitter", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("socialTwitter", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Instagram Link</label>
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Instagram Link
+                  </label>
                   <input
                     type="text"
                     value={settings.socialInstagram}
-                    onChange={(e) => handleFieldChange("socialInstagram", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("socialInstagram", e.target.value)
+                    }
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>

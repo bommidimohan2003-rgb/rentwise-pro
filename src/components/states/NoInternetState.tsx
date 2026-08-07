@@ -111,7 +111,9 @@ export function NoInternetState({
             onClick={handleManualRetry}
             className="inline-flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-100 px-3 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 border border-amber-500/30 cursor-pointer"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", retrying && "animate-spin")} />
+            <RefreshCw
+              className={cn("h-3.5 w-3.5", retrying && "animate-spin")}
+            />
             <span>{retrying ? "Checking..." : "Retry now"}</span>
           </button>
           {onDismiss && (
@@ -165,7 +167,9 @@ export function NoInternetState({
         )}
       </div>
       <p className="text-[11px] text-muted-foreground/70 mt-4">
-        {isOnline ? "Network interface active. Click retry." : "Waiting for network signal..."}
+        {isOnline
+          ? "Network interface active. Click retry."
+          : "Waiting for network signal..."}
       </p>
     </div>
   );

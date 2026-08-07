@@ -1,5 +1,15 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Bell, Heart, LogIn, LogOut, Menu, Moon, Sun, User as UserIcon, X } from "lucide-react";
+import {
+  Bell,
+  Heart,
+  LogIn,
+  LogOut,
+  Menu,
+  Moon,
+  Sun,
+  User as UserIcon,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -89,7 +99,9 @@ export function Navbar() {
           ))}
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-payent-help-chat"))}
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("open-payent-help-chat"))
+            }
             className="px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-secondary"
           >
             Help
@@ -179,7 +191,9 @@ export function Navbar() {
                 <div className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold shrink-0 bg-black dark:bg-white dark:text-black">
                   {user.fullName.charAt(0)}
                 </div>
-                <span className="text-sm font-bold text-white">{user.fullName.split(" ")[0]}</span>
+                <span className="text-sm font-bold text-white">
+                  {user.fullName.split(" ")[0]}
+                </span>
               </Link>
               <Button
                 variant="ghost"
@@ -240,7 +254,9 @@ export function Navbar() {
                 key={l.to}
                 to={l.to}
                 className="block px-4 py-2.5 text-sm font-semibold rounded-xl text-foreground hover:bg-secondary transition-colors"
-                activeProps={{ className: "!text-[#FF5A5F] !bg-[#FF5A5F]/15 font-bold" }}
+                activeProps={{
+                  className: "!text-[#FF5A5F] !bg-[#FF5A5F]/15 font-bold",
+                }}
                 onClick={() => setOpen(false)}
               >
                 {l.label}

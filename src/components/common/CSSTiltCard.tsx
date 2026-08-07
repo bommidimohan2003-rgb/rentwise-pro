@@ -8,7 +8,12 @@ interface CSSTiltCardProps {
   scale?: number;
 }
 
-export function CSSTiltCard({ children, className, maxTilt = 10, scale = 1.02 }: CSSTiltCardProps) {
+export function CSSTiltCard({
+  children,
+  className,
+  maxTilt = 10,
+  scale = 1.02,
+}: CSSTiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [transformStyle, setTransformStyle] = useState<string>("");
   const [shadowStyle, setShadowStyle] = useState<string>("");
@@ -16,8 +21,12 @@ export function CSSTiltCard({ children, className, maxTilt = 10, scale = 1.02 }:
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const isTouch = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      const isTouch =
+        window.matchMedia("(pointer: coarse)").matches ||
+        "ontouchstart" in window;
       setIsDisabled(reducedMotion || isTouch);
     }
   }, []);
@@ -46,7 +55,9 @@ export function CSSTiltCard({ children, className, maxTilt = 10, scale = 1.02 }:
 
   const handleMouseLeave = () => {
     if (isDisabled) return;
-    setTransformStyle("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
+    setTransformStyle(
+      "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
+    );
     setShadowStyle("0 12px 28px -6px rgba(0, 0, 0, 0.1)");
   };
 

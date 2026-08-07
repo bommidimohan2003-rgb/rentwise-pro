@@ -38,7 +38,8 @@ export function Newsletter() {
           </h3>
 
           <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto font-normal">
-            No spam. Just top gear drops, lender discounts, and creator perks delivered once a week.
+            No spam. Just top gear drops, lender discounts, and creator perks
+            delivered once a week.
           </p>
 
           {done ? (

@@ -3,7 +3,8 @@ import type { Order, Product } from "@/types";
 
 const isLocal =
   typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1");
 const API_BASE =
   import.meta.env.VITE_API_URL !== undefined
     ? import.meta.env.VITE_API_URL
@@ -119,7 +120,9 @@ export const api = {
     if (!res.ok) {
       if (res.status === 401 && typeof window !== "undefined") {
         window.dispatchEvent(
-          new CustomEvent("payent-session-expired", { detail: { loginPath: "/login" } }),
+          new CustomEvent("payent-session-expired", {
+            detail: { loginPath: "/login" },
+          }),
         );
       }
       const data = await res.json().catch(() => ({}));
@@ -264,13 +267,17 @@ export const api = {
   },
 
   async toggleCustomProductAvailability(token: string, productId: string) {
-    const res = await fetch(`${API_BASE}/api/products/custom/${productId}/toggle-availability`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const res = await fetch(
+      `${API_BASE}/api/products/custom/${productId}/toggle-availability`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
-    if (!res.ok) throw new Error("Failed to toggle custom product availability");
+    );
+    if (!res.ok)
+      throw new Error("Failed to toggle custom product availability");
     return res.json();
   },
 
@@ -326,7 +333,12 @@ export const api = {
     return res.json();
   },
 
-  async processRefund(token: string, orderId: string, amount?: number, reason?: string) {
+  async processRefund(
+    token: string,
+    orderId: string,
+    amount?: number,
+    reason?: string,
+  ) {
     const res = await fetch(`${API_BASE}/api/payments/refund`, {
       method: "POST",
       headers: {
@@ -369,7 +381,9 @@ export const api = {
     }
   },
 
-  async getFrequentlyTogetherRecommendations(productId: string): Promise<Product[]> {
+  async getFrequentlyTogetherRecommendations(
+    productId: string,
+  ): Promise<Product[]> {
     try {
       const res = await fetch(
         `${API_BASE}/api/recommendations/frequently-together/${encodeURIComponent(productId)}`,

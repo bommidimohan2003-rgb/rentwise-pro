@@ -36,7 +36,10 @@ export function Modal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            onClick={onClose}
+          />
           <motion.div
             initial={{ scale: 0.94, y: 15, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -57,7 +60,11 @@ export function Modal({
               </button>
             </div>
             <div className="p-6">{children}</div>
-            {footer && <div className="p-5 border-t border-border/60 bg-card/30">{footer}</div>}
+            {footer && (
+              <div className="p-5 border-t border-border/60 bg-card/30">
+                {footer}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

@@ -74,7 +74,10 @@ export function useAuth() {
       return { ok: true };
     } catch (e) {
       const err = e as { message?: string };
-      return { ok: false, error: err.message || "Failed to initiate registration." };
+      return {
+        ok: false,
+        error: err.message || "Failed to initiate registration.",
+      };
     }
   }, []);
 

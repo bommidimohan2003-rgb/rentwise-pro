@@ -23,8 +23,15 @@ export function NotificationDropdown() {
 
     // Set up auto-polling or listen to custom event if needed
     const handleRefresh = () => fetchNotifications();
-    window.addEventListener("payent:admin:refresh-notifications", handleRefresh);
-    return () => window.removeEventListener("payent:admin:refresh-notifications", handleRefresh);
+    window.addEventListener(
+      "payent:admin:refresh-notifications",
+      handleRefresh,
+    );
+    return () =>
+      window.removeEventListener(
+        "payent:admin:refresh-notifications",
+        handleRefresh,
+      );
   }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -66,11 +73,16 @@ export function NotificationDropdown() {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
           <div className="absolute right-0 mt-2.5 w-80 glass bg-card/95 rounded-2xl shadow-xl border border-border/80 z-50 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/50">
-              <span className="text-xs font-bold text-foreground">Notifications</span>
+              <span className="text-xs font-bold text-foreground">
+                Notifications
+              </span>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
@@ -108,7 +120,9 @@ export function NotificationDropdown() {
                       )}
                     />
                     <div className="flex-1 min-w-0 pr-4">
-                      <p className="text-xs font-bold text-foreground truncate">{n.title}</p>
+                      <p className="text-xs font-bold text-foreground truncate">
+                        {n.title}
+                      </p>
                       <p className="text-[11px] font-medium text-muted-foreground leading-normal mt-0.5 line-clamp-2">
                         {n.message}
                       </p>

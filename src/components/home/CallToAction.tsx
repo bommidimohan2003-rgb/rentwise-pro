@@ -28,14 +28,17 @@ export function CallToAction() {
 
           {/* Headline */}
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground font-display leading-tight max-w-3xl mx-auto">
-            Ready to access professional gear <br className="hidden sm:inline" />
-            <span className="text-muted-foreground font-normal">for your next production?</span>
+            Ready to access professional gear{" "}
+            <br className="hidden sm:inline" />
+            <span className="text-muted-foreground font-normal">
+              for your next production?
+            </span>
           </h2>
 
           {/* Subtitle */}
           <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto font-normal leading-relaxed">
-            Browse verified listings from creators near you or list your own camera gear and
-            workstations to earn passive rental revenue.
+            Browse verified listings from creators near you or list your own
+            camera gear and workstations to earn passive rental revenue.
           </p>
 
           {/* CTA Buttons */}

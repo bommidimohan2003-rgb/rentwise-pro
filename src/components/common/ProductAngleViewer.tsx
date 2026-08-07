@@ -40,7 +40,8 @@ export function ProductAngleViewer({
       const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
       setIsReducedMotion(mediaQuery.matches);
 
-      const handleChange = (e: MediaQueryListEvent) => setIsReducedMotion(e.matches);
+      const handleChange = (e: MediaQueryListEvent) =>
+        setIsReducedMotion(e.matches);
       mediaQuery.addEventListener("change", handleChange);
       return () => mediaQuery.removeEventListener("change", handleChange);
     }
@@ -92,8 +93,12 @@ export function ProductAngleViewer({
             alt={`${productTitle} - ${angle.label} view`}
             className={cn(
               "absolute inset-0 h-full w-full object-cover object-center",
-              isReducedMotion ? "transition-none" : "transition-opacity duration-300 ease-in-out",
-              idx === activeIdx ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none",
+              isReducedMotion
+                ? "transition-none"
+                : "transition-opacity duration-300 ease-in-out",
+              idx === activeIdx
+                ? "opacity-100 z-10"
+                : "opacity-0 z-0 pointer-events-none",
             )}
           />
         ))}
@@ -109,9 +114,16 @@ export function ProductAngleViewer({
             <button
               onClick={onWishlistToggle}
               className="p-2.5 rounded-full bg-background/80 backdrop-blur-md border border-border/60 text-muted-foreground hover:text-red-500 hover:bg-background pointer-events-auto transition-all shadow-md active:scale-95"
-              aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+              aria-label={
+                isWishlisted ? "Remove from wishlist" : "Add to wishlist"
+              }
             >
-              <Heart className={cn("h-4 w-4", isWishlisted && "fill-red-500 text-red-500")} />
+              <Heart
+                className={cn(
+                  "h-4 w-4",
+                  isWishlisted && "fill-red-500 text-red-500",
+                )}
+              />
             </button>
           )}
         </div>
@@ -120,14 +132,22 @@ export function ProductAngleViewer({
         {angles.length > 1 && (
           <>
             <button
-              onClick={() => setActiveIdx((prev) => (prev > 0 ? prev - 1 : angles.length - 1))}
+              onClick={() =>
+                setActiveIdx((prev) =>
+                  prev > 0 ? prev - 1 : angles.length - 1,
+                )
+              }
               className="absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-background/80 backdrop-blur-md border border-border/60 text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg cursor-pointer"
               aria-label="Previous angle (Left arrow)"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
-              onClick={() => setActiveIdx((prev) => (prev < angles.length - 1 ? prev + 1 : 0))}
+              onClick={() =>
+                setActiveIdx((prev) =>
+                  prev < angles.length - 1 ? prev + 1 : 0,
+                )
+              }
               className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-background/80 backdrop-blur-md border border-border/60 text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg cursor-pointer"
               aria-label="Next angle (Right arrow)"
             >
