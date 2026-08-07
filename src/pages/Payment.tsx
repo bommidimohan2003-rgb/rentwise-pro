@@ -167,7 +167,10 @@ export default function Payment() {
         window as unknown as {
           Razorpay: new (opts: typeof options) => {
             open: () => void;
-            on: (event: string, handler: (resp: unknown) => void) => void;
+            on: (
+              event: string,
+              handler: (resp: { error?: { description?: string } }) => void,
+            ) => void;
           };
         }
       ).Razorpay(options);

@@ -284,7 +284,12 @@ export default function Checkout() {
         window as unknown as {
           Razorpay: new (opts: typeof options) => {
             open: () => void;
-            on: (event: string, handler: (resp: unknown) => void) => void;
+            on: (
+              event: string,
+              handler: (response: {
+                error?: { description?: string; code?: string; reason?: string };
+              }) => void,
+            ) => void;
           };
         }
       ).Razorpay(options);

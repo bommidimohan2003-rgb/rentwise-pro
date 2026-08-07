@@ -73,12 +73,15 @@ export async function searchWithML(
             title: String(raw.title || ""),
             description: String(raw.description || ""),
             price: Number(raw.price || 0),
-            image: raw.image,
-            category: raw.category || "general",
+            image: String(raw.image || ""),
+            category: String(raw.category || "general"),
             rating: Number(raw.rating || 4.8),
             reviews: Number(raw.reviews || 10),
-            available: raw.available ?? true,
-            owner: raw.owner || { name: "Payent Lender", avatar: "", rating: 4.9 },
+            available: Boolean(raw.available ?? true),
+            owner:
+              typeof raw.owner === "object" && raw.owner !== null
+                ? (raw.owner as { name: string; avatar: string; rating: number })
+                : { name: "Payent Lender", avatar: "", rating: 4.9 },
           };
         });
 
