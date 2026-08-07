@@ -42,6 +42,7 @@ from database import (
     create_custom_product,
     get_notifications,
     create_notification,
+    get_admin_notifications,
     mark_notifications_read,
     execute_query,
     get_db_connection,
@@ -56,6 +57,8 @@ from database import (
     get_order_by_id,
     get_order_by_razorpay_order_id,
     update_order_payment_status,
+    is_payment_event_processed,
+    record_payment_event,
     record_user_event_record,
     record_user_events_batch,
     get_recent_user_events,
@@ -1038,6 +1041,10 @@ def verify_razorpay_payment(data: VerifyRazorpayPaymentSchema, current_user_emai
 
 @app.post("/api/payments/webhook")
 async def razorpay_webhook_handler(request: Request):
+    if not RAZORPAY_WEBHOOK_SECRET:
+        logger.error("Razorpay webhook endpoint hit but RAZORPAY_WEBHOOK_SECRET is unconfigured.")
+        raise HTTPException(status_code=500, detail="Razorpay webhook processing is unconfigured.")
+
     raw_body = await request.body()
     signature = request.headers.get("X-Razorpay-Signature") or request.headers.get("x-razorpay-signature")
 
@@ -1066,9 +1073,17 @@ async def razorpay_webhook_handler(request: Request):
     razorpay_order_id = payment_entity.get("order_id")
     razorpay_payment_id = payment_entity.get("id")
 
+    # Idempotency check: extract event ID
+    event_id = payload.get("event_id") or payload.get("id") or f"{event}:{razorpay_payment_id}"
+    if is_payment_event_processed(event_id):
+        logger.info(f"Duplicate Razorpay webhook event received ({event_id}). Returning 200 OK without reprocessing.")
+        return {"status": "ok", "event": event, "note": "duplicate event ignored"}
+
+    order_id = None
     if razorpay_order_id:
         order = get_order_by_razorpay_order_id(razorpay_order_id)
         if order:
+            order_id = order["id"]
             if event == "payment.captured":
                 if order.get("payment_status") != "paid":
                     update_order_payment_status(
@@ -1091,6 +1106,9 @@ async def razorpay_webhook_handler(request: Request):
                         status="failed",
                         razorpay_payment_id=razorpay_payment_id
                     )
+
+    # Record event as processed to prevent duplicate executions
+    record_payment_event(event_id=event_id, event_type=event, payment_id=razorpay_payment_id, order_id=order_id)
 
     return {"status": "ok", "event": event}
 
@@ -1387,6 +1405,16 @@ async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):
     except Exception as e:
         ws_manager.disconnect(websocket)
         logger.warning(f"WebSocket error for {user['email']}: {e}")
+
+@app.get("/api/admin/events/poll")
+def poll_admin_events(since: Optional[str] = None, current_admin: dict = Depends(check_admin_user)):
+    """Serverless HTTP polling fallback for admin notifications/events."""
+    notifications = get_admin_notifications(limit=20)
+    return {
+        "success": True,
+        "events": notifications,
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
 
 @app.post("/api/admin/auth/login")
 def admin_login(data: LoginRequestSchema, request: Request, response: Response):

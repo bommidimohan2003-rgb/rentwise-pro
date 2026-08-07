@@ -38,6 +38,7 @@ IS_PRODUCTION = ENV in ("production", "prod")
 # Security & Secrets Audit
 DEFAULT_SECRET = "payent_super_secret_key_change_me_in_production"
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", DEFAULT_SECRET)
+RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 
 if IS_PRODUCTION:
     if not JWT_SECRET_KEY or JWT_SECRET_KEY == DEFAULT_SECRET:
@@ -46,6 +47,8 @@ if IS_PRODUCTION:
         raise RuntimeError("FATAL SECURITY ERROR: MYSQL_PASSWORD environment variable must be set to a strong password in production!")
     if not os.getenv("ADMIN_SETUP_CODE"):
         raise RuntimeError("FATAL SECURITY ERROR: ADMIN_SETUP_CODE environment variable must be set in production!")
+    if not RAZORPAY_WEBHOOK_SECRET:
+        raise RuntimeError("FATAL SECURITY ERROR: RAZORPAY_WEBHOOK_SECRET environment variable must be set in production mode!")
 
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 if JWT_ALGORITHM not in ["HS256", "HS384", "HS512"]:

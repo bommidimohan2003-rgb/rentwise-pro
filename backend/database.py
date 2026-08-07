@@ -301,6 +301,17 @@ def init_db():
         )
     """)
 
+    # Create processed_payment_events table for webhook idempotency
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS processed_payment_events (
+            event_id VARCHAR(255) PRIMARY KEY,
+            event_type VARCHAR(100),
+            payment_id VARCHAR(255),
+            order_id VARCHAR(255),
+            created_at VARCHAR(100)
+        )
+    """)
+
     # Create user_events table for behavioral recommendation tracking
     execute_query("""
         CREATE TABLE IF NOT EXISTS user_events (
@@ -408,6 +419,20 @@ def get_user(email: str):
     except Exception as e:
         print(f"Warning: Database read error in get_user: {e}")
     return MOCK_USERS.get(clean_email)
+
+def get_admin_notifications(limit: int = 20) -> list:
+    """Fetch recent admin notifications for serverless HTTP polling."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT %s", (limit,))
+                return cursor.fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Notice: Database query in get_admin_notifications fallback: {e}")
+        return []
 
 def create_user(email: str, phone: str, password_hash: str, full_name: str, role: str = "user", address: str = None, city: str = None, pincode: str = None):
     created_at = datetime.utcnow().isoformat()
@@ -685,37 +710,61 @@ RATE_LIMIT_STORE = {}
 
 def record_failed_auth_attempt(key: str, max_attempts: int = 5, lock_duration_secs: int = 900) -> tuple[bool, int]:
     """
-    Record a failed login attempt for a key (IP or email).
+    Record a failed login attempt for a key (IP or email) with DB-backed persistence for serverless scaling.
     Returns (is_locked, seconds_remaining).
     """
     now = int(datetime.utcnow().timestamp())
-    record = RATE_LIMIT_STORE.get(key, {"attempts": 0, "last_attempt": now, "locked_until": 0})
-    
-    if record["locked_until"] > now:
-        return True, record["locked_until"] - now
-    
-    # If last attempt was more than 15 mins ago, reset count
-    if now - record["last_attempt"] > 900:
-        record["attempts"] = 1
+    attempts = 0
+    last_attempt = now
+    locked_until = 0
+
+    # Read existing rate-limit state from DB
+    try:
+        row = fetch_one("SELECT attempts, last_attempt, locked_until FROM auth_rate_limits WHERE key_id = %s", (key,))
+        if row:
+            attempts = int(row.get("attempts") or 0)
+            last_attempt = int(row.get("last_attempt") or now)
+            locked_until = int(row.get("locked_until") or 0)
+    except Exception:
+        mem_rec = RATE_LIMIT_STORE.get(key, {})
+        attempts = mem_rec.get("attempts", 0)
+        last_attempt = mem_rec.get("last_attempt", now)
+        locked_until = mem_rec.get("locked_until", 0)
+
+    if locked_until > now:
+        return True, locked_until - now
+
+    # Reset attempt count if window expired (> 15 minutes)
+    if now - last_attempt > 900:
+        attempts = 1
     else:
-        record["attempts"] += 1
-    
-    record["last_attempt"] = now
-    
-    if record["attempts"] >= max_attempts:
-        record["locked_until"] = now + lock_duration_secs
-        RATE_LIMIT_STORE[key] = record
-        try:
-            execute_query(
-                "REPLACE INTO auth_rate_limits (key_id, attempts, last_attempt, locked_until) VALUES (%s, %s, %s, %s)",
-                (key, record["attempts"], now, record["locked_until"])
-            )
-        except Exception:
-            pass
-        return True, lock_duration_secs
-    
-    RATE_LIMIT_STORE[key] = record
-    return False, 0
+        attempts += 1
+
+    last_attempt = now
+    is_locked = False
+    secs_remaining = 0
+
+    if attempts >= max_attempts:
+        locked_until = now + lock_duration_secs
+        is_locked = True
+        secs_remaining = lock_duration_secs
+
+    # Update state in DB and in-memory cache
+    RATE_LIMIT_STORE[key] = {
+        "attempts": attempts,
+        "last_attempt": last_attempt,
+        "locked_until": locked_until
+    }
+
+    try:
+        execute_query(
+            "REPLACE INTO auth_rate_limits (key_id, attempts, last_attempt, locked_until) VALUES (%s, %s, %s, %s)",
+            (key, attempts, last_attempt, locked_until)
+        )
+    except Exception as e:
+        print(f"Notice: Database write error in record_failed_auth_attempt: {e}")
+
+    return is_locked, secs_remaining
 
 def clear_failed_auth_attempts(key: str):
     RATE_LIMIT_STORE.pop(key, None)
@@ -790,6 +839,32 @@ def get_order_by_id(order_id: str):
     except Exception as e:
         print(f"Warning: Database read error in get_order_by_id: {e}")
     return MOCK_ORDERS.get(order_id)
+
+MOCK_PROCESSED_EVENTS = set()
+
+def is_payment_event_processed(event_id: str) -> bool:
+    """Check if a Razorpay webhook event_id has already been processed."""
+    if not event_id:
+        return False
+    try:
+        row = fetch_one("SELECT 1 FROM processed_payment_events WHERE event_id = %s", (event_id,))
+        return bool(row)
+    except Exception:
+        return event_id in MOCK_PROCESSED_EVENTS
+
+def record_payment_event(event_id: str, event_type: str = "", payment_id: str = None, order_id: str = None):
+    """Record a processed Razorpay webhook event_id for idempotency."""
+    if not event_id:
+        return
+    MOCK_PROCESSED_EVENTS.add(event_id)
+    try:
+        execute_query("""
+            INSERT INTO processed_payment_events (event_id, event_type, payment_id, order_id, created_at)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE created_at = VALUES(created_at)
+        """, (event_id, event_type or "", payment_id or "", order_id or "", datetime.utcnow().isoformat()))
+    except Exception:
+        pass
 
 def get_order_by_razorpay_order_id(razorpay_order_id: str):
     if not razorpay_order_id:

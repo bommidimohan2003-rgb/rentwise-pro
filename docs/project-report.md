@@ -34,7 +34,7 @@ The backend is a FastAPI service served by uvicorn or gunicorn. Data access uses
 
 ### Deployment Model
 
-The deployment model is split across hosting layers. The backend targets Railway or Render, the frontend targets Vercel, and MySQL is the datastore. The repository includes environment-driven configuration for that deployment pattern.
+The application uses Vercel for serverless deployment across both frontend (React/Vite) and backend (FastAPI Python ASGI serverless functions via `api/index.py` and `vercel.json`). MySQL serves as the external persistent datastore, and backend rate limiting is DB-backed across serverless execution instances.
 
 ## Repository Layout
 
