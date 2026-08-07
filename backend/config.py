@@ -42,6 +42,8 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", DEFAULT_SECRET)
 if IS_PRODUCTION:
     if not JWT_SECRET_KEY or JWT_SECRET_KEY == DEFAULT_SECRET:
         raise RuntimeError("FATAL SECURITY ERROR: JWT_SECRET_KEY must be set to a strong secret in production!")
+    if not MYSQL_PASSWORD or MYSQL_PASSWORD == "Bmohan":
+        raise RuntimeError("FATAL SECURITY ERROR: MYSQL_PASSWORD environment variable must be set to a strong password in production!")
     if not os.getenv("ADMIN_SETUP_CODE"):
         raise RuntimeError("FATAL SECURITY ERROR: ADMIN_SETUP_CODE environment variable must be set in production!")
 

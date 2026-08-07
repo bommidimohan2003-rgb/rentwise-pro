@@ -1,6 +1,5 @@
 import { storage, STORAGE_KEYS } from "./storage";
 import type { Order, Product } from "@/types";
-import { ADMIN_SETUP_CODE } from "./adminSetup";
 
 const isLocal =
   typeof window !== "undefined" &&

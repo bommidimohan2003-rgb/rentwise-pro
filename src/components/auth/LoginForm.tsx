@@ -76,7 +76,9 @@ export function LoginForm() {
     const currentUser = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
     if (currentUser?.role === "admin") {
       const userToken = storage.get<string | null>(STORAGE_KEYS.token, null);
-      localStorage.setItem("payent:admin:token", userToken || "mock-admin-token");
+      if (userToken) {
+        localStorage.setItem("payent:admin:token", userToken);
+      }
       localStorage.setItem(
         "payent:admin:current_user",
         JSON.stringify({

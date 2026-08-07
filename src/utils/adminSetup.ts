@@ -1,1 +1,0 @@
-export const ADMIN_SETUP_CODE = "PAYENT-ADMIN-2026";

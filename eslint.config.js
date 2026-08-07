@@ -7,15 +7,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: [
-      "dist",
-      ".output",
-      ".vinxi",
-      ".venv",
-      "node_modules",
-      ".tanstack",
-      "rentwise-pro-main",
-    ],
+    ignores: ["dist", ".output", ".vinxi", ".venv", "node_modules", ".tanstack"],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

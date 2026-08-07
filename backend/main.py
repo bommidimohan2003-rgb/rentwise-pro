@@ -87,12 +87,14 @@ from config import (
     RAZORPAY_WEBHOOK_SECRET
 )
 
-# try:
-#     razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
-# except Exception as rzp_err:
-#     logger.warning(f"Razorpay Client init warning: {rzp_err}")
-#     razorpay_client = None
 razorpay_client = None
+if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
+    try:
+        razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+        logger.info("Razorpay Client SDK initialized successfully.")
+    except Exception as rzp_err:
+        logger.warning(f"Razorpay Client SDK initialization warning: {rzp_err}")
+        razorpay_client = None
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -209,10 +211,16 @@ def normalize_phone(phone: str) -> str:
 
 # Twilio Verify API Helpers
 def start_verification(phone: str) -> dict:
-    """Start verification via Twilio Verify API or fall back to local mock OTP."""
+    """Start verification via Twilio Verify API or fall back to local mock OTP in development."""
     phone = normalize_phone(phone)
     if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_VERIFY_SERVICE_SID:
-        # Fallback to cryptographically secure local mock OTP
+        if IS_PRODUCTION:
+            logger.error("FATAL SECURITY ERROR: Twilio credentials missing in production mode.")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="SMS verification service is unconfigured in production environment."
+            )
+        # Fallback to cryptographically secure local mock OTP in development
         mock_otp = f"{secrets.randbelow(900000) + 100000}"
         logger.info(f"[Twilio Simulator] Simulated SMS to {phone}: 'Your code is: {mock_otp}'")
         return {"mode": "mock", "otp": mock_otp}
@@ -841,10 +849,19 @@ def toggle_listing_availability(id: str, email: str = Depends(get_current_user_e
     new_status = toggle_custom_product_availability(id, email)
     return {"success": True, "available": new_status}
 
+# Admin check dependency
+def check_admin_user(current_user_email: str = Depends(get_current_user_email)) -> dict:
+    user = get_user(current_user_email)
+    if not user or user["role"] != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. Admin access required."
+        )
+    return user
+
 # ==============================================================================
-# --- RAZORPAY BACKEND PAYMENT ENDPOINTS (COMMENTED OUT AS REQUESTED) ---
+# --- RAZORPAY BACKEND PAYMENT ENDPOINTS ---
 # ==============================================================================
-"""
 class CreateRazorpayOrderSchema(BaseModel):
     product_id: str
     start_date: str
@@ -1123,7 +1140,6 @@ def process_admin_refund(data: RefundPaymentSchema, current_admin: dict = Depend
         "refund_id": refund_id,
         "order_id": order["id"]
     }
-"""
 
 @app.get("/api/lender/orders")
 def fetch_lender_orders(email: str = Depends(get_current_user_email)):
@@ -1276,15 +1292,6 @@ class SupportReplySchema(BaseModel):
 class SupportStatusSchema(BaseModel):
     status: str
 
-# Admin check dependency
-def check_admin_user(current_user_email: str = Depends(get_current_user_email)) -> dict:
-    user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden. Admin access required."
-        )
-    return user
 
 # ----------------------------------------------------------------------
 # Admin Live WebSocket Real-Time Broadcast Infrastructure
