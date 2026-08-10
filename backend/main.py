@@ -1520,6 +1520,39 @@ def poll_admin_events(since: Optional[str] = None, current_admin: dict = Depends
         "timestamp": datetime.datetime.utcnow().isoformat()
     }
 
+class AdminRegisterSchema(BaseModel):
+    email: str
+    password: str
+    full_name: Optional[str] = "Admin User"
+    phone: Optional[str] = "0000000000"
+    admin_code: Optional[str] = None
+
+@app.post("/api/admin/auth/register")
+def admin_register(data: AdminRegisterSchema):
+    clean_email = data.email.lower().strip()
+    if data.admin_code and data.admin_code != ADMIN_SETUP_CODE:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid admin setup code.")
+
+    existing = get_user(clean_email)
+    if existing:
+        if verify_password(data.password, existing["password_hash"]) or data.admin_code == ADMIN_SETUP_CODE:
+            execute_query("UPDATE users SET role = 'admin' WHERE email = %s", (clean_email,))
+            if clean_email in MOCK_USERS:
+                MOCK_USERS[clean_email]["role"] = "admin"
+            return {"success": True, "message": f"User {clean_email} upgraded to administrator role successfully."}
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account already exists with different password.")
+
+    hashed = hash_password(data.password)
+    create_user(
+        email=clean_email,
+        phone=data.phone or "0000000000",
+        password_hash=hashed,
+        full_name=data.full_name or clean_email.split("@")[0],
+        role="admin"
+    )
+    return {"success": True, "message": f"Admin account for {clean_email} created successfully."}
+
 @app.post("/api/admin/auth/login")
 def admin_login(data: LoginRequestSchema, request: Request, response: Response):
     clean_email = data.email.lower().strip()
