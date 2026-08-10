@@ -50,23 +50,18 @@ export const googleProvider = new GoogleAuthProvider();
  */
 export async function signInWithGoogle() {
   try {
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Google popup sign-in request timed out.")), 2500);
-    });
-
-    const result = (await Promise.race([
-      signInWithPopup(auth, googleProvider),
-      timeoutPromise,
-    ])) as any;
-
+    const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
+    const idToken = await user.getIdToken();
     return {
       success: true,
+      idToken,
       googleUser: {
         email: user.email || "",
         fullName: user.displayName || user.email?.split("@")[0] || "Google User",
         avatar: user.photoURL || undefined,
         phone: user.phoneNumber || "",
+        uid: user.uid,
       },
     };
   } catch (error) {

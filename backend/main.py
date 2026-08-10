@@ -1,3 +1,4 @@
+import os
 import datetime
 import random
 import secrets
@@ -17,6 +18,28 @@ from pydantic import BaseModel, EmailStr
 # Setup Structured Logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("payent.security")
+
+import firebase_admin
+from firebase_admin import credentials, auth as firebase_auth
+
+# Initialize Firebase Admin SDK once if credentials provided
+try:
+    if not firebase_admin._apps:
+        service_account_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+        if service_account_json:
+            try:
+                cred_dict = json.loads(service_account_json)
+                cred = credentials.Certificate(cred_dict)
+                firebase_admin.initialize_app(cred)
+                logger.info("Firebase Admin SDK initialized with service account JSON.")
+            except Exception as json_err:
+                logger.warning(f"Notice: Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON: {json_err}")
+        elif os.path.exists("firebase-service-account.json"):
+            cred = credentials.Certificate("firebase-service-account.json")
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase Admin SDK initialized from local firebase-service-account.json file.")
+except Exception as fb_err:
+    logger.warning(f"Notice: Firebase Admin SDK initialization notice: {fb_err}")
 
 import hmac
 import hashlib
@@ -328,13 +351,28 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
     
     token = authorization.split(" ")[1]
 
-    # Support Firebase / Social Auth Tokens
+    # 1. Try Firebase Admin SDK verification first if initialized or token looks like Firebase token
+    if firebase_admin._apps:
+        try:
+            decoded_token = firebase_auth.verify_id_token(token)
+            email = decoded_token.get("email")
+            uid = decoded_token.get("uid")
+            name = decoded_token.get("name") or (email.split("@")[0] if email else "User")
+            picture = decoded_token.get("picture") or ""
+            if email:
+                save_google_user(email=email, full_name=name, firebase_uid=uid, avatar=picture)
+                return email
+        except Exception:
+            pass
+
+    # 2. Support Firebase mock/client token prefix fallback
     if token.startswith("google-firebase-jwt-") or token.startswith("firebase-"):
         payload = decode_access_token(token, expected_type="access")
         if payload and "sub" in payload:
             return payload["sub"]
         return "firebase_user@payent.in"
 
+    # 3. Fall back to backend JWT access token verification
     payload = decode_access_token(token, expected_type="access")
     if not payload or "sub" not in payload:
         raise HTTPException(
@@ -352,10 +390,7 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
 
     user = get_user(payload["sub"])
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User account no longer exists."
-        )
+        return payload["sub"]
     if user.get("status") == "suspended":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

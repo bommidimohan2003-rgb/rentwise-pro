@@ -111,6 +111,7 @@ def init_db():
     add_column_safely("users", "address VARCHAR(500)")
     add_column_safely("users", "city VARCHAR(100)")
     add_column_safely("users", "pincode VARCHAR(20)")
+    add_column_safely("users", "firebase_uid VARCHAR(255) UNIQUE NULL")
 
     # Create token_blocklist table for server-side JWT revocation
     execute_query("""
@@ -548,13 +549,58 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
         "createdAt": created_at
     }
 
-def save_google_user(email: str, full_name: str, phone: str = "", avatar: str = "", address: str = "", city: str = "", pincode: str = "", role: str = "user"):
+def get_user_by_firebase_uid(firebase_uid: str):
+    if not firebase_uid:
+        return None
+    try:
+        user = fetch_one("SELECT * FROM users WHERE firebase_uid = %s", (firebase_uid,))
+        if user:
+            return user
+    except Exception as e:
+        print(f"Warning: Database read error in get_user_by_firebase_uid: {e}")
+    for u in MOCK_USERS.values():
+        if u.get("firebase_uid") == firebase_uid:
+            return u
+    return None
+
+def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: str = "", avatar: str = "", address: str = "", city: str = "", pincode: str = "", role: str = "user"):
     created_at = datetime.utcnow().isoformat()
     clean_email = email.strip().lower()
     dummy_hash = "GOOGLE_OAUTH_USER"
 
+    # Check if user already exists by firebase_uid or email (linking rule)
+    existing_user = None
+    if firebase_uid:
+        existing_user = get_user_by_firebase_uid(firebase_uid)
+    if not existing_user and clean_email:
+        existing_user = get_user(clean_email)
+
+    if existing_user:
+        clean_email = existing_user["email"]
+        existing_user["firebase_uid"] = firebase_uid or existing_user.get("firebase_uid")
+        if full_name:
+            existing_user["full_name"] = full_name
+        if avatar:
+            existing_user["avatar"] = avatar
+        MOCK_USERS[clean_email] = existing_user
+        try:
+            execute_query(
+                """
+                UPDATE users SET 
+                    firebase_uid = COALESCE(NULLIF(%s, ''), firebase_uid),
+                    full_name = COALESCE(NULLIF(%s, ''), full_name),
+                    avatar = COALESCE(NULLIF(%s, ''), avatar)
+                WHERE LOWER(email) = LOWER(%s)
+                """,
+                (firebase_uid or "", full_name or "", avatar or "", clean_email)
+            )
+        except Exception as e:
+            print(f"Notice: Database write error in save_google_user update: {e}")
+        return existing_user
+
     user_data = {
         "email": clean_email,
+        "firebase_uid": firebase_uid or "",
         "phone": phone or "",
         "password_hash": dummy_hash,
         "full_name": full_name,
@@ -572,20 +618,18 @@ def save_google_user(email: str, full_name: str, phone: str = "", avatar: str = 
     try:
         execute_query(
             """
-            INSERT INTO users (email, phone, password_hash, full_name, role, avatar, address, city, pincode, created_at, status, verified)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', TRUE)
+            INSERT INTO users (email, firebase_uid, phone, password_hash, full_name, role, avatar, address, city, pincode, created_at, status, verified)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', TRUE)
             ON DUPLICATE KEY UPDATE
+                firebase_uid = COALESCE(NULLIF(VALUES(firebase_uid), ''), firebase_uid),
                 full_name = COALESCE(NULLIF(VALUES(full_name), ''), full_name),
                 phone = COALESCE(NULLIF(VALUES(phone), ''), phone),
-                avatar = COALESCE(NULLIF(VALUES(avatar), ''), avatar),
-                address = COALESCE(NULLIF(VALUES(address), ''), address),
-                city = COALESCE(NULLIF(VALUES(city), ''), city),
-                pincode = COALESCE(NULLIF(VALUES(pincode), ''), pincode)
+                avatar = COALESCE(NULLIF(VALUES(avatar), ''), avatar)
             """,
-            (clean_email, phone or "", dummy_hash, full_name, role or "user", avatar or "", address or "", city or "", pincode or "", created_at)
+            (clean_email, firebase_uid or "", phone or "", dummy_hash, full_name, role or "user", avatar or "", address or "", city or "", pincode or "", created_at)
         )
     except Exception as e:
-        print(f"Notice: Database write error in save_google_user: {e}")
+        print(f"Notice: Database write error in save_google_user insert: {e}")
 
     return user_data
 
