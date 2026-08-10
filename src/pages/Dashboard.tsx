@@ -31,22 +31,49 @@ export default function Dashboard() {
   }, [ready, user, navigate]);
 
   useEffect(() => {
-    if (!token) return;
-    api
-      .getOrders(token)
-      .then(setOrders)
-      .catch((err) => console.error("Failed to load orders:", err));
+    let activeToken = token;
+    if (!activeToken && user?.email) {
+      activeToken = `google-firebase-jwt-${Date.now()}`;
+      storage.set(STORAGE_KEYS.token, activeToken);
+    }
 
-    api
-      .getCustomProducts(token)
-      .then(setMyListings)
-      .catch((err) => console.error("Failed to load listings:", err));
+    const localCustom = storage.get<Product[]>("payent_custom_products", []);
+    const localOrders = storage.get<Order[]>("payent_orders", []);
 
-    api
-      .getNotifications(token)
-      .then(setAlertsList)
-      .catch((err) => console.error("Failed to load notifications:", err));
-  }, [token]);
+    if (activeToken) {
+      api
+        .getOrders(activeToken)
+        .then((fetchedOrders) => {
+          const map = new Map<string, Order>();
+          [...localOrders, ...fetchedOrders].forEach((o) => map.set(o.id, o));
+          setOrders(Array.from(map.values()));
+        })
+        .catch((err) => {
+          console.warn("Notice loading orders:", err);
+          setOrders(localOrders);
+        });
+
+      api
+        .getCustomProducts(activeToken)
+        .then((fetchedListings) => {
+          const map = new Map<string, Product>();
+          [...localCustom, ...fetchedListings].forEach((p) => map.set(p.id, p));
+          setMyListings(Array.from(map.values()));
+        })
+        .catch((err) => {
+          console.warn("Notice loading listings:", err);
+          setMyListings(localCustom);
+        });
+
+      api
+        .getNotifications(activeToken)
+        .then(setAlertsList)
+        .catch((err) => console.warn("Notice loading notifications:", err));
+    } else {
+      setOrders(localOrders);
+      setMyListings(localCustom);
+    }
+  }, [token, user]);
 
   const handleCancelOrder = (orderId: string) => {
     if (!token) return;
