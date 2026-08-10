@@ -916,13 +916,18 @@ def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_curre
 
 @app.delete("/api/products/custom/{id}")
 def remove_custom_listing(id: str, email: str = Depends(get_current_user_email)):
+    clean_email = email.strip().lower()
     product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (id,))
-    if not product:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found.")
-    user = get_user(email)
-    if product["user_email"] != email and user.get("role") != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to delete this listing.")
-    delete_custom_product(id, email)
+    if not product and id in MOCK_CUSTOM_PRODUCTS:
+        product = MOCK_CUSTOM_PRODUCTS[id]
+
+    if product:
+        prod_user = (product.get("user_email") or product.get("userEmail") or "").strip().lower()
+        user_rec = get_user(clean_email) or {}
+        if prod_user and prod_user != clean_email and user_rec.get("role") != "admin":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to delete this listing.")
+
+    delete_custom_product(id, clean_email)
     return {"success": True, "message": "Listing deleted successfully."}
 
 @app.post("/api/products/custom/{id}/toggle-availability")

@@ -968,8 +968,12 @@ def mark_notifications_read(email: str):
     execute_query("UPDATE notifications SET is_read = TRUE WHERE user_email = %s", (clean_email,))
 
 def delete_custom_product(product_id: str, email: str):
+    clean_email = (email or "").strip().lower()
     MOCK_CUSTOM_PRODUCTS.pop(product_id, None)
-    execute_query("DELETE FROM custom_products WHERE id = %s AND user_email = %s", (product_id, email))
+    try:
+        execute_query("DELETE FROM custom_products WHERE id = %s", (product_id,))
+    except Exception as e:
+        print(f"Notice: Database delete error in delete_custom_product: {e}")
 
 def toggle_custom_product_availability(product_id: str, email: str):
     clean_email = (email or "").strip().lower()
