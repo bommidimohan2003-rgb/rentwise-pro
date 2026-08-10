@@ -141,19 +141,7 @@ export function RegisterForm() {
   const level = useMemo(() => strength(pw), [pw]);
   const labels = ["Weak", "Fair", "Good", "Strong", "Excellent"];
 
-  const showAdminOption = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    for (const [key, value] of params.entries()) {
-      if (
-        key.trim().toLowerCase() === "admin" &&
-        value.trim().toLowerCase() === "true"
-      ) {
-        return true;
-      }
-    }
-    return false;
-  }, []);
+  const showAdminOption = true;
 
   const onSubmit = async (data: FormValues) => {
     setErrorState(null);
@@ -360,7 +348,7 @@ export function RegisterForm() {
           {watchIsAdmin && (
             <Input
               label="Admin Setup Code"
-              placeholder="Enter admin key"
+              placeholder="e.g. PAYENT-ADMIN-2026"
               icon={<Lock className="h-4 w-4" />}
               error={errors.adminCode?.message}
               {...register("adminCode")}
