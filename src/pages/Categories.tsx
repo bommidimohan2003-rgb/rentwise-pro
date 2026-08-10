@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 import { useSearch, useNavigate, Link } from "@tanstack/react-router";
 import { NoSearchResults } from "@/components/states/NoSearchResults";
 import { tracker } from "@/utils/eventTracker";
+import { storage } from "@/utils/storage";
+import { api } from "@/utils/api";
 
 type Sort = "featured" | "price_asc" | "price_desc" | "rating";
 
@@ -83,11 +85,34 @@ export default function Categories() {
     }
   }, [search.q]);
 
+  const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
+    const localCustom = storage.get<Product[]>("payent_custom_products", []);
+    const map = new Map<string, Product>();
+    [...localCustom, ...products].forEach((p) => map.set(p.id, p));
+    return Array.from(map.values());
+  });
+
+  useEffect(() => {
+    api
+      .getPublicCustomProducts()
+      .then((serverProducts) => {
+        if (Array.isArray(serverProducts) && serverProducts.length > 0) {
+          setAllProductsList((prev) => {
+            const localCustom = storage.get<Product[]>("payent_custom_products", []);
+            const map = new Map<string, Product>();
+            [...localCustom, ...serverProducts, ...products].forEach((p) => map.set(p.id, p));
+            return Array.from(map.values());
+          });
+        }
+      })
+      .catch((err) => console.warn("[Categories] Server custom products fetch notice:", err));
+  }, []);
+
   // Fetch ML Search results asynchronously when query or category changes
   useEffect(() => {
     let isMounted = true;
     if (q && q.trim()) {
-      searchWithML(products, q, cat).then((res) => {
+      searchWithML(allProductsList, q, cat).then((res) => {
         if (isMounted) {
           setMlResults(res.results);
           setDidYouMean(res.didYouMean);
@@ -102,7 +127,7 @@ export default function Categories() {
     return () => {
       isMounted = false;
     };
-  }, [q, cat]);
+  }, [q, cat, allProductsList]);
 
   // Fetch Search Index stats & popular queries once
   useEffect(() => {
@@ -132,6 +157,19 @@ export default function Categories() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!q.trim()) return;
+    setIsSearchFocused(false);
+    navigate({
+      to: "/categories",
+      search: (prev: Record<string, unknown>) => ({
+        ...prev,
+        q: q.trim(),
+      }),
+    });
+  };
 
   const setQ = (val: string) => {
     setLocalQ(val);
@@ -167,7 +205,7 @@ export default function Categories() {
     let list =
       mlResults !== null
         ? mlResults
-        : products.filter((p) => (cat === "all" ? true : p.category === cat));
+        : allProductsList.filter((p) => (cat === "all" ? true : p.category.toLowerCase() === cat.toLowerCase()));
 
     if (mlResults === null && q) {
       list = advancedSearch(list, q);
@@ -185,7 +223,7 @@ export default function Categories() {
         break;
     }
     return list;
-  }, [cat, q, sort, mlResults]);
+  }, [cat, q, sort, mlResults, allProductsList]);
 
   // Instant Suggestions for Search Autocomplete
   const liveSuggestions = useMemo(() => {
@@ -193,17 +231,17 @@ export default function Categories() {
     if (mlResults && mlResults.length > 0) {
       return mlResults.slice(0, 5);
     }
-    return advancedSearch(products, q).slice(0, 5);
-  }, [q, mlResults]);
+    return advancedSearch(allProductsList, q).slice(0, 5);
+  }, [q, mlResults, allProductsList]);
 
   // Compute category item counts dynamically
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: products.length };
+    const counts: Record<string, number> = { all: allProductsList.length };
     categories.forEach((c) => {
-      counts[c.id] = products.filter((p) => p.category === c.id).length;
+      counts[c.id] = allProductsList.filter((p) => p.category.toLowerCase() === c.id.toLowerCase()).length;
     });
     return counts;
-  }, []);
+  }, [allProductsList]);
 
   // Selected Category Info
   const selectedCatObj = categories.find((c) => c.id === cat);
