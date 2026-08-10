@@ -141,7 +141,7 @@ export function RegisterForm() {
   const level = useMemo(() => strength(pw), [pw]);
   const labels = ["Weak", "Fair", "Good", "Strong", "Excellent"];
 
-  const showAdminOption = true;
+  const showAdminOption = false;
 
   const onSubmit = async (data: FormValues) => {
     setErrorState(null);
