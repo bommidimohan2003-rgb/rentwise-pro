@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { Phone, MapPin, Building2, Compass, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
@@ -30,11 +29,6 @@ export function CompleteProfileModal({
   const [pincode, setPincode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,8 +78,8 @@ export function CompleteProfileModal({
     }
   };
 
-  const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-card border border-border rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-5 relative overflow-hidden">
         {/* Header Banner */}
         <div className="flex items-center gap-3 border-b border-border pb-4">
@@ -169,7 +163,4 @@ export function CompleteProfileModal({
       </div>
     </div>
   );
-
-  return mounted ? createPortal(modalContent, document.body) : null;
 }
-
