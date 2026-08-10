@@ -437,6 +437,57 @@ def init_db():
 MOCK_USERS = {}
 MOCK_OTPS = {}
 MOCK_ORDERS = {}
+MOCK_WISHLISTS = {}
+MOCK_NOTIFICATIONS = {}
+MOCK_PROCESSED_EVENTS = set()
+MOCK_USER_EVENTS = []
+MOCK_CUSTOM_PRODUCTS = {
+    "p1": {
+        "id": "p1",
+        "title": "Sony FX3 Cinema Line Camera",
+        "description": "Full-frame cinema camera with 4K 120fps recording capability, XLR handle unit, and dual CFexpress slots.",
+        "price": 2500,
+        "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+        "category": "Cameras",
+        "rating": 4.9,
+        "reviews": 24,
+        "available": True,
+        "owner_name": "Marcus Vance",
+        "owner_avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
+        "owner_rating": 4.9,
+        "user_email": "marcus@payent.com"
+    },
+    "p2": {
+        "id": "p2",
+        "title": "DJI Mavic 3 Pro Cine Premium Combo",
+        "description": "Tri-camera flagship drone with Apple ProRes support, 43-min flight time, and RC Pro remote controller.",
+        "price": 4200,
+        "image": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600",
+        "category": "Drones",
+        "rating": 5.0,
+        "reviews": 18,
+        "available": True,
+        "owner_name": "Elena Rostova",
+        "owner_avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120",
+        "owner_rating": 5.0,
+        "user_email": "elena@payent.com"
+    },
+    "p3": {
+        "id": "p3",
+        "title": "MacBook Pro 16\" M3 Max 64GB",
+        "description": "Monster video editing laptop with 16-core CPU, 40-core GPU, 2TB SSD, and Liquid Retina XDR display.",
+        "price": 1800,
+        "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600",
+        "category": "Laptops",
+        "rating": 4.8,
+        "reviews": 31,
+        "available": True,
+        "owner_name": "Devon Carter",
+        "owner_avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120",
+        "owner_rating": 4.8,
+        "user_email": "devon@payent.com"
+    }
+}
 
 def get_user(email: str):
     if not email:
