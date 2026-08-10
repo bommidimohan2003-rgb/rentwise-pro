@@ -50,7 +50,15 @@ export const googleProvider = new GoogleAuthProvider();
  */
 export async function signInWithGoogle() {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Google popup sign-in request timed out.")), 2500);
+    });
+
+    const result = (await Promise.race([
+      signInWithPopup(auth, googleProvider),
+      timeoutPromise,
+    ])) as any;
+
     const user = result.user;
     return {
       success: true,
