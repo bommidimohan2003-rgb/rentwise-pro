@@ -820,27 +820,66 @@ def get_all_custom_products():
 def create_custom_product(email: str, product: dict):
     clean_email = (email or "").strip().lower()
     created_at = datetime.utcnow().isoformat()
-    MOCK_CUSTOM_PRODUCTS[product["id"]] = {**product, "user_email": clean_email}
-    execute_query("""
-        INSERT INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (
-        product["id"],
-        clean_email,
-        product["title"],
-        product["description"],
-        product["price"],
-        product["image"],
-        product["category"],
-        product.get("rating", 5.0),
-        product.get("reviews", 0),
-        product.get("available", True),
-        product["owner"]["name"],
-        product["owner"]["avatar"],
-        product["owner"].get("rating", 5.0),
-        created_at
-    ))
-    return product
+    
+    owner_info = product.get("owner") if isinstance(product.get("owner"), dict) else {}
+    owner_name = owner_info.get("name") or product.get("owner_name") or clean_email.split("@")[0]
+    owner_avatar = owner_info.get("avatar") or product.get("owner_avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
+    owner_rating = float(owner_info.get("rating") or product.get("owner_rating") or 5.0)
+
+    product_entry = {
+        "id": str(product.get("id", "")),
+        "user_email": clean_email,
+        "title": str(product.get("title", "")),
+        "description": str(product.get("description", "")),
+        "price": float(product.get("price", 0)),
+        "image": str(product.get("image", "")),
+        "category": str(product.get("category", "General")),
+        "rating": float(product.get("rating", 5.0)),
+        "reviews": int(product.get("reviews", 0)),
+        "available": bool(product.get("available", True)),
+        "owner_name": owner_name,
+        "owner_avatar": owner_avatar,
+        "owner_rating": owner_rating,
+        "owner": {
+            "name": owner_name,
+            "avatar": owner_avatar,
+            "rating": owner_rating
+        },
+        "created_at": created_at
+    }
+    MOCK_CUSTOM_PRODUCTS[product_entry["id"]] = product_entry
+
+    try:
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        product_entry["id"],
+                        clean_email,
+                        product_entry["title"],
+                        product_entry["description"],
+                        product_entry["price"],
+                        product_entry["image"],
+                        product_entry["category"],
+                        product_entry["rating"],
+                        product_entry["reviews"],
+                        product_entry["available"],
+                        owner_name,
+                        owner_avatar,
+                        owner_rating,
+                        created_at
+                    ))
+                conn.commit()
+            finally:
+                conn.close()
+    except Exception as e:
+        print(f"Notice: Database write error in create_custom_product: {e}")
+
+    return product_entry
 
 def update_custom_product(product_id: str, email: str, patch: dict):
     clean_email = (email or "").strip().lower()

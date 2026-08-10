@@ -865,51 +865,38 @@ def get_order_details(id: str, email: str = Depends(get_current_user_email)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to view this order.")
     return order
 
+def format_product_dict(p: dict) -> dict:
+    owner_info = p.get("owner") if isinstance(p.get("owner"), dict) else {}
+    owner_name = p.get("owner_name") or owner_info.get("name") or "Lender"
+    owner_avatar = p.get("owner_avatar") or owner_info.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
+    owner_rating = float(p.get("owner_rating") or owner_info.get("rating") or 5.0)
+
+    return {
+        "id": str(p.get("id", "")),
+        "title": str(p.get("title", "")),
+        "description": str(p.get("description", "")),
+        "price": float(p.get("price", 0)),
+        "image": str(p.get("image", "")),
+        "category": str(p.get("category", "")),
+        "rating": float(p.get("rating", 5.0)),
+        "reviews": int(p.get("reviews", 0)),
+        "available": bool(p.get("available", True)),
+        "owner": {
+            "name": owner_name,
+            "avatar": owner_avatar,
+            "rating": owner_rating
+        }
+    }
+
 @app.get("/api/products/custom")
 def fetch_user_listings(email: str = Depends(get_current_user_email)):
     listings = get_custom_products(email)
-    result = []
-    for p in listings:
-        result.append({
-            "id": p["id"],
-            "title": p["title"],
-            "description": p["description"],
-            "price": p["price"],
-            "image": p["image"],
-            "category": p["category"],
-            "rating": float(p["rating"]),
-            "reviews": p["reviews"],
-            "available": bool(p["available"]),
-            "owner": {
-                "name": p["owner_name"],
-                "avatar": p["owner_avatar"],
-                "rating": float(p["owner_rating"])
-            }
-        })
-    return result
+    return [format_product_dict(p) for p in listings]
 
 @app.get("/api/products/custom/public")
 def fetch_public_listings():
     listings = get_all_custom_products()
-    result = []
-    for p in listings:
-        result.append({
-            "id": p["id"],
-            "title": p["title"],
-            "description": p["description"],
-            "price": p["price"],
-            "image": p["image"],
-            "category": p["category"],
-            "rating": float(p["rating"]),
-            "reviews": p["reviews"],
-            "available": bool(p["available"]),
-            "owner": {
-                "name": p["owner_name"],
-                "avatar": p["owner_avatar"],
-                "rating": float(p["owner_rating"])
-            }
-        })
-    return result
+    return [format_product_dict(p) for p in listings]
 
 @app.post("/api/products/custom")
 def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_current_user_email)):
