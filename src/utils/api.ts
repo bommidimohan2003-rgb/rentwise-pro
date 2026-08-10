@@ -302,6 +302,23 @@ export const api = {
     return res.json();
   },
 
+  async updateCustomProduct(
+    token: string,
+    productId: string,
+    patchData: Partial<Product>,
+  ) {
+    const res = await fetch(`${API_BASE}/api/products/custom/${productId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(patchData),
+    });
+    if (!res.ok) throw new Error("Failed to update custom product");
+    return res.json();
+  },
+
   async createRazorpayOrder(
     token: string,
     productId: string,

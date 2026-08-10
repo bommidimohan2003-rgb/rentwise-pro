@@ -49,6 +49,7 @@ from database import (
     get_db_connection,
     delete_custom_product,
     toggle_custom_product_availability,
+    update_custom_product,
     revoke_token,
     is_token_revoked,
     record_failed_auth_attempt,
@@ -706,6 +707,14 @@ class CustomProductSchema(BaseModel):
     available: Optional[bool] = True
     owner: ProductOwnerSchema
 
+class UpdateCustomProductSchema(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[int] = None
+    image: Optional[str] = None
+    category: Optional[str] = None
+    available: Optional[bool] = None
+
 @app.get("/api/wishlist")
 def fetch_wishlist(email: str = Depends(get_current_user_email)):
     return get_wishlist(email)
@@ -893,6 +902,21 @@ def toggle_listing_availability(id: str, email: str = Depends(get_current_user_e
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to modify this listing.")
     new_status = toggle_custom_product_availability(id, email)
     return {"success": True, "available": new_status}
+
+@app.put("/api/products/custom/{id}")
+def edit_custom_listing(id: str, data: UpdateCustomProductSchema, email: str = Depends(get_current_user_email)):
+    product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (id,))
+    if not product and id not in MOCK_CUSTOM_PRODUCTS:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found.")
+    
+    user = get_user(email)
+    user_email = product["user_email"] if product else email
+    if user_email != email and (not user or user.get("role") != "admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to edit this listing.")
+        
+    patch = {k: v for k, v in data.dict().items() if v is not None}
+    update_custom_product(id, email, patch)
+    return {"success": True, "message": "Listing updated successfully."}
 
 # Admin check dependency
 def check_admin_user(current_user_email: str = Depends(get_current_user_email)) -> dict:

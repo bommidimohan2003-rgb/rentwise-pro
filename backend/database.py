@@ -747,6 +747,38 @@ def create_custom_product(email: str, product: dict):
     ))
     return product
 
+def update_custom_product(product_id: str, email: str, patch: dict):
+    clean_email = (email or "").strip().lower()
+    if product_id in MOCK_CUSTOM_PRODUCTS:
+        MOCK_CUSTOM_PRODUCTS[product_id].update(patch)
+    
+    fields = []
+    params = []
+    
+    mapping = {
+        "title": "title",
+        "description": "description",
+        "price": "price",
+        "image": "image",
+        "category": "category",
+        "available": "available",
+        "rating": "rating",
+        "reviews": "reviews"
+    }
+    
+    for key, col in mapping.items():
+        if key in patch and patch[key] is not None:
+            fields.append(f"{col} = %s")
+            params.append(patch[key])
+            
+    if fields:
+        params.extend([product_id, clean_email])
+        execute_query(
+            f"UPDATE custom_products SET {', '.join(fields)} WHERE id = %s AND user_email = %s",
+            tuple(params)
+        )
+    return MOCK_CUSTOM_PRODUCTS.get(product_id)
+
 # Notifications CRUD
 def get_notifications(email: str):
     clean_email = (email or "").strip().lower()
