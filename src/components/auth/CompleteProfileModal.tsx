@@ -40,10 +40,12 @@ export function CompleteProfileModal({
   }, []);
 
   const showAdminOption = useMemo(() => {
-    if (typeof isAdminRoute === "boolean") return isAdminRoute;
+    if (isAdminRoute === true) return true;
     if (typeof window === "undefined") return false;
     const href = window.location.href.toLowerCase();
-    return href.includes("admin");
+    const path = window.location.pathname.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    return href.includes("admin") || path.includes("admin") || search.includes("admin");
   }, [isAdminRoute]);
 
   const handleSubmit = async (e: React.FormEvent) => {

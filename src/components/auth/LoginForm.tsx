@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Lock, Mail, AlertCircle, ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/common/Button";
@@ -41,6 +41,12 @@ export function LoginForm() {
     avatar?: string;
     phone?: string;
   } | null>(null);
+
+  const showAdminOption = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const href = window.location.href.toLowerCase();
+    return href.includes("admin");
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -232,6 +238,7 @@ export function LoginForm() {
       {pendingGoogleUser && (
         <CompleteProfileModal
           googleUser={pendingGoogleUser}
+          isAdminRoute={showAdminOption}
           onComplete={handleCompleteProfile}
           onCancel={() => setPendingGoogleUser(null)}
         />
