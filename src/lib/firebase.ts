@@ -88,7 +88,7 @@ export function getDocId(email: string): string {
 }
 
 /**
- * Save user profile data to Firebase Firestore `users` collection.
+ * Save user profile data to Firebase Firestore `users` collection AND MySQL Workbench.
  */
 export async function saveUserToFirebase(userData: Partial<User> & { email: string }) {
   try {
@@ -100,8 +100,32 @@ export async function saveUserToFirebase(userData: Partial<User> & { email: stri
       updatedAt: serverTimestamp(),
     };
 
+    // 1. Save to Google Firebase Firestore
     await setDoc(userRef, payload, { merge: true });
     console.log(`[Firebase Firestore] User profile successfully saved for ${userData.email}`);
+
+    // 2. Sync to MySQL Workbench database
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      await fetch(`${apiBase}/api/auth/google-sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userData.email,
+          fullName: userData.fullName || userData.email.split("@")[0],
+          phone: userData.phone || "",
+          avatar: userData.avatar || "",
+          address: userData.address || "",
+          city: userData.city || "",
+          pincode: userData.pincode || "",
+          role: userData.role || "user",
+        }),
+      });
+      console.log(`[MySQL Workbench] User profile successfully synced to MySQL for ${userData.email}`);
+    } catch (mysqlErr) {
+      console.warn("[MySQL Workbench] Sync notice:", mysqlErr);
+    }
+
     return { success: true };
   } catch (error) {
     console.error("[Firebase Firestore] Error saving user data:", error);

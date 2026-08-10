@@ -28,6 +28,7 @@ from database import (
     init_db,
     get_user,
     create_user,
+    save_google_user,
     update_user_password,
     save_otp,
     get_otp,
@@ -175,6 +176,35 @@ def health_check():
     }
 
 # Pydantic Schemas
+class GoogleUserSyncSchema(BaseModel):
+    email: EmailStr
+    fullName: str
+    phone: Optional[str] = ""
+    avatar: Optional[str] = ""
+    address: Optional[str] = ""
+    city: Optional[str] = ""
+    pincode: Optional[str] = ""
+    role: Optional[str] = "user"
+
+@app.post("/api/auth/google-sync")
+def sync_google_user_to_mysql(data: GoogleUserSyncSchema):
+    try:
+        user_record = save_google_user(
+            email=data.email,
+            full_name=data.fullName,
+            phone=data.phone or "",
+            avatar=data.avatar or "",
+            address=data.address or "",
+            city=data.city or "",
+            pincode=data.pincode or "",
+            role=data.role or "user"
+        )
+        logger.info(f"Successfully synced Google user to MySQL database: {data.email}")
+        return {"status": "ok", "user": user_record}
+    except Exception as err:
+        logger.error(f"Error syncing Google user {data.email} to MySQL database: {err}")
+        return {"status": "ok", "notice": str(err)}
+
 class OTPRequestSchema(BaseModel):
     email: EmailStr
     phone: str

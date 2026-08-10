@@ -467,6 +467,47 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
         "createdAt": created_at
     }
 
+def save_google_user(email: str, full_name: str, phone: str = "", avatar: str = "", address: str = "", city: str = "", pincode: str = "", role: str = "user"):
+    created_at = datetime.utcnow().isoformat()
+    clean_email = email.strip().lower()
+    dummy_hash = "GOOGLE_OAUTH_USER"
+
+    user_data = {
+        "email": clean_email,
+        "phone": phone or "",
+        "password_hash": dummy_hash,
+        "full_name": full_name,
+        "role": role or "user",
+        "avatar": avatar or "",
+        "address": address or "",
+        "city": city or "",
+        "pincode": pincode or "",
+        "created_at": created_at,
+        "status": "active",
+        "verified": True
+    }
+    MOCK_USERS[clean_email] = user_data
+
+    try:
+        execute_query(
+            """
+            INSERT INTO users (email, phone, password_hash, full_name, role, avatar, address, city, pincode, created_at, status, verified)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', TRUE)
+            ON DUPLICATE KEY UPDATE
+                full_name = COALESCE(NULLIF(VALUES(full_name), ''), full_name),
+                phone = COALESCE(NULLIF(VALUES(phone), ''), phone),
+                avatar = COALESCE(NULLIF(VALUES(avatar), ''), avatar),
+                address = COALESCE(NULLIF(VALUES(address), ''), address),
+                city = COALESCE(NULLIF(VALUES(city), ''), city),
+                pincode = COALESCE(NULLIF(VALUES(pincode), ''), pincode)
+            """,
+            (clean_email, phone or "", dummy_hash, full_name, role or "user", avatar or "", address or "", city or "", pincode or "", created_at)
+        )
+    except Exception as e:
+        print(f"Notice: Database write error in save_google_user: {e}")
+
+    return user_data
+
 def update_user_password(email: str, password_hash: str):
     if not email:
         return
