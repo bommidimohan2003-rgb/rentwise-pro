@@ -8,8 +8,8 @@ export default function OTP() {
         <div className="card-premium p-8">
           <h1 className="text-3xl font-bold">Enter verification code</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            A 6-digit code was sent to your email. Check the browser console in
-            demo mode.
+            A 6-digit verification code has been sent to your email or
+            registered phone.
           </p>
           <div className="mt-8">
             <OTPVerification />

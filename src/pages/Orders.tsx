@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,7 +20,7 @@ export default function Orders() {
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
   const navigate = useNavigate();
 
-  const fetchOrders = () => {
+  const fetchOrders = useCallback(() => {
     if (!token) {
       setLoading(false);
       return;
@@ -37,11 +37,11 @@ export default function Orders() {
         setError("Failed to fetch your active order history.");
       })
       .finally(() => setLoading(false));
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchOrders();
-  }, [token]);
+  }, [fetchOrders]);
 
   const handleCancelOrder = (orderId: string) => {
     if (!token) return;

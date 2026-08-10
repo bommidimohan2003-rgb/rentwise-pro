@@ -79,7 +79,7 @@ export default function ProductDetails() {
     return () => {
       isMounted = false;
     };
-  }, [product?.id]);
+  }, [product]);
 
   if (!product) {
     return (
