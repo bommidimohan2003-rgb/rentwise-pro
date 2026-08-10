@@ -12,43 +12,73 @@ def get_db_connection():
             password=MYSQL_PASSWORD,
             database=MYSQL_DB,
             cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=10
+            connect_timeout=2
         )
     except Exception:
         # Fallback to connecting without database and creating database if it does not exist yet
-        conn = pymysql.connect(
-            host=MYSQL_HOST,
-            port=MYSQL_PORT,
-            user=MYSQL_USER,
-            password=MYSQL_PASSWORD,
-            cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=10
-        )
         try:
-            with conn.cursor() as cursor:
-                cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DB}`")
-            conn.select_db(MYSQL_DB)
-        except Exception:
-            pass
-        return conn
+            conn = pymysql.connect(
+                host=MYSQL_HOST,
+                port=MYSQL_PORT,
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                cursorclass=pymysql.cursors.DictCursor,
+                connect_timeout=2
+            )
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DB}`")
+                conn.select_db(MYSQL_DB)
+            except Exception:
+                pass
+            return conn
+        except Exception as inner_e:
+            print(f"Notice: MySQL database host '{MYSQL_HOST}' unavailable ({inner_e}). Operating in degraded fallback mode.")
+            return None
 
 def execute_query(query: str, params: tuple = ()):
-    conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
-        conn.commit()
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if not conn:
+            return
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Notice: Database execute_query notice: {e}")
 
 def fetch_one(query: str, params: tuple = ()):
-    conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
-            return cursor.fetchone()
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if not conn:
+            return None
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.fetchone()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Notice: Database fetch_one notice: {e}")
+        return None
+
+def fetch_all(query: str, params: tuple = ()):
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return []
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Notice: Database fetch_all notice: {e}")
+        return []
 
 def init_db():
     # Helper to safely add column if not exists
@@ -555,45 +585,72 @@ def delete_otp(email: str):
 
 # Wishlist CRUD
 def get_wishlist(email: str):
-    conn = get_db_connection()
+    clean_email = (email or "").strip().lower()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT product_id FROM wishlist WHERE email = %s", (email,))
-            return [row["product_id"] for row in cursor.fetchall()]
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT product_id FROM wishlist WHERE email = %s", (clean_email,))
+                    return [row["product_id"] for row in cursor.fetchall()]
+            finally:
+                conn.close()
+    except Exception as e:
+        print(f"Notice: Database read error in get_wishlist: {e}")
+    return MOCK_WISHLISTS.get(clean_email, [])
 
 def toggle_wishlist(email: str, product_id: str):
-    conn = get_db_connection()
+    clean_email = (email or "").strip().lower()
+    wishlist = MOCK_WISHLISTS.setdefault(clean_email, [])
+    if product_id in wishlist:
+        wishlist.remove(product_id)
+    else:
+        wishlist.append(product_id)
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT 1 FROM wishlist WHERE email = %s AND product_id = %s", (email, product_id))
-            exists = cursor.fetchone()
-            if exists:
-                cursor.execute("DELETE FROM wishlist WHERE email = %s AND product_id = %s", (email, product_id))
-            else:
-                cursor.execute("INSERT INTO wishlist (email, product_id) VALUES (%s, %s)", (email, product_id))
-        conn.commit()
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT 1 FROM wishlist WHERE email = %s AND product_id = %s", (clean_email, product_id))
+                    exists = cursor.fetchone()
+                    if exists:
+                        cursor.execute("DELETE FROM wishlist WHERE email = %s AND product_id = %s", (clean_email, product_id))
+                    else:
+                        cursor.execute("INSERT INTO wishlist (email, product_id) VALUES (%s, %s)", (clean_email, product_id))
+                conn.commit()
+            finally:
+                conn.close()
+    except Exception as e:
+        print(f"Notice: Database write error in toggle_wishlist: {e}")
+    return wishlist
 
 # Orders CRUD
 def get_orders(email: str):
-    conn = get_db_connection()
+    clean_email = (email or "").strip().lower()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM orders WHERE user_email = %s ORDER BY created_at DESC", (email,))
-            return cursor.fetchall()
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT * FROM orders WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
+                    rows = cursor.fetchall()
+                    if rows:
+                        return rows
+            finally:
+                conn.close()
+    except Exception as e:
+        print(f"Notice: Database read error in get_orders: {e}")
+    return [o for o in MOCK_ORDERS.values() if (o.get("user_email") or o.get("userEmail")) == clean_email]
 
 def create_order(email: str, order: dict):
+    clean_email = (email or "").strip().lower()
+    MOCK_ORDERS[order["id"]] = {**order, "user_email": clean_email}
     execute_query("""
         INSERT INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         order["id"],
-        email,
+        clean_email,
         order["productId"],
         order["productTitle"],
         order["productImage"],
@@ -606,8 +663,8 @@ def create_order(email: str, order: dict):
 
     # Create matching payment transaction
     tx_id = f"tx-{order['id']}"
-    user = get_user(email)
-    customer_name = user["full_name"] if user else email.split("@")[0]
+    user = get_user(clean_email)
+    customer_name = user["full_name"] if user else clean_email.split("@")[0]
     
     execute_query("""
         INSERT INTO payments (id, booking_id, customer_id, customer_name, amount, status, method, invoice_url, created_at)
@@ -616,7 +673,7 @@ def create_order(email: str, order: dict):
     """, (
         tx_id,
         order["id"],
-        email,
+        clean_email,
         customer_name,
         order["total"],
         "successful" if order["status"] != "cancelled" else "failed",
@@ -627,35 +684,54 @@ def create_order(email: str, order: dict):
     return order
 
 def cancel_order(order_id: str):
+    if order_id in MOCK_ORDERS:
+        MOCK_ORDERS[order_id]["status"] = "cancelled"
     execute_query("UPDATE orders SET status = 'cancelled' WHERE id = %s", (order_id,))
 
 # Custom Products CRUD
 def get_custom_products(email: str):
-    conn = get_db_connection()
+    clean_email = (email or "").strip().lower()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM custom_products WHERE user_email = %s ORDER BY created_at DESC", (email,))
-            return cursor.fetchall()
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT * FROM custom_products WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
+                    rows = cursor.fetchall()
+                    if rows:
+                        return rows
+            finally:
+                conn.close()
+    except Exception as e:
+        print(f"Notice: Database read error in get_custom_products: {e}")
+    return [p for p in MOCK_CUSTOM_PRODUCTS.values() if (p.get("user_email") or p.get("userEmail")) == clean_email]
 
 def get_all_custom_products():
-    conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM custom_products ORDER BY created_at DESC")
-            return cursor.fetchall()
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT * FROM custom_products ORDER BY created_at DESC")
+                    rows = cursor.fetchall()
+                    if rows:
+                        return rows
+            finally:
+                conn.close()
+    except Exception as e:
+        print(f"Notice: Database read error in get_all_custom_products: {e}")
+    return list(MOCK_CUSTOM_PRODUCTS.values())
 
 def create_custom_product(email: str, product: dict):
+    clean_email = (email or "").strip().lower()
     created_at = datetime.utcnow().isoformat()
+    MOCK_CUSTOM_PRODUCTS[product["id"]] = {**product, "user_email": clean_email}
     execute_query("""
         INSERT INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         product["id"],
-        email,
+        clean_email,
         product["title"],
         product["description"],
         product["price"],
@@ -673,21 +749,31 @@ def create_custom_product(email: str, product: dict):
 
 # Notifications CRUD
 def get_notifications(email: str):
-    conn = get_db_connection()
+    clean_email = (email or "").strip().lower()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM notifications WHERE user_email = %s ORDER BY created_at DESC", (email,))
-            return cursor.fetchall()
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT * FROM notifications WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
+                    rows = cursor.fetchall()
+                    if rows:
+                        return rows
+            finally:
+                conn.close()
+    except Exception as e:
+        print(f"Notice: Database read error in get_notifications: {e}")
+    return [n for n in MOCK_NOTIFICATIONS.values() if (n.get("user_email") or n.get("userEmail")) == clean_email]
 
 def create_notification(email: str, n: dict):
+    clean_email = (email or "").strip().lower()
+    MOCK_NOTIFICATIONS[n["id"]] = {**n, "user_email": clean_email}
     execute_query("""
         INSERT INTO notifications (id, user_email, title, message, type, is_read, created_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
         n["id"],
-        email,
+        clean_email,
         n["title"],
         n["message"],
         n["type"],
@@ -696,25 +782,39 @@ def create_notification(email: str, n: dict):
     ))
 
 def mark_notifications_read(email: str):
-    execute_query("UPDATE notifications SET is_read = TRUE WHERE user_email = %s", (email,))
+    clean_email = (email or "").strip().lower()
+    for n in MOCK_NOTIFICATIONS.values():
+        if (n.get("user_email") or n.get("userEmail")) == clean_email:
+            n["is_read"] = True
+            n["read"] = True
+    execute_query("UPDATE notifications SET is_read = TRUE WHERE user_email = %s", (clean_email,))
 
 def delete_custom_product(product_id: str, email: str):
+    MOCK_CUSTOM_PRODUCTS.pop(product_id, None)
     execute_query("DELETE FROM custom_products WHERE id = %s AND user_email = %s", (product_id, email))
 
 def toggle_custom_product_availability(product_id: str, email: str):
-    conn = get_db_connection()
+    clean_email = (email or "").strip().lower()
+    if product_id in MOCK_CUSTOM_PRODUCTS:
+        curr = MOCK_CUSTOM_PRODUCTS[product_id].get("available", True)
+        MOCK_CUSTOM_PRODUCTS[product_id]["available"] = not curr
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT available FROM custom_products WHERE id = %s AND user_email = %s", (product_id, email))
-            row = cursor.fetchone()
-            if row:
-                new_val = not bool(row["available"])
-                cursor.execute("UPDATE custom_products SET available = %s WHERE id = %s AND user_email = %s", (new_val, product_id, email))
-                conn.commit()
-                return new_val
-            return None
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT available FROM custom_products WHERE id = %s AND user_email = %s", (product_id, clean_email))
+                    row = cursor.fetchone()
+                    if row:
+                        new_val = not bool(row["available"])
+                        cursor.execute("UPDATE custom_products SET available = %s WHERE id = %s AND user_email = %s", (new_val, product_id, clean_email))
+                        conn.commit()
+                        return new_val
+            finally:
+                conn.close()
+    except Exception as e:
+        print(f"Notice: Database toggle_custom_product_availability notice: {e}")
+    return MOCK_CUSTOM_PRODUCTS.get(product_id, {}).get("available", True)
 
 # Token Revocation Helpers
 REVOKED_JTIS = set()
