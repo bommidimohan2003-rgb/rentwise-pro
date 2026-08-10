@@ -143,9 +143,8 @@ export function RegisterForm() {
 
   const showAdminOption = useMemo(() => {
     if (typeof window === "undefined") return false;
-    const path = window.location.pathname.toLowerCase();
-    const query = window.location.search.toLowerCase();
-    return path.includes("/admin") || query.includes("admin=true");
+    const href = window.location.href.toLowerCase();
+    return href.includes("admin");
   }, []);
 
   const onSubmit = async (data: FormValues) => {
@@ -403,6 +402,7 @@ export function RegisterForm() {
     {pendingGoogleUser && (
       <CompleteProfileModal
         googleUser={pendingGoogleUser}
+        isAdminRoute={showAdminOption}
         onComplete={handleCompleteProfile}
         onCancel={() => setPendingGoogleUser(null)}
       />

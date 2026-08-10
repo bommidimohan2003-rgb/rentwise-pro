@@ -15,12 +15,14 @@ interface CompleteProfileModalProps {
     avatar?: string;
     phone?: string;
   };
+  isAdminRoute?: boolean;
   onComplete: (user: User) => void;
   onCancel: () => void;
 }
 
 export function CompleteProfileModal({
   googleUser,
+  isAdminRoute,
   onComplete,
   onCancel,
 }: CompleteProfileModalProps) {
@@ -38,11 +40,11 @@ export function CompleteProfileModal({
   }, []);
 
   const showAdminOption = useMemo(() => {
+    if (typeof isAdminRoute === "boolean") return isAdminRoute;
     if (typeof window === "undefined") return false;
-    const path = window.location.pathname.toLowerCase();
-    const query = window.location.search.toLowerCase();
-    return path.includes("/admin") || query.includes("admin=true");
-  }, []);
+    const href = window.location.href.toLowerCase();
+    return href.includes("admin");
+  }, [isAdminRoute]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,10 +162,10 @@ export function CompleteProfileModal({
             />
           </div>
 
-          {/* Admin Security Code (Only rendered when registering on /admin/register or ?admin=true) */}
+          {/* Admin Security Code (Only rendered on /admin/register or ?admin=true) */}
           {showAdminOption && (
-            <div className="space-y-2 p-3 rounded-2xl bg-secondary/60 border border-primary/20">
-              <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
+            <div className="space-y-1.5 p-3 rounded-xl bg-secondary/80 border border-primary/20">
+              <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider mb-1">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 <span>Admin Security Code (Optional)</span>
               </div>
