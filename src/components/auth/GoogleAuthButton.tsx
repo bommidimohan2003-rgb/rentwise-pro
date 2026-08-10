@@ -27,8 +27,18 @@ export function GoogleAuthButton({
       }
     } catch (err: any) {
       console.error("[Google Auth] Firebase Google Sign-In error:", err);
-      if (err?.code !== "auth/popup-closed-by-user") {
-        toast.error("Google Sign-In failed. Please try again.");
+      const code = err?.code;
+      if (code === "auth/unauthorized-domain") {
+        toast.error(
+          "Domain unauthorized in Firebase Console. Add 'rentwise-pro-chi.vercel.app' under Firebase -> Authentication -> Settings -> Authorized Domains.",
+          { duration: 7000 }
+        );
+      } else if (code === "auth/popup-blocked") {
+        toast.error("Popup blocked by browser. Please allow popups for this site.");
+      } else if (code === "auth/operation-not-allowed") {
+        toast.error("Google provider not enabled in Firebase Console.");
+      } else if (code !== "auth/popup-closed-by-user") {
+        toast.error(`Google Sign-In failed (${code || "auth-error"}). Please try email sign-in.`);
       }
     } finally {
       setLoading(false);
