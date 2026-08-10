@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Phone, MapPin, Building2, Compass, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/common/Button";
@@ -22,7 +22,6 @@ interface CompleteProfileModalProps {
 
 export function CompleteProfileModal({
   googleUser,
-  isAdminRoute,
   onComplete,
   onCancel,
 }: CompleteProfileModalProps) {
@@ -38,15 +37,6 @@ export function CompleteProfileModal({
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const showAdminOption = useMemo(() => {
-    if (isAdminRoute === true) return true;
-    if (typeof window === "undefined") return false;
-    const href = window.location.href.toLowerCase();
-    const path = window.location.pathname.toLowerCase();
-    const search = window.location.search.toLowerCase();
-    return href.includes("admin") || path.includes("admin") || search.includes("admin");
-  }, [isAdminRoute]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,8 +57,7 @@ export function CompleteProfileModal({
     setLoading(true);
 
     try {
-      const isAdminRegistration =
-        showAdminOption && adminCode.trim().length > 0;
+      const isAdminRegistration = adminCode.trim().length > 0;
 
       const fullUser: User = {
         id: googleUser.email,
@@ -164,22 +153,20 @@ export function CompleteProfileModal({
             />
           </div>
 
-          {/* Admin Security Code (Only rendered on /admin/register or ?admin=true) */}
-          {showAdminOption && (
-            <div className="space-y-1.5 p-3 rounded-xl bg-secondary/80 border border-primary/20">
-              <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider mb-1">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                <span>Admin Security Code (Optional)</span>
-              </div>
-              <Input
-                label="Admin Code"
-                placeholder="PAYENT-ADMIN-2026 (Enter code to register as Admin)"
-                icon={<ShieldCheck className="h-4 w-4 text-primary" />}
-                value={adminCode}
-                onChange={(e) => setAdminCode(e.target.value)}
-              />
+          {/* Admin Security Code (Optional) Field */}
+          <div className="space-y-1.5 p-3 rounded-xl bg-secondary/80 border border-primary/20">
+            <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider mb-1">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>Admin Security Code (Optional)</span>
             </div>
-          )}
+            <Input
+              label="Admin Code"
+              placeholder="PAYENT-ADMIN-2026 (Enter code to register as Admin)"
+              icon={<ShieldCheck className="h-4 w-4 text-primary" />}
+              value={adminCode}
+              onChange={(e) => setAdminCode(e.target.value)}
+            />
+          </div>
 
           {error && <p className="text-xs text-destructive font-medium">{error}</p>}
 
