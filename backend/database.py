@@ -97,14 +97,19 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             email VARCHAR(255) PRIMARY KEY,
             phone VARCHAR(50),
-            password_hash VARCHAR(255) NOT NULL,
+            password_hash VARCHAR(255) NULL,
             full_name VARCHAR(255),
             role VARCHAR(50) DEFAULT 'user',
             created_at VARCHAR(100) NOT NULL
         )
     """)
     
-    # Safely alter users table for new fields
+    # Safely alter users table for new fields and nullable password_hash
+    try:
+        execute_query("ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NULL")
+    except Exception:
+        pass
+
     add_column_safely("users", "status VARCHAR(50) DEFAULT 'active'")
     add_column_safely("users", "verified BOOLEAN DEFAULT TRUE")
     add_column_safely("users", "avatar VARCHAR(1000) DEFAULT 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'")
@@ -563,10 +568,9 @@ def get_user_by_firebase_uid(firebase_uid: str):
             return u
     return None
 
-def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: str = "", avatar: str = "", address: str = "", city: str = "", pincode: str = "", role: str = "user"):
+def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: str = "", avatar: str = "", address: str = "", city: str = "", pincode: str = "", role: str = "user", google_email_verified: bool = True):
     created_at = datetime.utcnow().isoformat()
     clean_email = email.strip().lower()
-    dummy_hash = "GOOGLE_OAUTH_USER"
 
     # Check if user already exists by firebase_uid or email (linking rule)
     existing_user = None
@@ -576,8 +580,14 @@ def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: 
         existing_user = get_user(clean_email)
 
     if existing_user:
+        is_existing_verified = bool(existing_user.get("verified", True))
+        if not is_existing_verified and not google_email_verified:
+            print(f"[SECURITY NOTICE]: Refusing auto-link for unverified email: {clean_email}")
+            raise ValueError(f"Cannot auto-link Google identity to unverified account: {clean_email}")
+
         clean_email = existing_user["email"]
         existing_user["firebase_uid"] = firebase_uid or existing_user.get("firebase_uid")
+        existing_user["verified"] = True
         if full_name:
             existing_user["full_name"] = full_name
         if avatar:
@@ -589,7 +599,8 @@ def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: 
                 UPDATE users SET 
                     firebase_uid = COALESCE(NULLIF(%s, ''), firebase_uid),
                     full_name = COALESCE(NULLIF(%s, ''), full_name),
-                    avatar = COALESCE(NULLIF(%s, ''), avatar)
+                    avatar = COALESCE(NULLIF(%s, ''), avatar),
+                    verified = TRUE
                 WHERE LOWER(email) = LOWER(%s)
                 """,
                 (firebase_uid or "", full_name or "", avatar or "", clean_email)
@@ -602,7 +613,7 @@ def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: 
         "email": clean_email,
         "firebase_uid": firebase_uid or "",
         "phone": phone or "",
-        "password_hash": dummy_hash,
+        "password_hash": None,
         "full_name": full_name,
         "role": role or "user",
         "avatar": avatar or "",
@@ -624,9 +635,10 @@ def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: 
                 firebase_uid = COALESCE(NULLIF(VALUES(firebase_uid), ''), firebase_uid),
                 full_name = COALESCE(NULLIF(VALUES(full_name), ''), full_name),
                 phone = COALESCE(NULLIF(VALUES(phone), ''), phone),
-                avatar = COALESCE(NULLIF(VALUES(avatar), ''), avatar)
+                avatar = COALESCE(NULLIF(VALUES(avatar), ''), avatar),
+                verified = TRUE
             """,
-            (clean_email, firebase_uid or "", phone or "", dummy_hash, full_name, role or "user", avatar or "", address or "", city or "", pincode or "", created_at)
+            (clean_email, firebase_uid or "", phone or "", None, full_name, role or "user", avatar or "", address or "", city or "", pincode or "", created_at)
         )
     except Exception as e:
         print(f"Notice: Database write error in save_google_user insert: {e}")
