@@ -353,9 +353,19 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-[11px] text-muted-foreground flex gap-2 items-center">
-                <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                <span>Creating an admin account grants full control over listings, users, and platform analytics.</span>
+              <div className="p-3 rounded-xl bg-secondary/80 border border-border flex flex-col gap-2">
+                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-foreground select-none">
+                  <input
+                    type="checkbox"
+                    defaultChecked={true}
+                    className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary"
+                  />
+                  <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                  <span>Register as site administrator</span>
+                </label>
+                <p className="text-[10px] text-muted-foreground pl-6">
+                  Grants full administrative privileges over listings, users, orders, and platform analytics.
+                </p>
               </div>
 
               <button
