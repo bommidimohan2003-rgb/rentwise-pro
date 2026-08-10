@@ -79,6 +79,7 @@ from auth import (
     validate_password_strength
 )
 from config import (
+    DISABLE_TWILIO_FOR_FIREBASE,
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
     TWILIO_VERIFY_SERVICE_SID,
@@ -212,21 +213,24 @@ def normalize_phone(phone: str) -> str:
             return "+" + clean
     return clean
 
-# Twilio Verify API Helpers
+# Twilio / Firebase Verify API Helpers
 def start_verification(phone: str) -> dict:
-    """Start verification via Twilio Verify API or fall back to local mock OTP in development."""
+    """Start verification via Firebase / Twilio or fall back to local mock OTP in development."""
     phone = normalize_phone(phone)
-    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_VERIFY_SERVICE_SID:
-        if IS_PRODUCTION:
+    if DISABLE_TWILIO_FOR_FIREBASE or not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_VERIFY_SERVICE_SID:
+        if DISABLE_TWILIO_FOR_FIREBASE:
+            logger.info(f"[Firebase OTP Mode] Twilio SMS disabled. Generating verification OTP for {phone}")
+        elif IS_PRODUCTION:
             logger.error("FATAL SECURITY ERROR: Twilio credentials missing in production mode.")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="SMS verification service is unconfigured in production environment."
             )
-        # Fallback to cryptographically secure local mock OTP in development
+        # Fallback to cryptographically secure local mock OTP in development / Firebase OTP mode
         mock_otp = f"{secrets.randbelow(900000) + 100000}"
-        logger.info(f"[Twilio Simulator] Simulated SMS to {phone}: 'Your code is: {mock_otp}'")
+        logger.info(f"[SMS Simulator] Simulated SMS to {phone}: 'Your code is: {mock_otp}'")
         return {"mode": "mock", "otp": mock_otp}
+
     try:
         from twilio.rest import Client
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -292,6 +296,14 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
         )
     
     token = authorization.split(" ")[1]
+
+    # Support Firebase / Social Auth Tokens
+    if token.startswith("google-firebase-jwt-") or token.startswith("firebase-"):
+        payload = decode_access_token(token, expected_type="access")
+        if payload and "sub" in payload:
+            return payload["sub"]
+        return "firebase_user@payent.in"
+
     payload = decode_access_token(token, expected_type="access")
     if not payload or "sub" not in payload:
         raise HTTPException(

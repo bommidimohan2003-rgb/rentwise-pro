@@ -6,8 +6,11 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { CompleteProfileModal } from "@/components/auth/CompleteProfileModal";
 import { useAuth } from "@/hooks/useAuth";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
+import { getUserFromFirebase } from "@/lib/firebase";
 import { toast } from "sonner";
 import type { User } from "@/types";
 
@@ -27,11 +30,17 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export function LoginForm() {
-  const { user, login } = useAuth();
+  const { user, login, loginWithGoogleUser } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [error, setErrorState] = useState<string | null>(null);
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<{
+    email: string;
+    fullName: string;
+    avatar?: string;
+    phone?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -59,6 +68,35 @@ export function LoginForm() {
       }
     }
   }, []);
+
+  const handleGoogleSuccess = async (gUser: {
+    email: string;
+    fullName: string;
+    avatar?: string;
+    phone?: string;
+  }) => {
+    try {
+      // Check if user profile already exists in Firebase Firestore
+      const existingDoc = await getUserFromFirebase(gUser.email);
+      if (existingDoc && existingDoc.phone && existingDoc.address) {
+        loginWithGoogleUser(existingDoc);
+        toast.success(`Welcome back, ${existingDoc.fullName}!`);
+        navigate({ to: "/dashboard" });
+      } else {
+        // Missing phone or address - open CompleteProfileModal
+        setPendingGoogleUser(gUser);
+      }
+    } catch (err) {
+      console.error("[Google Auth] Error checking Firestore user:", err);
+      setPendingGoogleUser(gUser);
+    }
+  };
+
+  const handleCompleteProfile = (fullUser: User) => {
+    loginWithGoogleUser(fullUser);
+    setPendingGoogleUser(null);
+    navigate({ to: "/dashboard" });
+  };
 
   const onSubmit = async (data: FormValues) => {
     setErrorState(null);
@@ -108,73 +146,97 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {sessionNotice && (
-        <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{sessionNotice}</span>
-        </div>
-      )}
+    <div className="space-y-4">
+      {/* Google OAuth Login Button */}
+      <GoogleAuthButton onSuccess={handleGoogleSuccess} label="Sign in with Google" />
 
-      <Input
-        label="Email address"
-        type="email"
-        placeholder="you@work.com"
-        icon={<Mail className="h-4 w-4" />}
-        error={errors.email?.message}
-        {...register("email")}
-      />
-      <Input
-        label="Password"
-        type={showPw ? "text" : "password"}
-        placeholder="••••••••"
-        icon={<Lock className="h-4 w-4" />}
-        rightAdornment={
-          <button
-            type="button"
-            onClick={() => setShowPw((v) => !v)}
-            className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            {showPw ? (
-              <EyeOff className="h-4 w-4" />
-            ) : (
-              <Eye className="h-4 w-4" />
-            )}
-          </button>
-        }
-        error={errors.password?.message}
-        {...register("password")}
-      />
-
-      <div className="flex items-center justify-between text-xs sm:text-sm">
-        <label className="inline-flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-          <input
-            type="checkbox"
-            className="rounded border-border text-foreground focus:ring-foreground"
-            {...register("remember")}
-          />
-          Remember me
-        </label>
-        <button
-          type="button"
-          onClick={() => navigate({ to: "/forgot-password" })}
-          className="text-foreground hover:underline font-bold text-xs cursor-pointer"
-        >
-          Forgot password?
-        </button>
+      {/* Divider */}
+      <div className="relative flex items-center justify-center my-2">
+        <div className="border-t border-border w-full"></div>
+        <span className="bg-card px-3 text-[10px] font-black text-muted-foreground uppercase tracking-widest shrink-0 relative">
+          OR EMAIL
+        </span>
+        <div className="border-t border-border w-full"></div>
       </div>
 
-      {error && <p className="text-xs text-destructive font-medium">{error}</p>}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
+        {sessionNotice && (
+          <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{sessionNotice}</span>
+          </div>
+        )}
 
-      <Button
-        type="submit"
-        className="w-full font-extrabold h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg active:scale-98 flex items-center justify-center gap-2 cursor-pointer mt-2"
-        loading={isSubmitting}
-        disabled={isSubmitting}
-      >
-        <span>{isSubmitting ? "Signing in..." : "Sign In to Payent"}</span>
-        {!isSubmitting && <ArrowRight className="h-4 w-4" />}
-      </Button>
-    </form>
+        <Input
+          label="Email address"
+          type="email"
+          placeholder="you@work.com"
+          icon={<Mail className="h-4 w-4" />}
+          error={errors.email?.message}
+          {...register("email")}
+        />
+        <Input
+          label="Password"
+          type={showPw ? "text" : "password"}
+          placeholder="••••••••"
+          icon={<Lock className="h-4 w-4" />}
+          rightAdornment={
+            <button
+              type="button"
+              onClick={() => setShowPw((v) => !v)}
+              className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              {showPw ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          }
+          error={errors.password?.message}
+          {...register("password")}
+        />
+
+        <div className="flex items-center justify-between text-xs sm:text-sm">
+          <label className="inline-flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+            <input
+              type="checkbox"
+              className="rounded border-border text-foreground focus:ring-foreground"
+              {...register("remember")}
+            />
+            Remember me
+          </label>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/forgot-password" })}
+            className="text-foreground hover:underline font-bold text-xs cursor-pointer"
+          >
+            Forgot password?
+          </button>
+        </div>
+
+        {error && <p className="text-xs text-destructive font-medium">{error}</p>}
+
+        <Button
+          type="submit"
+          className="w-full font-extrabold h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg active:scale-98 flex items-center justify-center gap-2 cursor-pointer mt-2"
+          loading={isSubmitting}
+          disabled={isSubmitting}
+        >
+          <span>{isSubmitting ? "Signing in..." : "Sign In to Payent"}</span>
+          {!isSubmitting && <ArrowRight className="h-4 w-4" />}
+        </Button>
+      </form>
+
+      {/* Complete Profile Modal for Google Sign-In */}
+      {pendingGoogleUser && (
+        <CompleteProfileModal
+          googleUser={pendingGoogleUser}
+          onComplete={handleCompleteProfile}
+          onCancel={() => setPendingGoogleUser(null)}
+        />
+      )}
+    </div>
   );
 }
+

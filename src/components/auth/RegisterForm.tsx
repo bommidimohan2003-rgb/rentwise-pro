@@ -74,17 +74,56 @@ function strength(pw: string) {
   return s;
 }
 
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { CompleteProfileModal } from "@/components/auth/CompleteProfileModal";
+import { getUserFromFirebase } from "@/lib/firebase";
+import type { User as UserType } from "@/types";
+
 export function RegisterForm() {
-  const { user, register: registerUser } = useAuth();
+  const { user, register: registerUser, loginWithGoogleUser } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<{
+    email: string;
+    fullName: string;
+    avatar?: string;
+    phone?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
       navigate({ to: "/categories" });
     }
   }, [user, navigate]);
+
+  const handleGoogleSuccess = async (gUser: {
+    email: string;
+    fullName: string;
+    avatar?: string;
+    phone?: string;
+  }) => {
+    try {
+      const existingDoc = await getUserFromFirebase(gUser.email);
+      if (existingDoc && existingDoc.phone && existingDoc.address) {
+        loginWithGoogleUser(existingDoc);
+        toast.success(`Welcome to Payent, ${existingDoc.fullName}!`);
+        navigate({ to: "/dashboard" });
+      } else {
+        setPendingGoogleUser(gUser);
+      }
+    } catch (err) {
+      console.error("[Google Auth] Error checking Firestore user:", err);
+      setPendingGoogleUser(gUser);
+    }
+  };
+
+  const handleCompleteProfile = (fullUser: UserType) => {
+    loginWithGoogleUser(fullUser);
+    setPendingGoogleUser(null);
+    navigate({ to: "/dashboard" });
+  };
+
 
   const {
     register,
@@ -150,7 +189,21 @@ export function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
+    <div className="space-y-4">
+      {/* Google OAuth Register Button */}
+      <GoogleAuthButton onSuccess={handleGoogleSuccess} label="Sign up with Google" />
+
+      {/* Divider */}
+      <div className="relative flex items-center justify-center my-2">
+        <div className="border-t border-border w-full"></div>
+        <span className="bg-card px-3 text-[10px] font-black text-muted-foreground uppercase tracking-widest shrink-0 relative">
+          OR REGISTER WITH EMAIL
+        </span>
+        <div className="border-t border-border w-full"></div>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
+
       {/* Section 1: Account & Contact Info */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
@@ -355,6 +408,21 @@ export function RegisterForm() {
         </p>
       )}
       {error && <p className="text-xs text-destructive font-medium">{error}</p>}
+
+      {/* Hidden reCAPTCHA container for Firebase Phone Authentication */}
+      <div id="recaptcha-container"></div>
     </form>
+
+    {/* Complete Profile Modal for Google Sign-In */}
+    {pendingGoogleUser && (
+      <CompleteProfileModal
+        googleUser={pendingGoogleUser}
+        onComplete={handleCompleteProfile}
+        onCancel={() => setPendingGoogleUser(null)}
+      />
+    )}
+  </div>
   );
 }
+
+

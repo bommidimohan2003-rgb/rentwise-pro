@@ -111,22 +111,43 @@ export const api = {
   },
 
   async getMe(token: string) {
+    // Return cached user profile if using Firebase / Social Auth token
+    if (token.startsWith("google-firebase-jwt-") || token.startsWith("firebase-")) {
+      const cached = storage.get<{ email: string; fullName: string; role?: "user" | "admin" } | null>(
+        STORAGE_KEYS.currentUser,
+        null
+      );
+      if (cached) {
+        return {
+          email: cached.email,
+          fullName: cached.fullName,
+          role: cached.role || "user",
+        };
+      }
+    }
+
     const res = await fetch(`${API_BASE}/api/me`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+
     if (!res.ok) {
       if (res.status === 401 && typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("payent-session-expired", {
-            detail: { loginPath: "/login" },
-          }),
-        );
+        const cached = storage.get(STORAGE_KEYS.currentUser, null);
+        if (!cached) {
+          window.dispatchEvent(
+            new CustomEvent("payent-session-expired", {
+              detail: { loginPath: "/login" },
+            })
+          );
+        }
       }
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Failed to fetch user profile.");
+      const err = new Error(data.detail || "Failed to fetch user profile.") as Error & { status?: number };
+      err.status = res.status;
+      throw err;
     }
     return await res.json();
   },
