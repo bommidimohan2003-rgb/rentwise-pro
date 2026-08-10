@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 # Load .env file if present
 load_dotenv()
 
-# Parse DATABASE_URL if provided by Railway
+# Parse DATABASE_URL if provided
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
@@ -24,7 +24,7 @@ if DATABASE_URL:
         MYSQL_PASSWORD = os.getenv("MYSQLPASSWORD", os.getenv("MYSQL_PASSWORD", "Bmohan"))
         MYSQL_DB = os.getenv("MYSQLDATABASE", os.getenv("MYSQL_DB", "payent_db"))
 else:
-    # Railway environment variable aliases (MYSQLHOST / MYSQL_HOST, etc.)
+    # Environment variable aliases (MYSQLHOST / MYSQL_HOST, etc.)
     MYSQL_HOST = os.getenv("MYSQLHOST", os.getenv("MYSQL_HOST", "localhost"))
     MYSQL_PORT = int(os.getenv("MYSQLPORT", os.getenv("MYSQL_PORT", "3306")))
     MYSQL_USER = os.getenv("MYSQLUSER", os.getenv("MYSQL_USER", "root"))

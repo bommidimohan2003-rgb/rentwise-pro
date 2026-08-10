@@ -3,7 +3,7 @@ from datetime import datetime
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB
 
 def get_db_connection():
-    # Attempt connecting directly to the specified database first (ideal for cloud MySQL like Railway/Aiven/PlanetScale)
+    # Attempt connecting directly to the specified database first
     try:
         return pymysql.connect(
             host=MYSQL_HOST,
