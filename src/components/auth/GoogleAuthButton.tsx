@@ -35,13 +35,14 @@ export function GoogleAuthButton({
     setLoading(true);
     try {
       const res = await signInWithGoogle();
-      if (res.success && res.googleUser) {
+      if (res && res.success && res.googleUser) {
         onSuccess(res.googleUser);
       }
     } catch (err: any) {
-      console.warn("[Google Auth] Firebase Google Popup error or timeout:", err);
-      toast.info("Opening Gmail sign-in helper...");
-      setShowGmailModal(true);
+      console.warn("[Google Auth] Firebase Google Popup notice:", err);
+      if (err?.code !== "auth/popup-closed-by-user") {
+        toast.error("Could not complete Google Sign-In. Please allow browser popups or try again.");
+      }
     } finally {
       setLoading(false);
     }

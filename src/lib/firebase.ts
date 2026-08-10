@@ -5,6 +5,8 @@ import {
   signInWithPhoneNumber,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   type ConfirmationResult,
 } from "firebase/auth";
 import {
@@ -37,13 +39,16 @@ const firebaseConfig = {
     "1:405693280587:web:f33c0d5823bcf52d4078ce",
 };
 
-
 // Initialize Firebase App instance
+
 export const app =
   getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: "select_account",
+});
 
 /**
  * Sign in using Google OAuth via Firebase Popup.
@@ -64,8 +69,16 @@ export async function signInWithGoogle() {
         uid: user.uid,
       },
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Firebase Auth] Google Sign-In failed:", error);
+    if (error?.code === "auth/popup-blocked" || error?.code === "auth/popup-closed-by-user") {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return { success: false, redirecting: true };
+      } catch (redirectErr) {
+        console.error("[Firebase Auth] Redirect fallback error:", redirectErr);
+      }
+    }
     throw error;
   }
 }
