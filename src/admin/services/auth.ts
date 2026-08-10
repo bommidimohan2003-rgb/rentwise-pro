@@ -9,6 +9,21 @@ export const authService = {
     return response.data;
   },
 
+  async registerAdmin(data: {
+    email: string;
+    password: string;
+    fullName?: string;
+    adminCode?: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const response = await adminApi.post("/auth/register", {
+      email: data.email,
+      password: data.password,
+      full_name: data.fullName,
+      admin_code: data.adminCode,
+    });
+    return response.data;
+  },
+
   async logout(): Promise<void> {
     try {
       await adminApi.post("/auth/logout");
