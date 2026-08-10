@@ -58,27 +58,25 @@ export async function signInWithGoogle() {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
     const idToken = await user.getIdToken();
+    const googleUser = {
+      email: user.email || "",
+      fullName: user.displayName || user.email?.split("@")[0] || "Google User",
+      avatar: user.photoURL || undefined,
+      phone: user.phoneNumber || "",
+      uid: user.uid,
+    };
+
+    if (googleUser.email) {
+      await saveUserToFirebase(googleUser);
+    }
+
     return {
       success: true,
       idToken,
-      googleUser: {
-        email: user.email || "",
-        fullName: user.displayName || user.email?.split("@")[0] || "Google User",
-        avatar: user.photoURL || undefined,
-        phone: user.phoneNumber || "",
-        uid: user.uid,
-      },
+      googleUser,
     };
   } catch (error: any) {
     console.error("[Firebase Auth] Google Sign-In failed:", error);
-    if (error?.code === "auth/popup-blocked" || error?.code === "auth/popup-closed-by-user") {
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        return { success: false, redirecting: true };
-      } catch (redirectErr) {
-        console.error("[Firebase Auth] Redirect fallback error:", redirectErr);
-      }
-    }
     throw error;
   }
 }
