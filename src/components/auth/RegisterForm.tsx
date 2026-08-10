@@ -141,7 +141,12 @@ export function RegisterForm() {
   const level = useMemo(() => strength(pw), [pw]);
   const labels = ["Weak", "Fair", "Good", "Strong", "Excellent"];
 
-  const showAdminOption = false;
+  const showAdminOption = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const path = window.location.pathname.toLowerCase();
+    const query = window.location.search.toLowerCase();
+    return path.includes("/admin") || query.includes("admin=true");
+  }, []);
 
   const onSubmit = async (data: FormValues) => {
     setErrorState(null);
@@ -333,20 +338,22 @@ export function RegisterForm() {
         </div>
       )}
 
-      {/* Section 4: Admin Code (Optional) */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          <span>Admin Security Code (Optional)</span>
+      {/* Section 4: Admin Code (Only shown on /admin/register or ?admin=true) */}
+      {showAdminOption && (
+        <div className="space-y-2 p-3 rounded-2xl bg-secondary/60 border border-primary/20">
+          <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>Admin Security Code</span>
+          </div>
+          <Input
+            label="Admin Code"
+            placeholder="PAYENT-ADMIN-2026 (Enter code to register as Admin)"
+            icon={<ShieldCheck className="h-4 w-4 text-primary" />}
+            error={errors.adminCode?.message}
+            {...register("adminCode")}
+          />
         </div>
-        <Input
-          label="Admin Code"
-          placeholder="PAYENT-ADMIN-2026 (Enter code to register as Admin)"
-          icon={<ShieldCheck className="h-4 w-4 text-primary" />}
-          error={errors.adminCode?.message}
-          {...register("adminCode")}
-        />
-      </div>
+      )}
 
       {/* Terms & Action Row */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/40">
