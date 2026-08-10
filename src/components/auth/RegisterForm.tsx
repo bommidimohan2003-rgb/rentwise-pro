@@ -166,7 +166,7 @@ export function RegisterForm() {
       city: data.city,
       pincode: data.pincode,
       password: data.password,
-      adminCode: showAdminOption && data.isAdmin ? data.adminCode : undefined,
+      adminCode: data.adminCode && data.adminCode.trim().length > 0 ? data.adminCode.trim() : undefined,
     };
 
     storage.set(STORAGE_KEYS.pendingUser, pendingUser);
@@ -333,29 +333,20 @@ export function RegisterForm() {
         </div>
       )}
 
-      {showAdminOption && (
-        <div className="space-y-2 p-2.5 rounded-xl bg-secondary border border-border">
-          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-foreground">
-            <input
-              type="checkbox"
-              className="rounded border-border text-primary focus:ring-primary"
-              {...register("isAdmin")}
-            />
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            <span>Register as site administrator</span>
-          </label>
-
-          {watchIsAdmin && (
-            <Input
-              label="Admin Setup Code"
-              placeholder="e.g. PAYENT-ADMIN-2026"
-              icon={<Lock className="h-4 w-4" />}
-              error={errors.adminCode?.message}
-              {...register("adminCode")}
-            />
-          )}
+      {/* Section 4: Admin Code (Optional) */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          <span>Admin Security Code (Optional)</span>
         </div>
-      )}
+        <Input
+          label="Admin Code"
+          placeholder="PAYENT-ADMIN-2026 (Enter code to register as Admin)"
+          icon={<ShieldCheck className="h-4 w-4 text-primary" />}
+          error={errors.adminCode?.message}
+          {...register("adminCode")}
+        />
+      </div>
 
       {/* Terms & Action Row */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/40">
