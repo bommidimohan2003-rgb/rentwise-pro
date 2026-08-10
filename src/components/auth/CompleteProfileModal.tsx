@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Phone, MapPin, Building2, Compass, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/common/Button";
@@ -28,12 +28,20 @@ export function CompleteProfileModal({
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [pincode, setPincode] = useState("");
+  const [adminCode, setAdminCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  const showAdminOption = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const path = window.location.pathname.toLowerCase();
+    const query = window.location.search.toLowerCase();
+    return path.includes("/admin") || query.includes("admin=true");
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,6 +63,9 @@ export function CompleteProfileModal({
     setLoading(true);
 
     try {
+      const isAdminRegistration =
+        showAdminOption && adminCode.trim().length > 0;
+
       const fullUser: User = {
         id: googleUser.email,
         fullName: googleUser.fullName,
@@ -64,7 +75,7 @@ export function CompleteProfileModal({
         city: city.trim(),
         pincode: pincode.trim(),
         avatar: googleUser.avatar,
-        role: "user",
+        role: isAdminRegistration ? "admin" : "user",
       };
 
       // Save complete user profile document to Firebase Firestore database
@@ -74,7 +85,11 @@ export function CompleteProfileModal({
       storage.set(STORAGE_KEYS.currentUser, fullUser);
       storage.set(STORAGE_KEYS.token, `google-firebase-jwt-${Date.now()}`);
 
-      toast.success("Profile details saved successfully to Firebase!");
+      toast.success(
+        isAdminRegistration
+          ? "Admin profile created successfully!"
+          : "Profile details saved successfully to Firebase!"
+      );
       onComplete(fullUser);
     } catch (err: any) {
       console.error("[Firebase] Error saving Google user details:", err);
@@ -145,6 +160,23 @@ export function CompleteProfileModal({
             />
           </div>
 
+          {/* Admin Security Code (Only rendered when registering on /admin/register or ?admin=true) */}
+          {showAdminOption && (
+            <div className="space-y-2 p-3 rounded-2xl bg-secondary/60 border border-primary/20">
+              <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Admin Security Code (Optional)</span>
+              </div>
+              <Input
+                label="Admin Code"
+                placeholder="PAYENT-ADMIN-2026 (Enter code to register as Admin)"
+                icon={<ShieldCheck className="h-4 w-4 text-primary" />}
+                value={adminCode}
+                onChange={(e) => setAdminCode(e.target.value)}
+              />
+            </div>
+          )}
+
           {error && <p className="text-xs text-destructive font-medium">{error}</p>}
 
           {/* Action Buttons */}
@@ -172,4 +204,3 @@ export function CompleteProfileModal({
 
   return mounted ? createPortal(modalContent, document.body) : null;
 }
-
