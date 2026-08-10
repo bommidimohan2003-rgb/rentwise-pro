@@ -726,21 +726,22 @@ class OrderSchema(BaseModel):
     status: str
 
 class ProductOwnerSchema(BaseModel):
-    name: str
-    avatar: str
+    name: Optional[str] = "Verified Lender"
+    avatar: Optional[str] = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
     rating: Optional[float] = 5.0
 
 class CustomProductSchema(BaseModel):
-    id: str
+    id: Optional[str] = None
     title: str
     description: str
-    price: int
+    price: float
     image: str
     category: str
     rating: Optional[float] = 5.0
     reviews: Optional[int] = 0
     available: Optional[bool] = True
-    owner: ProductOwnerSchema
+    isReference: Optional[bool] = False
+    owner: Optional[ProductOwnerSchema] = None
 
 class UpdateCustomProductSchema(BaseModel):
     title: Optional[str] = None
@@ -900,8 +901,18 @@ def fetch_public_listings():
 
 @app.post("/api/products/custom")
 def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_current_user_email)):
-    create_custom_product(email, data.dict())
-    return {"success": True}
+    product_dict = data.dict()
+    if not product_dict.get("id"):
+        product_dict["id"] = f"p-custom-{int(time.time() * 1000)}"
+    user_rec = get_user(email) or {}
+    if not product_dict.get("owner") or not isinstance(product_dict.get("owner"), dict):
+        product_dict["owner"] = {
+            "name": user_rec.get("full_name") or email.split("@")[0],
+            "avatar": user_rec.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
+            "rating": 5.0
+        }
+    created = create_custom_product(email, product_dict)
+    return {"success": True, "product": format_product_dict(created)}
 
 @app.delete("/api/products/custom/{id}")
 def remove_custom_listing(id: str, email: str = Depends(get_current_user_email)):

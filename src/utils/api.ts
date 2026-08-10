@@ -239,7 +239,11 @@ export const api = {
       },
       body: JSON.stringify(productData),
     });
-    if (!res.ok) throw new Error("Failed to create custom product");
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      const detail = errJson.detail ? (typeof errJson.detail === "string" ? errJson.detail : JSON.stringify(errJson.detail)) : "Failed to create custom product";
+      throw new Error(detail);
+    }
     return res.json();
   },
 
