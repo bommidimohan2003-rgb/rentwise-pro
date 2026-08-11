@@ -19,9 +19,27 @@ export default defineConfig({
   },
   server: {
     headers: {
-      // Allow Google Sign-In popups without COOP blocking
-      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+      // Remove COOP restriction so Google Sign-In popup can call window.close/closed on opener
+      "Cross-Origin-Opener-Policy": "unsafe-none",
       "Cross-Origin-Embedder-Policy": "unsafe-none",
+    },
+    proxy: {
+      // Forward all /api requests to the FastAPI backend running on :8000
+      "/api": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/health": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/docs": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   plugins: [

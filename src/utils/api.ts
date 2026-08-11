@@ -8,9 +8,7 @@ const isLocal =
 const API_BASE =
   import.meta.env.VITE_API_URL !== undefined
     ? import.meta.env.VITE_API_URL
-    : isLocal
-      ? "http://127.0.0.1:8000"
-      : "";
+    : ""; // Use relative URLs — Vite dev proxy forwards /api/* to http://127.0.0.1:8000
 
 function parseApiError(data: unknown, fallback: string): string {
   const obj = data as {

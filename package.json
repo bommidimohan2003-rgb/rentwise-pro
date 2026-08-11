@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "dev:backend": "cd backend && python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000",
+    "dev:all": "start npm run dev:backend && npm run dev",
     "build": "vite build",
     "postbuild": "node -e \"const fs = require('fs'); const html = '<!DOCTYPE html><html><head><meta charset=\\\"UTF-8\\\"><title>Payent - Tech Gear Rental</title></head><body><div id=\\\"root\\\"></div></body></html>'; if(fs.existsSync('.output/public')){ fs.writeFileSync('.output/public/index.html', html); fs.cpSync('.output/public', 'dist', {recursive: true}); }\"",
     "build:dev": "vite build --mode development",
