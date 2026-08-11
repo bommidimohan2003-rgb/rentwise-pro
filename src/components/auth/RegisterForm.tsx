@@ -74,56 +74,17 @@ function strength(pw: string) {
   return s;
 }
 
-import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-import { CompleteProfileModal } from "@/components/auth/CompleteProfileModal";
-import { getUserFromFirebase } from "@/lib/firebase";
-import type { User as UserType } from "@/types";
-
 export function RegisterForm() {
-  const { user, register: registerUser, loginWithGoogleUser } = useAuth();
+  const { user, register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
-  const [pendingGoogleUser, setPendingGoogleUser] = useState<{
-    email: string;
-    fullName: string;
-    avatar?: string;
-    phone?: string;
-  } | null>(null);
 
   useEffect(() => {
     if (user) {
       navigate({ to: "/categories" });
     }
   }, [user, navigate]);
-
-  const handleGoogleSuccess = async (gUser: {
-    email: string;
-    fullName: string;
-    avatar?: string;
-    phone?: string;
-  }) => {
-    try {
-      const existingDoc = await getUserFromFirebase(gUser.email);
-      if (existingDoc && existingDoc.phone && existingDoc.address) {
-        loginWithGoogleUser(existingDoc);
-        toast.success(`Welcome to Payent, ${existingDoc.fullName}!`);
-        navigate({ to: "/dashboard" });
-      } else {
-        setPendingGoogleUser(gUser);
-      }
-    } catch (err) {
-      console.error("[Google Auth] Error checking Firestore user:", err);
-      setPendingGoogleUser(gUser);
-    }
-  };
-
-  const handleCompleteProfile = (fullUser: UserType) => {
-    loginWithGoogleUser(fullUser);
-    setPendingGoogleUser(null);
-    navigate({ to: "/dashboard" });
-  };
-
 
   const {
     register,
@@ -143,8 +104,16 @@ export function RegisterForm() {
 
   const showAdminOption = useMemo(() => {
     if (typeof window === "undefined") return false;
-    const href = window.location.href.toLowerCase();
-    return href.includes("admin");
+    const params = new URLSearchParams(window.location.search);
+    for (const [key, value] of params.entries()) {
+      if (
+        key.trim().toLowerCase() === "admin" &&
+        value.trim().toLowerCase() === "true"
+      ) {
+        return true;
+      }
+    }
+    return false;
   }, []);
 
   const onSubmit = async (data: FormValues) => {
@@ -170,7 +139,7 @@ export function RegisterForm() {
       city: data.city,
       pincode: data.pincode,
       password: data.password,
-      adminCode: data.adminCode && data.adminCode.trim().length > 0 ? data.adminCode.trim() : undefined,
+      adminCode: showAdminOption && data.isAdmin ? data.adminCode : undefined,
     };
 
     storage.set(STORAGE_KEYS.pendingUser, pendingUser);
@@ -181,21 +150,7 @@ export function RegisterForm() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Google OAuth Register Button */}
-      <GoogleAuthButton onSuccess={handleGoogleSuccess} label="Sign up with Google" />
-
-      {/* Divider */}
-      <div className="relative flex items-center justify-center my-2">
-        <div className="border-t border-border w-full"></div>
-        <span className="bg-card px-3 text-[10px] font-black text-muted-foreground uppercase tracking-widest shrink-0 relative">
-          OR REGISTER WITH EMAIL
-        </span>
-        <div className="border-t border-border w-full"></div>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
-
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
       {/* Section 1: Account & Contact Info */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
@@ -337,20 +292,27 @@ export function RegisterForm() {
         </div>
       )}
 
-      {/* Section 4: Admin Code (Only shown on /admin/register or ?admin=true) */}
       {showAdminOption && (
-        <div className="space-y-2 p-3 rounded-2xl bg-secondary/60 border border-primary/20">
-          <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Admin Security Code</span>
-          </div>
-          <Input
-            label="Admin Code"
-            placeholder="PAYENT-ADMIN-2026 (Enter code to register as Admin)"
-            icon={<ShieldCheck className="h-4 w-4 text-primary" />}
-            error={errors.adminCode?.message}
-            {...register("adminCode")}
-          />
+        <div className="space-y-2 p-2.5 rounded-xl bg-secondary border border-border">
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-foreground">
+            <input
+              type="checkbox"
+              className="rounded border-border text-primary focus:ring-primary"
+              {...register("isAdmin")}
+            />
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            <span>Register as site administrator</span>
+          </label>
+
+          {watchIsAdmin && (
+            <Input
+              label="Admin Setup Code"
+              placeholder="Enter admin key"
+              icon={<Lock className="h-4 w-4" />}
+              error={errors.adminCode?.message}
+              {...register("adminCode")}
+            />
+          )}
         </div>
       )}
 
@@ -393,22 +355,6 @@ export function RegisterForm() {
         </p>
       )}
       {error && <p className="text-xs text-destructive font-medium">{error}</p>}
-
-      {/* Hidden reCAPTCHA container for Firebase Phone Authentication */}
-      <div id="recaptcha-container"></div>
     </form>
-
-    {/* Complete Profile Modal for Google Sign-In */}
-    {pendingGoogleUser && (
-      <CompleteProfileModal
-        googleUser={pendingGoogleUser}
-        isAdminRoute={showAdminOption}
-        onComplete={handleCompleteProfile}
-        onCancel={() => setPendingGoogleUser(null)}
-      />
-    )}
-  </div>
   );
 }
-
-

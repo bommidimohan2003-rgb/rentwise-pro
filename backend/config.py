@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 # Load .env file if present
 load_dotenv()
 
-# Parse DATABASE_URL if provided
+# Parse DATABASE_URL if provided by Railway
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
@@ -24,7 +24,7 @@ if DATABASE_URL:
         MYSQL_PASSWORD = os.getenv("MYSQLPASSWORD", os.getenv("MYSQL_PASSWORD", "Bmohan"))
         MYSQL_DB = os.getenv("MYSQLDATABASE", os.getenv("MYSQL_DB", "payent_db"))
 else:
-    # Environment variable aliases (MYSQLHOST / MYSQL_HOST, etc.)
+    # Railway environment variable aliases (MYSQLHOST / MYSQL_HOST, etc.)
     MYSQL_HOST = os.getenv("MYSQLHOST", os.getenv("MYSQL_HOST", "localhost"))
     MYSQL_PORT = int(os.getenv("MYSQLPORT", os.getenv("MYSQL_PORT", "3306")))
     MYSQL_USER = os.getenv("MYSQLUSER", os.getenv("MYSQL_USER", "root"))
@@ -54,21 +54,18 @@ JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 if JWT_ALGORITHM not in ["HS256", "HS384", "HS512"]:
     raise RuntimeError(f"FATAL SECURITY ERROR: Insecure or unsupported JWT_ALGORITHM '{JWT_ALGORITHM}'")
 
-# Token Expiries (30-day persistent access token, 90-day refresh token)
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200"))  # 30 days (43200 minutes)
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "90"))        # 90 days
-
+# Token Expiries
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))  # 30 minutes
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))        # 7 days
 
 # CORS Config
 ALLOWED_ORIGINS_RAW = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,http://localhost:3001")
 ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_RAW.split(",") if origin.strip()]
 
-# Real-time Twilio Verify Config (Temporarily disabled for Firebase OTP)
-DISABLE_TWILIO_FOR_FIREBASE = True
+# Real-time Twilio Verify Config
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
 TWILIO_VERIFY_SERVICE_SID = os.getenv("TWILIO_VERIFY_SERVICE_SID", "")
-
 
 # Admin Registration Config
 ADMIN_SETUP_CODE = os.getenv("ADMIN_SETUP_CODE", "PAYENT-ADMIN-2026")

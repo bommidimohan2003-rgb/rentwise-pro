@@ -96,24 +96,10 @@ export function OTPVerification() {
           pendingUser.city,
           pendingUser.pincode,
         );
-
-        // Store user profile document in Firebase Firestore
-        const { saveUserToFirebase } = await import("@/lib/firebase");
-        await saveUserToFirebase({
-          id: pendingUser.email,
-          fullName: pendingUser.fullName || pendingUser.email.split("@")[0],
-          email: pendingUser.email,
-          phone: pendingUser.phone,
-          address: pendingUser.address,
-          city: pendingUser.city,
-          pincode: pendingUser.pincode,
-          role: pendingUser.adminCode ? "admin" : "user",
-        });
-
         storage.remove(STORAGE_KEYS.otp);
         storage.remove(STORAGE_KEYS.pendingUser);
         storage.remove(STORAGE_KEYS.otpEmail);
-        toast.success("Registration & Firebase user sync successful! Please log in.");
+        toast.success("Registration successful! Please log in.");
       }
       navigate({ to: "/login" });
     } catch (err) {
@@ -143,12 +129,12 @@ export function OTPVerification() {
 
   return (
     <div className="space-y-6">
-      {/* Real-time SMS Verification Notice */}
+      {/* Real-time SMS Verification */}
       <div className="bg-card border border-border rounded-xl p-4 text-sm flex gap-3 items-start shadow-sm">
         <Info className="h-5 w-5 text-foreground shrink-0 mt-0.5" />
         <div>
           <span className="font-semibold text-foreground">
-            Firebase SMS OTP Verification
+            SMS Verification
           </span>
           <p className="text-muted-foreground mt-0.5 text-xs">
             We sent a verification code via SMS to{" "}
@@ -158,11 +144,10 @@ export function OTPVerification() {
             .
           </p>
           <p className="text-muted-foreground text-xs mt-1.5 italic">
-            Check your mobile device for the SMS verification code from Firebase Auth (Twilio SMS temporarily disabled).
+            Check your mobile device for the SMS verification code from Twilio.
           </p>
         </div>
       </div>
-
 
       {/* Demo Mode OTP Display */}
       {(() => {

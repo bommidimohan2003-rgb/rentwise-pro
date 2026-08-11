@@ -55,7 +55,7 @@ export default function Analytics() {
       setLoading(true);
       const [statsData, chartsData] = await Promise.all([
         notificationsService.getDashboardStats(),
-        notificationsService.getDashboardCharts(timePeriod),
+        notificationsService.getDashboardCharts(),
       ]);
       setStats(statsData);
       setCharts(chartsData);

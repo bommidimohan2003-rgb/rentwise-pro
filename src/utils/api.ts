@@ -111,43 +111,22 @@ export const api = {
   },
 
   async getMe(token: string) {
-    // Return cached user profile if using Firebase / Social Auth token
-    if (token.startsWith("google-firebase-jwt-") || token.startsWith("firebase-")) {
-      const cached = storage.get<{ email: string; fullName: string; role?: "user" | "admin" } | null>(
-        STORAGE_KEYS.currentUser,
-        null
-      );
-      if (cached) {
-        return {
-          email: cached.email,
-          fullName: cached.fullName,
-          role: cached.role || "user",
-        };
-      }
-    }
-
     const res = await fetch(`${API_BASE}/api/me`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-
     if (!res.ok) {
       if (res.status === 401 && typeof window !== "undefined") {
-        const cached = storage.get(STORAGE_KEYS.currentUser, null);
-        if (!cached) {
-          window.dispatchEvent(
-            new CustomEvent("payent-session-expired", {
-              detail: { loginPath: "/login" },
-            })
-          );
-        }
+        window.dispatchEvent(
+          new CustomEvent("payent-session-expired", {
+            detail: { loginPath: "/login" },
+          }),
+        );
       }
       const data = await res.json().catch(() => ({}));
-      const err = new Error(data.detail || "Failed to fetch user profile.") as Error & { status?: number };
-      err.status = res.status;
-      throw err;
+      throw new Error(data.detail || "Failed to fetch user profile.");
     }
     return await res.json();
   },
@@ -239,11 +218,7 @@ export const api = {
       },
       body: JSON.stringify(productData),
     });
-    if (!res.ok) {
-      const errJson = await res.json().catch(() => ({}));
-      const detail = errJson.detail ? (typeof errJson.detail === "string" ? errJson.detail : JSON.stringify(errJson.detail)) : "Failed to create custom product";
-      throw new Error(detail);
-    }
+    if (!res.ok) throw new Error("Failed to create custom product");
     return res.json();
   },
 
@@ -303,23 +278,6 @@ export const api = {
     );
     if (!res.ok)
       throw new Error("Failed to toggle custom product availability");
-    return res.json();
-  },
-
-  async updateCustomProduct(
-    token: string,
-    productId: string,
-    patchData: Partial<Product>,
-  ) {
-    const res = await fetch(`${API_BASE}/api/products/custom/${productId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(patchData),
-    });
-    if (!res.ok) throw new Error("Failed to update custom product");
     return res.json();
   },
 
@@ -495,36 +453,6 @@ export const api = {
       return await res.json();
     } catch {
       return null;
-    }
-  },
-
-  async getPublicCategories() {
-    try {
-      const res = await fetch(`${API_BASE}/api/categories/public`);
-      if (!res.ok) return [];
-      return await res.json();
-    } catch {
-      return [];
-    }
-  },
-
-  async getPublicStats() {
-    try {
-      const res = await fetch(`${API_BASE}/api/stats/public`);
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
-  },
-
-  async getPublicProducts(): Promise<Product[]> {
-    try {
-      const res = await fetch(`${API_BASE}/api/products/custom/public`);
-      if (!res.ok) return [];
-      return await res.json();
-    } catch {
-      return [];
     }
   },
 };

@@ -51,36 +51,22 @@ export default function LenderPortal() {
   }, [ready, user, navigate]);
 
   const fetchData = useCallback(async () => {
-    let activeToken = token;
-    if (!activeToken && user?.email) {
-      activeToken = `google-firebase-jwt-${Date.now()}`;
-      storage.set(STORAGE_KEYS.token, activeToken);
-    }
-
+    if (!token) return;
     setLoading(true);
-    const localCustom = storage.get<Product[]>("payent_custom_products", []);
-
     try {
-      if (activeToken) {
-        const [fetchedListings, fetchedBookings] = await Promise.all([
-          api.getCustomProducts(activeToken).catch(() => []),
-          api.getLenderOrders(activeToken).catch(() => []),
-        ]);
-        const combined = [...localCustom, ...fetchedListings];
-        const map = new Map<string, Product>();
-        combined.forEach((p) => map.set(p.id, p));
-        setListings(Array.from(map.values()));
-        setBookings(fetchedBookings);
-      } else {
-        setListings(localCustom);
-      }
+      const [fetchedListings, fetchedBookings] = await Promise.all([
+        api.getCustomProducts(token),
+        api.getLenderOrders(token),
+      ]);
+      setListings(fetchedListings);
+      setBookings(fetchedBookings);
     } catch (err) {
-      console.warn("Notice loading lender portal data:", err);
-      setListings(localCustom);
+      console.error("Failed to load lender portal data:", err);
+      toast.error("Failed to load listings or bookings.");
     } finally {
       setLoading(false);
     }
-  }, [token, user]);
+  }, [token]);
 
   useEffect(() => {
     fetchData();
@@ -108,28 +94,17 @@ export default function LenderPortal() {
   };
 
   const handleDeleteListing = async (productId: string) => {
-    let activeToken = token;
-    if (!activeToken && user?.email) {
-      activeToken = `google-firebase-jwt-${Date.now()}`;
-      storage.set(STORAGE_KEYS.token, activeToken);
+    if (!token) return;
+    try {
+      await api.deleteCustomProduct(token, productId);
+      setListings((prev) => prev.filter((p) => p.id !== productId));
+      toast.success("Listing deleted successfully.");
+      setConfirmDeleteId(null);
+    } catch (err: unknown) {
+      const errMsg =
+        err instanceof Error ? err.message : "Failed to delete listing.";
+      toast.error(errMsg);
     }
-
-    if (activeToken) {
-      try {
-        await api.deleteCustomProduct(activeToken, productId);
-      } catch (err: unknown) {
-        console.warn("[LenderPortal] Server delete notice:", err);
-      }
-    }
-
-    setListings((prev) => prev.filter((p) => p.id !== productId));
-    const cachedCustom = storage.get<Product[]>("payent_custom_products", []);
-    storage.set(
-      "payent_custom_products",
-      cachedCustom.filter((p) => p.id !== productId),
-    );
-    toast.success("Listing deleted successfully.");
-    setConfirmDeleteId(null);
   };
 
   // Calculations for Stats

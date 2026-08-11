@@ -2,30 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { User } from "@/types";
-import {
-  saveUserToFirebase,
-  getUserFromFirebase,
-  updateUserInFirebase,
-} from "@/lib/firebase";
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(() => {
-    return storage.get<User | null>(STORAGE_KEYS.currentUser, null);
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
-      const cachedUser = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
       const token = storage.get<string | null>(STORAGE_KEYS.token, null);
-
-      // Hydrate state immediately from local storage cache
-      if (cachedUser) {
-        setUser(cachedUser);
-      }
-      setReady(true);
-
-      // Background session verification
       if (token) {
         try {
           const profile = await api.getMe(token);
@@ -37,31 +21,16 @@ export function useAuth() {
           };
           storage.set(STORAGE_KEYS.currentUser, loggedUser);
           setUser(loggedUser);
-
-          // Store/Sync user data in Firebase Firestore
-          saveUserToFirebase(loggedUser);
-        } catch (err: any) {
-          console.warn("[Auth] Background session check warning:", err?.message || err);
-          // ONLY clear session if explicitly revoked/expired (HTTP 401)
-          if (err?.status === 401 || err?.message?.toLowerCase().includes("revoked") || err?.message?.toLowerCase().includes("expired")) {
-            console.error("[Auth] Session revoked or expired by server. Clearing credentials.");
-            storage.remove(STORAGE_KEYS.token);
-            storage.remove(STORAGE_KEYS.currentUser);
-            setUser(null);
-          }
+        } catch (err) {
+          console.error("[Auth] Session validation failed:", err);
+          storage.remove(STORAGE_KEYS.token);
+          storage.remove(STORAGE_KEYS.currentUser);
+          setUser(null);
         }
-      } else if (cachedUser?.email) {
-        // Hydrate from Firebase Firestore if token is local/social
-        try {
-          const firestoreDoc = await getUserFromFirebase(cachedUser.email);
-          if (firestoreDoc) {
-            setUser(firestoreDoc);
-            storage.set(STORAGE_KEYS.currentUser, firestoreDoc);
-          }
-        } catch (e) {
-          console.warn("[Auth] Firestore cache fallback notice:", e);
-        }
+      } else {
+        setUser(null);
       }
+      setReady(true);
     };
 
     initAuth();
@@ -90,10 +59,6 @@ export function useAuth() {
 
         storage.set(STORAGE_KEYS.currentUser, loggedUser);
         setUser(loggedUser);
-
-        // Save complete user profile to Firebase Firestore database
-        saveUserToFirebase(loggedUser);
-
         return { ok: true };
       }
       return { ok: false, error: "Invalid credentials from server." };
@@ -131,23 +96,9 @@ export function useAuth() {
       if (!prev) return prev;
       const merged = { ...prev, ...patch };
       storage.set(STORAGE_KEYS.currentUser, merged);
-
-      // Persist user profile updates to Firebase Firestore
-      if (merged.email) {
-        updateUserInFirebase(merged.email, patch);
-      }
       return merged;
     });
   }, []);
 
-  const loginWithGoogleUser = useCallback((userObj: User) => {
-    storage.set(STORAGE_KEYS.currentUser, userObj);
-    storage.set(STORAGE_KEYS.token, `google-firebase-jwt-${Date.now()}`);
-    setUser(userObj);
-    saveUserToFirebase(userObj);
-  }, []);
-
-  return { user, ready, login, register, logout, updateUser, loginWithGoogleUser };
+  return { user, ready, login, register, logout, updateUser };
 }
-
-

@@ -3,7 +3,7 @@ from datetime import datetime
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB
 
 def get_db_connection():
-    # Attempt connecting directly to the specified database first
+    # Attempt connecting directly to the specified database first (ideal for cloud MySQL like Railway/Aiven/PlanetScale)
     try:
         return pymysql.connect(
             host=MYSQL_HOST,
@@ -12,73 +12,43 @@ def get_db_connection():
             password=MYSQL_PASSWORD,
             database=MYSQL_DB,
             cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=2
+            connect_timeout=10
         )
     except Exception:
         # Fallback to connecting without database and creating database if it does not exist yet
+        conn = pymysql.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=10
+        )
         try:
-            conn = pymysql.connect(
-                host=MYSQL_HOST,
-                port=MYSQL_PORT,
-                user=MYSQL_USER,
-                password=MYSQL_PASSWORD,
-                cursorclass=pymysql.cursors.DictCursor,
-                connect_timeout=2
-            )
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DB}`")
-                conn.select_db(MYSQL_DB)
-            except Exception:
-                pass
-            return conn
-        except Exception as inner_e:
-            print(f"Notice: MySQL database host '{MYSQL_HOST}' unavailable ({inner_e}). Operating in degraded fallback mode.")
-            return None
+            with conn.cursor() as cursor:
+                cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DB}`")
+            conn.select_db(MYSQL_DB)
+        except Exception:
+            pass
+        return conn
 
 def execute_query(query: str, params: tuple = ()):
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        if not conn:
-            return
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(query, params)
-            conn.commit()
-        finally:
-            conn.close()
-    except Exception as e:
-        print(f"Notice: Database execute_query notice: {e}")
+        with conn.cursor() as cursor:
+            cursor.execute(query, params)
+        conn.commit()
+    finally:
+        conn.close()
 
 def fetch_one(query: str, params: tuple = ()):
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        if not conn:
-            return None
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(query, params)
-                return cursor.fetchone()
-        finally:
-            conn.close()
-    except Exception as e:
-        print(f"Notice: Database fetch_one notice: {e}")
-        return None
-
-def fetch_all(query: str, params: tuple = ()):
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return []
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(query, params)
-                return cursor.fetchall()
-        finally:
-            conn.close()
-    except Exception as e:
-        print(f"Notice: Database fetch_all notice: {e}")
-        return []
+        with conn.cursor() as cursor:
+            cursor.execute(query, params)
+            return cursor.fetchone()
+    finally:
+        conn.close()
 
 def init_db():
     # Helper to safely add column if not exists
@@ -97,26 +67,20 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             email VARCHAR(255) PRIMARY KEY,
             phone VARCHAR(50),
-            password_hash VARCHAR(255) NULL,
+            password_hash VARCHAR(255) NOT NULL,
             full_name VARCHAR(255),
             role VARCHAR(50) DEFAULT 'user',
             created_at VARCHAR(100) NOT NULL
         )
     """)
     
-    # Safely alter users table for new fields and nullable password_hash
-    try:
-        execute_query("ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NULL")
-    except Exception:
-        pass
-
+    # Safely alter users table for new fields
     add_column_safely("users", "status VARCHAR(50) DEFAULT 'active'")
     add_column_safely("users", "verified BOOLEAN DEFAULT TRUE")
     add_column_safely("users", "avatar VARCHAR(1000) DEFAULT 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'")
     add_column_safely("users", "address VARCHAR(500)")
     add_column_safely("users", "city VARCHAR(100)")
     add_column_safely("users", "pincode VARCHAR(20)")
-    add_column_safely("users", "firebase_uid VARCHAR(255) UNIQUE NULL")
 
     # Create token_blocklist table for server-side JWT revocation
     execute_query("""
@@ -398,18 +362,7 @@ def init_db():
     try:
         with conn.cursor() as cursor:
             # Purge mock/test data & reset analytics records for clean startup
-            cursor.execute("""
-                DELETE FROM users
-                WHERE email LIKE '%@example.com'
-                   OR email IN (
-                       'test_regular_user@payent.com', 'test_admin_user@payent.com',
-                       'user_a_idor@payent.com', 'user_b_idor@payent.com', 'revocation_user@payent.com',
-                       'marcus.vance@techgear.io', 'elena.rostova@drones.com',
-                       'devon.carter@creatives.co', 'priya.sharma@studios.in',
-                       'marcus@payent.com', 'elena@payent.com', 'devon@payent.com',
-                       'bengaluru@payent.com', 'mumbai@payent.com', 'delhi@payent.com'
-                   )
-            """)
+            cursor.execute("DELETE FROM users WHERE email LIKE '%@example.com' OR email IN ('test_regular_user@payent.com', 'test_admin_user@payent.com', 'user_a_idor@payent.com', 'user_b_idor@payent.com', 'revocation_user@payent.com')")
             cursor.execute("DELETE FROM custom_products")
             cursor.execute("DELETE FROM orders")
             cursor.execute("DELETE FROM payments")
@@ -454,57 +407,6 @@ def init_db():
 MOCK_USERS = {}
 MOCK_OTPS = {}
 MOCK_ORDERS = {}
-MOCK_WISHLISTS = {}
-MOCK_NOTIFICATIONS = {}
-MOCK_PROCESSED_EVENTS = set()
-MOCK_USER_EVENTS = []
-MOCK_CUSTOM_PRODUCTS = {
-    "p1": {
-        "id": "p1",
-        "title": "Sony FX3 Cinema Line Camera",
-        "description": "Full-frame cinema camera with 4K 120fps recording capability, XLR handle unit, and dual CFexpress slots.",
-        "price": 2500,
-        "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
-        "category": "Cameras",
-        "rating": 4.9,
-        "reviews": 24,
-        "available": True,
-        "owner_name": "Marcus Vance",
-        "owner_avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
-        "owner_rating": 4.9,
-        "user_email": "marcus@payent.com"
-    },
-    "p2": {
-        "id": "p2",
-        "title": "DJI Mavic 3 Pro Cine Premium Combo",
-        "description": "Tri-camera flagship drone with Apple ProRes support, 43-min flight time, and RC Pro remote controller.",
-        "price": 4200,
-        "image": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600",
-        "category": "Drones",
-        "rating": 5.0,
-        "reviews": 18,
-        "available": True,
-        "owner_name": "Elena Rostova",
-        "owner_avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120",
-        "owner_rating": 5.0,
-        "user_email": "elena@payent.com"
-    },
-    "p3": {
-        "id": "p3",
-        "title": "MacBook Pro 16\" M3 Max 64GB",
-        "description": "Monster video editing laptop with 16-core CPU, 40-core GPU, 2TB SSD, and Liquid Retina XDR display.",
-        "price": 1800,
-        "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600",
-        "category": "Laptops",
-        "rating": 4.8,
-        "reviews": 31,
-        "available": True,
-        "owner_name": "Devon Carter",
-        "owner_avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120",
-        "owner_rating": 4.8,
-        "user_email": "devon@payent.com"
-    }
-}
 
 def get_user(email: str):
     if not email:
@@ -565,97 +467,6 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
         "createdAt": created_at
     }
 
-def get_user_by_firebase_uid(firebase_uid: str):
-    if not firebase_uid:
-        return None
-    try:
-        user = fetch_one("SELECT * FROM users WHERE firebase_uid = %s", (firebase_uid,))
-        if user:
-            return user
-    except Exception as e:
-        print(f"Warning: Database read error in get_user_by_firebase_uid: {e}")
-    for u in MOCK_USERS.values():
-        if u.get("firebase_uid") == firebase_uid:
-            return u
-    return None
-
-def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: str = "", avatar: str = "", address: str = "", city: str = "", pincode: str = "", role: str = "user", google_email_verified: bool = True):
-    created_at = datetime.utcnow().isoformat()
-    clean_email = email.strip().lower()
-
-    # Check if user already exists by firebase_uid or email (linking rule)
-    existing_user = None
-    if firebase_uid:
-        existing_user = get_user_by_firebase_uid(firebase_uid)
-    if not existing_user and clean_email:
-        existing_user = get_user(clean_email)
-
-    if existing_user:
-        is_existing_verified = bool(existing_user.get("verified", True))
-        if not is_existing_verified and not google_email_verified:
-            print(f"[SECURITY NOTICE]: Refusing auto-link for unverified email: {clean_email}")
-            raise ValueError(f"Cannot auto-link Google identity to unverified account: {clean_email}")
-
-        clean_email = existing_user["email"]
-        existing_user["firebase_uid"] = firebase_uid or existing_user.get("firebase_uid")
-        existing_user["verified"] = True
-        if full_name:
-            existing_user["full_name"] = full_name
-        if avatar:
-            existing_user["avatar"] = avatar
-        MOCK_USERS[clean_email] = existing_user
-        try:
-            execute_query(
-                """
-                UPDATE users SET 
-                    firebase_uid = COALESCE(NULLIF(%s, ''), firebase_uid),
-                    full_name = COALESCE(NULLIF(%s, ''), full_name),
-                    avatar = COALESCE(NULLIF(%s, ''), avatar),
-                    verified = TRUE
-                WHERE LOWER(email) = LOWER(%s)
-                """,
-                (firebase_uid or "", full_name or "", avatar or "", clean_email)
-            )
-        except Exception as e:
-            print(f"Notice: Database write error in save_google_user update: {e}")
-        return existing_user
-
-    user_data = {
-        "email": clean_email,
-        "firebase_uid": firebase_uid or "",
-        "phone": phone or "",
-        "password_hash": None,
-        "full_name": full_name,
-        "role": role or "user",
-        "avatar": avatar or "",
-        "address": address or "",
-        "city": city or "",
-        "pincode": pincode or "",
-        "created_at": created_at,
-        "status": "active",
-        "verified": True
-    }
-    MOCK_USERS[clean_email] = user_data
-
-    try:
-        execute_query(
-            """
-            INSERT INTO users (email, firebase_uid, phone, password_hash, full_name, role, avatar, address, city, pincode, created_at, status, verified)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', TRUE)
-            ON DUPLICATE KEY UPDATE
-                firebase_uid = COALESCE(NULLIF(VALUES(firebase_uid), ''), firebase_uid),
-                full_name = COALESCE(NULLIF(VALUES(full_name), ''), full_name),
-                phone = COALESCE(NULLIF(VALUES(phone), ''), phone),
-                avatar = COALESCE(NULLIF(VALUES(avatar), ''), avatar),
-                verified = TRUE
-            """,
-            (clean_email, firebase_uid or "", phone or "", None, full_name, role or "user", avatar or "", address or "", city or "", pincode or "", created_at)
-        )
-    except Exception as e:
-        print(f"Notice: Database write error in save_google_user insert: {e}")
-
-    return user_data
-
 def update_user_password(email: str, password_hash: str):
     if not email:
         return
@@ -703,72 +514,45 @@ def delete_otp(email: str):
 
 # Wishlist CRUD
 def get_wishlist(email: str):
-    clean_email = (email or "").strip().lower()
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        if conn:
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT product_id FROM wishlist WHERE email = %s", (clean_email,))
-                    return [row["product_id"] for row in cursor.fetchall()]
-            finally:
-                conn.close()
-    except Exception as e:
-        print(f"Notice: Database read error in get_wishlist: {e}")
-    return MOCK_WISHLISTS.get(clean_email, [])
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT product_id FROM wishlist WHERE email = %s", (email,))
+            return [row["product_id"] for row in cursor.fetchall()]
+    finally:
+        conn.close()
 
 def toggle_wishlist(email: str, product_id: str):
-    clean_email = (email or "").strip().lower()
-    wishlist = MOCK_WISHLISTS.setdefault(clean_email, [])
-    if product_id in wishlist:
-        wishlist.remove(product_id)
-    else:
-        wishlist.append(product_id)
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        if conn:
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT 1 FROM wishlist WHERE email = %s AND product_id = %s", (clean_email, product_id))
-                    exists = cursor.fetchone()
-                    if exists:
-                        cursor.execute("DELETE FROM wishlist WHERE email = %s AND product_id = %s", (clean_email, product_id))
-                    else:
-                        cursor.execute("INSERT INTO wishlist (email, product_id) VALUES (%s, %s)", (clean_email, product_id))
-                conn.commit()
-            finally:
-                conn.close()
-    except Exception as e:
-        print(f"Notice: Database write error in toggle_wishlist: {e}")
-    return wishlist
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM wishlist WHERE email = %s AND product_id = %s", (email, product_id))
+            exists = cursor.fetchone()
+            if exists:
+                cursor.execute("DELETE FROM wishlist WHERE email = %s AND product_id = %s", (email, product_id))
+            else:
+                cursor.execute("INSERT INTO wishlist (email, product_id) VALUES (%s, %s)", (email, product_id))
+        conn.commit()
+    finally:
+        conn.close()
 
 # Orders CRUD
 def get_orders(email: str):
-    clean_email = (email or "").strip().lower()
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        if conn:
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM orders WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
-                    rows = cursor.fetchall()
-                    if rows:
-                        return rows
-            finally:
-                conn.close()
-    except Exception as e:
-        print(f"Notice: Database read error in get_orders: {e}")
-    return [o for o in MOCK_ORDERS.values() if (o.get("user_email") or o.get("userEmail")) == clean_email]
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM orders WHERE user_email = %s ORDER BY created_at DESC", (email,))
+            return cursor.fetchall()
+    finally:
+        conn.close()
 
 def create_order(email: str, order: dict):
-    clean_email = (email or "").strip().lower()
-    MOCK_ORDERS[order["id"]] = {**order, "user_email": clean_email}
     execute_query("""
         INSERT INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         order["id"],
-        clean_email,
+        email,
         order["productId"],
         order["productTitle"],
         order["productImage"],
@@ -781,8 +565,8 @@ def create_order(email: str, order: dict):
 
     # Create matching payment transaction
     tx_id = f"tx-{order['id']}"
-    user = get_user(clean_email)
-    customer_name = user["full_name"] if user else clean_email.split("@")[0]
+    user = get_user(email)
+    customer_name = user["full_name"] if user else email.split("@")[0]
     
     execute_query("""
         INSERT INTO payments (id, booking_id, customer_id, customer_name, amount, status, method, invoice_url, created_at)
@@ -791,7 +575,7 @@ def create_order(email: str, order: dict):
     """, (
         tx_id,
         order["id"],
-        clean_email,
+        email,
         customer_name,
         order["total"],
         "successful" if order["status"] != "cancelled" else "failed",
@@ -802,167 +586,67 @@ def create_order(email: str, order: dict):
     return order
 
 def cancel_order(order_id: str):
-    if order_id in MOCK_ORDERS:
-        MOCK_ORDERS[order_id]["status"] = "cancelled"
     execute_query("UPDATE orders SET status = 'cancelled' WHERE id = %s", (order_id,))
 
 # Custom Products CRUD
 def get_custom_products(email: str):
-    clean_email = (email or "").strip().lower()
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        if conn:
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM custom_products WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
-                    rows = cursor.fetchall()
-                    if rows:
-                        return rows
-            finally:
-                conn.close()
-    except Exception as e:
-        print(f"Notice: Database read error in get_custom_products: {e}")
-    return [p for p in MOCK_CUSTOM_PRODUCTS.values() if (p.get("user_email") or p.get("userEmail")) == clean_email]
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM custom_products WHERE user_email = %s ORDER BY created_at DESC", (email,))
+            return cursor.fetchall()
+    finally:
+        conn.close()
 
 def get_all_custom_products():
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        if conn:
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM custom_products ORDER BY created_at DESC")
-                    rows = cursor.fetchall()
-                    if rows:
-                        return rows
-            finally:
-                conn.close()
-    except Exception as e:
-        print(f"Notice: Database read error in get_all_custom_products: {e}")
-    return list(MOCK_CUSTOM_PRODUCTS.values())
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM custom_products ORDER BY created_at DESC")
+            return cursor.fetchall()
+    finally:
+        conn.close()
 
 def create_custom_product(email: str, product: dict):
-    clean_email = (email or "").strip().lower()
     created_at = datetime.utcnow().isoformat()
-    
-    owner_info = product.get("owner") if isinstance(product.get("owner"), dict) else {}
-    owner_name = owner_info.get("name") or product.get("owner_name") or clean_email.split("@")[0]
-    owner_avatar = owner_info.get("avatar") or product.get("owner_avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
-    owner_rating = float(owner_info.get("rating") or product.get("owner_rating") or 5.0)
-
-    product_entry = {
-        "id": str(product.get("id", "")),
-        "user_email": clean_email,
-        "title": str(product.get("title", "")),
-        "description": str(product.get("description", "")),
-        "price": float(product.get("price", 0)),
-        "image": str(product.get("image", "")),
-        "category": str(product.get("category", "General")),
-        "rating": float(product.get("rating", 5.0)),
-        "reviews": int(product.get("reviews", 0)),
-        "available": bool(product.get("available", True)),
-        "owner_name": owner_name,
-        "owner_avatar": owner_avatar,
-        "owner_rating": owner_rating,
-        "owner": {
-            "name": owner_name,
-            "avatar": owner_avatar,
-            "rating": owner_rating
-        },
-        "created_at": created_at
-    }
-    MOCK_CUSTOM_PRODUCTS[product_entry["id"]] = product_entry
-
-    try:
-        conn = get_db_connection()
-        if conn:
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute("""
-                        INSERT INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (
-                        product_entry["id"],
-                        clean_email,
-                        product_entry["title"],
-                        product_entry["description"],
-                        product_entry["price"],
-                        product_entry["image"],
-                        product_entry["category"],
-                        product_entry["rating"],
-                        product_entry["reviews"],
-                        product_entry["available"],
-                        owner_name,
-                        owner_avatar,
-                        owner_rating,
-                        created_at
-                    ))
-                conn.commit()
-            finally:
-                conn.close()
-    except Exception as e:
-        print(f"Notice: Database write error in create_custom_product: {e}")
-
-    return product_entry
-
-def update_custom_product(product_id: str, email: str, patch: dict):
-    clean_email = (email or "").strip().lower()
-    if product_id in MOCK_CUSTOM_PRODUCTS:
-        MOCK_CUSTOM_PRODUCTS[product_id].update(patch)
-    
-    fields = []
-    params = []
-    
-    mapping = {
-        "title": "title",
-        "description": "description",
-        "price": "price",
-        "image": "image",
-        "category": "category",
-        "available": "available",
-        "rating": "rating",
-        "reviews": "reviews"
-    }
-    
-    for key, col in mapping.items():
-        if key in patch and patch[key] is not None:
-            fields.append(f"{col} = %s")
-            params.append(patch[key])
-            
-    if fields:
-        params.extend([product_id, clean_email])
-        execute_query(
-            f"UPDATE custom_products SET {', '.join(fields)} WHERE id = %s AND user_email = %s",
-            tuple(params)
-        )
-    return MOCK_CUSTOM_PRODUCTS.get(product_id)
+    execute_query("""
+        INSERT INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        product["id"],
+        email,
+        product["title"],
+        product["description"],
+        product["price"],
+        product["image"],
+        product["category"],
+        product.get("rating", 5.0),
+        product.get("reviews", 0),
+        product.get("available", True),
+        product["owner"]["name"],
+        product["owner"]["avatar"],
+        product["owner"].get("rating", 5.0),
+        created_at
+    ))
+    return product
 
 # Notifications CRUD
 def get_notifications(email: str):
-    clean_email = (email or "").strip().lower()
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        if conn:
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM notifications WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
-                    rows = cursor.fetchall()
-                    if rows:
-                        return rows
-            finally:
-                conn.close()
-    except Exception as e:
-        print(f"Notice: Database read error in get_notifications: {e}")
-    return [n for n in MOCK_NOTIFICATIONS.values() if (n.get("user_email") or n.get("userEmail")) == clean_email]
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM notifications WHERE user_email = %s ORDER BY created_at DESC", (email,))
+            return cursor.fetchall()
+    finally:
+        conn.close()
 
 def create_notification(email: str, n: dict):
-    clean_email = (email or "").strip().lower()
-    MOCK_NOTIFICATIONS[n["id"]] = {**n, "user_email": clean_email}
     execute_query("""
         INSERT INTO notifications (id, user_email, title, message, type, is_read, created_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
         n["id"],
-        clean_email,
+        email,
         n["title"],
         n["message"],
         n["type"],
@@ -971,43 +655,25 @@ def create_notification(email: str, n: dict):
     ))
 
 def mark_notifications_read(email: str):
-    clean_email = (email or "").strip().lower()
-    for n in MOCK_NOTIFICATIONS.values():
-        if (n.get("user_email") or n.get("userEmail")) == clean_email:
-            n["is_read"] = True
-            n["read"] = True
-    execute_query("UPDATE notifications SET is_read = TRUE WHERE user_email = %s", (clean_email,))
+    execute_query("UPDATE notifications SET is_read = TRUE WHERE user_email = %s", (email,))
 
 def delete_custom_product(product_id: str, email: str):
-    clean_email = (email or "").strip().lower()
-    MOCK_CUSTOM_PRODUCTS.pop(product_id, None)
-    try:
-        execute_query("DELETE FROM custom_products WHERE id = %s", (product_id,))
-    except Exception as e:
-        print(f"Notice: Database delete error in delete_custom_product: {e}")
+    execute_query("DELETE FROM custom_products WHERE id = %s AND user_email = %s", (product_id, email))
 
 def toggle_custom_product_availability(product_id: str, email: str):
-    clean_email = (email or "").strip().lower()
-    if product_id in MOCK_CUSTOM_PRODUCTS:
-        curr = MOCK_CUSTOM_PRODUCTS[product_id].get("available", True)
-        MOCK_CUSTOM_PRODUCTS[product_id]["available"] = not curr
+    conn = get_db_connection()
     try:
-        conn = get_db_connection()
-        if conn:
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT available FROM custom_products WHERE id = %s AND user_email = %s", (product_id, clean_email))
-                    row = cursor.fetchone()
-                    if row:
-                        new_val = not bool(row["available"])
-                        cursor.execute("UPDATE custom_products SET available = %s WHERE id = %s AND user_email = %s", (new_val, product_id, clean_email))
-                        conn.commit()
-                        return new_val
-            finally:
-                conn.close()
-    except Exception as e:
-        print(f"Notice: Database toggle_custom_product_availability notice: {e}")
-    return MOCK_CUSTOM_PRODUCTS.get(product_id, {}).get("available", True)
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT available FROM custom_products WHERE id = %s AND user_email = %s", (product_id, email))
+            row = cursor.fetchone()
+            if row:
+                new_val = not bool(row["available"])
+                cursor.execute("UPDATE custom_products SET available = %s WHERE id = %s AND user_email = %s", (new_val, product_id, email))
+                conn.commit()
+                return new_val
+            return None
+    finally:
+        conn.close()
 
 # Token Revocation Helpers
 REVOKED_JTIS = set()

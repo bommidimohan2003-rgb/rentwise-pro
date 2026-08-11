@@ -290,15 +290,6 @@ export function Navbar() {
               </div>
             ) : (
               <div className="pt-2 space-y-2 border-t border-white/10">
-                {user.role === "admin" && (
-                  <Link
-                    to="/admin/dashboard"
-                    onClick={() => setOpen(false)}
-                    className="block px-4 py-2.5 text-sm font-bold text-white bg-black dark:bg-white dark:text-black rounded-xl shadow-md"
-                  >
-                    Admin Portal
-                  </Link>
-                )}
                 <Link
                   to="/dashboard"
                   onClick={() => setOpen(false)}

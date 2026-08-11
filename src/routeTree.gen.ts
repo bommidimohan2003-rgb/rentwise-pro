@@ -37,7 +37,6 @@ import { Route as AdminSupportRouteImport } from './routes/admin/support'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminReviewsRouteImport } from './routes/admin/reviews'
 import { Route as AdminReportsRouteImport } from './routes/admin/reports'
-import { Route as AdminRegisterRouteImport } from './routes/admin/register'
 import { Route as AdminProfileRouteImport } from './routes/admin/profile'
 import { Route as AdminProductsRouteImport } from './routes/admin/products'
 import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
@@ -191,11 +190,6 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminRegisterRoute = AdminRegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminProfileRoute = AdminProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -290,7 +284,6 @@ export interface FileRoutesByFullPath {
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/products': typeof AdminProductsRouteWithChildren
   '/admin/profile': typeof AdminProfileRoute
-  '/admin/register': typeof AdminRegisterRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -332,7 +325,6 @@ export interface FileRoutesByTo {
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/products': typeof AdminProductsRouteWithChildren
   '/admin/profile': typeof AdminProfileRoute
-  '/admin/register': typeof AdminRegisterRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -376,7 +368,6 @@ export interface FileRoutesById {
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/products': typeof AdminProductsRouteWithChildren
   '/admin/profile': typeof AdminProfileRoute
-  '/admin/register': typeof AdminRegisterRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -421,7 +412,6 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/products'
     | '/admin/profile'
-    | '/admin/register'
     | '/admin/reports'
     | '/admin/reviews'
     | '/admin/settings'
@@ -463,7 +453,6 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/products'
     | '/admin/profile'
-    | '/admin/register'
     | '/admin/reports'
     | '/admin/reviews'
     | '/admin/settings'
@@ -506,7 +495,6 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/products'
     | '/admin/profile'
-    | '/admin/register'
     | '/admin/reports'
     | '/admin/reviews'
     | '/admin/settings'
@@ -740,13 +728,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/register': {
-      id: '/admin/register'
-      path: '/register'
-      fullPath: '/admin/register'
-      preLoaderRoute: typeof AdminRegisterRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/profile': {
       id: '/admin/profile'
       path: '/profile'
@@ -858,7 +839,6 @@ interface AdminRouteChildren {
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminProductsRoute: typeof AdminProductsRouteWithChildren
   AdminProfileRoute: typeof AdminProfileRoute
-  AdminRegisterRoute: typeof AdminRegisterRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -879,7 +859,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminProductsRoute: AdminProductsRouteWithChildren,
   AdminProfileRoute: AdminProfileRoute,
-  AdminRegisterRoute: AdminRegisterRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSettingsRoute: AdminSettingsRoute,

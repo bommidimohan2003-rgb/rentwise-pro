@@ -17,6 +17,7 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Modal } from "@/components/common/Modal";
+import { products } from "@/utils/mockData";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { api } from "@/utils/api";
 import { tracker } from "@/utils/eventTracker";
@@ -44,24 +45,7 @@ const loadRazorpayScript = (): Promise<boolean> => {
 export default function Checkout() {
   const search = useSearch({ from: "/checkout" }) as { id?: string };
   const navigate = useNavigate();
-  const [product, setProduct] = useState<Product | null>(() => {
-    if (!search.id) return null;
-    const localCustom = storage.get<Product[]>("payent_custom_products", []);
-    return localCustom.find((p) => p.id === search.id) || null;
-  });
-
-  useEffect(() => {
-    let isMounted = true;
-    if (!search.id) return;
-    api.getPublicProducts().then((all) => {
-      if (!isMounted) return;
-      const found = all.find((p) => p.id === search.id);
-      if (found) setProduct(found);
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [search.id]);
+  const product = products.find((p) => p.id === search.id) ?? products[0];
 
   // Dates
   const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
@@ -93,7 +77,7 @@ export default function Checkout() {
     return () => {
       isMounted = false;
     };
-  }, [product]);
+  }, [product?.id]);
 
   // Payment Method: "card" | "upi"
   const [paymentMethod, setPaymentMethod] = useState<"card" | "upi">("card");
@@ -119,7 +103,7 @@ export default function Checkout() {
     1,
     Math.ceil((+new Date(end) - +new Date(start)) / 86400000),
   );
-  const subtotal = (product?.price ?? 0) * days;
+  const subtotal = product.price * days;
   const discount = applied ? subtotal * 0.1 : 0;
   const tax = (subtotal - discount) * 0.08;
   const total = useMemo(
@@ -200,7 +184,6 @@ export default function Checkout() {
 
   // Razorpay Real Payment Handler
   const handlePayWithRazorpay = async () => {
-    if (!product) return;
     setPaymentError(null);
     const token = storage.get<string | null>(STORAGE_KEYS.token, null);
 
@@ -371,17 +354,6 @@ export default function Checkout() {
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
-
-  if (!product) {
-    return (
-      <MainLayout>
-        <div className="mx-auto max-w-md px-4 py-24 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <h2 className="mt-4 text-xl font-bold">Loading product details...</h2>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
@@ -727,7 +699,6 @@ export default function Checkout() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              if (!product) return;
                               toast.success(
                                 "UPI App payment verified. Proceeding...",
                               );

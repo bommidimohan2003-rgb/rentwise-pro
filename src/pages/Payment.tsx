@@ -14,9 +14,10 @@ import {
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
+import { products } from "@/utils/mockData";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
-import type { Order, Product } from "@/types";
+import type { Order } from "@/types";
 import { toast } from "sonner";
 
 interface PaymentSearch {
@@ -47,23 +48,7 @@ export default function Payment() {
   const navigate = useNavigate();
 
   const productId = search.id || "";
-  const [product, setProduct] = useState<Product | null>(() => {
-    const localCustom = storage.get<Product[]>("payent_custom_products", []);
-    return localCustom.find((p) => p.id === productId) || null;
-  });
-
-  useEffect(() => {
-    let isMounted = true;
-    if (!productId) return;
-    api.getPublicProducts().then((all) => {
-      if (!isMounted) return;
-      const found = all.find((p) => p.id === productId);
-      if (found) setProduct(found);
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [productId]);
+  const product = products.find((p) => p.id === productId) ?? products[0];
 
   const totalAmount = Number(search.total) || 0;
   const start = search.start || new Date().toISOString().slice(0, 10);
@@ -96,8 +81,8 @@ export default function Payment() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleRazorpayCheckout = async (_appName?: string) => {
-    if (!product) return;
+  const handleRazorpayCheckout = async (appName?: string) => {
+    if (appName) setSelectedMethod(appName);
     setPaymentError(null);
     const token = storage.get<string | null>(STORAGE_KEYS.token, null);
 
@@ -259,17 +244,6 @@ export default function Payment() {
       tagline: "Fast Checkout using Paytm Balance or linked accounts",
     },
   ];
-
-  if (!product) {
-    return (
-      <MainLayout>
-        <div className="mx-auto max-w-md px-4 py-24 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <h2 className="mt-4 text-xl font-bold">Loading payment details...</h2>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>

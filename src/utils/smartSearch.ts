@@ -104,11 +104,10 @@ export async function searchWithML(
       }
     }
   } catch (err) {
-    if (import.meta.env.DEV) {
-      console.warn(
-        "[MLSearch] Backend search endpoint unreachable, using client fallback.",
-      );
-    }
+    console.warn(
+      "[MLSearch] Backend ML search unavailable, using client-side engine fallback.",
+      err,
+    );
   }
 
   // Fallback to client-side advanced search
@@ -145,9 +144,7 @@ export async function getSearchStats(): Promise<SearchStats> {
       };
     }
   } catch (err) {
-    if (import.meta.env.DEV) {
-      console.warn("[MLSearch] Could not fetch search stats.");
-    }
+    console.warn("[MLSearch] Could not fetch search stats.", err);
   }
 
   return {

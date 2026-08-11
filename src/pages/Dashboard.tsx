@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
+import { products } from "@/utils/mockData";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { Order, Product, Notification } from "@/types";
@@ -30,49 +31,22 @@ export default function Dashboard() {
   }, [ready, user, navigate]);
 
   useEffect(() => {
-    let activeToken = token;
-    if (!activeToken && user?.email) {
-      activeToken = `google-firebase-jwt-${Date.now()}`;
-      storage.set(STORAGE_KEYS.token, activeToken);
-    }
+    if (!token) return;
+    api
+      .getOrders(token)
+      .then(setOrders)
+      .catch((err) => console.error("Failed to load orders:", err));
 
-    const localCustom = storage.get<Product[]>("payent_custom_products", []);
-    const localOrders = storage.get<Order[]>("payent_orders", []);
+    api
+      .getCustomProducts(token)
+      .then(setMyListings)
+      .catch((err) => console.error("Failed to load listings:", err));
 
-    if (activeToken) {
-      api
-        .getOrders(activeToken)
-        .then((fetchedOrders) => {
-          const map = new Map<string, Order>();
-          [...localOrders, ...fetchedOrders].forEach((o) => map.set(o.id, o));
-          setOrders(Array.from(map.values()));
-        })
-        .catch((err) => {
-          console.warn("Notice loading orders:", err);
-          setOrders(localOrders);
-        });
-
-      api
-        .getCustomProducts(activeToken)
-        .then((fetchedListings) => {
-          const map = new Map<string, Product>();
-          [...localCustom, ...fetchedListings].forEach((p) => map.set(p.id, p));
-          setMyListings(Array.from(map.values()));
-        })
-        .catch((err) => {
-          console.warn("Notice loading listings:", err);
-          setMyListings(localCustom);
-        });
-
-      api
-        .getNotifications(activeToken)
-        .then(setAlertsList)
-        .catch((err) => console.warn("Notice loading notifications:", err));
-    } else {
-      setOrders(localOrders);
-      setMyListings(localCustom);
-    }
-  }, [token, user]);
+    api
+      .getNotifications(token)
+      .then(setAlertsList)
+      .catch((err) => console.error("Failed to load notifications:", err));
+  }, [token]);
 
   const handleCancelOrder = (orderId: string) => {
     if (!token) return;
@@ -89,7 +63,7 @@ export default function Dashboard() {
       .catch((err) => toast.error(err.message || "Failed to cancel order."));
   };
 
-  const wishlistItems = myListings.filter((p: Product) => ids.includes(p.id)).slice(0, 3);
+  const wishlistItems = products.filter((p) => ids.includes(p.id)).slice(0, 3);
 
   // Compute real-time dashboard details dynamically
   const activeRentalsCount = orders.filter(
@@ -268,7 +242,7 @@ export default function Dashboard() {
               </div>
               <div className="mt-4 space-y-3">
                 {wishlistItems.length ? (
-                  wishlistItems.map((p: Product) => (
+                  wishlistItems.map((p) => (
                     <div key={p.id} className="flex items-center gap-3">
                       <img
                         src={p.image}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { ProductCard } from "@/components/common/ProductCard";
 import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
+import { products as mockProducts } from "@/utils/mockData";
 import { api } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import { getSessionId } from "@/utils/eventTracker";
@@ -9,7 +10,6 @@ import type { Product } from "@/types";
 
 export function FeaturedProducts() {
   const { user } = useAuth();
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [recommendationData, setRecommendationData] = useState<{
     source: string;
     title: string;
@@ -19,21 +19,16 @@ export function FeaturedProducts() {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadData() {
-      const [recRes, prodRes] = await Promise.all([
-        api.getPersonalizedRecommendations(user?.email, getSessionId()),
-        api.getPublicProducts(),
-      ]);
-      if (isMounted) {
-        if (recRes && recRes.items && recRes.items.length > 0) {
-          setRecommendationData(recRes);
-        }
-        if (prodRes && prodRes.length > 0) {
-          setFeaturedProducts(prodRes);
-        }
+    async function loadRecommendations() {
+      const res = await api.getPersonalizedRecommendations(
+        user?.email,
+        getSessionId(),
+      );
+      if (isMounted && res && res.items && res.items.length > 0) {
+        setRecommendationData(res);
       }
     }
-    loadData();
+    loadRecommendations();
     return () => {
       isMounted = false;
     };
@@ -80,7 +75,7 @@ export function FeaturedProducts() {
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredProducts.slice(0, 8).map((p, i) => (
+          {mockProducts.slice(0, 8).map((p, i) => (
             <ProductCard key={p.id} product={p} index={i} />
           ))}
         </div>

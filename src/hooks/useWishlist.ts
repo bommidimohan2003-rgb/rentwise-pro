@@ -5,24 +5,27 @@ import { api } from "@/utils/api";
 export function useWishlist() {
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
   const [ids, setIds] = useState<string[]>(() => {
-    return storage.get<string[]>(STORAGE_KEYS.wishlist, []);
+    return token ? storage.get<string[]>(STORAGE_KEYS.wishlist, []) : [];
   });
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setIds([]);
+      storage.remove(STORAGE_KEYS.wishlist);
+      return;
+    }
     api
       .getWishlist(token)
       .then((serverIds) => {
-        if (Array.isArray(serverIds)) {
-          setIds(serverIds);
-          storage.set(STORAGE_KEYS.wishlist, serverIds);
-        }
+        setIds(serverIds);
+        storage.set(STORAGE_KEYS.wishlist, serverIds);
       })
-      .catch((err) => console.warn("Notice loading backend wishlist:", err));
+      .catch((err) => console.error("Failed to load backend wishlist:", err));
   }, [token]);
 
   const toggle = useCallback(
     (id: string) => {
+      if (!token) return;
       // Optimistic UI update
       setIds((prev) => {
         const next = prev.includes(id)
@@ -32,11 +35,14 @@ export function useWishlist() {
         return next;
       });
 
-      if (token) {
-        api.toggleWishlist(token, id).catch((err) => {
-          console.warn("Notice toggling wishlist item on server:", err);
+      api.toggleWishlist(token, id).catch((err) => {
+        console.error("Failed to toggle wishlist item on server:", err);
+        // Revert optimistic update on failure
+        api.getWishlist(token).then((serverIds) => {
+          setIds(serverIds);
+          storage.set(STORAGE_KEYS.wishlist, serverIds);
         });
-      }
+      });
     },
     [token],
   );
