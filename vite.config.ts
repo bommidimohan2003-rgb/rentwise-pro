@@ -24,19 +24,19 @@ export default defineConfig({
       "Cross-Origin-Embedder-Policy": "unsafe-none",
     },
     proxy: {
-      // Forward all /api requests to the FastAPI backend running on :8000
+      // Forward all /api requests to the FastAPI backend running on :8001
       "/api": {
-        target: "http://127.0.0.1:8000",
+        target: "http://127.0.0.1:8001",
         changeOrigin: true,
         secure: false,
       },
       "/health": {
-        target: "http://127.0.0.1:8000",
+        target: "http://127.0.0.1:8001",
         changeOrigin: true,
         secure: false,
       },
       "/docs": {
-        target: "http://127.0.0.1:8000",
+        target: "http://127.0.0.1:8001",
         changeOrigin: true,
         secure: false,
       },
