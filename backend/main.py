@@ -382,23 +382,33 @@ def verify_otp_direct(data: DirectOTPVerifySchema, request: Request):
 def register_request(data: OTPRequestSchema, request: Request):
     client_ip = request.client.host if request.client else "unknown"
     key = f"regreq:{client_ip}"
-    is_locked, secs = record_failed_auth_attempt(key, max_attempts=5, lock_duration_secs=600)
+    is_locked, secs = record_failed_auth_attempt(key, max_attempts=10, lock_duration_secs=300)
     if is_locked:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Too many registration requests. Please try again in {secs // 60} minutes."
+            detail=f"Too many registration requests. Please try again in {secs // 60 + 1} minute(s)."
         )
 
     clean_email = data.email.lower().strip()
     clean_phone = normalize_phone(data.phone)
     
-    # Preventing enumeration: Return standard success message even if email exists
+    if not clean_phone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please provide a valid phone number in format +91XXXXXXXXXX or 10 digits."
+        )
+
     existing = get_user(clean_email)
     if existing:
-        return {"success": True, "message": "If this email is eligible, a verification code has been dispatched."}
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An account with this email address already exists. Please log in instead."
+        )
     
     # Start Twilio Verify / Mock flow
     result = start_verification(clean_phone)
+    clear_failed_auth_attempts(key)
+    
     if result["mode"] == "mock":
         save_otp(clean_email, clean_phone, result["otp"])
         return {"success": True, "otp": result["otp"], "message": "Verification code generated (Mock Mode)."}

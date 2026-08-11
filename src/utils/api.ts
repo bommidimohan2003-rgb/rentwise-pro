@@ -12,24 +12,38 @@ const API_BASE =
       ? "http://127.0.0.1:8000"
       : "";
 
+function parseApiError(data: any, fallback: string): string {
+  if (typeof data?.detail === "string") return data.detail;
+  if (Array.isArray(data?.detail) && data.detail[0]?.msg) return data.detail[0].msg;
+  if (typeof data?.message === "string") return data.message;
+  return fallback;
+}
+
 export const api = {
   async registerRequest(email: string, phone: string) {
-    const res = await fetch(`${API_BASE}/api/register/request`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, phone }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Failed to request registration code.");
+    try {
+      const res = await fetch(`${API_BASE}/api/register/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, phone }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(parseApiError(data, "Failed to request registration code."));
+      }
+      const data = await res.json();
+      if (data && data.otp) {
+        storage.set(STORAGE_KEYS.otp, data.otp);
+      } else {
+        storage.remove(STORAGE_KEYS.otp);
+      }
+      return data;
+    } catch (err: any) {
+      if (err.name === "TypeError" || err.message?.includes("Failed to fetch")) {
+        throw new Error("Backend server is offline (http://127.0.0.1:8000). Please start the FastAPI backend server.");
+      }
+      throw err;
     }
-    const data = await res.json();
-    if (data && data.otp) {
-      storage.set(STORAGE_KEYS.otp, data.otp);
-    } else {
-      storage.remove(STORAGE_KEYS.otp);
-    }
-    return data;
   },
 
   async registerVerify(
@@ -60,7 +74,7 @@ export const api = {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Failed to verify registration.");
+      throw new Error(parseApiError(data, "Failed to verify registration."));
     }
     return await res.json();
   },
@@ -73,7 +87,7 @@ export const api = {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Invalid email or password.");
+      throw new Error(parseApiError(data, "Invalid email or password."));
     }
     return await res.json();
   },
@@ -86,7 +100,7 @@ export const api = {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Failed to request password reset.");
+      throw new Error(parseApiError(data, "Failed to request password reset."));
     }
     const data = await res.json();
     if (data && data.otp) {
@@ -105,7 +119,7 @@ export const api = {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Failed to reset password.");
+      throw new Error(parseApiError(data, "Failed to reset password."));
     }
     return res.json();
   },
