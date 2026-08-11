@@ -8,7 +8,9 @@ const isLocal =
 const API_BASE =
   import.meta.env.VITE_API_URL !== undefined
     ? import.meta.env.VITE_API_URL
-    : ""; // Use relative URLs — Vite dev proxy forwards /api/* to http://127.0.0.1:8000
+    : isLocal
+      ? "http://127.0.0.1:8001"  // Direct to FastAPI; CORS on backend allows localhost:3000
+      : "";
 
 function parseApiError(data: unknown, fallback: string): string {
   const obj = data as {
