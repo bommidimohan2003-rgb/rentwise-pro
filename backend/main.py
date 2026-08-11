@@ -201,10 +201,23 @@ class ForgotPasswordResetSchema(BaseModel):
     otp: str
     new_password: str
 
+class DirectOTPRequestSchema(BaseModel):
+    phone: str
+    email: Optional[EmailStr] = None
+
+class DirectOTPVerifySchema(BaseModel):
+    phone: str
+    code: str
+    email: Optional[EmailStr] = None
+
 # Phone Normalization Helper
 def normalize_phone(phone: str) -> str:
     """Clean and normalize phone number to E.164 format."""
+    if not phone:
+        return ""
     clean = "".join(c for c in phone if c.isdigit() or c == "+")
+    if not clean or clean == "+":
+        return ""
     if not clean.startswith("+"):
         if len(clean) == 10:
             return "+91" + clean
@@ -216,6 +229,9 @@ def normalize_phone(phone: str) -> str:
 def start_verification(phone: str) -> dict:
     """Start verification via Twilio Verify API or fall back to local mock OTP in development."""
     phone = normalize_phone(phone)
+    if not phone:
+        logger.warning("Empty or invalid phone number passed to start_verification.")
+    
     if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_VERIFY_SERVICE_SID:
         if IS_PRODUCTION:
             logger.error("FATAL SECURITY ERROR: Twilio credentials missing in production mode.")
@@ -233,23 +249,24 @@ def start_verification(phone: str) -> dict:
         verification = client.verify.v2.services(TWILIO_VERIFY_SERVICE_SID) \
             .verifications \
             .create(to=phone, channel='sms')
-        logger.info(f"Twilio Verify SMS initiated to {phone}, status: {verification.status}")
+        logger.info(f"Twilio Verify SMS initiated to {phone}, status: {verification.status}, sid: {verification.sid}")
         return {"mode": "twilio"}
     except Exception as e:
-        logger.warning(f"Failed to initiate Twilio Verify: {e}. Falling back to secure mock.")
+        logger.warning(f"Failed to initiate Twilio Verify for {phone} [{type(e).__name__}]: {e}. Falling back to secure mock.")
         mock_otp = f"{secrets.randbelow(900000) + 100000}"
         return {"mode": "mock", "otp": mock_otp}
 
 def check_verification(phone: str, code: str, email: str) -> bool:
     """Check verification code with single-use, max attempts, and expiration checks."""
     phone = normalize_phone(phone)
-    record = get_otp(email)
+    clean_email = email.lower().strip() if email else ""
+    record = get_otp(clean_email) if clean_email else None
     if record:
         # Rate limit OTP attempts (max 3 tries)
-        attempts = increment_otp_attempt(email)
+        attempts = increment_otp_attempt(clean_email)
         if attempts > 3:
-            delete_otp(email)
-            logger.warning(f"OTP verification attempt limit exceeded for {email}. Deleting OTP.")
+            delete_otp(clean_email)
+            logger.warning(f"OTP verification attempt limit exceeded for {clean_email}. Deleting OTP.")
             return False
 
         # Check expiration (5 minutes = 300 seconds)
@@ -258,19 +275,22 @@ def check_verification(phone: str, code: str, email: str) -> bool:
             try:
                 created_dt = datetime.datetime.fromisoformat(created_at_str)
                 if (datetime.datetime.utcnow() - created_dt).total_seconds() > 300:
-                    delete_otp(email)
-                    logger.warning(f"OTP for {email} has expired.")
+                    delete_otp(clean_email)
+                    logger.warning(f"OTP for {clean_email} has expired.")
                     return False
             except Exception:
                 pass
 
         if record["otp"] == code:
-            delete_otp(email)  # Single-use: delete immediately on success
+            delete_otp(clean_email)  # Single-use: delete immediately on success
             return True
         return False
 
     # Query Twilio Verify API if no local mock record
     if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_VERIFY_SERVICE_SID:
+        return False
+    if not phone:
+        logger.warning("Empty phone number provided to check_verification for Twilio API check.")
         return False
     try:
         from twilio.rest import Client
@@ -280,7 +300,7 @@ def check_verification(phone: str, code: str, email: str) -> bool:
             .create(to=phone, code=code)
         return verification_check.status == "approved"
     except Exception as e:
-        logger.error(f"Twilio Verify Check failed: {e}")
+        logger.error(f"Twilio Verify Check failed for {phone} [{type(e).__name__}]: {e}")
         return False
 
 # Security Dependency
@@ -326,6 +346,38 @@ class RefreshTokenSchema(BaseModel):
     refresh_token: Optional[str] = None
 
 # Endpoints
+@app.post("/api/otp/send")
+def send_otp_direct(data: DirectOTPRequestSchema, request: Request):
+    clean_phone = normalize_phone(data.phone)
+    if not clean_phone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid phone number format."
+        )
+    result = start_verification(clean_phone)
+    if result["mode"] == "mock":
+        clean_email = data.email.lower().strip() if data.email else f"phone_{clean_phone}@payent.internal"
+        save_otp(clean_email, clean_phone, result["otp"])
+        return {"success": True, "mode": "mock", "otp": result["otp"], "message": "Verification code generated (Mock Mode)."}
+    return {"success": True, "mode": "twilio", "message": "Verification code dispatched via Twilio SMS."}
+
+@app.post("/api/otp/verify")
+def verify_otp_direct(data: DirectOTPVerifySchema, request: Request):
+    clean_phone = normalize_phone(data.phone)
+    if not clean_phone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid phone number format."
+        )
+    clean_email = data.email.lower().strip() if data.email else f"phone_{clean_phone}@payent.internal"
+    is_valid = check_verification(clean_phone, data.code, clean_email)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code."
+        )
+    return {"success": True, "message": "Phone number verified successfully via Twilio OTP."}
+
 @app.post("/api/register/request")
 def register_request(data: OTPRequestSchema, request: Request):
     client_ip = request.client.host if request.client else "unknown"
