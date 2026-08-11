@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # Load env variables at application startup
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, Header, Depends, status, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Header, Depends, Query, status, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 
@@ -19,12 +19,20 @@ from pydantic import BaseModel, EmailStr
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("payent.security")
 
-import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth
+try:
+    import firebase_admin
+    from firebase_admin import credentials, auth as firebase_auth
+    HAS_FIREBASE = True
+except ImportError:
+    firebase_admin = None
+    credentials = None
+    firebase_auth = None
+    HAS_FIREBASE = False
+    logger.warning("Notice: firebase_admin module not installed; Firebase Auth fallback active.")
 
 # Initialize Firebase Admin SDK once if credentials provided
 try:
-    if not firebase_admin._apps:
+    if HAS_FIREBASE and firebase_admin and not firebase_admin._apps:
         service_account_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
         if service_account_json:
             try:

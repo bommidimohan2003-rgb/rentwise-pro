@@ -49,9 +49,9 @@ The main areas are:
 A few repository facts matter for planning:
 
 - `rentwise-pro-main/` duplicate snapshot has been removed as part of Phase 1.
-- `api/index.py` orphaned serverless script has been removed.
+- `api/index.py` is the load-bearing Vercel serverless ASGI entrypoint re-exporting `backend.main:app`.
 - `scratch/` directory and `scratch/update_catalog.py` orphaned maintenance script have been removed.
-- `requirements.txt` dependencies have been consolidated to include `razorpay`.
+- `requirements.txt` dependencies at repository root are synchronized with `backend/requirements.txt` (including `firebase-admin`, `razorpay`, `twilio`).
 
 ## Frontend Architecture
 

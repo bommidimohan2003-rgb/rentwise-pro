@@ -10,3 +10,5 @@ pymysql>=1.1.0
 cryptography>=42.0.0
 twilio>=9.0.0
 razorpay>=1.4.1
+firebase-admin>=6.5.0
+
