@@ -4,7 +4,6 @@ import { Heart } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
 import { Button } from "@/components/common/Button";
-import { products } from "@/utils/mockData";
 import { useWishlist } from "@/hooks/useWishlist";
 import { storage } from "@/utils/storage";
 import { api } from "@/utils/api";
@@ -15,10 +14,7 @@ export default function Wishlist() {
   const navigate = useNavigate();
 
   const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
-    const localCustom = storage.get<Product[]>("payent_custom_products", []);
-    const map = new Map<string, Product>();
-    [...localCustom, ...products].forEach((p) => map.set(p.id, p));
-    return Array.from(map.values());
+    return storage.get<Product[]>("payent_custom_products", []);
   });
 
   useEffect(() => {
@@ -29,7 +25,7 @@ export default function Wishlist() {
           setAllProductsList((prev) => {
             const localCustom = storage.get<Product[]>("payent_custom_products", []);
             const map = new Map<string, Product>();
-            [...localCustom, ...serverProducts, ...products].forEach((p) => map.set(p.id, p));
+            [...localCustom, ...serverProducts].forEach((p) => map.set(p.id, p));
             return Array.from(map.values());
           });
         }

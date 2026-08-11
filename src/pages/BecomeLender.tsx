@@ -4,7 +4,6 @@ import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
-import { products } from "@/utils/mockData";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { Product } from "@/types";
@@ -132,8 +131,7 @@ export default function BecomeLender() {
       }
     }
 
-    // Optimistically push to active products array and local cache
-    products.unshift(newProduct);
+    // Save to local custom products cache
     const cachedCustom = storage.get<any[]>("payent_custom_products", []);
     storage.set("payent_custom_products", [newProduct, ...cachedCustom]);
 

@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
-import { products } from "@/utils/mockData";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { Order, Product, Notification } from "@/types";
@@ -90,7 +89,7 @@ export default function Dashboard() {
       .catch((err) => toast.error(err.message || "Failed to cancel order."));
   };
 
-  const wishlistItems = products.filter((p) => ids.includes(p.id)).slice(0, 3);
+  const wishlistItems = myListings.filter((p: Product) => ids.includes(p.id)).slice(0, 3);
 
   // Compute real-time dashboard details dynamically
   const activeRentalsCount = orders.filter(
@@ -269,7 +268,7 @@ export default function Dashboard() {
               </div>
               <div className="mt-4 space-y-3">
                 {wishlistItems.length ? (
-                  wishlistItems.map((p) => (
+                  wishlistItems.map((p: Product) => (
                     <div key={p.id} className="flex items-center gap-3">
                       <img
                         src={p.image}

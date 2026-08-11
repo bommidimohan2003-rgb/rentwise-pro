@@ -10,7 +10,7 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 import { HelpChatbot } from "../components/common/HelpChatbot";
 import { api } from "../utils/api";
-import { products } from "../utils/mockData";
+import { storage } from "../utils/storage";
 import type { Product } from "../types";
 import { Toaster } from "@/components/ui/sonner";
 import { NoInternetState } from "@/components/states/NoInternetState";
@@ -200,15 +200,13 @@ function RootComponent() {
   };
 
   useEffect(() => {
-    // Fetch custom products listed in the database and prepend them to the catalog
+    // Fetch public products from database and save to storage
     api
       .getPublicCustomProducts()
       .then((customProducts) => {
-        const existingIds = new Set(products.map((p) => p.id));
-        const filtered = (customProducts as Product[]).filter(
-          (p) => !existingIds.has(p.id),
-        );
-        products.unshift(...filtered);
+        if (Array.isArray(customProducts) && customProducts.length > 0) {
+          storage.set("payent_server_products", customProducts);
+        }
       })
       .catch((err) =>
         console.error("Failed to load public custom products:", err),

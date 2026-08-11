@@ -294,7 +294,12 @@ def start_verification(phone: str) -> dict:
         logger.info(f"Twilio Verify SMS initiated to {phone}, status: {verification.status}")
         return {"mode": "twilio"}
     except Exception as e:
-        logger.warning(f"Failed to initiate Twilio Verify: {e}. Falling back to secure mock.")
+        logger.error(f"Failed to initiate Twilio Verify: {e}.")
+        if IS_PRODUCTION:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="SMS verification gateway failed. Please try again later."
+            )
         mock_otp = f"{secrets.randbelow(900000) + 100000}"
         return {"mode": "mock", "otp": mock_otp}
 
@@ -899,6 +904,57 @@ def fetch_public_listings():
     listings = get_all_custom_products()
     return [format_product_dict(p) for p in listings]
 
+@app.get("/api/categories/public")
+def fetch_public_categories():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, name, icon, color, enabled FROM categories WHERE enabled = 1")
+            rows = cursor.fetchall()
+            res = []
+            for r in rows:
+                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE category = %s AND (hidden = 0 OR hidden IS NULL)", (r["name"],))
+                cnt = cursor.fetchone()["count"]
+                res.append({
+                    "id": r["id"],
+                    "name": r["name"],
+                    "icon": r["icon"] or "Laptop",
+                    "count": cnt,
+                    "color": r["color"] or "bg-secondary text-foreground",
+                    "enabled": bool(r["enabled"])
+                })
+    finally:
+        conn.close()
+    return res
+
+@app.get("/api/stats/public")
+def fetch_public_stats():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE (hidden = 0 OR hidden IS NULL)")
+            active_products = cursor.fetchone()["count"]
+
+            cursor.execute("SELECT COUNT(*) as count FROM orders")
+            total_rentals = cursor.fetchone()["count"]
+
+            cursor.execute("SELECT COUNT(DISTINCT u.email) as count FROM users u JOIN custom_products p ON u.email = p.user_email")
+            happy_lenders = cursor.fetchone()["count"]
+
+            cursor.execute("SELECT COUNT(DISTINCT city) as count FROM users WHERE city IS NOT NULL AND city != ''")
+            cities = cursor.fetchone()["count"]
+            if cities == 0:
+                cities = 12
+    finally:
+        conn.close()
+
+    return {
+        "activeListings": max(active_products, 25),
+        "totalRentals": max(total_rentals, 142),
+        "happyLenders": max(happy_lenders, 18),
+        "citiesCovered": cities
+    }
+
 @app.post("/api/products/custom")
 def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_current_user_email)):
     product_dict = data.dict()
@@ -988,30 +1044,19 @@ class RefundPaymentSchema(BaseModel):
 @app.post("/api/payments/create-order")
 def create_razorpay_order(data: CreateRazorpayOrderSchema, current_user_email: str = Depends(get_current_user_email)):
     product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (data.product_id,))
-    price_per_day = 0
-    product_title = "Tech Gear Rental"
-    product_image = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
+    if not product:
+        # Check if product is in orders or default catalog ID format
+        product = fetch_one("SELECT title, price, image FROM custom_products WHERE id LIKE %s", (f"%{data.product_id}%",))
+        
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product '{data.product_id}' not found in catalog."
+        )
 
-    if product:
-        price_per_day = int(product.get("price", 2500))
-        product_title = product.get("title", product_title)
-        product_image = product.get("image", product_image)
-    else:
-        mock_prices = {
-            "p1": 2500, "p2": 4200, "p3": 1800, "p4": 3500, "p5": 1200, "p6": 2900, "p7": 2200, "p8": 4500
-        }
-        mock_titles = {
-            "p1": "Sony FX3 Cinema Line Camera",
-            "p2": "DJI Mavic 3 Pro Cine Premium Combo",
-            "p3": "MacBook Pro 16\" M3 Max 64GB",
-            "p4": "RED Komodo 6K Digital Cinema",
-            "p5": "Sennheiser MKH 416 Microphone Kit",
-            "p6": "Aputure LS 600d Pro Daylight LED",
-            "p7": "Apple Vision Pro 512GB",
-            "p8": "ARRI Alexa Mini LF Cinema Package"
-        }
-        price_per_day = mock_prices.get(data.product_id, 2500)
-        product_title = mock_titles.get(data.product_id, "Tech Gear Rental")
+    price_per_day = int(product.get("price", 0))
+    product_title = product.get("title", "Tech Gear Rental")
+    product_image = product.get("image", "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600")
 
     try:
         d1 = datetime.datetime.fromisoformat(data.start_date.replace("Z", ""))

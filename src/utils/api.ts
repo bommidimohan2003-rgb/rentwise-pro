@@ -497,4 +497,34 @@ export const api = {
       return null;
     }
   },
+
+  async getPublicCategories() {
+    try {
+      const res = await fetch(`${API_BASE}/api/categories/public`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async getPublicStats() {
+    try {
+      const res = await fetch(`${API_BASE}/api/stats/public`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getPublicProducts(): Promise<Product[]> {
+    try {
+      const res = await fetch(`${API_BASE}/api/products/custom/public`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
 };

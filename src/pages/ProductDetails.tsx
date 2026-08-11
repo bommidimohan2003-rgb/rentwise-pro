@@ -18,9 +18,9 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Rating } from "@/components/common/Rating";
-import { products, reviews } from "@/utils/mockData";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuth } from "@/hooks/useAuth";
+import { storage } from "@/utils/storage";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { JsonLd } from "@/components/common/JsonLd";
@@ -42,16 +42,56 @@ const mockDates = [
 
 const mockTimes = ["10:00 AM", "12:00 PM", "02:00 PM", "04:00 PM"];
 
+const DEFAULT_REVIEWS = [
+  {
+    id: "r1",
+    user: "Aarav Sharma",
+    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+    rating: 5,
+    date: "2 days ago",
+    comment: "Gear was in pristine condition! Smooth handover and clean packaging.",
+  },
+  {
+    id: "r2",
+    user: "Meera Patel",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100",
+    rating: 5,
+    date: "1 week ago",
+    comment: "Extremely reliable lender. Fast response time and complete accessories included.",
+  },
+];
+
 export default function ProductDetails() {
   const { id } = useParams({ from: "/product/$id" });
   const navigate = useNavigate();
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
-  const product = products.find((p) => p.id === id);
+  const [product, setProduct] = useState<Product | null>(null);
   const [selectedDate, setSelectedDate] = useState(0);
   const [selectedTime, setSelectedTime] = useState("12:00 PM");
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [frequentlyTogether, setFrequentlyTogether] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!id) return;
+
+    // Check local custom products cache first
+    const localCustom = storage.get<Product[]>("payent_custom_products", []);
+    const localFound = localCustom.find((p) => p.id === id);
+    if (localFound && isMounted) {
+      setProduct(localFound);
+    }
+
+    // Fetch from live server API
+    api.getPublicProducts().then((allProducts) => {
+      if (!isMounted) return;
+      const found = allProducts.find((p) => p.id === id);
+      if (found) {
+        setProduct(found);
+      }
+    });
+  }, [id]);
 
   const isOwner = Boolean(
     user &&
@@ -481,7 +521,7 @@ export default function ProductDetails() {
               Verified Customer Reviews
             </h2>
             <div className="grid gap-5 md:grid-cols-3">
-              {reviews.map((r) => (
+              {DEFAULT_REVIEWS.map((r) => (
                 <div
                   key={r.id}
                   className="rounded-3xl bg-card border border-border p-6 space-y-3 shadow-md"
