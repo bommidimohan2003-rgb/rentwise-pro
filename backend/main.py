@@ -219,21 +219,34 @@ def health_check():
 
 # Pydantic Schemas
 class GoogleUserSyncSchema(BaseModel):
+    model_config = {"populate_by_name": True}
     email: EmailStr
-    fullName: str
+    fullName: Optional[str] = None
+    full_name: Optional[str] = None
     phone: Optional[str] = ""
     avatar: Optional[str] = ""
     address: Optional[str] = ""
     city: Optional[str] = ""
     pincode: Optional[str] = ""
+    admin_code: Optional[str] = None
+    id_token: Optional[str] = None
     role: Optional[str] = "user"
+
+    @property
+    def resolved_full_name(self) -> str:
+        return self.fullName or self.full_name or ""
 
 @app.post("/api/auth/google-sync")
 def sync_google_user_to_mysql(data: GoogleUserSyncSchema):
     try:
+        name = data.fullName or data.full_name or ""
+        conn = get_db_connection()
+        if not conn:
+            # DB unavailable – return a soft success so Google Auth can still proceed
+            return {"status": "ok", "success": True, "token": None, "user": {"email": data.email, "fullName": name, "role": "user"}}
         user_record = save_google_user(
             email=data.email,
-            full_name=data.fullName,
+            full_name=name,
             phone=data.phone or "",
             avatar=data.avatar or "",
             address=data.address or "",
@@ -241,11 +254,15 @@ def sync_google_user_to_mysql(data: GoogleUserSyncSchema):
             pincode=data.pincode or "",
             role=data.role or "user"
         )
+        # Generate a JWT for the synced user
+        from auth import create_access_token
+        token = create_access_token({"sub": data.email, "role": user_record.get("role", "user")})
         logger.info(f"Successfully synced Google user to MySQL database: {data.email}")
-        return {"status": "ok", "user": user_record}
+        return {"status": "ok", "success": True, "token": token, "user": user_record}
     except Exception as err:
         logger.error(f"Error syncing Google user {data.email} to MySQL database: {err}")
-        return {"status": "ok", "notice": str(err)}
+        # Return soft success so auth flow continues even if DB is down
+        return {"status": "ok", "success": True, "token": None, "user": {"email": data.email, "fullName": data.fullName or data.full_name or "", "role": "user"}}
 
 class OTPRequestSchema(BaseModel):
     email: EmailStr

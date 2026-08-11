@@ -17,6 +17,13 @@ export default defineConfig({
   optimizeDeps: {
     include: ["firebase/app", "firebase/auth"],
   },
+  server: {
+    headers: {
+      // Allow Google Sign-In popups without COOP blocking
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+      "Cross-Origin-Embedder-Policy": "unsafe-none",
+    },
+  },
   plugins: [
     tanstackStart({
       server: { entry: "src/server.ts" },
