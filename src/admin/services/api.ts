@@ -182,50 +182,6 @@ const INITIAL_USERS: AdminUser[] = [
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
     createdAt: "2026-01-10T09:30:00Z",
   },
-  {
-    id: "usr-2",
-    fullName: "Marcus Vance",
-    email: "marcus.vance@techgear.io",
-    phone: "+91 98765 43210",
-    role: "user",
-    status: "active",
-    verified: true,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-    createdAt: "2026-02-15T14:20:00Z",
-  },
-  {
-    id: "usr-3",
-    fullName: "Elena Rostova",
-    email: "elena.rostova@drones.com",
-    phone: "+91 98123 45678",
-    role: "user",
-    status: "active",
-    verified: true,
-    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
-    createdAt: "2026-03-01T11:45:00Z",
-  },
-  {
-    id: "usr-4",
-    fullName: "Devon Carter",
-    email: "devon.carter@creatives.co",
-    phone: "+91 97654 32109",
-    role: "user",
-    status: "active",
-    verified: true,
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
-    createdAt: "2026-03-20T16:10:00Z",
-  },
-  {
-    id: "usr-5",
-    fullName: "Priya Sharma",
-    email: "priya.sharma@studios.in",
-    phone: "+91 99887 76655",
-    role: "user",
-    status: "active",
-    verified: true,
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
-    createdAt: "2026-04-05T08:15:00Z",
-  },
 ];
 
 const INITIAL_AGENTS: AdminAgent[] = [
@@ -816,6 +772,25 @@ const readDb = (key: string) => {
 
 // Initialize DBs
 const initDB = () => {
+  if (typeof window !== "undefined") {
+    const rawUsers = localStorage.getItem("payent:admin:users");
+    if (
+      rawUsers &&
+      (rawUsers.includes("priya.sharma") ||
+        rawUsers.includes("marcus.vance") ||
+        rawUsers.includes("elena.rostova") ||
+        rawUsers.includes("devon.carter"))
+    ) {
+      localStorage.removeItem("payent:admin:users");
+      localStorage.removeItem("payent:admin:agents");
+      localStorage.removeItem("payent:admin:products");
+      localStorage.removeItem("payent:admin:bookings");
+      localStorage.removeItem("payent:admin:payments");
+      localStorage.removeItem("payent:admin:reviews");
+      localStorage.removeItem("payent:admin:reports");
+    }
+  }
+
   getDB("users", INITIAL_USERS);
   getDB("agents", INITIAL_AGENTS);
   getDB("products", INITIAL_PRODUCTS);

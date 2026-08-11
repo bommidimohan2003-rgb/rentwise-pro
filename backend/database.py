@@ -398,7 +398,18 @@ def init_db():
     try:
         with conn.cursor() as cursor:
             # Purge mock/test data & reset analytics records for clean startup
-            cursor.execute("DELETE FROM users WHERE email LIKE '%@example.com' OR email IN ('test_regular_user@payent.com', 'test_admin_user@payent.com', 'user_a_idor@payent.com', 'user_b_idor@payent.com', 'revocation_user@payent.com')")
+            cursor.execute("""
+                DELETE FROM users
+                WHERE email LIKE '%@example.com'
+                   OR email IN (
+                       'test_regular_user@payent.com', 'test_admin_user@payent.com',
+                       'user_a_idor@payent.com', 'user_b_idor@payent.com', 'revocation_user@payent.com',
+                       'marcus.vance@techgear.io', 'elena.rostova@drones.com',
+                       'devon.carter@creatives.co', 'priya.sharma@studios.in',
+                       'marcus@payent.com', 'elena@payent.com', 'devon@payent.com',
+                       'bengaluru@payent.com', 'mumbai@payent.com', 'delhi@payent.com'
+                   )
+            """)
             cursor.execute("DELETE FROM custom_products")
             cursor.execute("DELETE FROM orders")
             cursor.execute("DELETE FROM payments")
