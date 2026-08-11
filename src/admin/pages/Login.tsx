@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { LogoIcon } from "@/components/common/LogoIcon";
 import { authService } from "../services/auth";
 import { toast } from "sonner";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -193,6 +194,22 @@ export default function Login() {
                 </>
               )}
             </button>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground font-semibold">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <GoogleAuthButton
+              isAdminRoute={true}
+              onSuccess={() => navigate({ to: "/admin/dashboard" })}
+            />
           </form>
         </div>
       </motion.div>
