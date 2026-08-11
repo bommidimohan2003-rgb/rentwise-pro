@@ -925,6 +925,16 @@ def fetch_public_listings():
 @app.get("/api/categories/public")
 def fetch_public_categories():
     conn = get_db_connection()
+    if not conn:
+        # DB unavailable – return seeded fallback categories
+        return [
+            {"id": "cameras", "name": "Cameras", "icon": "Camera", "count": 0, "color": "bg-purple-100 text-purple-800", "enabled": True},
+            {"id": "laptops", "name": "Laptops", "icon": "Laptop", "count": 0, "color": "bg-blue-100 text-blue-800", "enabled": True},
+            {"id": "drones", "name": "Drones", "icon": "Plane", "count": 0, "color": "bg-sky-100 text-sky-800", "enabled": True},
+            {"id": "audio", "name": "Audio", "icon": "Headphones", "count": 0, "color": "bg-green-100 text-green-800", "enabled": True},
+            {"id": "gaming", "name": "Gaming", "icon": "Gamepad2", "count": 0, "color": "bg-red-100 text-red-800", "enabled": True},
+            {"id": "mobile", "name": "Mobile", "icon": "Smartphone", "count": 0, "color": "bg-orange-100 text-orange-800", "enabled": True},
+        ]
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT id, name, icon, color, enabled FROM categories WHERE enabled = 1")

@@ -269,6 +269,20 @@ export const api = {
     return res.json();
   },
 
+  async getPublicProducts() {
+    return this.getPublicCustomProducts().catch(() => null);
+  },
+
+  async getPublicCategories() {
+    try {
+      const res = await fetch(`${API_BASE}/api/categories/public`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
   async createCustomProduct(token: string, productData: Product) {
     const res = await fetch(`${API_BASE}/api/products/custom`, {
       method: "POST",
