@@ -1,6 +1,9 @@
 import os
 import sys
 
+# Suppress uv hardlink fallback warning across Python processes
+os.environ["UV_LINK_MODE"] = "copy"
+
 # Ensure backend directory is in Python module search path for serverless environments
 backend_dir = os.path.dirname(os.path.abspath(__file__))
 if backend_dir not in sys.path:

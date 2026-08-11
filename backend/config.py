@@ -2,6 +2,9 @@ import os
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
+# Suppress uv hardlink warning by explicitly setting link mode to copy
+os.environ["UV_LINK_MODE"] = "copy"
+
 # Load .env file if present
 load_dotenv()
 
