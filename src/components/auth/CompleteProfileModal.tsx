@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/common/Input";
 import { Button } from "@/components/common/Button";
 import { Phone, MapPin, Building2, Compass, ShieldCheck } from "lucide-react";
@@ -32,7 +38,9 @@ export function CompleteProfileModal({
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [pincode, setPincode] = useState("");
-  const [adminCode, setAdminCode] = useState(isAdminRoute ? "PAYENT-ADMIN-2026" : "");
+  const [adminCode, setAdminCode] = useState(
+    isAdminRoute ? "PAYENT-ADMIN-2026" : "",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,8 +73,10 @@ export function CompleteProfileModal({
       });
       toast.success("Profile details saved successfully!");
       onClose();
-    } catch (err: any) {
-      setError(err?.message || "Failed to complete profile");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to complete profile",
+      );
     } finally {
       setLoading(false);
     }
@@ -80,7 +90,11 @@ export function CompleteProfileModal({
             Complete Account Setup
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Welcome <span className="font-semibold text-foreground">{fullName || email}</span>! Please complete your contact & delivery address details.
+            Welcome{" "}
+            <span className="font-semibold text-foreground">
+              {fullName || email}
+            </span>
+            ! Please complete your contact & delivery address details.
           </DialogDescription>
         </DialogHeader>
 
@@ -139,7 +153,12 @@ export function CompleteProfileModal({
           )}
 
           <div className="pt-3 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
               Cancel
             </Button>
             <Button type="submit" loading={loading}>

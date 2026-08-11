@@ -77,7 +77,7 @@ export default function Checkout() {
     return () => {
       isMounted = false;
     };
-  }, [product?.id]);
+  }, [product]);
 
   // Payment Method: "card" | "upi"
   const [paymentMethod, setPaymentMethod] = useState<"card" | "upi">("card");

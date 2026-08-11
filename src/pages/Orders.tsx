@@ -20,7 +20,7 @@ export default function Orders() {
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
   const navigate = useNavigate();
 
-  const fetchOrders = () => {
+  useEffect(() => {
     if (!token) {
       setLoading(false);
       return;
@@ -37,10 +37,6 @@ export default function Orders() {
         setError("Failed to fetch your active order history.");
       })
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchOrders();
   }, [token]);
 
   const handleCancelOrder = (orderId: string) => {

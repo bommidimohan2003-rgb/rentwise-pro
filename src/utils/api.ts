@@ -12,10 +12,15 @@ const API_BASE =
       ? "http://127.0.0.1:8000"
       : "";
 
-function parseApiError(data: any, fallback: string): string {
-  if (typeof data?.detail === "string") return data.detail;
-  if (Array.isArray(data?.detail) && data.detail[0]?.msg) return data.detail[0].msg;
-  if (typeof data?.message === "string") return data.message;
+function parseApiError(data: unknown, fallback: string): string {
+  const obj = data as {
+    detail?: string | Array<{ msg?: string }>;
+    message?: string;
+  };
+  if (typeof obj?.detail === "string") return obj.detail;
+  if (Array.isArray(obj?.detail) && obj.detail[0]?.msg)
+    return obj.detail[0].msg;
+  if (typeof obj?.message === "string") return obj.message;
   return fallback;
 }
 
@@ -29,7 +34,9 @@ export const api = {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(parseApiError(data, "Failed to request registration code."));
+        throw new Error(
+          parseApiError(data, "Failed to request registration code."),
+        );
       }
       const data = await res.json();
       if (data && data.otp) {
@@ -38,9 +45,15 @@ export const api = {
         storage.remove(STORAGE_KEYS.otp);
       }
       return data;
-    } catch (err: any) {
-      if (err.name === "TypeError" || err.message?.includes("Failed to fetch")) {
-        throw new Error("Backend server is offline (http://127.0.0.1:8000). Please start the FastAPI backend server.");
+    } catch (err: unknown) {
+      const errorObj = err as { name?: string; message?: string };
+      if (
+        errorObj.name === "TypeError" ||
+        errorObj.message?.includes("Failed to fetch")
+      ) {
+        throw new Error(
+          "Backend server is offline (http://127.0.0.1:8000). Please start the FastAPI backend server.",
+        );
       }
       throw err;
     }
@@ -150,7 +163,9 @@ export const api = {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(data, "Failed to authenticate with Google."));
+      throw new Error(
+        parseApiError(data, "Failed to authenticate with Google."),
+      );
     }
     return await res.json();
   },
