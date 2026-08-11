@@ -19,14 +19,15 @@ import {
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
-import { categories, products } from "@/utils/mockData";
 import { advancedSearch } from "@/utils/searchEngine";
 import { searchWithML, getSearchStats } from "@/utils/smartSearch";
-import type { Product } from "@/types";
+import type { Product, Category } from "@/types";
 import { cn } from "@/lib/utils";
 import { useSearch, useNavigate, Link } from "@tanstack/react-router";
 import { NoSearchResults } from "@/components/states/NoSearchResults";
 import { tracker } from "@/utils/eventTracker";
+import { storage } from "@/utils/storage";
+import { api } from "@/utils/api";
 
 type Sort = "featured" | "price_asc" | "price_desc" | "rating";
 
@@ -60,6 +61,7 @@ export default function Categories() {
   const [didYouMean, setDidYouMean] = useState<string | null>(null);
   const [isMLActive, setIsMLActive] = useState(false);
   const [popularQueries, setPopularQueries] = useState<string[]>([]);
+  const [liveCategories, setLiveCategories] = useState<Category[]>([]);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchBoxRef = useRef<HTMLDivElement>(null);
@@ -83,11 +85,49 @@ export default function Categories() {
     }
   }, [search.q]);
 
+  const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
+    return storage.get<Product[]>("payent_custom_products", []);
+  });
+
+  useEffect(() => {
+    api
+      .getPublicProducts()
+      .then((serverProducts) => {
+        if (Array.isArray(serverProducts) && serverProducts.length > 0) {
+          setAllProductsList((prev) => {
+            const localCustom = storage.get<Product[]>(
+              "payent_custom_products",
+              [],
+            );
+            const map = new Map<string, Product>();
+            [...localCustom, ...serverProducts].forEach((p) =>
+              map.set(p.id, p),
+            );
+            return Array.from(map.values());
+          });
+        }
+      })
+      .catch((err) =>
+        console.warn("[Categories] Server products fetch notice:", err),
+      );
+
+    api
+      .getPublicCategories()
+      .then((cats) => {
+        if (Array.isArray(cats) && cats.length > 0) {
+          setLiveCategories(cats);
+        }
+      })
+      .catch((err) =>
+        console.warn("[Categories] Public categories fetch notice:", err),
+      );
+  }, []);
+
   // Fetch ML Search results asynchronously when query or category changes
   useEffect(() => {
     let isMounted = true;
     if (q && q.trim()) {
-      searchWithML(products, q, cat).then((res) => {
+      searchWithML(allProductsList, q, cat).then((res) => {
         if (isMounted) {
           setMlResults(res.results);
           setDidYouMean(res.didYouMean);
@@ -102,7 +142,7 @@ export default function Categories() {
     return () => {
       isMounted = false;
     };
-  }, [q, cat]);
+  }, [q, cat, allProductsList]);
 
   // Fetch Search Index stats & popular queries once
   useEffect(() => {
@@ -132,6 +172,19 @@ export default function Categories() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!q.trim()) return;
+    setIsSearchFocused(false);
+    navigate({
+      to: "/categories",
+      search: (prev: Record<string, unknown>) => ({
+        ...prev,
+        q: q.trim(),
+      }),
+    });
+  };
 
   const setQ = (val: string) => {
     setLocalQ(val);
@@ -167,7 +220,11 @@ export default function Categories() {
     let list =
       mlResults !== null
         ? mlResults
-        : products.filter((p) => (cat === "all" ? true : p.category === cat));
+        : allProductsList.filter((p) =>
+            cat === "all"
+              ? true
+              : p.category.toLowerCase() === cat.toLowerCase(),
+          );
 
     if (mlResults === null && q) {
       list = advancedSearch(list, q);
@@ -185,7 +242,7 @@ export default function Categories() {
         break;
     }
     return list;
-  }, [cat, q, sort, mlResults]);
+  }, [cat, q, sort, mlResults, allProductsList]);
 
   // Instant Suggestions for Search Autocomplete
   const liveSuggestions = useMemo(() => {
@@ -193,20 +250,79 @@ export default function Categories() {
     if (mlResults && mlResults.length > 0) {
       return mlResults.slice(0, 5);
     }
-    return advancedSearch(products, q).slice(0, 5);
-  }, [q, mlResults]);
+    return advancedSearch(allProductsList, q).slice(0, 5);
+  }, [q, mlResults, allProductsList]);
+
+  const defaultCategories: Category[] = useMemo(
+    () => [
+      {
+        id: "cameras",
+        name: "Cameras",
+        icon: "Camera",
+        count: 0,
+        color: "bg-blue-500/10 text-blue-500",
+        enabled: true,
+      },
+      {
+        id: "laptops",
+        name: "Laptops",
+        icon: "Laptop",
+        count: 0,
+        color: "bg-purple-500/10 text-purple-500",
+        enabled: true,
+      },
+      {
+        id: "drones",
+        name: "Drones",
+        icon: "Plane",
+        count: 0,
+        color: "bg-emerald-500/10 text-emerald-500",
+        enabled: true,
+      },
+      {
+        id: "bikes",
+        name: "Bikes & Rides",
+        icon: "Bike",
+        count: 0,
+        color: "bg-amber-500/10 text-amber-500",
+        enabled: true,
+      },
+      {
+        id: "tools",
+        name: "Power Tools",
+        icon: "Hammer",
+        count: 0,
+        color: "bg-red-500/10 text-red-500",
+        enabled: true,
+      },
+      {
+        id: "powerbanks",
+        name: "Power Banks",
+        icon: "Zap",
+        count: 0,
+        color: "bg-cyan-500/10 text-cyan-500",
+        enabled: true,
+      },
+    ],
+    [],
+  );
+
+  const activeCategoriesList =
+    liveCategories.length > 0 ? liveCategories : defaultCategories;
 
   // Compute category item counts dynamically
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: products.length };
-    categories.forEach((c) => {
-      counts[c.id] = products.filter((p) => p.category === c.id).length;
+    const counts: Record<string, number> = { all: allProductsList.length };
+    activeCategoriesList.forEach((c) => {
+      counts[c.id] = allProductsList.filter(
+        (p) => p.category.toLowerCase() === c.id.toLowerCase(),
+      ).length;
     });
     return counts;
-  }, []);
+  }, [allProductsList, activeCategoriesList]);
 
   // Selected Category Info
-  const selectedCatObj = categories.find((c) => c.id === cat);
+  const selectedCatObj = activeCategoriesList.find((c) => c.id === cat);
   const selectedCatName =
     cat === "all" ? "All Categories" : selectedCatObj?.name || cat;
   const SelectedIcon = categoryIconMap[cat] || Layers;
@@ -220,7 +336,7 @@ export default function Categories() {
       icon: Layers,
       count: categoryCounts.all,
     },
-    ...categories.map((c) => ({
+    ...activeCategoriesList.map((c) => ({
       id: c.id,
       name: c.name,
       icon: categoryIconMap[c.id] || Sparkles,
@@ -487,12 +603,12 @@ export default function Categories() {
             </span>{" "}
             rental listings
             {cat !== "all" &&
-              ` in ${categories.find((c) => c.id === cat)?.name || cat}`}
+              ` in ${activeCategoriesList.find((c) => c.id === cat)?.name || cat}`}
             {q && ` for "${q}"`}
           </p>
 
           <span className="text-xs font-bold text-muted-foreground">
-            {products.length} Items Total
+            {allProductsList.length} Items Total
           </span>
         </div>
 

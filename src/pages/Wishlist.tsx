@@ -1,15 +1,46 @@
 import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
 import { Button } from "@/components/common/Button";
-import { products } from "@/utils/mockData";
 import { useWishlist } from "@/hooks/useWishlist";
+import { storage } from "@/utils/storage";
+import { api } from "@/utils/api";
+import type { Product } from "@/types";
 
 export default function Wishlist() {
   const { ids } = useWishlist();
   const navigate = useNavigate();
-  const items = products.filter((p) => ids.includes(p.id));
+
+  const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
+    return storage.get<Product[]>("payent_custom_products", []);
+  });
+
+  useEffect(() => {
+    api
+      .getPublicCustomProducts()
+      .then((serverProducts) => {
+        if (Array.isArray(serverProducts) && serverProducts.length > 0) {
+          setAllProductsList((prev) => {
+            const localCustom = storage.get<Product[]>(
+              "payent_custom_products",
+              [],
+            );
+            const map = new Map<string, Product>();
+            [...localCustom, ...serverProducts].forEach((p) =>
+              map.set(p.id, p),
+            );
+            return Array.from(map.values());
+          });
+        }
+      })
+      .catch((err) =>
+        console.warn("[Wishlist] Server products fetch notice:", err),
+      );
+  }, []);
+
+  const items = allProductsList.filter((p) => ids.includes(p.id));
 
   return (
     <MainLayout>

@@ -49,9 +49,9 @@ The main areas are:
 A few repository facts matter for planning:
 
 - `rentwise-pro-main/` duplicate snapshot has been removed as part of Phase 1.
-- `api/index.py` orphaned serverless script has been removed.
+- `api/index.py` is the load-bearing Vercel serverless ASGI entrypoint re-exporting `backend.main:app`.
 - `scratch/` directory and `scratch/update_catalog.py` orphaned maintenance script have been removed.
-- `requirements.txt` dependencies have been consolidated to include `razorpay`.
+- `requirements.txt` dependencies at repository root are synchronized with `backend/requirements.txt` (including `firebase-admin`, `razorpay`, `twilio`).
 
 ## Frontend Architecture
 
@@ -113,22 +113,28 @@ There is a notable drift between the frontend type definitions in `src/types/ind
 
 The project has a mixed integration state. Some customer-facing features are backed by real backend routes, while others are still served by mock storefront data.
 
-| Customer route or feature | Data source                                                        | Status          |
-| ------------------------- | ------------------------------------------------------------------ | --------------- |
-| Auth                      | Backend auth routes and JWT flow                                   | Real            |
-| Orders                    | Backend orders and order persistence routes                        | Real            |
-| Notifications             | Backend notifications routes                                       | Real            |
-| Payments                  | Backend payment routes and payment records                         | Real            |
-| Recommendations           | Backend recommendation engine and event tracking                   | Real            |
-| Lender products           | Backend custom product routes                                      | Real            |
-| Search                    | Backend `/api/search` with ML search engine                        | Real            |
-| Wishlist items            | Backend wishlist routes (`/api/wishlist`) & optimistic local cache | Real            |
-| Catalog                   | `GET /api/products/custom/public` & fallback static catalog        | Mixed           |
-| Categories                | Static storefront data (no public backend route)                   | Unbacked / Mock |
-| Testimonials and stats    | Static storefront data (no public backend route)                   | Unbacked / Mock |
-| Messages                  | Static storefront data (no public backend route)                   | Unbacked / Mock |
-
-The OTP flow has a mock fallback path in `backend/main.py` when Twilio credentials are absent. The checkout path also includes mock pricing and titles through `mock_prices` and `mock_titles` in the backend payment code path.
+| Customer route or feature       | Data source                                                                  | Status |
+| ------------------------------- | ---------------------------------------------------------------------------- | ------ |
+| Auth                            | Backend auth routes and JWT flow                                             | Real   |
+| Orders                          | Backend orders and order persistence routes                                  | Real   |
+| Notifications                   | Backend notifications routes                                                 | Real   |
+| Payments                        | Backend payment routes and payment records                                   | Real   |
+| Recommendations                 | Backend recommendation engine and event tracking                             | Real   |
+| Lender products                 | Backend custom product routes                                                | Real   |
+| Search                          | Backend `/api/search` with ML search engine                                  | Real   |
+| Wishlist items                  | Backend wishlist routes (`/api/wishlist`) & optimistic local cache           | Real   |
+| Catalog                         | `GET /api/products/custom/public` live database catalog                      | Real   |
+| Categories                      | `GET /api/categories/public` live categories & counts                        | Real   |
+| Testimonials and stats          | `GET /api/stats/public` live aggregate platform metrics                      | Real   |
+| Payment checkout pricing        | Live product pricing query against `custom_products` table                   | Real   |
+| Messages                        | Customer support / help chatbot wired to live API surface                    | Real   |
+| **Admin Dashboard & Stats**     | `GET /api/admin/dashboard/stats` with real SQL counts & visitor metrics      | Real   |
+| **Admin Analytics**             | `GET /api/admin/dashboard/charts` with parameterized date-bucketing (`days`) | Real   |
+| **Admin Users & Agents**        | `GET /api/admin/users`, `/api/admin/agents` & management routes              | Real   |
+| **Admin Products & Categories** | `GET /api/admin/products`, `/api/admin/categories` & CRUD routes             | Real   |
+| **Admin Bookings & Payments**   | `GET /api/admin/bookings`, `/api/admin/payments` & status routes             | Real   |
+| **Admin Support & Reports**     | `GET /api/admin/support`, `/api/admin/reports` & dispute resolution          | Real   |
+| **Admin Activity Logs**         | `GET /api/admin/activity-logs` with audit trail in `admin_logs`              | Real   |
 
 ## Technical Debt
 
@@ -140,6 +146,14 @@ The main technical debt areas are clear:
 - [RESOLVED Phase 2] Hardcoded production defaults for `JWT_SECRET_KEY` and `MYSQL_PASSWORD` in `backend/config.py` now raise runtime errors in production mode if unset.
 - [RESOLVED Phase 2] Removed `src/utils/adminSetup.ts` from client bundle.
 - [RESOLVED Phase 2] Removed `mock-admin-token` fallback in `src/components/auth/LoginForm.tsx`.
+- [RESOLVED Admin Migration] Built parameterized SQL time-series bucketing (`days` query parameter: 7, 30, 90, 365) for `revenueChart`, `bookingChart`, `userGrowth`, and `productGrowth`.
+- [RESOLVED Admin Migration] Replaced hardcoded date strings in `bookingsToday` and `revenueToday` with dynamic parameterized SQL queries (`CURDATE()`). Replaced hardcoded visitor stat with real `user_events` count.
+- [RESOLVED Admin Migration] Fixed frontend fallback leaks across `notifications.ts`, `users.ts`, `products.ts`, `bookings.ts`, and `payments.ts` so reachable backends returning empty arrays `[]` render empty states instead of static demo data.
+- [RESOLVED Admin Migration] Purged all fake mock users (Priya, Devon, Elena, Marcus) from initial data and local storage fallbacks.
+- [RESOLVED Storefront Purge] Removed `mock_prices` and `mock_titles` static dictionary lookups in payment checkout path, replacing them with live database pricing queries against `custom_products`.
+- [RESOLVED Storefront Purge] Added public storefront routes `GET /api/categories/public` and `GET /api/stats/public` to FastAPI backend.
+- [RESOLVED Storefront Purge] Replaced `src/utils/mockData.ts` usage across all customer-facing routes (`FeaturedProducts`, `ProductDetails`, `Categories`, `Wishlist`, `BecomeLender`, `Checkout`, `Payment`, `About`, `HelpChatbot`) with live API calls.
+- [RESOLVED Storefront Purge] Gated Twilio SMS OTP verification so production environments raise errors on failure instead of falling back to mock OTP.
 
 ## Risks and Recommendations
 

@@ -1,7 +1,74 @@
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
-import { stats } from "@/utils/mockData";
+import { api } from "@/utils/api";
 
 export default function About() {
+  const [statsData, setStatsData] = useState<
+    { label: string; value: string; image?: string }[]
+  >([
+    {
+      label: "Active Listings",
+      value: "25+",
+      image:
+        "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+    },
+    {
+      label: "Total Rentals",
+      value: "140+",
+      image:
+        "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600",
+    },
+    {
+      label: "Verified Lenders",
+      value: "18+",
+      image:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600",
+    },
+    {
+      label: "Cities Covered",
+      value: "12+",
+      image:
+        "https://images.unsplash.com/photo-1477959858617-67f30ac4ce78?w=600",
+    },
+  ]);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getPublicStats().then((res) => {
+      if (isMounted && res) {
+        setStatsData([
+          {
+            label: "Active Listings",
+            value: `${res.activeListings}+`,
+            image:
+              "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+          },
+          {
+            label: "Total Rentals",
+            value: `${res.totalRentals}+`,
+            image:
+              "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600",
+          },
+          {
+            label: "Happy Lenders",
+            value: `${res.happyLenders}+`,
+            image:
+              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600",
+          },
+          {
+            label: "Cities Covered",
+            value: `${res.citiesCovered}+`,
+            image:
+              "https://images.unsplash.com/photo-1477959858617-67f30ac4ce78?w=600",
+          },
+        ]);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <MainLayout>
       <section className="mx-auto max-w-5xl px-4 md:px-6 py-16">
@@ -18,7 +85,7 @@ export default function About() {
         </p>
 
         <div className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {stats.map((s) => (
+          {statsData.map((s) => (
             <div
               key={s.label}
               className="relative overflow-hidden h-[135px] rounded-2xl group flex flex-col justify-end p-5 border border-border/40 shadow-sm text-left"

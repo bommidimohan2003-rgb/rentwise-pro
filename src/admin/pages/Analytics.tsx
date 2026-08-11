@@ -50,24 +50,31 @@ export default function Analytics() {
     });
   }, [charts]);
 
-  const loadAnalytics = async () => {
-    try {
-      setLoading(true);
-      const [statsData, chartsData] = await Promise.all([
-        notificationsService.getDashboardStats(),
-        notificationsService.getDashboardCharts(),
-      ]);
-      setStats(statsData);
-      setCharts(chartsData);
-    } catch {
-      toast.error("Failed to load analytics datasets.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadAnalytics();
+    let isMounted = true;
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        const [statsData, chartsData] = await Promise.all([
+          notificationsService.getDashboardStats(),
+          notificationsService.getDashboardCharts(timePeriod),
+        ]);
+        if (isMounted) {
+          setStats(statsData);
+          setCharts(chartsData);
+        }
+      } catch {
+        toast.error("Failed to load analytics datasets.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchAnalytics();
+    return () => {
+      isMounted = false;
+    };
   }, [timePeriod]);
 
   if (loading) {

@@ -8,8 +8,9 @@ import {
   Sparkles,
   AlertCircle,
 } from "lucide-react";
-import { products, categories } from "@/utils/mockData";
+import { api } from "@/utils/api";
 import { Button } from "@/components/common/Button";
+import type { Product, Category } from "@/types";
 
 interface Message {
   sender: "bot" | "user";
@@ -19,6 +20,8 @@ interface Message {
 
 export function HelpChatbot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [productsList, setProductsList] = useState<Product[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "bot",
@@ -35,6 +38,21 @@ export function HelpChatbot() {
     window.addEventListener("open-payent-help-chat", handleOpen);
     return () =>
       window.removeEventListener("open-payent-help-chat", handleOpen);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([api.getPublicProducts(), api.getPublicCategories()]).then(
+      ([prods, cats]) => {
+        if (isMounted) {
+          if (prods) setProductsList(prods);
+          if (cats) setCategoriesList(cats);
+        }
+      },
+    );
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -79,10 +97,10 @@ export function HelpChatbot() {
       /payent|rent|lend|price|rate|cost|gear|deposit|insur|deliver|city|cities|owner|earn|product|list|item/i.test(
         q,
       ) ||
-      categories.some(
+      categoriesList.some(
         (cat) => q.includes(cat.id) || q.includes(cat.name.toLowerCase()),
       ) ||
-      products.some(
+      productsList.some(
         (p) => q.includes(p.title.toLowerCase()) || q.includes(p.category),
       );
 
@@ -100,7 +118,10 @@ export function HelpChatbot() {
       q.includes("ktm") ||
       q.includes("activa")
     ) {
-      const bikes = products.filter((p) => p.category === "bikes");
+      const bikes = productsList.filter((p) => p.category === "bikes");
+      if (bikes.length === 0) {
+        return "We have multiple rides available on Payent! Browse the marketplace to find the latest available vehicles.";
+      }
       let bikeListText =
         "We have multiple premium rides available for rent on Payent:\n";
       bikes.forEach((b) => {
@@ -120,7 +141,10 @@ export function HelpChatbot() {
       q.includes("dewalt") ||
       q.includes("makita")
     ) {
-      const tools = products.filter((p) => p.category === "tools");
+      const tools = productsList.filter((p) => p.category === "tools");
+      if (tools.length === 0) {
+        return "Yes! We list heavy-duty electric tools for home projects and contract work. Browse the marketplace categories for current availability.";
+      }
       let toolListText =
         "Yes! We list heavy-duty electric tools for home projects and contract work:\n";
       tools.forEach((t) => {
@@ -141,7 +165,12 @@ export function HelpChatbot() {
       q.includes("charger") ||
       q.includes("battery")
     ) {
-      const powerbanks = products.filter((p) => p.category === "powerbanks");
+      const powerbanks = productsList.filter(
+        (p) => p.category === "powerbanks",
+      );
+      if (powerbanks.length === 0) {
+        return "We offer high-capacity power banks perfect for outdoor shoots or trips! Search our powerbanks category to rent.";
+      }
       let pbListText =
         "We have high-capacity power banks perfect for outdoor shoots or trips:\n";
       powerbanks.forEach((pb) => {
@@ -160,7 +189,7 @@ export function HelpChatbot() {
       q.includes("lens") ||
       q.includes("mirrorless")
     ) {
-      const camera = products.find((p) => p.category === "cameras");
+      const camera = productsList.find((p) => p.category === "cameras");
       return camera
         ? `We have professional cameras like the *${camera.title}* for rent at just ₹${camera.price}/day. It includes a lens, additional batteries, and a carrying case.`
         : "We rent professional full-frame mirrorless cameras, lenses, and accessories at competitive daily rates.";
@@ -168,14 +197,14 @@ export function HelpChatbot() {
 
     // 5. Laptops & Drones
     if (q.includes("laptop") || q.includes("macbook")) {
-      const macbook = products.find((p) => p.category === "laptops");
+      const macbook = productsList.find((p) => p.category === "laptops");
       return macbook
         ? `You can rent the high-end *${macbook.title}* for editing or development work at ₹${macbook.price}/day.`
         : "Need power on the go? Rent premium editing and coding laptops by the day.";
     }
 
     if (q.includes("drone") || q.includes("dji") || q.includes("mavic")) {
-      const drone = products.find((p) => p.category === "drones");
+      const drone = productsList.find((p) => p.category === "drones");
       return drone
         ? `Fly in style! Rent the *${drone.title}* with triple-cameras and additional flight batteries for ₹${drone.price}/day.`
         : "We offer professional DJI camera drones for cinematic aerial videography.";
