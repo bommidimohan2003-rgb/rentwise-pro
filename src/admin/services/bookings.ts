@@ -82,7 +82,7 @@ export const bookingsService = {
   async getBookings(): Promise<AdminBooking[]> {
     try {
       const response = await adminApi.get("/bookings");
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
     } catch (err) {

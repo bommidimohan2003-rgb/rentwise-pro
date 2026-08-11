@@ -251,9 +251,10 @@ export const notificationsService = {
     };
   },
 
-  async getDashboardCharts(): Promise<DashboardCharts> {
+  async getDashboardCharts(period = "30"): Promise<DashboardCharts> {
     try {
-      const response = await adminApi.get("/dashboard/charts");
+      const days = parseInt(period, 10) || 30;
+      const response = await adminApi.get(`/dashboard/charts?days=${days}`);
       if (response.data) return response.data;
     } catch (err) {
       console.warn("Failed to fetch backend charts, using client database:", err);
@@ -318,46 +319,13 @@ export const notificationsService = {
   async getDashboardActivities(): Promise<DashboardActivity[]> {
     try {
       const response = await adminApi.get("/dashboard/activities");
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
     } catch (err) {
       console.warn("Failed to fetch backend activities, using client database:", err);
     }
-    return [
-      {
-        id: "a-1",
-        type: "user_registered",
-        title: "New User Registered",
-        detail: "Bommidi Mohan created account with Admin role",
-        time: "5 mins ago",
-        icon: "UserPlus",
-      },
-      {
-        id: "a-2",
-        type: "product_uploaded",
-        title: "Camera Listing Added",
-        detail: "Sony FX3 Cinema Line Camera verified in Indiranagar Hub",
-        time: "25 mins ago",
-        icon: "Camera",
-      },
-      {
-        id: "a-3",
-        type: "booking_created",
-        title: "Rental Order Confirmed",
-        detail: "DJI Mavic 3 Pro Cine booked for ₹12,600 via Razorpay",
-        time: "1 hour ago",
-        icon: "CheckCircle",
-      },
-      {
-        id: "a-4",
-        type: "payment_settled",
-        title: "Lender Settlement Processed",
-        detail: "Payout ₹7,500 disbursed to Marcus Vance",
-        time: "3 hours ago",
-        icon: "CreditCard",
-      },
-    ];
+    return [];
   },
 
   async resetAnalytics(): Promise<void> {

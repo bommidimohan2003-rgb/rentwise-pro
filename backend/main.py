@@ -1750,11 +1750,12 @@ def admin_stats(current_admin: dict = Depends(check_admin_user)):
             cursor.execute("SELECT IFNULL(SUM(total), 0) as total FROM orders")
             monthly_revenue = cursor.fetchone()["total"]
             
-            # Stats today
-            cursor.execute("SELECT COUNT(*) as count FROM orders WHERE created_at LIKE '2026-07-18%' OR created_at LIKE '2026-07-17%'")
+            # Stats today (dynamic date filtering)
+            today_prefix = datetime.date.today().isoformat()
+            cursor.execute("SELECT COUNT(*) as count FROM orders WHERE created_at LIKE %s OR created_at >= CURDATE()", (f"{today_prefix}%",))
             bookings_today = cursor.fetchone()["count"]
             
-            cursor.execute("SELECT IFNULL(SUM(total), 0) as total FROM orders WHERE created_at LIKE '2026-07-18%' OR created_at LIKE '2026-07-17%'")
+            cursor.execute("SELECT IFNULL(SUM(total), 0) as total FROM orders WHERE created_at LIKE %s OR created_at >= CURDATE()", (f"{today_prefix}%",))
             revenue_today = cursor.fetchone()["total"]
             
             # Reports & notifications
@@ -1763,6 +1764,13 @@ def admin_stats(current_admin: dict = Depends(check_admin_user)):
             
             cursor.execute("SELECT COUNT(*) as count FROM admin_notifications WHERE is_read = 0")
             unread_notifications = cursor.fetchone()["count"]
+            
+            # Real website visitors count from user_events table
+            cursor.execute("SELECT COUNT(DISTINCT session_id) as count FROM user_events WHERE session_id IS NOT NULL AND session_id != ''")
+            visitors_count = cursor.fetchone()["count"]
+            if visitors_count == 0:
+                cursor.execute("SELECT COUNT(*) as count FROM user_events")
+                visitors_count = cursor.fetchone()["count"]
             
     finally:
         conn.close()
@@ -1777,11 +1785,11 @@ def admin_stats(current_admin: dict = Depends(check_admin_user)):
         "totalCategories": total_categories,
         "bookingsToday": bookings_today,
         "monthlyBookings": monthly_bookings,
-        "revenueToday": revenue_today,
-        "monthlyRevenue": monthly_revenue,
+        "revenueToday": float(revenue_today),
+        "monthlyRevenue": float(monthly_revenue),
         "pendingReports": pending_reports,
         "unreadNotifications": unread_notifications,
-        "websiteVisitors": 15420
+        "websiteVisitors": visitors_count
     }
 
 @app.post("/api/admin/dashboard/reset-analytics")
@@ -1796,35 +1804,28 @@ def admin_reset_analytics(current_admin: dict = Depends(check_admin_user)):
     return {"success": True, "message": "Total analytics, revenue, and active listings reset to 0."}
 
 @app.get("/api/admin/dashboard/charts")
-def admin_charts(current_admin: dict = Depends(check_admin_user)):
+def admin_charts(days: int = Query(30), current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT IFNULL(SUM(total), 0) as total FROM orders")
-            total_rev = cursor.fetchone()["total"]
-            cursor.execute("SELECT COUNT(*) as count FROM orders")
-            total_bookings = cursor.fetchone()["count"]
-            cursor.execute("SELECT COUNT(*) as count FROM users")
-            total_users = cursor.fetchone()["count"]
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products")
-            total_products = cursor.fetchone()["count"]
+            # Build dynamic time-series buckets based on requested days
+            num_days = max(1, min(days, 365))
+            end_date = datetime.date.today()
+            start_date = end_date - datetime.timedelta(days=num_days - 1)
             
             # Top products
             cursor.execute("""
-                SELECT product_title, COUNT(*) as rentals, SUM(total) as revenue
+                SELECT product_title, COUNT(*) as rentals, IFNULL(SUM(total), 0) as revenue
                 FROM orders
                 GROUP BY product_title
                 ORDER BY rentals DESC
                 LIMIT 4
             """)
-            rows = cursor.fetchall()
-            top_products = []
-            for r in rows:
-                top_products.append({
-                    "name": r["product_title"],
-                    "rentals": r["rentals"],
-                    "revenue": r["revenue"]
-                })
+            top_rows = cursor.fetchall()
+            top_products = [
+                {"name": r["product_title"], "rentals": r["rentals"], "revenue": float(r["revenue"])}
+                for r in top_rows
+            ]
                 
             # Category distribution share
             cursor.execute("""
@@ -1833,51 +1834,91 @@ def admin_charts(current_admin: dict = Depends(check_admin_user)):
                 GROUP BY category
             """)
             cat_rows = cursor.fetchall()
-            category_distribution = []
-            for c in cat_rows:
-                if c["name"]:
-                    category_distribution.append({"name": c["name"], "value": c["value"]})
+            category_distribution = [
+                {"name": c["name"], "value": c["value"]}
+                for c in cat_rows if c["name"]
+            ]
+
+            # Aggregate time-series for orders (revenue & booking count)
+            cursor.execute("""
+                SELECT DATE(created_at) as dt, COUNT(*) as cnt, IFNULL(SUM(total), 0) as rev
+                FROM orders
+                WHERE created_at >= %s
+                GROUP BY DATE(created_at)
+            """, (start_date.isoformat(),))
+            order_data = {str(r["dt"]): (r["cnt"], float(r["rev"])) for r in cursor.fetchall()}
+
+            # Aggregate time-series for user growth
+            cursor.execute("""
+                SELECT DATE(created_at) as dt, COUNT(*) as cnt
+                FROM users
+                WHERE created_at >= %s
+                GROUP BY DATE(created_at)
+            """, (start_date.isoformat(),))
+            user_data = {str(r["dt"]): r["cnt"] for r in cursor.fetchall()}
+
+            # Aggregate time-series for product growth
+            cursor.execute("""
+                SELECT DATE(created_at) as dt, COUNT(*) as cnt
+                FROM custom_products
+                WHERE created_at >= %s
+                GROUP BY DATE(created_at)
+            """, (start_date.isoformat(),))
+            product_data = {str(r["dt"]): r["cnt"] for r in cursor.fetchall()}
+
+            revenue_chart = []
+            booking_chart = []
+            user_growth = []
+            product_growth = []
+
+            if num_days <= 31:
+                # Group by day
+                curr = start_date
+                while curr <= end_date:
+                    d_str = curr.isoformat()
+                    label = curr.strftime("%b %d")
+                    cnt, rev = order_data.get(d_str, (0, 0.0))
+                    u_cnt = user_data.get(d_str, 0)
+                    p_cnt = product_data.get(d_str, 0)
+
+                    revenue_chart.append({"name": label, "revenue": rev})
+                    booking_chart.append({"name": label, "bookings": cnt})
+                    user_growth.append({"name": label, "users": u_cnt})
+                    product_growth.append({"name": label, "products": p_cnt})
+                    curr += datetime.timedelta(days=1)
+            else:
+                # Group by month for longer periods (90, 365 days)
+                # Aggregate daily values into monthly buckets
+                rev_m, book_m, user_m, prod_m = {}, {}, {}, {}
+                curr = start_date
+                while curr <= end_date:
+                    d_str = curr.isoformat()
+                    m_label = curr.strftime("%b %Y")
+                    cnt, rev = order_data.get(d_str, (0, 0.0))
+                    u_cnt = user_data.get(d_str, 0)
+                    p_cnt = product_data.get(d_str, 0)
+
+                    rev_m[m_label] = rev_m.get(m_label, 0.0) + rev
+                    book_m[m_label] = book_m.get(m_label, 0) + cnt
+                    user_m[m_label] = user_m.get(m_label, 0) + u_cnt
+                    prod_m[m_label] = prod_m.get(m_label, 0) + p_cnt
+
+                    curr += datetime.timedelta(days=1)
+
+                for m_label in rev_m.keys():
+                    revenue_chart.append({"name": m_label, "revenue": rev_m[m_label]})
+                    booking_chart.append({"name": m_label, "bookings": book_m[m_label]})
+                    user_growth.append({"name": m_label, "users": user_m[m_label]})
+                    product_growth.append({"name": m_label, "products": prod_m[m_label]})
 
     finally:
         conn.close()
         
     return {
-        "revenueChart": [
-            { "name": "Jan", "revenue": 0 },
-            { "name": "Feb", "revenue": 0 },
-            { "name": "Mar", "revenue": 0 },
-            { "name": "Apr", "revenue": 0 },
-            { "name": "May", "revenue": 0 },
-            { "name": "Jun", "revenue": 0 },
-            { "name": "Jul", "revenue": int(total_rev) },
-        ],
-        "bookingChart": [
-            { "name": "Jan", "bookings": 0 },
-            { "name": "Feb", "bookings": 0 },
-            { "name": "Mar", "bookings": 0 },
-            { "name": "Apr", "bookings": 0 },
-            { "name": "May", "bookings": 0 },
-            { "name": "Jun", "bookings": 0 },
-            { "name": "Jul", "bookings": int(total_bookings) },
-        ],
-        "userGrowth": [
-            { "name": "Jan", "users": 0 },
-            { "name": "Feb", "users": 0 },
-            { "name": "Mar", "users": 0 },
-            { "name": "Apr", "users": 0 },
-            { "name": "May", "users": 0 },
-            { "name": "Jun", "users": 0 },
-            { "name": "Jul", "users": int(total_users) },
-        ],
-        "productGrowth": [
-            { "name": "Jan", "products": 0 },
-            { "name": "Feb", "products": 0 },
-            { "name": "Mar", "products": 0 },
-            { "name": "Apr", "products": 0 },
-            { "name": "May", "products": 0 },
-            { "name": "Jun", "products": 0 },
-            { "name": "Jul", "products": int(total_products) },
-        ],
+        "revenueChart": revenue_chart,
+        "bookingChart": booking_chart,
+        "userGrowth": user_growth,
+        "productGrowth": product_growth,
         "categoryDistribution": category_distribution,
         "topProducts": top_products
     }
@@ -2101,8 +2142,14 @@ def admin_agents_list(current_admin: dict = Depends(check_admin_user)):
                     JOIN custom_products p ON o.product_id = p.id
                     WHERE p.user_email = %s
                 """, (r["email"],))
-                o_data = cursor.fetchone()
-                
+                cursor.execute("""
+                    SELECT IFNULL(AVG(r.rating), 4.8) as avg_rating
+                    FROM reviews r
+                    JOIN custom_products p ON r.product_id = p.id
+                    WHERE p.user_email = %s
+                """, (r["email"],))
+                avg_rating = float(cursor.fetchone()["avg_rating"] or 4.8)
+
                 result.append({
                     "id": r["email"],
                     "fullName": r["full_name"],
@@ -2110,8 +2157,8 @@ def admin_agents_list(current_admin: dict = Depends(check_admin_user)):
                     "avatar": r["avatar"] or "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
                     "productsCount": p_count,
                     "bookingsCount": o_data["count"],
-                    "revenue": o_data["revenue"],
-                    "rating": 4.8,
+                    "revenue": float(o_data["revenue"]),
+                    "rating": round(avg_rating, 1),
                     "status": r["status"] or "active",
                     "createdAt": r["created_at"]
                 })

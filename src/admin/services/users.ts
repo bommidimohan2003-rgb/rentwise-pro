@@ -101,7 +101,7 @@ export const usersService = {
   async getUsers(): Promise<AdminUser[]> {
     try {
       const response = await adminApi.get("/users");
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
     } catch (err) {
@@ -154,7 +154,7 @@ export const usersService = {
   async getAgents(): Promise<AdminAgent[]> {
     try {
       const response = await adminApi.get("/agents");
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
     } catch (err) {

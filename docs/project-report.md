@@ -127,6 +127,13 @@ The project has a mixed integration state. Some customer-facing features are bac
 | Categories                | Static storefront data (no public backend route)                   | Unbacked / Mock |
 | Testimonials and stats    | Static storefront data (no public backend route)                   | Unbacked / Mock |
 | Messages                  | Static storefront data (no public backend route)                   | Unbacked / Mock |
+| **Admin Dashboard & Stats** | `GET /api/admin/dashboard/stats` with real SQL counts & visitor metrics | Real            |
+| **Admin Analytics**        | `GET /api/admin/dashboard/charts` with parameterized date-bucketing (`days`) | Real            |
+| **Admin Users & Agents**   | `GET /api/admin/users`, `/api/admin/agents` & management routes   | Real            |
+| **Admin Products & Categories** | `GET /api/admin/products`, `/api/admin/categories` & CRUD routes | Real            |
+| **Admin Bookings & Payments** | `GET /api/admin/bookings`, `/api/admin/payments` & status routes | Real            |
+| **Admin Support & Reports** | `GET /api/admin/support`, `/api/admin/reports` & dispute resolution | Real            |
+| **Admin Activity Logs**   | `GET /api/admin/activity-logs` with audit trail in `admin_logs`     | Real            |
 
 The OTP flow has a mock fallback path in `backend/main.py` when Twilio credentials are absent. The checkout path also includes mock pricing and titles through `mock_prices` and `mock_titles` in the backend payment code path.
 
@@ -140,6 +147,10 @@ The main technical debt areas are clear:
 - [RESOLVED Phase 2] Hardcoded production defaults for `JWT_SECRET_KEY` and `MYSQL_PASSWORD` in `backend/config.py` now raise runtime errors in production mode if unset.
 - [RESOLVED Phase 2] Removed `src/utils/adminSetup.ts` from client bundle.
 - [RESOLVED Phase 2] Removed `mock-admin-token` fallback in `src/components/auth/LoginForm.tsx`.
+- [RESOLVED Admin Migration] Built parameterized SQL time-series bucketing (`days` query parameter: 7, 30, 90, 365) for `revenueChart`, `bookingChart`, `userGrowth`, and `productGrowth`.
+- [RESOLVED Admin Migration] Replaced hardcoded date strings in `bookingsToday` and `revenueToday` with dynamic parameterized SQL queries (`CURDATE()`). Replaced hardcoded visitor stat with real `user_events` count.
+- [RESOLVED Admin Migration] Fixed frontend fallback leaks across `notifications.ts`, `users.ts`, `products.ts`, `bookings.ts`, and `payments.ts` so reachable backends returning empty arrays `[]` render empty states instead of static demo data.
+- [RESOLVED Admin Migration] Wired dynamic `timePeriod` selector in `Analytics.tsx` to re-fetch backend analytics for the selected range.
 
 ## Risks and Recommendations
 

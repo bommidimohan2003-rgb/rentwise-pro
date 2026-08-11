@@ -225,7 +225,7 @@ export const productsService = {
   async getProducts(): Promise<AdminProduct[]> {
     try {
       const response = await adminApi.get("/products");
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
     } catch (err) {
@@ -314,7 +314,7 @@ export const productsService = {
   async getCategories(): Promise<AdminCategory[]> {
     try {
       const response = await adminApi.get("/categories");
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
     } catch (err) {

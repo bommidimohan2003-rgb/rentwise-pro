@@ -62,7 +62,7 @@ export const paymentsService = {
   async getPayments(): Promise<AdminPayment[]> {
     try {
       const response = await adminApi.get("/payments");
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
     } catch (err) {
