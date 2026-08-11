@@ -11,6 +11,12 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 2000,
   },
+  ssr: {
+    noExternal: ["firebase", "@firebase/app", "@firebase/auth"],
+  },
+  optimizeDeps: {
+    include: ["firebase/app", "firebase/auth"],
+  },
   plugins: [
     tanstackStart({
       server: { entry: "src/server.ts" },
