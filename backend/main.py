@@ -210,6 +210,16 @@ class DirectOTPVerifySchema(BaseModel):
     code: str
     email: Optional[EmailStr] = None
 
+class GoogleSyncSchema(BaseModel):
+    email: EmailStr
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    pincode: Optional[str] = None
+    admin_code: Optional[str] = None
+    id_token: Optional[str] = None
+
 # Phone Normalization Helper
 def normalize_phone(phone: str) -> str:
     """Clean and normalize phone number to E.164 format."""
@@ -377,6 +387,98 @@ def verify_otp_direct(data: DirectOTPVerifySchema, request: Request):
             detail="Invalid or expired verification code."
         )
     return {"success": True, "message": "Phone number verified successfully via Twilio OTP."}
+
+@app.post("/api/auth/google-sync")
+def google_sync(data: GoogleSyncSchema, response: Response):
+    clean_email = data.email.lower().strip()
+    existing = get_user(clean_email)
+    
+    role = "user"
+    if data.admin_code:
+        if data.admin_code == ADMIN_SETUP_CODE:
+            role = "admin"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid admin setup code."
+            )
+
+    display_name = data.full_name or clean_email.split("@")[0]
+    clean_phone = normalize_phone(data.phone) if data.phone else "+10000000000"
+
+    if existing:
+        role = existing.get("role", role)
+        execute_query(
+            """
+            UPDATE users 
+            SET full_name = COALESCE(NULLIF(%s, ''), full_name),
+                phone = COALESCE(NULLIF(%s, ''), phone),
+                address = COALESCE(NULLIF(%s, ''), address),
+                city = COALESCE(NULLIF(%s, ''), city),
+                pincode = COALESCE(NULLIF(%s, ''), pincode),
+                role = %s
+            WHERE LOWER(email) = LOWER(%s)
+            """,
+            (display_name, clean_phone, data.address, data.city, data.pincode, role, clean_email)
+        )
+        user_data = get_user(clean_email) or existing
+    else:
+        create_user(
+            email=clean_email,
+            phone=clean_phone,
+            password_hash=None,
+            full_name=display_name,
+            role=role,
+            address=data.address,
+            city=data.city,
+            pincode=data.pincode
+        )
+        user_data = get_user(clean_email) or {
+            "email": clean_email,
+            "phone": clean_phone,
+            "full_name": display_name,
+            "role": role,
+            "address": data.address,
+            "city": data.city,
+            "pincode": data.pincode
+        }
+
+    access_token = create_access_token({"sub": clean_email, "role": role, "name": display_name})
+    refresh_token = create_refresh_token({"sub": clean_email})
+    
+    response.set_cookie(
+        key="payent_refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
+        max_age=7 * 86400
+    )
+
+    broadcast_admin_event("user.google_authenticated", {
+        "id": clean_email,
+        "fullName": display_name,
+        "email": clean_email,
+        "phone": clean_phone,
+        "role": role,
+        "status": "active",
+        "createdAt": datetime.datetime.utcnow().isoformat()
+    })
+
+    return {
+        "success": True,
+        "token": access_token,
+        "user": {
+            "id": clean_email,
+            "email": clean_email,
+            "fullName": display_name,
+            "phone": user_data.get("phone", clean_phone),
+            "role": role,
+            "address": user_data.get("address", data.address),
+            "city": user_data.get("city", data.city),
+            "pincode": user_data.get("pincode", data.pincode)
+        }
+    }
 
 @app.post("/api/register/request")
 def register_request(data: OTPRequestSchema, request: Request):

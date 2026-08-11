@@ -21,6 +21,7 @@ import { Input } from "@/components/common/Input";
 import { useAuth } from "@/hooks/useAuth";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { toast } from "sonner";
+import { GoogleAuthButton } from "./GoogleAuthButton";
 
 const schema = z
   .object({
@@ -355,6 +356,19 @@ export function RegisterForm() {
         </p>
       )}
       {error && <p className="text-xs text-destructive font-medium">{error}</p>}
+
+      <div className="relative my-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-2 text-muted-foreground font-semibold">
+            Or sign up with
+          </span>
+        </div>
+      </div>
+
+      <GoogleAuthButton onSuccess={() => navigate({ to: "/dashboard" })} />
     </form>
   );
 }

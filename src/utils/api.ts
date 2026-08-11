@@ -124,6 +124,37 @@ export const api = {
     return res.json();
   },
 
+  async googleSync(payload: {
+    email: string;
+    fullName?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    pincode?: string;
+    adminCode?: string;
+    idToken?: string;
+  }) {
+    const res = await fetch(`${API_BASE}/api/auth/google-sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: payload.email,
+        full_name: payload.fullName || null,
+        phone: payload.phone || null,
+        address: payload.address || null,
+        city: payload.city || null,
+        pincode: payload.pincode || null,
+        admin_code: payload.adminCode || null,
+        id_token: payload.idToken || null,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to authenticate with Google."));
+    }
+    return await res.json();
+  },
+
   async getMe(token: string) {
     const res = await fetch(`${API_BASE}/api/me`, {
       method: "GET",
