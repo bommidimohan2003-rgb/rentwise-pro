@@ -56,6 +56,8 @@ export default tseslint.config(
             "SESSION_TIMEOUT_SECONDS",
             "DEFAULT_SLOW_THRESHOLD_MS",
             "slowConnectionTriggerMs",
+            "triggerSessionExpiredEvent",
+            "useSlowConnection",
             "useSidebar",
           ],
         },
