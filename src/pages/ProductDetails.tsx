@@ -508,21 +508,21 @@ export default function ProductDetails() {
               Verified Customer Reviews
             </h2>
             <div className="grid gap-5 md:grid-cols-3">
-              {/* No reviews from backend yet — renders when backend review endpoint is wired */}
-              {([] as Array<{id: string; author: string; rating: number; comment: string; date: string}>).map((r) => (
+              {/* Reviews from backend will be rendered here once GET /api/reviews endpoint is implemented */}
+              {([] as Array<{id: string; author: string; avatar?: string; rating: number; comment: string; date: string}>).map((r) => (
                 <div
                   key={r.id}
                   className="rounded-3xl bg-card border border-border p-6 space-y-3 shadow-md"
                 >
                   <div className="flex items-center gap-3">
                     <img
-                      src={r.avatar}
-                      alt={r.user}
+                      src={r.avatar ?? ""}
+                      alt={r.author}
                       className="h-10 w-10 rounded-full object-cover border border-[#FF5A5F]"
                     />
                     <div className="text-left">
                       <div className="text-sm font-extrabold text-foreground">
-                        {r.user}
+                        {r.author}
                       </div>
                       <div className="text-[10px] text-muted-foreground font-medium">
                         {r.date}

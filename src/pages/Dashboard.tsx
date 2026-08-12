@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [myListings, setMyListings] = useState<Product[]>([]);
   const [alertsList, setAlertsList] = useState<Notification[]>([]);
+  const [publicProducts, setPublicProducts] = useState<Product[]>([]);
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(
     null,
   );
@@ -45,6 +46,12 @@ export default function Dashboard() {
       .getNotifications(token)
       .then(setAlertsList)
       .catch((err) => console.error("Failed to load notifications:", err));
+
+    // Load public catalog for wishlist preview
+    api
+      .getPublicProducts()
+      .then((items) => setPublicProducts(items ?? []))
+      .catch(() => {});
   }, [token]);
 
   const handleCancelOrder = (orderId: string) => {
@@ -62,7 +69,7 @@ export default function Dashboard() {
       .catch((err) => toast.error(err.message || "Failed to cancel order."));
   };
 
-  const wishlistItems = products.filter((p) => ids.includes(p.id)).slice(0, 3);
+  const wishlistItems = publicProducts.filter((p: Product) => ids.includes(p.id)).slice(0, 3);
 
   // Compute real-time dashboard details dynamically
   const activeRentalsCount = orders.filter(
@@ -241,7 +248,7 @@ export default function Dashboard() {
               </div>
               <div className="mt-4 space-y-3">
                 {wishlistItems.length ? (
-                  wishlistItems.map((p) => (
+                  wishlistItems.map((p: Product) => (
                     <div key={p.id} className="flex items-center gap-3">
                       <img
                         src={p.image}
