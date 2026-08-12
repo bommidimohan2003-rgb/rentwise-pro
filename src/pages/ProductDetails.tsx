@@ -18,7 +18,6 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Rating } from "@/components/common/Rating";
-import { products, reviews } from "@/utils/mockData";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -47,7 +46,23 @@ export default function ProductDetails() {
   const navigate = useNavigate();
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
-  const product = products.find((p) => p.id === id);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [productLoading, setProductLoading] = useState(true);
+
+  // Load product from live API catalog
+  useEffect(() => {
+    let isMounted = true;
+    setProductLoading(true);
+    api.getPublicProducts().then((items) => {
+      if (!isMounted) return;
+      const found = items?.find((p: Product) => p.id === id) ?? null;
+      setProduct(found);
+      setProductLoading(false);
+    }).catch(() => {
+      if (isMounted) setProductLoading(false);
+    });
+    return () => { isMounted = false; };
+  }, [id]);
   const [selectedDate, setSelectedDate] = useState(0);
   const [selectedTime, setSelectedTime] = useState("12:00 PM");
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
@@ -81,6 +96,17 @@ export default function ProductDetails() {
     };
   }, [product]);
 
+  if (productLoading) {
+    return (
+      <MainLayout>
+        <div className="mx-auto max-w-3xl px-4 md:px-6 py-24 text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-neutral-300 border-t-neutral-700" />
+          <p className="mt-4 text-neutral-500">Loading product…</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (!product) {
     return (
       <MainLayout>
@@ -96,6 +122,7 @@ export default function ProductDetails() {
       </MainLayout>
     );
   }
+
 
   const productSchema = {
     "@type": "Product",
@@ -481,7 +508,8 @@ export default function ProductDetails() {
               Verified Customer Reviews
             </h2>
             <div className="grid gap-5 md:grid-cols-3">
-              {reviews.map((r) => (
+              {/* No reviews from backend yet — renders when backend review endpoint is wired */}
+              {([] as Array<{id: string; author: string; rating: number; comment: string; date: string}>).map((r) => (
                 <div
                   key={r.id}
                   className="rounded-3xl bg-card border border-border p-6 space-y-3 shadow-md"

@@ -17,7 +17,6 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Modal } from "@/components/common/Modal";
-import { products } from "@/utils/mockData";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { api } from "@/utils/api";
 import { tracker } from "@/utils/eventTracker";
@@ -45,7 +44,23 @@ const loadRazorpayScript = (): Promise<boolean> => {
 export default function Checkout() {
   const search = useSearch({ from: "/checkout" }) as { id?: string };
   const navigate = useNavigate();
-  const product = products.find((p) => p.id === search.id) ?? products[0];
+  const [product, setProduct] = useState<Product | null>(null);
+  const [productLoading, setProductLoading] = useState(true);
+
+  // Load product from live API
+  useEffect(() => {
+    let isMounted = true;
+    setProductLoading(true);
+    api.getPublicProducts().then((items) => {
+      if (!isMounted) return;
+      const found = items?.find((p: Product) => p.id === search.id) ?? items?.[0] ?? null;
+      setProduct(found);
+      setProductLoading(false);
+    }).catch(() => {
+      if (isMounted) setProductLoading(false);
+    });
+    return () => { isMounted = false; };
+  }, [search.id]);
 
   // Dates
   const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
@@ -98,18 +113,44 @@ export default function Checkout() {
 
   const qrTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Rental Calculations
+  // Rental Calculations (safe-guard against null product while loading)
   const days = Math.max(
     1,
     Math.ceil((+new Date(end) - +new Date(start)) / 86400000),
   );
-  const subtotal = product.price * days;
+  const subtotal = (product?.price ?? 0) * days;
   const discount = applied ? subtotal * 0.1 : 0;
   const tax = (subtotal - discount) * 0.08;
   const total = useMemo(
     () => subtotal - discount + tax,
     [subtotal, discount, tax],
   );
+
+  // Loading and not-found guards
+  if (productLoading) {
+    return (
+      <MainLayout>
+        <div className="mx-auto max-w-3xl px-4 py-24 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-neutral-400" />
+          <p className="mt-4 text-neutral-500">Loading product details…</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!product) {
+    return (
+      <MainLayout>
+        <div className="mx-auto max-w-3xl px-4 py-24 text-center">
+          <AlertTriangle className="mx-auto h-8 w-8 text-amber-500" />
+          <h1 className="mt-4 text-2xl font-bold">Product not found</h1>
+          <Button className="mt-6" onClick={() => navigate({ to: "/categories" })}>
+            Browse marketplace
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   // QR Timer Countdown Handler
   useEffect(() => {

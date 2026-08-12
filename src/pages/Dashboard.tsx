@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
-import { products } from "@/utils/mockData";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { Order, Product, Notification } from "@/types";
