@@ -1,0 +1,4 @@
+# Disable Jekyll themes and metadata fetching for React / Vite app
+theme: null
+plugins: []
+repository: null
