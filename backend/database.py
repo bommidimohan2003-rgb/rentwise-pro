@@ -7,8 +7,11 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 import pymysql
+import logging
 from datetime import datetime
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB
+
+logger = logging.getLogger("payent.database")
 
 def get_db_connection():
     # Attempt connecting directly to the specified database first
@@ -477,7 +480,7 @@ def get_user(email: str):
         if user:
             return user
     except Exception as e:
-        print(f"Warning: Database read error in get_user: {e}")
+        logger.warning("DB read error in get_user for %s — falling back to MOCK_USERS: %s", clean_email, e)
     return MOCK_USERS.get(clean_email)
 
 def get_admin_notifications(limit: int = 20) -> list:
@@ -1032,7 +1035,11 @@ def revoke_token(jti: str, email: str, expires_at: int):
             (jti, email, expires_at, created_at)
         )
     except Exception as e:
-        print(f"Notice: Database write error in revoke_token: {e}")
+        logger.warning(
+            "SECURITY: token_blocklist DB write failed for jti=%s email=%s — "
+            "token revocation stored only in-process REVOKED_JTIS (lost on restart). "
+            "Error: %s", jti, email, e
+        )
 
 def is_token_revoked(jti: str) -> bool:
     if not jti:

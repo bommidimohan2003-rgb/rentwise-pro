@@ -1062,10 +1062,6 @@ def remove_custom_listing(id: str, email: str = Depends(get_current_user_email))
     logger.info(f"Listing {id} deleted successfully from MySQL database for user {clean_email}.")
     return {"success": True, "message": "Listing deleted successfully from MySQL database."}
 
-@app.get("/api/stats/public")
-def get_public_marketplace_stats():
-    return get_public_stats()
-
 @app.post("/api/products/custom/{id}/toggle-availability")
 def toggle_listing_availability(id: str, email: str = Depends(get_current_user_email)):
     product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (id,))
@@ -1587,6 +1583,9 @@ def broadcast_admin_event(event_type: str, data: dict):
         logger.warning(f"Could not broadcast WS event {event_type}: {e}")
 
 @app.websocket("/api/admin/ws")
+# NOTE (F-18): This WebSocket route is NOT functional on Vercel serverless (HTTP-only platform).
+# On Vercel, clients fall through to the HTTP polling fallback at GET /api/admin/events/poll.
+# This route works only on long-lived deployments (Railway, Render, Docker, bare server).
 async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):
     # 1. Rate limiting WebSocket connection attempts per IP
     client_ip = websocket.client.host if websocket.client else "unknown"
