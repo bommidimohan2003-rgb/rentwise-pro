@@ -978,10 +978,12 @@ adminApi.interceptors.response.use(
               createdAt: new Date().toISOString(),
             };
 
-            localStorage.setItem("payent:admin:token", "mock-admin-token");
+            // Generate a non-JWT offline session identifier scoped only to this browser/tab
+            const offlineSessionId = `offline-admin-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            localStorage.setItem("payent:admin:token", offlineSessionId);
             localStorage.setItem(
               "payent:admin:current_user",
-              JSON.stringify(adminProfile),
+              JSON.stringify({ ...adminProfile, _offlineMode: true }),
             );
 
             // Log activity
@@ -1000,7 +1002,7 @@ adminApi.interceptors.response.use(
               status: 200,
               data: {
                 success: true,
-                token: "mock-admin-token",
+                token: offlineSessionId,
                 user: adminProfile,
               },
               headers: {},
