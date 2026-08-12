@@ -697,7 +697,25 @@ def logout(request: Request, response: Response, authorization: Optional[str] = 
     return {"success": True, "message": "Logged out successfully."}
 
 @app.post("/api/forgot-password/request")
-def forgot_password_request(data: ForgotPasswordRequestSchema):
+def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    ip_key = f"forgotpw_ip:{client_ip}"
+    email_key = f"forgotpw_email:{data.email.lower().strip()}"
+
+    is_locked_ip, secs_ip = record_failed_auth_attempt(ip_key, max_attempts=5, lock_duration_secs=600)
+    if is_locked_ip:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many password reset requests. Please try again in {secs_ip // 60} minutes."
+        )
+
+    is_locked_email, secs_email = record_failed_auth_attempt(email_key, max_attempts=3, lock_duration_secs=600)
+    if is_locked_email:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many reset attempts for this account. Please try again in {secs_email // 60} minutes."
+        )
+
     clean_email = data.email.lower().strip()
     user = get_user(clean_email)
     
