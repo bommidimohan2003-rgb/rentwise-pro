@@ -83,11 +83,12 @@ export function CompleteProfileModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()} modal={true}>
-      <DialogContent
-        className="max-w-md border-border bg-card text-foreground shadow-2xl"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      modal={true}
+    >
+      <DialogContent className="max-w-md border-border bg-card text-foreground shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-foreground">
             Complete Account Setup

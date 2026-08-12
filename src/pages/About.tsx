@@ -8,25 +8,25 @@ export default function About() {
   >([
     {
       label: "Active Listings",
-      value: "25+",
+      value: "...",
       image:
         "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
     },
     {
       label: "Total Rentals",
-      value: "140+",
+      value: "...",
       image:
         "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600",
     },
     {
-      label: "Verified Lenders",
-      value: "18+",
+      label: "Happy Lenders",
+      value: "...",
       image:
         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600",
     },
     {
       label: "Cities Covered",
-      value: "12+",
+      value: "...",
       image:
         "https://images.unsplash.com/photo-1477959858617-67f30ac4ce78?w=600",
     },
@@ -34,36 +34,38 @@ export default function About() {
 
   useEffect(() => {
     let isMounted = true;
-    api.getPublicStats().then((res) => {
+    const fetchStats = async () => {
+      const res: any = await api.getPublicStats();
       if (isMounted && res) {
         setStatsData([
           {
             label: "Active Listings",
-            value: `${res.activeListings}+`,
+            value: res.activeListings > 0 ? `${res.activeListings}+` : `${res.activeListings || 0}`,
             image:
               "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
           },
           {
             label: "Total Rentals",
-            value: `${res.totalRentals}+`,
+            value: res.totalRentals > 0 ? `${res.totalRentals}+` : `${res.totalRentals || 0}`,
             image:
               "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600",
           },
           {
             label: "Happy Lenders",
-            value: `${res.happyLenders}+`,
+            value: res.happyLenders > 0 ? `${res.happyLenders}+` : `${res.happyLenders || 0}`,
             image:
               "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600",
           },
           {
             label: "Cities Covered",
-            value: `${res.citiesCovered}+`,
+            value: res.citiesCovered > 0 ? `${res.citiesCovered}+` : `${res.citiesCovered || 0}`,
             image:
               "https://images.unsplash.com/photo-1477959858617-67f30ac4ce78?w=600",
           },
         ]);
       }
-    });
+    };
+    fetchStats();
     return () => {
       isMounted = false;
     };

@@ -20,7 +20,7 @@ export default function Orders() {
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const loadOrders = () => {
     if (!token) {
       setLoading(false);
       return;
@@ -37,6 +37,10 @@ export default function Orders() {
         setError("Failed to fetch your active order history.");
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadOrders();
   }, [token]);
 
   const handleCancelOrder = (orderId: string) => {
@@ -49,38 +53,42 @@ export default function Orders() {
             o.id === orderId ? { ...o, status: "cancelled" as const } : o,
           ),
         );
-        toast.success("Order cancelled successfully!");
+        toast.success("Order cancelled successfully.");
       })
-      .catch((err) => toast.error(err.message || "Failed to cancel order."));
+      .catch((err) => {
+        toast.error(err.message || "Failed to cancel order.");
+      })
+      .finally(() => setCancellingOrderId(null));
   };
 
   return (
     <DashboardLayout>
-      <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
-        <Package className="h-7 w-7 text-primary" /> Orders
-      </h1>
-      <p className="mt-2 text-muted-foreground">
-        Track and manage all your gear rentals.
-      </p>
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-2xl font-bold font-display flex items-center gap-2">
+          <Package className="h-7 w-7 text-primary" /> Orders
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          Track and manage all your gear rentals.
+        </p>
 
-      <div className="mt-8">
-        {loading ? (
-          <LoadingState type="list" count={4} />
-        ) : error ? (
-          <ErrorState
-            title="Unable to load orders"
-            error={error}
-            onRetry={fetchOrders}
-          />
-        ) : orders.length === 0 ? (
-          <EmptyState
-            title="No orders yet"
-            description="You haven't booked any tech gear rentals yet. Explore the marketplace to find gear!"
-            icon={Package}
-            actionLabel="Browse Marketplace"
-            onAction={() => navigate({ to: "/categories" })}
-          />
-        ) : (
+        <div className="mt-8">
+          {loading ? (
+            <LoadingState type="list" count={4} />
+          ) : error ? (
+            <ErrorState
+              title="Unable to load orders"
+              error={error}
+              onRetry={loadOrders}
+            />
+          ) : orders.length === 0 ? (
+            <EmptyState
+              title="No orders yet"
+              description="You haven't booked any tech gear rentals yet. Explore the marketplace to find gear!"
+              icon={Package}
+              actionLabel="Browse Marketplace"
+              onAction={() => navigate({ to: "/categories" })}
+            />
+          ) : (
           <div className="card-premium overflow-hidden">
             <div className="hidden md:grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 border-b border-border text-xs uppercase text-muted-foreground">
               <div>Item</div>
@@ -132,6 +140,7 @@ export default function Orders() {
           </div>
         )}
       </div>
+    </div>
 
       <AnimatePresence>
         {cancellingOrderId && (

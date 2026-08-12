@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   CreditCard,
   Building,
-  Sparkles,
   Clock,
   Award,
 } from "lucide-react";
@@ -87,7 +86,7 @@ export default function Profile() {
           <div className="h-32 sm:h-40 bg-gradient-to-r from-zinc-900 via-zinc-800 to-black relative p-6 flex items-end justify-between border-b border-border/40">
             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:2rem_2rem] pointer-events-none" />
             <div className="relative z-10 hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold">
-              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-amber-400" />
               <span>Pro Creator Tier</span>
             </div>
           </div>

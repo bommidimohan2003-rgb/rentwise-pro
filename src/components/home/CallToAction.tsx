@@ -1,6 +1,6 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Zap } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export function CallToAction() {
@@ -22,7 +22,7 @@ export function CallToAction() {
         >
           {/* Badge */}
           <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1 bg-secondary border border-border text-foreground text-xs font-semibold uppercase tracking-wider">
-            <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+            <Zap className="h-3.5 w-3.5 text-muted-foreground" />
             <span>START RENTING TODAY</span>
           </div>
 

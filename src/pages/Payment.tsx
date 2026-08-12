@@ -55,9 +55,9 @@ export default function Payment() {
   useEffect(() => {
     let isMounted = true;
     if (!productId) return;
-    api.getPublicProducts().then((all) => {
+    api.getPublicProducts().then((all: Product[]) => {
       if (!isMounted) return;
-      const found = all.find((p) => p.id === productId);
+      const found = all.find((p: Product) => p.id === productId);
       if (found) setProduct(found);
     });
     return () => {

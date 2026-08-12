@@ -4,7 +4,7 @@ import {
   ShieldCheck,
   Zap,
   RotateCcw,
-  Sparkles,
+  CheckCircle,
   Search,
   Headphones,
 } from "lucide-react";
@@ -32,7 +32,7 @@ const features = [
     bg: "rgba(255, 90, 95, 0.1)",
   },
   {
-    icon: Sparkles,
+    icon: CheckCircle,
     title: "Verified Users & Gear",
     desc: "Aadhaar & DigiLocker KYC verification for all members ensures a secure, trusted peer-to-peer community.",
     glow: "rgba(255, 90, 95, 0.35)",

@@ -9,7 +9,7 @@ const API_BASE =
   import.meta.env.VITE_API_URL !== undefined
     ? import.meta.env.VITE_API_URL
     : isLocal
-      ? "http://127.0.0.1:8001"  // Direct to FastAPI; CORS on backend allows localhost:3000
+      ? "http://127.0.0.1:8001" // Direct to FastAPI; CORS on backend allows localhost:3000
       : "";
 
 function parseApiError(data: unknown, fallback: string): string {
@@ -52,7 +52,7 @@ export const api = {
         errorObj.message?.includes("Failed to fetch")
       ) {
         throw new Error(
-          "Backend server is offline (http://127.0.0.1:8000). Please start the FastAPI backend server.",
+          "Backend server is offline (http://127.0.0.1:8001). Please start the FastAPI backend server.",
         );
       }
       throw err;
@@ -296,6 +296,23 @@ export const api = {
     return res.json();
   },
 
+  async deleteCustomProduct(token: string, id: string) {
+    const res = await fetch(`${API_BASE}/api/products/custom/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!res.ok) {
+      const errData = await res
+        .json()
+        .catch(() => ({ detail: "Failed to delete product from database" }));
+      throw new Error(errData.detail || "Failed to delete product from database");
+    }
+    return res.json();
+  },
+
   async getNotifications(token: string) {
     const res = await fetch(`${API_BASE}/api/notifications`, {
       method: "GET",
@@ -329,15 +346,26 @@ export const api = {
     return res.json();
   },
 
-  async deleteCustomProduct(token: string, productId: string) {
-    const res = await fetch(`${API_BASE}/api/products/custom/${productId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!res.ok) throw new Error("Failed to delete custom product");
-    return res.json();
+  async getPublicStats() {
+    try {
+      const res = await fetch(`${API_BASE}/api/stats/public`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Backend request failed; use actual local client datastore
+    }
+
+    const customProds = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+    const orders = storage.get<Order[]>(STORAGE_KEYS.orders, []);
+    const user = storage.get<{ city?: string } | null>(STORAGE_KEYS.currentUser, null);
+
+    return {
+      activeListings: customProds.length,
+      totalRentals: orders.length,
+      happyLenders: user ? 1 : 0,
+      citiesCovered: user && user.city ? 1 : 0,
+    };
   },
 
   async toggleCustomProductAvailability(token: string, productId: string) {

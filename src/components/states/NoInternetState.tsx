@@ -70,65 +70,8 @@ export function NoInternetState({
     }, 600);
   };
 
-  if (reconnected && mode === "banner") {
-    return (
-      <div className="w-full bg-emerald-500/15 border-b border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2.5 text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top z-50">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-          <span>Connection restored! Syncing real-time data...</span>
-        </div>
-        {onDismiss && (
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 p-1 rounded-md transition-colors"
-            title="Dismiss"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-    );
-  }
-
   if (mode === "banner") {
-    return (
-      <div
-        className={cn(
-          "w-full bg-amber-500/15 border-b border-amber-500/30 text-amber-800 dark:text-amber-300 px-4 py-2.5 text-xs font-medium flex items-center justify-between gap-3 z-50",
-          className,
-        )}
-      >
-        <div className="flex items-center gap-2.5">
-          <WifiOff className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <span className="font-semibold text-amber-900 dark:text-amber-200">
-            You are currently offline. Pages will auto-update when reconnected.
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleManualRetry}
-            className="inline-flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-100 px-3 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 border border-amber-500/30 cursor-pointer"
-          >
-            <RefreshCw
-              className={cn("h-3.5 w-3.5", retrying && "animate-spin")}
-            />
-            <span>{retrying ? "Checking..." : "Retry now"}</span>
-          </button>
-          {onDismiss && (
-            <button
-              type="button"
-              onClick={onDismiss}
-              className="text-amber-700 hover:text-amber-950 dark:text-amber-400 dark:hover:text-white p-1 rounded-md transition-colors cursor-pointer"
-              title="Dismiss banner"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

@@ -8,7 +8,7 @@ import {
   Hammer,
   Zap,
   ArrowRight,
-  Sparkles,
+  Layers,
 } from "lucide-react";
 
 const baseCategories = [
@@ -34,7 +34,7 @@ const baseCategories = [
   },
   {
     id: "tools",
-    name: "Electric Tools",
+    name: "Electronic Drilling Tools",
     icon: Hammer,
   },
   {
@@ -51,7 +51,7 @@ export function Categories() {
         {/* Header */}
         <div className="space-y-2 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-black text-primary tracking-wider uppercase">
-            <Sparkles className="h-3 w-3" />
+            <Layers className="h-3 w-3" />
             <span>Popular Categories</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground font-display">

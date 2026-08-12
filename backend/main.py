@@ -188,14 +188,25 @@ async def add_security_headers(request: Request, call_next):
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
+from fastapi.responses import JSONResponse
+import traceback
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS else ["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS else ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:3000", "http://127.0.0.1:5173"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled Exception on {request.method} {request.url.path}: {exc}\n{traceback.format_exc()}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"},
+    )
 
 @app.get("/api/health")
 def health_check():
@@ -945,12 +956,12 @@ def fetch_public_categories():
     if not conn:
         # DB unavailable – return seeded fallback categories
         return [
-            {"id": "cameras", "name": "Cameras", "icon": "Camera", "count": 0, "color": "bg-purple-100 text-purple-800", "enabled": True},
-            {"id": "laptops", "name": "Laptops", "icon": "Laptop", "count": 0, "color": "bg-blue-100 text-blue-800", "enabled": True},
-            {"id": "drones", "name": "Drones", "icon": "Plane", "count": 0, "color": "bg-sky-100 text-sky-800", "enabled": True},
-            {"id": "audio", "name": "Audio", "icon": "Headphones", "count": 0, "color": "bg-green-100 text-green-800", "enabled": True},
-            {"id": "gaming", "name": "Gaming", "icon": "Gamepad2", "count": 0, "color": "bg-red-100 text-red-800", "enabled": True},
-            {"id": "mobile", "name": "Mobile", "icon": "Smartphone", "count": 0, "color": "bg-orange-100 text-orange-800", "enabled": True},
+            {"id": "cameras", "name": "Cameras", "icon": "Camera", "count": 0, "color": "bg-blue-100 text-blue-800", "enabled": True},
+            {"id": "laptops", "name": "Laptops", "icon": "Laptop", "count": 0, "color": "bg-purple-100 text-purple-800", "enabled": True},
+            {"id": "drones", "name": "Drones", "icon": "Plane", "count": 0, "color": "bg-emerald-100 text-emerald-800", "enabled": True},
+            {"id": "bikes", "name": "Bikes & Rides", "icon": "Bike", "count": 0, "color": "bg-amber-100 text-amber-800", "enabled": True},
+            {"id": "tools", "name": "Electronic Drilling Tools", "icon": "Hammer", "count": 0, "color": "bg-red-100 text-red-800", "enabled": True},
+            {"id": "powerbanks", "name": "Power Banks", "icon": "Zap", "count": 0, "color": "bg-cyan-100 text-cyan-800", "enabled": True},
         ]
     try:
         with conn.cursor() as cursor:
@@ -1016,6 +1027,7 @@ def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_curre
     return {"success": True, "product": format_product_dict(created)}
 
 @app.delete("/api/products/custom/{id}")
+@app.delete("/api/products/{id}")
 def remove_custom_listing(id: str, email: str = Depends(get_current_user_email)):
     clean_email = email.strip().lower()
     product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (id,))
@@ -1029,7 +1041,12 @@ def remove_custom_listing(id: str, email: str = Depends(get_current_user_email))
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to delete this listing.")
 
     delete_custom_product(id, clean_email)
-    return {"success": True, "message": "Listing deleted successfully."}
+    logger.info(f"Listing {id} deleted successfully from MySQL database for user {clean_email}.")
+    return {"success": True, "message": "Listing deleted successfully from MySQL database."}
+
+@app.get("/api/stats/public")
+def get_public_marketplace_stats():
+    return get_public_stats()
 
 @app.post("/api/products/custom/{id}/toggle-availability")
 def toggle_listing_availability(id: str, email: str = Depends(get_current_user_email)):
@@ -3827,6 +3844,6 @@ def get_search_stats():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True)
 
 

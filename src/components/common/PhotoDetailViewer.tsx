@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Sparkles } from "lucide-react";
+import { Maximize2 } from "lucide-react";
 
 interface PhotoDetailViewerProps {
   primaryImage: string;
@@ -93,8 +93,8 @@ export function PhotoDetailViewer({
         {/* Floating Badge */}
         <div className="absolute top-4 left-4 z-10">
           <span className="px-3 py-1 rounded-full spatial-float text-[11px] font-bold text-primary flex items-center gap-1.5 border border-primary/20 shadow-md">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Interactive Real Photo Depth</span>
+            <Maximize2 className="h-3.5 w-3.5" />
+            <span>High-Res Detail View</span>
           </span>
         </div>
       </div>

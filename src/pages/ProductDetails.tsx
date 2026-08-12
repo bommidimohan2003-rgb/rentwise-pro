@@ -12,7 +12,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Info,
-  Sparkles,
+  Tag,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
@@ -277,7 +277,7 @@ export default function ProductDetails() {
               ) : (
                 <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-secondary/40 border border-border/70">
                   <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-foreground font-black shrink-0">
-                    <Sparkles className="h-5 w-5" />
+                    <Tag className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-extrabold text-foreground uppercase tracking-wider">

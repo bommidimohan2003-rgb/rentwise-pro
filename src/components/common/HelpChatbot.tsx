@@ -5,7 +5,6 @@ import {
   X,
   Send,
   Bot,
-  Sparkles,
   AlertCircle,
 } from "lucide-react";
 import { api } from "@/utils/api";
@@ -313,8 +312,7 @@ export function HelpChatbot() {
                 </div>
                 <div>
                   <h4 className="font-bold text-sm leading-none flex items-center gap-1.5">
-                    Payent AI Assistant
-                    <Sparkles className="h-3 w-3 text-yellow-300 animate-pulse" />
+                    Payent Support Assistant
                   </h4>
                   <span className="text-[11px] text-white/80">
                     Support Online

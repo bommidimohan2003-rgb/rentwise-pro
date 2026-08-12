@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import {
   Search as SearchIcon,
-  Sparkles,
+  Tag,
   Camera,
   Laptop,
   Plane,
@@ -16,6 +16,8 @@ import {
   Star,
   ArrowRight,
   Info,
+  Plus,
+  ExternalLink,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
@@ -28,6 +30,15 @@ import { NoSearchResults } from "@/components/states/NoSearchResults";
 import { tracker } from "@/utils/eventTracker";
 import { storage } from "@/utils/storage";
 import { api } from "@/utils/api";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import cameraImg from "@/assets/images/camera.png";
+import laptopImg from "@/assets/images/laptop.png";
+import droneImg from "@/assets/images/drone.png";
+import bikeImg from "@/assets/images/bike.png";
+import toolImg from "@/assets/images/tool.png";
+import powerbankImg from "@/assets/images/powerbank.png";
+import reClassic350Img from "@/assets/images/re_classic350.png";
 
 type Sort = "featured" | "price_asc" | "price_desc" | "rating";
 
@@ -42,6 +53,33 @@ const categoryIconMap: Record<
   bikes: Bike,
   tools: Hammer,
   powerbanks: Zap,
+};
+
+const matchCategory = (productCat: string, targetId: string) => {
+  if (!productCat) return false;
+  const pCat = productCat.toLowerCase().trim();
+  const tId = targetId.toLowerCase().trim();
+  if (pCat === tId) return true;
+  if (
+    tId === "bikes" &&
+    (pCat.includes("bike") || pCat.includes("ride") || pCat.includes("motorcycle"))
+  )
+    return true;
+  if (
+    tId === "tools" &&
+    (pCat.includes("tool") || pCat.includes("drill") || pCat.includes("electric"))
+  )
+    return true;
+  if (
+    tId === "powerbanks" &&
+    (pCat.includes("power") || pCat.includes("bank") || pCat.includes("battery"))
+  )
+    return true;
+  if (tId === "cameras" && pCat.includes("camera")) return true;
+  if (tId === "laptops" && (pCat.includes("laptop") || pCat.includes("macbook")))
+    return true;
+  if (tId === "drones" && pCat.includes("drone")) return true;
+  return false;
 };
 
 export default function Categories() {
@@ -88,6 +126,18 @@ export default function Categories() {
   const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
     return storage.get<Product[]>("payent_custom_products", []);
   });
+
+  useEffect(() => {
+    const handleProductsUpdate = () => {
+      const localCustom = storage.get<Product[]>("payent_custom_products", []);
+      setAllProductsList(localCustom);
+    };
+
+    window.addEventListener("payent_products_updated", handleProductsUpdate);
+    return () => {
+      window.removeEventListener("payent_products_updated", handleProductsUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     api
@@ -221,9 +271,7 @@ export default function Categories() {
       mlResults !== null
         ? mlResults
         : allProductsList.filter((p) =>
-            cat === "all"
-              ? true
-              : p.category.toLowerCase() === cat.toLowerCase(),
+            cat === "all" ? true : matchCategory(p.category, cat),
           );
 
     if (mlResults === null && q) {
@@ -289,7 +337,7 @@ export default function Categories() {
       },
       {
         id: "tools",
-        name: "Power Tools",
+        name: "Electronic Drilling Tools",
         icon: "Hammer",
         count: 0,
         color: "bg-red-500/10 text-red-500",
@@ -307,15 +355,213 @@ export default function Categories() {
     [],
   );
 
+  const { user } = useAuth();
+
+  const referenceProducts: Product[] = useMemo(
+    () => [
+      {
+        id: "ref-camera-1",
+        title: "Sony FX3 Cinema Line Camera",
+        description:
+          "Full-frame cinema camera with 4K 120fps recording capability, XLR handle unit, and dual CFexpress slots.",
+        price: 2500,
+        image: cameraImg,
+        category: "cameras",
+        rating: 5.0,
+        reviews: 24,
+        available: true,
+        isReference: true,
+        owner: {
+          name: "Payent Reference Catalog",
+          avatar: "https://i.pravatar.cc/100?img=12",
+          rating: 5.0,
+        },
+      },
+      {
+        id: "ref-laptop-1",
+        title: 'MacBook Pro 16" M3 Max 64GB',
+        description:
+          "Monster video editing laptop with 16-core CPU, 40-core GPU, 2TB SSD, and Liquid Retina XDR display.",
+        price: 1800,
+        image: laptopImg,
+        category: "laptops",
+        rating: 5.0,
+        reviews: 31,
+        available: true,
+        isReference: true,
+        owner: {
+          name: "Payent Reference Catalog",
+          avatar: "https://i.pravatar.cc/100?img=32",
+          rating: 5.0,
+        },
+      },
+      {
+        id: "ref-drone-1",
+        title: "DJI Mavic 3 Pro Cine Premium Combo",
+        description:
+          "Tri-camera flagship drone with Apple ProRes support, 43-min flight time, and RC Pro remote controller.",
+        price: 4200,
+        image: droneImg,
+        category: "drones",
+        rating: 5.0,
+        reviews: 18,
+        available: true,
+        isReference: true,
+        owner: {
+          name: "Payent Reference Catalog",
+          avatar: "https://i.pravatar.cc/100?img=45",
+          rating: 5.0,
+        },
+      },
+      {
+        id: "ref-bike-1",
+        title: "Royal Enfield Classic 350 Motorcycle",
+        description:
+          "Classic cruiser bike with 349cc engine, dual-channel ABS, teardrop fuel tank, and comfortable riding posture.",
+        price: 1200,
+        image: reClassic350Img,
+        category: "bikes",
+        rating: 5.0,
+        reviews: 15,
+        available: true,
+        isReference: true,
+        owner: {
+          name: "Payent Reference Catalog",
+          avatar: "https://i.pravatar.cc/100?img=11",
+          rating: 5.0,
+        },
+      },
+      {
+        id: "ref-tool-1",
+        title: "DeWalt 880W Heavy-Duty Electronic Rotary Hammer Drill",
+        description:
+          "Professional 880W rotary hammer drill with 3.2 Joules impact energy, safety clutch, and variable speed control.",
+        price: 350,
+        image: toolImg,
+        category: "tools",
+        rating: 5.0,
+        reviews: 12,
+        available: true,
+        isReference: true,
+        owner: {
+          name: "Payent Reference Catalog",
+          avatar: "https://i.pravatar.cc/100?img=47",
+          rating: 5.0,
+        },
+      },
+      {
+        id: "ref-powerbank-1",
+        title: "Anker PowerCore 24,000mAh 140W Power Bank",
+        description:
+          "Ultra-high capacity 24,000mAh external battery pack with 140W fast charging and smart digital display.",
+        price: 250,
+        image: powerbankImg,
+        category: "powerbanks",
+        rating: 5.0,
+        reviews: 20,
+        available: true,
+        isReference: true,
+        owner: {
+          name: "Payent Reference Catalog",
+          avatar: "https://i.pravatar.cc/100?img=47",
+          rating: 5.0,
+        },
+      },
+    ],
+    [],
+  );
+
+  const filteredReferenceProducts = useMemo(() => {
+    if (cat === "all") return referenceProducts;
+    return referenceProducts.filter((p) => matchCategory(p.category, cat));
+  }, [referenceProducts, cat]);
+
+  const [selectedCardForListing, setSelectedCardForListing] = useState<{
+    id: string;
+    name: string;
+    image: string;
+    badgeText: string;
+    defaultTitle: string;
+    defaultPrice: string;
+    defaultDesc: string;
+  } | null>(null);
+
+  const handleOpenListingPermissionFromProduct = (product: Product) => {
+    const catName =
+      liveCategories.find((c) => matchCategory(c.id, product.category))?.name ||
+      product.category;
+    setSelectedCardForListing({
+      id: product.category,
+      name: catName,
+      image: product.image,
+      badgeText: "REFERENCE",
+      defaultTitle: product.title,
+      defaultPrice: product.price.toString(),
+      defaultDesc: product.description,
+    });
+  };
+
+  const handleConfirmListingPermission = (details: {
+    title: string;
+    price: number;
+    description: string;
+  }) => {
+    if (!selectedCardForListing) return;
+
+    const card = selectedCardForListing;
+    const newProduct: Product = {
+      id: `p-custom-${Date.now()}`,
+      title: details.title,
+      description: details.description,
+      price: details.price,
+      image: card.image,
+      category: card.id,
+      rating: 5.0,
+      reviews: 0,
+      available: true,
+      owner: {
+        name: user ? user.fullName || user.email : "Verified Lender",
+        avatar: "https://i.pravatar.cc/100?img=33",
+        rating: 5.0,
+      },
+    };
+
+    // Store in local custom products
+    const currentCustom = storage.get<Product[]>("payent_custom_products", []);
+    const updatedCustom = [newProduct, ...currentCustom];
+    storage.set("payent_custom_products", updatedCustom);
+
+    // Update state immediately so listing grid refreshes
+    setAllProductsList((prev) => {
+      const map = new Map<string, Product>();
+      [newProduct, ...prev].forEach((p) => map.set(p.id, p));
+      return Array.from(map.values());
+    });
+
+    const userToken = (user as any)?.token;
+    if (user && userToken) {
+      api.createCustomProduct(userToken, newProduct).catch((err) => {
+        console.warn("Backend sync notice:", err);
+      });
+    }
+
+    toast.success(`Listing Confirmed!`, {
+      description: `"${details.title}" has been published to ${card.name} listings.`,
+    });
+
+    setCat(card.id);
+    setSelectedCardForListing(null);
+  };
+
   const activeCategoriesList =
     liveCategories.length > 0 ? liveCategories : defaultCategories;
 
-  // Compute category item counts dynamically
+  // Compute category item counts dynamically using matchCategory
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { all: allProductsList.length };
     activeCategoriesList.forEach((c) => {
-      counts[c.id] = allProductsList.filter(
-        (p) => p.category.toLowerCase() === c.id.toLowerCase(),
+      counts[c.id] = allProductsList.filter((p) =>
+        matchCategory(p.category, c.id),
       ).length;
     });
     return counts;
@@ -339,7 +585,7 @@ export default function Categories() {
     ...activeCategoriesList.map((c) => ({
       id: c.id,
       name: c.name,
-      icon: categoryIconMap[c.id] || Sparkles,
+      icon: categoryIconMap[c.id] || Layers,
       count: categoryCounts[c.id] || 0,
     })),
   ];
@@ -350,7 +596,7 @@ export default function Categories() {
         {/* Section Title Header */}
         <div className="text-center space-y-2 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-black text-primary tracking-wider uppercase">
-            <Sparkles className="h-3 w-3" />
+            <Tag className="h-3 w-3" />
             <span>Explore Marketplace</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground font-display">
@@ -358,9 +604,11 @@ export default function Categories() {
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground font-medium">
             Rent high-performance cameras, laptops, drones, bikes, power banks,
-            and electric tools from verified owners.
+            and electronic tools from verified owners.
           </p>
         </div>
+
+
 
         {/* Top Control Bar: Category Dropdown at TOP LEFT CORNER + Intelligent Search Bar + Sort */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
@@ -481,11 +729,11 @@ export default function Categories() {
               <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl bg-card border border-border shadow-2xl p-3 space-y-2 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between text-[10px] uppercase font-black tracking-wider text-muted-foreground border-b border-border/50 pb-1.5">
                   <span className="flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-primary" />
+                    <SearchIcon className="h-3 w-3 text-primary" />
                     Trending & Popular Searches
                   </span>
                   <span className="text-[9px] text-primary font-bold">
-                    ML Powered
+                    Popular
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
@@ -577,10 +825,48 @@ export default function Categories() {
           </div>
         </div>
 
+        {/* Category Reference Items Section (BELOW SEARCH BAR) */}
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <Tag className="h-4 w-4" />
+              </div>
+              <h2 className="text-xs font-black uppercase tracking-wider text-foreground font-display">
+                Category Reference Items
+              </h2>
+            </div>
+
+            {cat !== "all" && (
+              <button
+                onClick={() => setCat("all")}
+                className="text-xs font-extrabold text-primary hover:underline cursor-pointer flex items-center gap-1.5 bg-primary/10 px-3 py-1 rounded-full border border-primary/20 transition-all hover:bg-primary/20"
+              >
+                <span>Reset Filters</span>
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Grid of Reference Products using EXACT SAME ProductCard Design */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {filteredReferenceProducts.map((refProd, i) => (
+              <ProductCard
+                key={refProd.id}
+                product={refProd}
+                index={i}
+                onListGear={(prod) =>
+                  handleOpenListingPermissionFromProduct(prod)
+                }
+              />
+            ))}
+          </div>
+        </div>
+
         {/* Spelling Typo Correction Chip ("Did you mean?") */}
         {didYouMean && (
           <div className="flex items-center gap-2.5 p-3 px-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-medium">
-            <Sparkles className="h-4 w-4 shrink-0 text-amber-500" />
+            <Info className="h-4 w-4 shrink-0 text-amber-500" />
             <span>
               Did you mean{" "}
               <button
@@ -623,6 +909,223 @@ export default function Categories() {
           <NoSearchResults query={q} onClearFilters={handleResetFilters} />
         )}
       </div>
+
+      {/* Permission & Confirmation Modal */}
+      {selectedCardForListing && (
+        <ListingPermissionModal
+          card={selectedCardForListing}
+          user={user}
+          onClose={() => setSelectedCardForListing(null)}
+          onConfirm={handleConfirmListingPermission}
+        />
+      )}
     </MainLayout>
+  );
+}
+
+function ListingPermissionModal({
+  card,
+  user,
+  onClose,
+  onConfirm,
+}: {
+  card: {
+    id: string;
+    name: string;
+    image: string;
+    badgeText: string;
+    defaultTitle: string;
+    defaultPrice: string;
+    defaultDesc: string;
+  };
+  user: any;
+  onClose: () => void;
+  onConfirm: (details: {
+    title: string;
+    price: number;
+    description: string;
+  }) => void;
+}) {
+  const [title, setTitle] = useState(card.defaultTitle);
+  const [price, setPrice] = useState(card.defaultPrice);
+  const [description, setDescription] = useState(card.defaultDesc);
+  const [permissionGranted, setPermissionGranted] = useState(true);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) {
+      toast.error("Please enter an item title.");
+      return;
+    }
+    const numPrice = Number(price);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      toast.error("Please enter a valid daily rental price.");
+      return;
+    }
+    if (!permissionGranted) {
+      toast.error("Please confirm that you authorize listing this item.");
+      return;
+    }
+    onConfirm({
+      title: title.trim(),
+      price: numPrice,
+      description: description.trim(),
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl rounded-3xl border border-border/80 bg-card p-6 shadow-2xl space-y-5 overflow-hidden max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-start justify-between border-b border-border/60 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <Check className="h-4 w-4" />
+              </span>
+              <h2 className="text-lg font-black text-foreground tracking-tight font-display">
+                Confirm Listing Permission
+              </h2>
+            </div>
+            <p className="text-xs text-muted-foreground font-medium">
+              Review details and grant explicit permission to publish this item under your lender account.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Card Preview Banner */}
+          <div className="flex items-center gap-4 p-3 rounded-2xl bg-secondary/50 border border-border/60">
+            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-card p-1 border border-border/50 flex items-center justify-center">
+              <img
+                src={card.image}
+                alt={card.name}
+                className="h-full w-full object-contain"
+              />
+            </div>
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {card.name}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-bold">
+                  {card.badgeText}
+                </span>
+              </div>
+              <p className="text-xs font-black text-foreground truncate">
+                {title || card.defaultTitle}
+              </p>
+              <p className="text-[11px] font-bold text-primary">
+                ₹{price || card.defaultPrice} / day
+              </p>
+            </div>
+          </div>
+
+          {/* Input Fields */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-extrabold text-foreground mb-1">
+                Item Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary"
+                placeholder="e.g. Sony FX3 Cinema Camera"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-extrabold text-foreground mb-1">
+                  Category
+                </label>
+                <input
+                  type="text"
+                  value={card.name}
+                  disabled
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-secondary/50 text-xs font-semibold text-muted-foreground cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-extrabold text-foreground mb-1">
+                  Daily Price (₹)
+                </label>
+                <input
+                  type="number"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary"
+                  placeholder="2500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-extrabold text-foreground mb-1">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary resize-none"
+                placeholder="Item condition, included accessories, rental guidelines..."
+              />
+            </div>
+          </div>
+
+          {/* Authorization Checkbox */}
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-primary/5 border border-primary/20">
+            <input
+              type="checkbox"
+              id="permission-check"
+              checked={permissionGranted}
+              onChange={(e) => setPermissionGranted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-primary text-primary focus:ring-primary cursor-pointer"
+            />
+            <label
+              htmlFor="permission-check"
+              className="text-[11px] font-medium text-foreground cursor-pointer leading-tight"
+            >
+              <span className="font-extrabold text-primary">
+                Listing Authorization:
+              </span>{" "}
+              I confirm I own or am authorized to rent this item, and I agree to list it on Payent under my account.
+            </label>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/60">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl border border-border text-xs font-extrabold text-muted-foreground hover:bg-secondary transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#FF5A5F] hover:bg-[#ff4349] active:scale-95 text-white text-xs font-black tracking-tight shadow-md hover:shadow-lg transition-all cursor-pointer border border-white/20"
+            >
+              <Check className="h-4 w-4" />
+              <span>Confirm & Publish Listing</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

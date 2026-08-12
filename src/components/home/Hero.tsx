@@ -7,7 +7,7 @@ import {
   Laptop,
   Plane,
   Bike,
-  Sparkles,
+  Plus,
   SlidersHorizontal,
   ChevronRight,
   Star,
@@ -143,7 +143,7 @@ export function Hero() {
                 className="px-6 py-3 rounded-xl font-medium text-sm border border-border bg-secondary hover:bg-secondary/80 text-foreground transition-all flex items-center gap-2 cursor-pointer"
               >
                 <span>List Your Gear</span>
-                <Sparkles className="h-4 w-4 text-muted-foreground" />
+                <Plus className="h-4 w-4 text-muted-foreground" />
               </Link>
             </motion.div>
 

@@ -79,7 +79,7 @@ class AdminWebSocketService {
     const host =
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1"
-        ? "127.0.0.1:8000"
+        ? "127.0.0.1:8001"
         : window.location.host;
 
     const wsUrl = `${protocol}//${host}/api/admin/ws?token=${encodeURIComponent(token)}`;

@@ -1,4 +1,4 @@
-import { IndianRupee, Shield, Sparkles, Upload } from "lucide-react";
+import { IndianRupee, Shield, Zap, Upload } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
@@ -24,7 +24,7 @@ const perks = [
     image: "1516321318423-f06f85e504b3",
   },
   {
-    icon: Sparkles,
+    icon: Zap,
     title: "Instant listing",
     body: "List in under 2 minutes with smart suggestions.",
     image: "1498050108023-c5249f4df085",

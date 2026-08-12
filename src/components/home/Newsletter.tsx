@@ -1,6 +1,6 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
-import { Mail, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 
 export function Newsletter() {
   const ref = useRef<HTMLElement>(null);
@@ -28,7 +28,7 @@ export function Newsletter() {
         >
           {/* Badge */}
           <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1 bg-secondary border border-border text-foreground text-xs font-semibold uppercase tracking-wider">
-            <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
             <span>PAYENT INSIDER</span>
           </div>
 

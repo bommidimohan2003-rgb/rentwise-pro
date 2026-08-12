@@ -262,14 +262,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isOffline && (
-        <NoInternetState
-          mode="banner"
-          onRetry={checkConnectivity}
-          onDismiss={() => setIsOffline(false)}
-        />
-      )}
-
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
 

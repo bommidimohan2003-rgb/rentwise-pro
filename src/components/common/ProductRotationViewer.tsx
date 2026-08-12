@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Sparkles, RefreshCw, RotateCcw, Hand } from "lucide-react";
+import { RefreshCw, RotateCcw, Hand } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ProductRotationViewerProps {
@@ -162,7 +162,7 @@ export function ProductRotationViewer({
       {/* Header Badge */}
       <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
         <span className="px-3.5 py-1.5 rounded-full spatial-float text-xs font-bold text-primary flex items-center gap-1.5 border border-primary/30 shadow-md">
-          <Sparkles className="h-3.5 w-3.5" />
+          <RotateCcw className="h-3.5 w-3.5" />
           <span>Real 360° Photography ({totalFrames} Angles)</span>
         </span>
         <span className="px-3 py-1 rounded-full bg-background/80 backdrop-blur-md text-[11px] font-semibold text-muted-foreground border border-border/60">

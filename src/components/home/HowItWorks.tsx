@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { Search, ClipboardList, Sparkles, Star } from "lucide-react";
+import { Search, ClipboardList, CheckCircle2, Star } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export function HowItWorks() {
@@ -152,7 +152,7 @@ export function HowItWorks() {
                 className="flex items-start gap-4"
               >
                 <div className="h-12 w-12 rounded-2xl bg-[#FF5A5F]/15 border border-[#FF5A5F]/30 flex items-center justify-center text-[#FF5A5F] shrink-0 font-bold">
-                  <Sparkles className="h-6 w-6" />
+                  <CheckCircle2 className="h-6 w-6" />
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-foreground">

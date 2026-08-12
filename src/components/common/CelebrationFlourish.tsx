@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check, CheckCircle2 } from "lucide-react";
 
 interface CelebrationFlourishProps {
   productImage: string;
@@ -50,7 +50,7 @@ export function CelebrationFlourish({
         transition={{ delay: 0.4 }}
         className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20"
       >
-        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+        <CheckCircle2 className="h-3.5 w-3.5" />
         <span>Rental Reserved Successfully</span>
       </motion.div>
     </div>

@@ -186,13 +186,23 @@ export function Navbar() {
               <Link
                 to="/dashboard"
                 id="nav-dashboard"
-                className="flex items-center gap-2 rounded-full pl-2 pr-4 h-10 transition-all border border-white/15 bg-white/10 hover:bg-white/20"
+                className={cn(
+                  "flex items-center gap-2.5 rounded-full pl-1.5 pr-4 h-10 transition-all border shadow-sm cursor-pointer",
+                  isHomePage
+                    ? "bg-black/80 dark:bg-neutral-900 border-white/20 text-white hover:bg-black"
+                    : "bg-slate-100 dark:bg-neutral-900 border-slate-300 dark:border-neutral-800 text-black dark:text-white hover:bg-slate-200 dark:hover:bg-neutral-800",
+                )}
               >
-                <div className="h-7 w-7 rounded-full grid place-items-center text-white text-xs font-bold shrink-0 bg-black dark:bg-white dark:text-black">
-                  {user.fullName.charAt(0)}
+                <div className="h-7 w-7 rounded-full grid place-items-center text-xs font-black shrink-0 bg-white text-black border border-black/10 shadow-xs">
+                  {user.fullName.charAt(0).toLowerCase()}
                 </div>
-                <span className="text-sm font-bold text-white">
-                  {user.fullName.split(" ")[0]}
+                <span
+                  className={cn(
+                    "text-sm font-black tracking-wide",
+                    isHomePage ? "text-white" : "text-black dark:text-white",
+                  )}
+                >
+                  {user.fullName.split(" ")[0].toLowerCase()}
                 </span>
               </Link>
               <Button
@@ -200,7 +210,12 @@ export function Navbar() {
                 size="icon"
                 aria-label="Logout"
                 onClick={logout}
-                className="text-slate-200 hover:text-white"
+                className={cn(
+                  "transition-colors",
+                  isHomePage
+                    ? "text-slate-200 hover:text-white"
+                    : "text-slate-600 dark:text-slate-300 hover:text-foreground",
+                )}
               >
                 <LogOut className="h-4 w-4" />
               </Button>

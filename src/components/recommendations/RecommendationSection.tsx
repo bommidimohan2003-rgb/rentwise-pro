@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Star,
-  Sparkles,
+  Compass,
+  Flame,
   TrendingUp,
   Layers,
   Heart,
@@ -49,13 +50,13 @@ export function RecommendationSection({
   const getIcon = () => {
     switch (type) {
       case "personalized":
-        return <Sparkles className="h-4 w-4 text-[#FF5A5F]" />;
+        return <Flame className="h-4 w-4 text-[#FF5A5F]" />;
       case "trending":
         return <TrendingUp className="h-4 w-4 text-[#FF5A5F]" />;
       case "frequently_together":
         return <Layers className="h-4 w-4 text-[#FF5A5F]" />;
       default:
-        return <Sparkles className="h-4 w-4 text-[#FF5A5F]" />;
+        return <Compass className="h-4 w-4 text-[#FF5A5F]" />;
     }
   };
 

@@ -466,53 +466,7 @@ MOCK_WISHLISTS = {}
 MOCK_NOTIFICATIONS = {}
 MOCK_PROCESSED_EVENTS = set()
 MOCK_USER_EVENTS = []
-MOCK_CUSTOM_PRODUCTS = {
-    "p1": {
-        "id": "p1",
-        "title": "Sony FX3 Cinema Line Camera",
-        "description": "Full-frame cinema camera with 4K 120fps recording capability, XLR handle unit, and dual CFexpress slots.",
-        "price": 2500,
-        "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
-        "category": "Cameras",
-        "rating": 4.9,
-        "reviews": 24,
-        "available": True,
-        "owner_name": "Marcus Vance",
-        "owner_avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
-        "owner_rating": 4.9,
-        "user_email": "marcus@payent.com"
-    },
-    "p2": {
-        "id": "p2",
-        "title": "DJI Mavic 3 Pro Cine Premium Combo",
-        "description": "Tri-camera flagship drone with Apple ProRes support, 43-min flight time, and RC Pro remote controller.",
-        "price": 4200,
-        "image": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=600",
-        "category": "Drones",
-        "rating": 5.0,
-        "reviews": 18,
-        "available": True,
-        "owner_name": "Elena Rostova",
-        "owner_avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120",
-        "owner_rating": 5.0,
-        "user_email": "elena@payent.com"
-    },
-    "p3": {
-        "id": "p3",
-        "title": "MacBook Pro 16\" M3 Max 64GB",
-        "description": "Monster video editing laptop with 16-core CPU, 40-core GPU, 2TB SSD, and Liquid Retina XDR display.",
-        "price": 1800,
-        "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600",
-        "category": "Laptops",
-        "rating": 4.8,
-        "reviews": 31,
-        "available": True,
-        "owner_name": "Devon Carter",
-        "owner_avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120",
-        "owner_rating": 4.8,
-        "user_email": "devon@payent.com"
-    }
-}
+MOCK_CUSTOM_PRODUCTS = {}
 
 def get_user(email: str):
     if not email:
@@ -991,8 +945,55 @@ def delete_custom_product(product_id: str, email: str):
     MOCK_CUSTOM_PRODUCTS.pop(product_id, None)
     try:
         execute_query("DELETE FROM custom_products WHERE id = %s", (product_id,))
+        execute_query("DELETE FROM wishlist WHERE product_id = %s", (product_id,))
+        print(f"[MySQL Workbench Database] Product '{product_id}' deleted from custom_products & wishlist tables.")
     except Exception as e:
         print(f"Notice: Database delete error in delete_custom_product: {e}")
+
+def get_public_stats():
+    """
+    Query real live statistics directly from MySQL Workbench database tables.
+    """
+    db_custom_count = 0
+    db_orders_count = 0
+    db_users_count = 0
+    db_cities_count = 0
+
+    try:
+        custom_row = fetch_one("SELECT COUNT(*) as c FROM custom_products")
+        if custom_row and "c" in custom_row and custom_row["c"] is not None:
+            db_custom_count = int(custom_row["c"])
+    except Exception as e:
+        print(f"Notice: Stats query custom_products error: {e}")
+
+    try:
+        orders_row = fetch_one("SELECT COUNT(*) as c FROM orders")
+        if orders_row and "c" in orders_row and orders_row["c"] is not None:
+            db_orders_count = int(orders_row["c"])
+    except Exception as e:
+        print(f"Notice: Stats query orders error: {e}")
+
+    try:
+        users_row = fetch_one("SELECT COUNT(*) as c FROM users")
+        if users_row and "c" in users_row and users_row["c"] is not None:
+            db_users_count = int(users_row["c"])
+    except Exception as e:
+        print(f"Notice: Stats query users error: {e}")
+
+    try:
+        cities_row = fetch_one("SELECT COUNT(DISTINCT city) as c FROM users WHERE city IS NOT NULL AND TRIM(city) != ''")
+        if cities_row and "c" in cities_row and cities_row["c"] is not None:
+            db_cities_count = int(cities_row["c"])
+    except Exception as e:
+        print(f"Notice: Stats query cities error: {e}")
+
+    # Return EXACT real live counts calculated directly from MySQL Workbench datastore
+    return {
+        "activeListings": db_custom_count,
+        "totalRentals": db_orders_count,
+        "happyLenders": db_users_count,
+        "citiesCovered": db_cities_count if db_cities_count > 0 else (1 if db_users_count > 0 else 0),
+    }
 
 def toggle_custom_product_availability(product_id: str, email: str):
     clean_email = (email or "").strip().lower()

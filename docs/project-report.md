@@ -154,6 +154,8 @@ The main technical debt areas are clear:
 - [RESOLVED Storefront Purge] Added public storefront routes `GET /api/categories/public` and `GET /api/stats/public` to FastAPI backend.
 - [RESOLVED Storefront Purge] Replaced `src/utils/mockData.ts` usage across all customer-facing routes (`FeaturedProducts`, `ProductDetails`, `Categories`, `Wishlist`, `BecomeLender`, `Checkout`, `Payment`, `About`, `HelpChatbot`) with live API calls.
 - [RESOLVED Storefront Purge] Gated Twilio SMS OTP verification so production environments raise errors on failure instead of falling back to mock OTP.
+- [RESOLVED Storefront Purge] Purged fake mock product cards (`p1`, `p2`, `p3`, `p4`, `p9`, `p11`) from `mockData.ts` and `backend/database.py` so only real user listings appear in the catalog.
+- [RESOLVED Category Reference Cards] Added interactive visual Category Reference Cards for Bikes, Cameras, Laptops, Electronic Drilling Tools, Power Banks, and Drones to `/categories`.
 
 ## Risks and Recommendations
 
