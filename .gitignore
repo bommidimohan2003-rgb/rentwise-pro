@@ -38,6 +38,7 @@ dist-ssr
 __pycache__/
 *.pyc
 .vercel
+.vercel_python_packages/
 *.docx
 ~$*
 .env*
