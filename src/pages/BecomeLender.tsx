@@ -108,10 +108,12 @@ export default function BecomeLender() {
       category: category,
       rating: 5.0,
       reviews: 0,
-      available: true,
+      available: false,
       isReference: false,
+      status: "pending",
       owner: {
-        name: user?.fullName || "Verified Lender",
+        name: user?.fullName || user?.email || "Verified Lender",
+        email: user?.email || "",
         avatar:
           user?.avatar ||
           "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80",
@@ -139,7 +141,9 @@ export default function BecomeLender() {
     storage.set("payent_custom_products", [newProduct, ...cachedCustom]);
 
     setDone(true);
-    toast.success("Listing submitted successfully!");
+    toast.success(
+      "Listing submitted! Under admin review before public retail launch.",
+    );
     setTimeout(() => {
       navigate({ to: "/dashboard" });
     }, 1000);

@@ -805,6 +805,22 @@ def get_all_custom_products():
         print(f"Notice: Database read error in get_all_custom_products: {e}")
     return list(MOCK_CUSTOM_PRODUCTS.values())
 
+def get_all_approved_custom_products():
+    try:
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT * FROM custom_products WHERE status = 'approved' AND (hidden = 0 OR hidden IS NULL) ORDER BY created_at DESC")
+                    rows = cursor.fetchall()
+                    if rows:
+                        return rows
+            finally:
+                conn.close()
+    except Exception as e:
+        print(f"Notice: Database read error in get_all_approved_custom_products: {e}")
+    return [p for p in MOCK_CUSTOM_PRODUCTS.values() if p.get("status") == "approved"]
+
 def create_custom_product(email: str, product: dict):
     clean_email = (email or "").strip().lower()
     created_at = datetime.utcnow().isoformat()
@@ -824,7 +840,8 @@ def create_custom_product(email: str, product: dict):
         "category": str(product.get("category", "General")),
         "rating": float(product.get("rating", 5.0)),
         "reviews": int(product.get("reviews", 0)),
-        "available": bool(product.get("available", True)),
+        "available": False,
+        "status": "pending",
         "owner_name": owner_name,
         "owner_avatar": owner_avatar,
         "owner_rating": owner_rating,
@@ -843,8 +860,8 @@ def create_custom_product(email: str, product: dict):
             try:
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        INSERT INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, owner_name, owner_avatar, owner_rating, created_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, status, owner_name, owner_avatar, owner_rating, created_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """, (
                         product_entry["id"],
                         clean_email,
@@ -855,7 +872,8 @@ def create_custom_product(email: str, product: dict):
                         product_entry["category"],
                         product_entry["rating"],
                         product_entry["reviews"],
-                        product_entry["available"],
+                        0,
+                        "pending",
                         owner_name,
                         owner_avatar,
                         owner_rating,

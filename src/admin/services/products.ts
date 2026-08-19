@@ -290,6 +290,24 @@ export const productsService = {
   },
 
   async approveProduct(id: string): Promise<AdminProduct> {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("payent_custom_products");
+        if (raw) {
+          const customList: AdminProduct[] = JSON.parse(raw);
+          const updatedList = customList.map((p) =>
+            p.id === id ? { ...p, status: "approved", available: true } : p,
+          );
+          localStorage.setItem(
+            "payent_custom_products",
+            JSON.stringify(updatedList),
+          );
+          window.dispatchEvent(new CustomEvent("payent_products_updated"));
+        }
+      } catch (e) {
+        console.warn("[productsService] local approve notice:", e);
+      }
+    }
     try {
       const response = await adminApi.post(`/products/${id}/approve`);
       return response.data;
@@ -297,11 +315,29 @@ export const productsService = {
       console.warn("[productsService] approveProduct fallback:", err);
       const prod =
         FALLBACK_PRODUCTS.find((p) => p.id === id) || FALLBACK_PRODUCTS[0];
-      return { ...prod, status: "approved" };
+      return { ...prod, status: "approved", available: true };
     }
   },
 
   async rejectProduct(id: string): Promise<AdminProduct> {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("payent_custom_products");
+        if (raw) {
+          const customList: AdminProduct[] = JSON.parse(raw);
+          const updatedList = customList.map((p) =>
+            p.id === id ? { ...p, status: "rejected", available: false } : p,
+          );
+          localStorage.setItem(
+            "payent_custom_products",
+            JSON.stringify(updatedList),
+          );
+          window.dispatchEvent(new CustomEvent("payent_products_updated"));
+        }
+      } catch (e) {
+        console.warn("[productsService] local reject notice:", e);
+      }
+    }
     try {
       const response = await adminApi.post(`/products/${id}/reject`);
       return response.data;
@@ -309,7 +345,7 @@ export const productsService = {
       console.warn("[productsService] rejectProduct fallback:", err);
       const prod =
         FALLBACK_PRODUCTS.find((p) => p.id === id) || FALLBACK_PRODUCTS[0];
-      return { ...prod, status: "rejected" };
+      return { ...prod, status: "rejected", available: false };
     }
   },
 

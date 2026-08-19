@@ -69,7 +69,9 @@ export default function Dashboard() {
       .catch((err) => toast.error(err.message || "Failed to cancel order."));
   };
 
-  const wishlistItems = publicProducts.filter((p: Product) => ids.includes(p.id)).slice(0, 3);
+  const wishlistItems = publicProducts
+    .filter((p: Product) => ids.includes(p.id))
+    .slice(0, 3);
 
   // Compute real-time dashboard details dynamically
   const activeRentalsCount = orders.filter(

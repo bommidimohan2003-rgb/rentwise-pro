@@ -9,6 +9,15 @@ export function useAuth() {
 
   useEffect(() => {
     const initAuth = async () => {
+      // Immediately hydrate cached user session to prevent UI flickering or premature logouts
+      const cachedUser = storage.get<User | null>(
+        STORAGE_KEYS.currentUser,
+        null,
+      );
+      if (cachedUser) {
+        setUser(cachedUser);
+      }
+
       const token = storage.get<string | null>(STORAGE_KEYS.token, null);
       if (token) {
         try {
@@ -20,14 +29,23 @@ export function useAuth() {
             role: profile.role,
           };
           storage.set(STORAGE_KEYS.currentUser, loggedUser);
-          setUser(loggedUser);
-        } catch (err) {
-          console.error("[Auth] Session validation failed:", err);
-          storage.remove(STORAGE_KEYS.token);
-          storage.remove(STORAGE_KEYS.currentUser);
-          setUser(null);
+        } catch (err: unknown) {
+          console.warn("[Auth] Session validation notice:", err);
+          const errorObj = err as { status?: number; message?: string };
+          // Only invalidate session if backend explicitly returned a 401 Unauthorized response
+          const is401 =
+            errorObj?.status === 401 ||
+            (errorObj?.message &&
+              (errorObj.message.includes("401") ||
+                errorObj.message.includes("Invalid token") ||
+                errorObj.message.includes("expired")));
+          if (is401) {
+            storage.remove(STORAGE_KEYS.token);
+            storage.remove(STORAGE_KEYS.currentUser);
+            setUser(null);
+          }
         }
-      } else {
+      } else if (!cachedUser) {
         setUser(null);
       }
       setReady(true);

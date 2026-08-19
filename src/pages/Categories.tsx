@@ -23,7 +23,7 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
 import { advancedSearch } from "@/utils/searchEngine";
 import { searchWithML, getSearchStats } from "@/utils/smartSearch";
-import type { Product, Category } from "@/types";
+import type { Product, Category, User } from "@/types";
 import { cn } from "@/lib/utils";
 import { useSearch, useNavigate, Link } from "@tanstack/react-router";
 import { NoSearchResults } from "@/components/states/NoSearchResults";
@@ -62,27 +62,37 @@ const matchCategory = (productCat: string, targetId: string) => {
   if (pCat === tId) return true;
   if (
     tId === "bikes" &&
-    (pCat.includes("bike") || pCat.includes("ride") || pCat.includes("motorcycle"))
+    (pCat.includes("bike") ||
+      pCat.includes("ride") ||
+      pCat.includes("motorcycle"))
   )
     return true;
   if (
     tId === "tools" &&
-    (pCat.includes("tool") || pCat.includes("drill") || pCat.includes("electric"))
+    (pCat.includes("tool") ||
+      pCat.includes("drill") ||
+      pCat.includes("electric"))
   )
     return true;
   if (
     tId === "powerbanks" &&
-    (pCat.includes("power") || pCat.includes("bank") || pCat.includes("battery"))
+    (pCat.includes("power") ||
+      pCat.includes("bank") ||
+      pCat.includes("battery"))
   )
     return true;
   if (tId === "cameras" && pCat.includes("camera")) return true;
-  if (tId === "laptops" && (pCat.includes("laptop") || pCat.includes("macbook")))
+  if (
+    tId === "laptops" &&
+    (pCat.includes("laptop") || pCat.includes("macbook"))
+  )
     return true;
   if (tId === "drones" && pCat.includes("drone")) return true;
   return false;
 };
 
 export default function Categories() {
+  const { user } = useAuth();
   const search = useSearch({ from: "/categories" }) as {
     q?: string;
     cat?: string;
@@ -135,7 +145,10 @@ export default function Categories() {
 
     window.addEventListener("payent_products_updated", handleProductsUpdate);
     return () => {
-      window.removeEventListener("payent_products_updated", handleProductsUpdate);
+      window.removeEventListener(
+        "payent_products_updated",
+        handleProductsUpdate,
+      );
     };
   }, []);
 
@@ -278,6 +291,21 @@ export default function Categories() {
       list = advancedSearch(list, q);
     }
 
+    // Public retail security filter: Pending items are only shown to their uploader until approved by admin
+    list = list.filter((p) => {
+      const isApproved = p.status === "approved" || !p.status;
+      const isOwner = Boolean(
+        user &&
+        ((p.owner?.email &&
+          user.email &&
+          p.owner.email.toLowerCase() === user.email.toLowerCase()) ||
+          (p.owner?.name &&
+            user.fullName &&
+            p.owner.name.toLowerCase() === user.fullName.toLowerCase())),
+      );
+      return isApproved || isOwner;
+    });
+
     switch (sort) {
       case "price_asc":
         list = [...list].sort((a, b) => a.price - b.price);
@@ -290,7 +318,7 @@ export default function Categories() {
         break;
     }
     return list;
-  }, [cat, q, sort, mlResults, allProductsList]);
+  }, [cat, q, sort, mlResults, allProductsList, user]);
 
   // Instant Suggestions for Search Autocomplete
   const liveSuggestions = useMemo(() => {
@@ -354,8 +382,6 @@ export default function Categories() {
     ],
     [],
   );
-
-  const { user } = useAuth();
 
   const referenceProducts: Product[] = useMemo(
     () => [
@@ -518,9 +544,11 @@ export default function Categories() {
       category: card.id,
       rating: 5.0,
       reviews: 0,
-      available: true,
+      available: false,
+      status: "pending",
       owner: {
         name: user ? user.fullName || user.email : "Verified Lender",
+        email: user?.email || "",
         avatar: "https://i.pravatar.cc/100?img=33",
         rating: 5.0,
       },
@@ -530,6 +558,9 @@ export default function Categories() {
     const currentCustom = storage.get<Product[]>("payent_custom_products", []);
     const updatedCustom = [newProduct, ...currentCustom];
     storage.set("payent_custom_products", updatedCustom);
+    toast.success(
+      "Listing submitted! Pending admin approval before retail launch.",
+    );
 
     // Update state immediately so listing grid refreshes
     setAllProductsList((prev) => {
@@ -538,7 +569,7 @@ export default function Categories() {
       return Array.from(map.values());
     });
 
-    const userToken = (user as any)?.token;
+    const userToken = (user as { token?: string })?.token;
     if (user && userToken) {
       api.createCustomProduct(userToken, newProduct).catch((err) => {
         console.warn("Backend sync notice:", err);
@@ -607,8 +638,6 @@ export default function Categories() {
             and electronic tools from verified owners.
           </p>
         </div>
-
-
 
         {/* Top Control Bar: Category Dropdown at TOP LEFT CORNER + Intelligent Search Bar + Sort */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
@@ -938,7 +967,7 @@ function ListingPermissionModal({
     defaultPrice: string;
     defaultDesc: string;
   };
-  user: any;
+  user: User | null;
   onClose: () => void;
   onConfirm: (details: {
     title: string;
@@ -988,7 +1017,8 @@ function ListingPermissionModal({
               </h2>
             </div>
             <p className="text-xs text-muted-foreground font-medium">
-              Review details and grant explicit permission to publish this item under your lender account.
+              Review details and grant explicit permission to publish this item
+              under your lender account.
             </p>
           </div>
           <button
@@ -1102,7 +1132,8 @@ function ListingPermissionModal({
               <span className="font-extrabold text-primary">
                 Listing Authorization:
               </span>{" "}
-              I confirm I own or am authorized to rent this item, and I agree to list it on Payent under my account.
+              I confirm I own or am authorized to rent this item, and I agree to
+              list it on Payent under my account.
             </label>
           </div>
 

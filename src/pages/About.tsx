@@ -35,30 +35,42 @@ export default function About() {
   useEffect(() => {
     let isMounted = true;
     const fetchStats = async () => {
-      const res: any = await api.getPublicStats();
+      const res = await api.getPublicStats();
       if (isMounted && res) {
         setStatsData([
           {
             label: "Active Listings",
-            value: res.activeListings > 0 ? `${res.activeListings}+` : `${res.activeListings || 0}`,
+            value:
+              res.activeListings > 0
+                ? `${res.activeListings}+`
+                : `${res.activeListings || 0}`,
             image:
               "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
           },
           {
             label: "Total Rentals",
-            value: res.totalRentals > 0 ? `${res.totalRentals}+` : `${res.totalRentals || 0}`,
+            value:
+              res.totalRentals > 0
+                ? `${res.totalRentals}+`
+                : `${res.totalRentals || 0}`,
             image:
               "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600",
           },
           {
             label: "Happy Lenders",
-            value: res.happyLenders > 0 ? `${res.happyLenders}+` : `${res.happyLenders || 0}`,
+            value:
+              res.happyLenders > 0
+                ? `${res.happyLenders}+`
+                : `${res.happyLenders || 0}`,
             image:
               "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600",
           },
           {
             label: "Cities Covered",
-            value: res.citiesCovered > 0 ? `${res.citiesCovered}+` : `${res.citiesCovered || 0}`,
+            value:
+              res.citiesCovered > 0
+                ? `${res.citiesCovered}+`
+                : `${res.citiesCovered || 0}`,
             image:
               "https://images.unsplash.com/photo-1477959858617-67f30ac4ce78?w=600",
           },

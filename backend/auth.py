@@ -6,7 +6,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
-from config import JWT_SECRET_KEY, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
+from config import JWT_SECRET_KEY, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS, IS_PRODUCTION
 
 COMMON_WEAK_PASSWORDS = {
     "12345678", "password", "password123", "123456789", "1234567890",
@@ -24,7 +24,7 @@ def check_hibp_pwned_password(password: str) -> bool:
         prefix = sha1_pwd[:5]
         suffix = sha1_pwd[5:]
         url = f"https://api.pwnedpasswords.com/range/{prefix}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Payent-Security-Checker"})
+        req = urllib.request.Request(url, headers={'User-Agent': 'Payent-Security-Audit'})
         with urllib.request.urlopen(req, timeout=3) as response:
             if response.status == 200:
                 body = response.read().decode('utf-8')
@@ -58,7 +58,7 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
     if password.lower() in COMMON_WEAK_PASSWORDS:
         return False, "This password is too common and easily guessed. Please choose a stronger password."
 
-    if check_hibp_pwned_password(password):
+    if IS_PRODUCTION and check_hibp_pwned_password(password):
         return False, "This password has appeared in a known data breach. Please choose a safer password."
 
     return True, ""

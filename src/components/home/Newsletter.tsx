@@ -17,27 +17,27 @@ export function Newsletter() {
     <section
       id="newsletter"
       ref={ref}
-      className="relative py-20 px-4 sm:px-6 overflow-hidden bg-background text-foreground border-t border-border"
+      className="relative py-20 px-4 sm:px-6 overflow-hidden bg-white dark:bg-[#070A10] text-foreground dark:text-white border-t border-border dark:border-white/10"
     >
       <div className="relative max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7 }}
-          className="relative rounded-3xl p-8 md:p-14 text-center overflow-hidden bg-card border border-border shadow-2xl space-y-6"
+          className="relative rounded-3xl p-8 md:p-14 text-center overflow-hidden border border-border dark:border-white/20 bg-card dark:bg-gradient-to-br dark:from-white/10 dark:via-white/5 dark:to-white/0 backdrop-blur-3xl shadow-xl dark:shadow-2xl dark:shadow-black space-y-6"
         >
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1 bg-secondary border border-border text-foreground text-xs font-semibold uppercase tracking-wider">
-            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1 bg-secondary/80 dark:bg-white/5 border border-border dark:border-white/15 text-foreground dark:text-white text-xs font-semibold uppercase tracking-wider">
+            <Mail className="h-3.5 w-3.5 text-primary" />
             <span>PAYENT INSIDER</span>
           </div>
 
-          <h3 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground font-display">
+          <h3 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground dark:text-white font-display">
             Get exclusive rental deals <br className="hidden sm:inline" />
             &amp; new gear alerts
           </h3>
 
-          <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto font-normal">
+          <p className="text-muted-foreground dark:text-neutral-300 text-xs sm:text-sm max-w-md mx-auto font-medium">
             No spam. Just top gear drops, lender discounts, and creator perks
             delivered once a week.
           </p>
@@ -53,19 +53,19 @@ export function Newsletter() {
               className="flex flex-col sm:flex-row items-center gap-3 max-w-md mx-auto pt-2"
             >
               <div className="relative w-full">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-neutral-400" />
                 <input
                   type="email"
                   required
                   placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-secondary border border-border focus:border-primary text-foreground placeholder:text-muted-foreground text-xs sm:text-sm rounded-xl pl-10 pr-4 py-3.5 focus:outline-none transition-colors"
+                  className="w-full bg-secondary/50 dark:bg-white/10 border border-border dark:border-white/15 focus:border-primary text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-neutral-400 text-xs sm:text-sm rounded-xl pl-10 pr-4 py-3.5 focus:outline-none transition-colors"
                 />
               </div>
               <button
                 type="submit"
-                className="w-full sm:w-auto shrink-0 bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto shrink-0 btn-gradient text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Subscribe</span>
                 <ArrowRight className="h-4 w-4" />

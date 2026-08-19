@@ -34,10 +34,12 @@ export interface Product {
   reviews: number;
   available: boolean;
   isReference?: boolean;
+  status?: "approved" | "pending" | "rejected";
   owner: {
     name: string;
     avatar: string;
     rating: number;
+    email?: string;
   };
 }
 

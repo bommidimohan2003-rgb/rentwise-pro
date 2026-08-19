@@ -69,16 +69,13 @@ export function Navbar() {
     >
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-6">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group" id="nav-logo">
+        <Link to="/" className="flex items-center gap-2 group" id="nav-logo">
           <motion.div
-            whileHover={{ scale: 1.08, rotate: 6 }}
-            className="h-9 w-9 rounded-xl flex items-center justify-center bg-primary text-primary-foreground shrink-0 shadow-md transition-all"
+            whileHover={{ scale: 1.05 }}
+            className="flex items-center shrink-0"
           >
-            <LogoIcon className="h-5 w-5" />
+            <LogoIcon className="h-10 w-auto rounded-lg shadow-sm" />
           </motion.div>
-          <span className="text-xl font-extrabold tracking-tight font-display text-foreground">
-            PAYENT
-          </span>
         </Link>
 
         {/* Desktop Nav Links */}
@@ -88,9 +85,9 @@ export function Navbar() {
               key={l.to}
               to={l.to}
               id={`nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
-              className="px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-secondary"
+              className="px-4 py-2 text-sm font-extrabold rounded-full transition-all duration-200 text-black dark:text-white hover:text-[#FF5A5F] hover:bg-black/5 dark:hover:bg-white/10"
               activeProps={{
-                className: "!text-[#FF5A5F] !bg-[#FF5A5F]/10 font-bold",
+                className: "!text-[#FF5A5F] !bg-[#FF5A5F]/15 font-black",
               }}
               activeOptions={{ exact: l.to === "/" }}
             >
@@ -102,7 +99,7 @@ export function Navbar() {
             onClick={() =>
               window.dispatchEvent(new CustomEvent("open-payent-help-chat"))
             }
-            className="px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-secondary"
+            className="px-4 py-2 text-sm font-extrabold rounded-full transition-all duration-200 cursor-pointer text-black dark:text-white hover:text-[#FF5A5F] hover:bg-black/5 dark:hover:bg-white/10"
           >
             Help
           </button>
@@ -141,14 +138,9 @@ export function Navbar() {
               onClick={action}
               aria-label={label}
               id={`nav-${label.toLowerCase()}`}
-              className={cn(
-                "h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer",
-                isHomePage
-                  ? "text-slate-200 hover:text-white hover:bg-white/10"
-                  : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10",
-              )}
+              className="h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer text-black dark:text-white hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-black/5 dark:hover:bg-white/10 font-extrabold"
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4 stroke-[2.5]" />
             </button>
           ))}
 
@@ -158,17 +150,12 @@ export function Navbar() {
             onClick={toggle}
             aria-label="Toggle theme"
             id="nav-theme-toggle"
-            className={cn(
-              "h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer",
-              isHomePage
-                ? "text-slate-200 hover:text-white hover:bg-white/10"
-                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10",
-            )}
+            className="h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer text-black dark:text-white hover:text-[#FF5A5F] dark:hover:text-[#FF5A5F] hover:bg-black/5 dark:hover:bg-white/10 font-extrabold"
           >
             {theme === "dark" ? (
-              <Sun className="h-4 w-4 text-amber-400" />
+              <Sun className="h-4 w-4 text-amber-400 stroke-[2.5]" />
             ) : (
-              <Moon className="h-4 w-4" />
+              <Moon className="h-4 w-4 stroke-[2.5]" />
             )}
           </button>
 
@@ -178,78 +165,59 @@ export function Navbar() {
               {user.role === "admin" && (
                 <Link
                   to="/admin/dashboard"
-                  className="px-3.5 py-1.5 text-xs font-bold rounded-full bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all shadow-md"
+                  className="px-3 py-1.5 text-xs font-black rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 transition-all"
                 >
-                  Admin Portal
+                  Admin Panel
                 </Link>
               )}
               <Link
                 to="/dashboard"
-                id="nav-dashboard"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-full pl-1.5 pr-4 h-10 transition-all border shadow-sm cursor-pointer",
-                  isHomePage
-                    ? "bg-black/80 dark:bg-neutral-900 border-white/20 text-white hover:bg-black"
-                    : "bg-slate-100 dark:bg-neutral-900 border-slate-300 dark:border-neutral-800 text-black dark:text-white hover:bg-slate-200 dark:hover:bg-neutral-800",
-                )}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 border border-border transition-all"
               >
-                <div className="h-7 w-7 rounded-full grid place-items-center text-xs font-black shrink-0 bg-white text-black border border-black/10 shadow-xs">
-                  {user.fullName.charAt(0).toLowerCase()}
-                </div>
-                <span
-                  className={cn(
-                    "text-sm font-black tracking-wide",
-                    isHomePage ? "text-white" : "text-black dark:text-white",
-                  )}
-                >
-                  {user.fullName.split(" ")[0].toLowerCase()}
+                <img
+                  src={
+                    user.avatar ||
+                    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+                  }
+                  alt={user.fullName}
+                  className="h-6 w-6 rounded-full object-cover border border-border"
+                />
+                <span className="text-xs font-black text-black dark:text-white max-w-[100px] truncate">
+                  {user.fullName.split(" ")[0]}
                 </span>
               </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Logout"
+              <button
+                type="button"
                 onClick={logout}
-                className={cn(
-                  "transition-colors",
-                  isHomePage
-                    ? "text-slate-200 hover:text-white"
-                    : "text-slate-600 dark:text-slate-300 hover:text-foreground",
-                )}
+                title="Log Out"
+                className="p-2 text-black dark:text-white hover:text-destructive hover:bg-destructive/10 rounded-full transition-all cursor-pointer"
               >
-                <LogOut className="h-4 w-4" />
-              </Button>
+                <LogOut className="h-4 w-4 stroke-[2.5]" />
+              </button>
             </div>
           ) : (
-            <div className="hidden md:flex items-center gap-2 ml-2">
-              <motion.button
-                onClick={handleGetStarted}
-                id="nav-get-started"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="rounded-xl px-5 py-2 text-sm font-bold bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all duration-200 cursor-pointer shadow-lg"
-              >
-                <span className="flex items-center gap-1.5">
-                  <LogIn className="h-3.5 w-3.5" />
-                  Login
-                </span>
-              </motion.button>
-            </div>
+            <button
+              type="button"
+              onClick={handleGetStarted}
+              className="ml-2 btn-gradient px-4 py-2 rounded-full text-xs font-black text-white shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <UserIcon className="h-3.5 w-3.5 stroke-[2.5]" />
+              <span>Sign In</span>
+            </button>
           )}
 
           {/* Mobile Menu Toggle */}
           <button
             type="button"
-            className={cn(
-              "lg:hidden ml-1 h-9 w-9 flex items-center justify-center rounded-full transition-all cursor-pointer",
-              isHomePage
-                ? "text-slate-200 hover:text-white hover:bg-white/10"
-                : "text-slate-600 dark:text-slate-200 hover:text-[#FF5A5F] hover:bg-slate-100 dark:hover:bg-white/10",
-            )}
+            className="lg:hidden ml-1 h-9 w-9 flex items-center justify-center rounded-full transition-all cursor-pointer text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10"
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
           >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {open ? (
+              <X className="h-5 w-5 stroke-[2.5]" />
+            ) : (
+              <Menu className="h-5 w-5 stroke-[2.5]" />
+            )}
           </button>
         </div>
       </div>

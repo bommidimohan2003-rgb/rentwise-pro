@@ -55,12 +55,7 @@ export function Footer() {
           {/* Brand column */}
           <div className="lg:col-span-2 space-y-5">
             <Link to="/" className="flex items-center gap-2.5 group w-fit">
-              <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-primary text-primary-foreground shrink-0 shadow-md">
-                <LogoIcon className="h-5 w-5" />
-              </div>
-              <span className="text-xl font-extrabold tracking-tight text-foreground font-display">
-                PAYENT
-              </span>
+              <LogoIcon className="h-10 w-auto rounded-lg shadow-sm" />
             </Link>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-sm font-normal">
               India's premier peer-to-peer tech gear rental platform. Access

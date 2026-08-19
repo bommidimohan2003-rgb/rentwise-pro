@@ -72,15 +72,39 @@ export const usersService = {
   },
 
   async getAgents(): Promise<AdminAgent[]> {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("payent:admin:agents");
+        if (raw) {
+          const list: AdminAgent[] = JSON.parse(raw);
+          const clean = list.filter(
+            (a) =>
+              !a.email?.endsWith("@payent.com") &&
+              !a.fullName?.includes("Gear Hub") &&
+              !a.fullName?.includes("Cine Rental") &&
+              !a.fullName?.includes("Pro Drone"),
+          );
+          localStorage.setItem("payent:admin:agents", JSON.stringify(clean));
+        }
+      } catch (e) {
+        console.warn("[usersService] local agents cleanup notice:", e);
+      }
+    }
     try {
       const response = await adminApi.get("/agents");
       if (response.data && Array.isArray(response.data)) {
-        return response.data;
+        return response.data.filter(
+          (a: AdminAgent) =>
+            !a.email?.endsWith("@payent.com") &&
+            !a.fullName?.includes("Gear Hub") &&
+            !a.fullName?.includes("Cine Rental") &&
+            !a.fullName?.includes("Pro Drone"),
+        );
       }
     } catch (err) {
       console.warn("[usersService] getAgents fallback:", err);
     }
-    return FALLBACK_AGENTS;
+    return [];
   },
 
   async suspendAgent(id: string): Promise<AdminAgent> {

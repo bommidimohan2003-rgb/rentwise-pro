@@ -2,9 +2,9 @@ import { Hero } from "@/components/home/Hero";
 import { Stats } from "@/components/home/Stats";
 import { Features } from "@/components/home/Features";
 import { Categories } from "@/components/home/Categories";
+import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { WhyChoose } from "@/components/home/WhyChoose";
-import { Testimonials } from "@/components/home/Testimonials";
 import { CallToAction } from "@/components/home/CallToAction";
 import { Newsletter } from "@/components/home/Newsletter";
 import { MainLayout } from "@/layouts/MainLayout";
@@ -45,13 +45,15 @@ export default function Home() {
       <JsonLd schema={websiteSchema} />
       {/* Hero section */}
       <Hero />
-      {/* Popular Categories */}
+      {/* Curated Reserve Collections */}
       <Categories />
+      {/* Featured Reserve Catalog */}
+      <FeaturedProducts />
       {/* How it works */}
       <HowItWorks />
-      {/* Trust & Security Banner */}
+      {/* Trust & Heritage Standards */}
       <WhyChoose />
-      {/* Call to action */}
+      {/* Exclusive Membership Call To Action */}
       <CallToAction />
       {/* Newsletter */}
       <Newsletter />

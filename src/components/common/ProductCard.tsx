@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
-import { Heart, MapPin, ShieldCheck, Tag, Star, Trash2 } from "lucide-react";
+import {
+  Heart,
+  MapPin,
+  ShieldCheck,
+  Tag,
+  Star,
+  Trash2,
+  Clock,
+} from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import type { Product } from "@/types";
@@ -45,26 +53,57 @@ export function ProductCard({
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const getFallbackImage = () => {
-    const catKey = (product.category || "").toLowerCase().trim();
-    return fallbackMap[catKey] || cameraImg;
-  };
+  const catKey = (product.category || "").toLowerCase().trim();
+  const fallbackImg = fallbackMap[catKey] || cameraImg;
 
-  const [imgSrc, setImgSrc] = useState<string>(
-    product.image || getFallbackImage(),
-  );
+  const [imgSrc, setImgSrc] = useState<string>(product.image || fallbackImg);
 
   useEffect(() => {
-    setImgSrc(product.image || getFallbackImage());
-  }, [product.image, product.category]);
+    setImgSrc(product.image || fallbackImg);
+  }, [product.image, fallbackImg]);
 
-  const isOwner =
+  const ownerName = product.owner?.name?.toLowerCase().trim();
+  const ownerEmail = product.owner?.email?.toLowerCase().trim();
+  const userFullName = user?.fullName?.toLowerCase().trim();
+  const userEmail = user?.email?.toLowerCase().trim();
+
+  const isOwner = Boolean(
     user &&
-    (product.owner?.name === user.fullName ||
-      product.owner?.name === user.email ||
-      product.id.startsWith("p-custom-"));
+    !product.isReference &&
+    ((ownerEmail && userEmail && ownerEmail === userEmail) ||
+      (ownerName && userFullName && ownerName === userFullName) ||
+      (ownerName && userEmail && ownerName === userEmail)),
+  );
 
-  const location = (product as any).location || "Jubilee Hills, Hyderabad";
+  const location =
+    (product as Product & { location?: string }).location ||
+    "Jubilee Hills, Hyderabad";
+
+  const handleCardClick = () => {
+    if (product.isReference) {
+      if (!user) {
+        toast.error("Please log in to list your gear.");
+        navigate({ to: "/login" });
+        return;
+      }
+      navigate({
+        to: "/become-lender",
+        search: {
+          title: product.title,
+          category: product.category,
+          price: product.price.toString(),
+          description:
+            product.description ||
+            `High-performance ${product.title} available for rent on Payent.`,
+        },
+      });
+    } else {
+      navigate({
+        to: "/product/$id",
+        params: { id: product.id },
+      });
+    }
+  };
 
   return (
     <CSSTiltCard>
@@ -72,15 +111,15 @@ export function ProductCard({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: index * 0.05 }}
-        className="group relative bg-card rounded-3xl overflow-hidden border border-border/80 hover:border-primary/50 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between h-full"
+        onClick={handleCardClick}
+        className="group relative bg-card rounded-3xl overflow-hidden border border-border/80 hover:border-primary/50 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between h-full cursor-pointer"
       >
-        <div className="relative aspect-4/3 overflow-hidden bg-secondary/50">
+        <div className="relative aspect-4/3 overflow-hidden bg-secondary/80">
           <img
             src={imgSrc}
-            alt={product.title}
+            alt=""
             onError={() => {
-              const fb = getFallbackImage();
-              if (imgSrc !== fb) setImgSrc(fb);
+              if (imgSrc !== fallbackImg) setImgSrc(fallbackImg);
             }}
             className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
           />
@@ -100,6 +139,7 @@ export function ProductCard({
             )}
           </div>
 
+          {/* Top Right Wishlist Button */}
           <button
             type="button"
             onClick={(e) => {
@@ -108,7 +148,7 @@ export function ProductCard({
               toggle(product.id);
             }}
             className={cn(
-              "absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md",
+              "absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md z-10",
               liked
                 ? "bg-[#FF5A5F] text-white"
                 : "bg-background/80 text-foreground hover:bg-background hover:scale-110",
@@ -188,21 +228,51 @@ export function ProductCard({
               >
                 + Add Listing
               </button>
+            ) : isOwner && product.status === "pending" ? (
+              <div className="flex items-center justify-between gap-1.5 w-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded-lg px-2.5 py-1.5 text-[11px] font-bold">
+                <span className="inline-flex items-center gap-1 truncate">
+                  <Clock className="h-3.5 w-3.5 text-amber-500 animate-pulse shrink-0" />
+                  Pending Admin Approval
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const currentCustom = storage.get<Product[]>(
+                      "payent_custom_products",
+                      [],
+                    );
+                    const updatedCustom = currentCustom.filter(
+                      (p) => p.id !== product.id,
+                    );
+                    storage.set("payent_custom_products", updatedCustom);
+                    window.dispatchEvent(
+                      new CustomEvent("payent_products_updated"),
+                    );
+                    toast.success("Listing cancelled.");
+                  }}
+                  className="h-6 w-6 rounded hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                  title="Cancel Listing"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
             ) : isOwner ? (
               <div className="flex items-center gap-1.5 w-full">
                 <Link
                   to="/product/$id"
                   params={{ id: product.id }}
-                  className="flex-1 border border-border text-muted-foreground bg-secondary/40 rounded-lg h-8 text-[11px] font-bold inline-flex items-center justify-center transition-all truncate"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-1 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-lg h-8 text-[11px] font-bold inline-flex items-center justify-center transition-all truncate"
                 >
-                  Your Listing
+                  Your Listing (Approved)
                 </Link>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    // 1. Remove from local storage cache
                     const currentCustom = storage.get<Product[]>(
                       "payent_custom_products",
                       [],
@@ -212,8 +282,7 @@ export function ProductCard({
                     );
                     storage.set("payent_custom_products", updatedCustom);
 
-                    // 2. Call backend DELETE /api/products/custom/{id} API to delete from database
-                    const userToken = (user as any)?.token;
+                    const userToken = (user as { token?: string })?.token;
                     if (userToken) {
                       api
                         .deleteCustomProduct(userToken, product.id)
@@ -228,7 +297,6 @@ export function ProductCard({
                       toast.success("Listing deleted!");
                     }
 
-                    // 3. Dispatch update event to refresh UI across all pages
                     window.dispatchEvent(
                       new CustomEvent("payent_products_updated"),
                     );
@@ -242,7 +310,8 @@ export function ProductCard({
             ) : (
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (!user) {
                     toast.error("Please log in to book this item.");
                     navigate({ to: "/login" });

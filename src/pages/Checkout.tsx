@@ -19,6 +19,7 @@ import { Input } from "@/components/common/Input";
 import { Modal } from "@/components/common/Modal";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { api } from "@/utils/api";
+import { products as MOCK_PRODUCTS } from "@/utils/mockData";
 import { tracker } from "@/utils/eventTracker";
 import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
 import type { Order, Product } from "@/types";
@@ -47,19 +48,48 @@ export default function Checkout() {
   const [product, setProduct] = useState<Product | null>(null);
   const [productLoading, setProductLoading] = useState(true);
 
-  // Load product from live API
+  // Load product from local custom items, MOCK_PRODUCTS, and live API catalog
   useEffect(() => {
     let isMounted = true;
     setProductLoading(true);
-    api.getPublicProducts().then((items) => {
-      if (!isMounted) return;
-      const found = items?.find((p: Product) => p.id === search.id) ?? items?.[0] ?? null;
-      setProduct(found);
-      setProductLoading(false);
-    }).catch(() => {
-      if (isMounted) setProductLoading(false);
-    });
-    return () => { isMounted = false; };
+
+    async function loadTargetProduct() {
+      // 1. Check local custom products (items created via Become a Lender or Categories modal)
+      const localCustom = storage.get<Product[]>("payent_custom_products", []);
+      let found = localCustom.find((p: Product) => p.id === search.id);
+
+      // 2. Check MOCK_PRODUCTS catalog
+      if (!found) {
+        found = MOCK_PRODUCTS.find((p: Product) => p.id === search.id);
+      }
+
+      // 3. Check public products API
+      if (!found) {
+        try {
+          const items = await api.getPublicProducts();
+          if (Array.isArray(items)) {
+            found = items.find((p: Product) => p.id === search.id);
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // 4. Fallback if search.id was missing or unresolvable
+      if (!found && MOCK_PRODUCTS.length > 0) {
+        found = MOCK_PRODUCTS[0];
+      }
+
+      if (isMounted) {
+        setProduct(found || null);
+        setProductLoading(false);
+      }
+    }
+
+    loadTargetProduct();
+    return () => {
+      isMounted = false;
+    };
   }, [search.id]);
 
   // Dates
@@ -126,32 +156,6 @@ export default function Checkout() {
     [subtotal, discount, tax],
   );
 
-  // Loading and not-found guards
-  if (productLoading) {
-    return (
-      <MainLayout>
-        <div className="mx-auto max-w-3xl px-4 py-24 text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-neutral-400" />
-          <p className="mt-4 text-neutral-500">Loading product details…</p>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (!product) {
-    return (
-      <MainLayout>
-        <div className="mx-auto max-w-3xl px-4 py-24 text-center">
-          <AlertTriangle className="mx-auto h-8 w-8 text-amber-500" />
-          <h1 className="mt-4 text-2xl font-bold">Product not found</h1>
-          <Button className="mt-6" onClick={() => navigate({ to: "/categories" })}>
-            Browse marketplace
-          </Button>
-        </div>
-      </MainLayout>
-    );
-  }
-
   // QR Timer Countdown Handler
   useEffect(() => {
     if (
@@ -172,12 +176,6 @@ export default function Checkout() {
     };
   }, [paymentMethod, upiType, qrCountdown, qrActive]);
 
-  const handleGenerateQR = () => {
-    setQrCountdown(120);
-    setQrActive(true);
-    toast.success("Payment QR Code generated!");
-  };
-
   // Card brand detection
   const cardBrand = useMemo(() => {
     const clean = cardNumber.replace(/\D/g, "");
@@ -186,6 +184,41 @@ export default function Checkout() {
     if (clean.startsWith("3")) return "American Express";
     return "Card";
   }, [cardNumber]);
+
+  // Loading and not-found guards (Placed AFTER all Hooks)
+  if (productLoading) {
+    return (
+      <MainLayout>
+        <div className="mx-auto max-w-3xl px-4 py-24 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-neutral-400" />
+          <p className="mt-4 text-neutral-500">Loading product details…</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!product) {
+    return (
+      <MainLayout>
+        <div className="mx-auto max-w-3xl px-4 py-24 text-center">
+          <AlertTriangle className="mx-auto h-8 w-8 text-amber-500" />
+          <h1 className="mt-4 text-2xl font-bold">Product not found</h1>
+          <Button
+            className="mt-6"
+            onClick={() => navigate({ to: "/categories" })}
+          >
+            Browse marketplace
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const handleGenerateQR = () => {
+    setQrCountdown(120);
+    setQrActive(true);
+    toast.success("Payment QR Code generated!");
+  };
 
   // Format Card Number (adds spaces every 4 digits)
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {

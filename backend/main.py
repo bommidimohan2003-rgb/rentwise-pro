@@ -81,6 +81,7 @@ from database import (
     cancel_order,
     get_custom_products,
     get_all_custom_products,
+    get_all_approved_custom_products,
     create_custom_product,
     get_notifications,
     create_notification,
@@ -718,9 +719,18 @@ def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request)
 
     clean_email = data.email.lower().strip()
     user = get_user(clean_email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No registered account found with email '{clean_email}'."
+        )
     
-    # Extract phone number from user account or default fallback
-    phone = user.get("phone") if user and user.get("phone") else "+10000000000"
+    phone = user.get("phone")
+    if not phone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No mobile phone number associated with this account for SMS verification."
+        )
     
     result = start_verification(phone)
     if result["mode"] == "mock":
@@ -965,7 +975,7 @@ def fetch_user_listings(email: str = Depends(get_current_user_email)):
 
 @app.get("/api/products/custom/public")
 def fetch_public_listings():
-    listings = get_all_custom_products()
+    listings = get_all_approved_custom_products()
     return [format_product_dict(p) for p in listings]
 
 @app.get("/api/categories/public")
@@ -2250,7 +2260,7 @@ def admin_agents_list(current_admin: dict = Depends(check_admin_user)):
                 SELECT DISTINCT u.email, u.full_name, u.status, u.avatar, u.created_at
                 FROM users u
                 LEFT JOIN custom_products cp ON u.email = cp.user_email
-                WHERE u.role = 'agent' OR u.role = 'lender' OR cp.id IS NOT NULL
+                WHERE (u.role = 'agent' OR u.role = 'lender' OR cp.id IS NOT NULL) AND u.email NOT LIKE '%@payent.com'
             """)
             rows = cursor.fetchall()
             
@@ -3514,7 +3524,7 @@ DEFAULT_CATALOG_PRODUCTS = [
         "rating": 4.75,
         "reviews": 0,
         "available": True,
-        "image": "https://images.unsplash.com/photo-1609592424074-2975a8996b27?auto=format&fit=crop&w=1200&q=80",
+        "image": "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?auto=format&fit=crop&w=1200&q=80",
         "owner": {"name": "Tech Hub Rentals", "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150", "rating": 4.9}
     },
     {

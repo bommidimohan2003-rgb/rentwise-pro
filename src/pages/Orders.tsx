@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,7 +20,7 @@ export default function Orders() {
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
   const navigate = useNavigate();
 
-  const loadOrders = () => {
+  const loadOrders = useCallback(() => {
     if (!token) {
       setLoading(false);
       return;
@@ -37,11 +37,11 @@ export default function Orders() {
         setError("Failed to fetch your active order history.");
       })
       .finally(() => setLoading(false));
-  };
+  }, [token]);
 
   useEffect(() => {
     loadOrders();
-  }, [token]);
+  }, [loadOrders]);
 
   const handleCancelOrder = (orderId: string) => {
     if (!token) return;
@@ -89,58 +89,58 @@ export default function Orders() {
               onAction={() => navigate({ to: "/categories" })}
             />
           ) : (
-          <div className="card-premium overflow-hidden">
-            <div className="hidden md:grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 border-b border-border text-xs uppercase text-muted-foreground">
-              <div>Item</div>
-              <div>Details</div>
-              <div>Dates</div>
-              <div>Total</div>
-              <div>Status</div>
-            </div>
-            {orders.map((o) => (
-              <div
-                key={o.id}
-                className="grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 items-center border-b border-border last:border-0"
-              >
-                <img
-                  src={o.productImage}
-                  alt=""
-                  className="h-14 w-14 rounded-lg object-cover"
-                />
-                <div className="font-medium">{o.productTitle}</div>
-                <div className="text-sm text-muted-foreground">
-                  {o.startDate} – {o.endDate}
-                </div>
-                <div className="font-semibold">₹{o.total}</div>
-                <div className="flex flex-col gap-1 items-start">
-                  <span
-                    className={`text-xs px-2.5 py-0.5 rounded-full font-semibold w-fit border ${
-                      o.status === "active"
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                        : o.status === "pending"
-                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                          : o.status === "cancelled"
-                            ? "bg-destructive/10 text-destructive border-destructive/20"
-                            : "bg-secondary text-muted-foreground border-border"
-                    }`}
-                  >
-                    {o.status}
-                  </span>
-                  {(o.status === "active" || o.status === "pending") && (
-                    <button
-                      onClick={() => setCancellingOrderId(o.id)}
-                      className="text-[10px] mt-1 text-destructive hover:underline font-semibold"
-                    >
-                      Cancel Rental
-                    </button>
-                  )}
-                </div>
+            <div className="card-premium overflow-hidden">
+              <div className="hidden md:grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 border-b border-border text-xs uppercase text-muted-foreground">
+                <div>Item</div>
+                <div>Details</div>
+                <div>Dates</div>
+                <div>Total</div>
+                <div>Status</div>
               </div>
-            ))}
-          </div>
-        )}
+              {orders.map((o) => (
+                <div
+                  key={o.id}
+                  className="grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 items-center border-b border-border last:border-0"
+                >
+                  <img
+                    src={o.productImage}
+                    alt=""
+                    className="h-14 w-14 rounded-lg object-cover"
+                  />
+                  <div className="font-medium">{o.productTitle}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {o.startDate} – {o.endDate}
+                  </div>
+                  <div className="font-semibold">₹{o.total}</div>
+                  <div className="flex flex-col gap-1 items-start">
+                    <span
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-semibold w-fit border ${
+                        o.status === "active"
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                          : o.status === "pending"
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                            : o.status === "cancelled"
+                              ? "bg-destructive/10 text-destructive border-destructive/20"
+                              : "bg-secondary text-muted-foreground border-border"
+                      }`}
+                    >
+                      {o.status}
+                    </span>
+                    {(o.status === "active" || o.status === "pending") && (
+                      <button
+                        onClick={() => setCancellingOrderId(o.id)}
+                        className="text-[10px] mt-1 text-destructive hover:underline font-semibold"
+                      >
+                        Cancel Rental
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
 
       <AnimatePresence>
         {cancellingOrderId && (

@@ -1,6 +1,6 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { ArrowRight, Zap } from "lucide-react";
+import { ArrowRight, Crown, Sparkles, ShieldCheck, Zap } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export function CallToAction() {
@@ -11,51 +11,59 @@ export function CallToAction() {
     <section
       id="cta"
       ref={ref}
-      className="relative py-20 px-4 sm:px-6 overflow-hidden bg-background text-foreground border-t border-border"
+      className="relative py-24 px-4 sm:px-6 overflow-hidden bg-white dark:bg-[#070A10] text-foreground dark:text-white border-t border-border dark:border-white/10"
     >
+      {/* Background Ambient Lighting */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-r from-primary/10 via-purple-500/10 to-cyan-500/10 dark:from-primary/20 dark:via-purple-500/20 dark:to-cyan-500/20 rounded-full blur-[140px] pointer-events-none" />
+
       <div className="relative max-w-5xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          initial={{ opacity: 0, y: 30, scale: 0.96 }}
           animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="spatial-card relative rounded-3xl p-8 sm:p-14 text-center overflow-hidden bg-card border border-border space-y-6"
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="relative rounded-3xl p-8 sm:p-14 text-center overflow-hidden border border-border dark:border-white/20 bg-card dark:bg-gradient-to-br dark:from-white/10 dark:via-white/5 dark:to-white/0 backdrop-blur-3xl shadow-xl dark:shadow-2xl dark:shadow-black space-y-6"
         >
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1 bg-secondary border border-border text-foreground text-xs font-semibold uppercase tracking-wider">
-            <Zap className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>START RENTING TODAY</span>
-          </div>
-
           {/* Headline */}
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground font-display leading-tight max-w-3xl mx-auto">
-            Ready to access professional gear{" "}
-            <br className="hidden sm:inline" />
-            <span className="text-muted-foreground font-normal">
-              for your next production?
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground dark:text-white font-display leading-tight max-w-3xl mx-auto">
+            Experience Unrivaled Tech Access{" "}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-primary to-cyan-600 dark:from-amber-200 dark:via-primary dark:to-cyan-400">
+              Without Compromise.
             </span>
           </h2>
 
           {/* Subtitle */}
-          <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto font-normal leading-relaxed">
-            Browse verified listings from creators near you or list your own
-            camera gear and workstations to earn passive rental revenue.
+          <p className="text-muted-foreground dark:text-neutral-300 text-sm sm:text-base max-w-2xl mx-auto font-medium leading-relaxed">
+            Join India's premiere peer-to-peer tech rental ecosystem. Reserve certified cinema gear, drones, and workstation laptops — or monetize your idle hardware today.
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <Link
               to="/categories"
-              className="btn-gradient px-7 py-3.5 rounded-xl font-medium text-sm flex items-center gap-2 group cursor-pointer"
+              className="btn-gradient px-8 py-4 rounded-2xl font-extrabold text-sm flex items-center gap-2.5 group cursor-pointer shadow-xl shadow-primary/30 hover:scale-105 transition-all"
             >
-              <span>Explore Gear Catalog</span>
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <Zap className="h-4 w-4 fill-current text-white" />
+              <span>Reserve Flagship Kit</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
+
             <Link
               to="/become-lender"
-              className="px-7 py-3.5 rounded-xl font-medium text-sm border border-border bg-secondary hover:bg-secondary/80 text-foreground transition-all flex items-center gap-2 cursor-pointer"
+              className="px-8 py-4 rounded-2xl font-extrabold text-sm border border-border dark:border-white/20 bg-secondary/80 dark:bg-white/5 hover:bg-secondary dark:hover:bg-white/10 text-foreground dark:text-white transition-all flex items-center gap-2 cursor-pointer backdrop-blur-xl"
             >
-              List Gear &amp; Earn
+              <Sparkles className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+              <span>Become Certified Lender</span>
             </Link>
+          </div>
+
+          {/* Security Banner */}
+          <div className="pt-6 border-t border-border dark:border-white/10 flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground dark:text-neutral-400 font-bold">
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-emerald-500 dark:text-emerald-400" /> Razorpay Escrow Protection
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Crown className="h-4 w-4 text-amber-500 dark:text-amber-400" /> ₹5L Insurance Backed (Terms & Conditions Apply)
+            </span>
           </div>
         </motion.div>
       </div>

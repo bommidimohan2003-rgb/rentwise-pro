@@ -186,7 +186,9 @@ export const api = {
         );
       }
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Failed to fetch user profile.");
+      const error = new Error(data.detail || "Failed to fetch user profile.");
+      (error as Error & { status?: number }).status = res.status;
+      throw error;
     }
     return await res.json();
   },
@@ -308,7 +310,9 @@ export const api = {
       const errData = await res
         .json()
         .catch(() => ({ detail: "Failed to delete product from database" }));
-      throw new Error(errData.detail || "Failed to delete product from database");
+      throw new Error(
+        errData.detail || "Failed to delete product from database",
+      );
     }
     return res.json();
   },
@@ -358,7 +362,10 @@ export const api = {
 
     const customProds = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
     const orders = storage.get<Order[]>(STORAGE_KEYS.orders, []);
-    const user = storage.get<{ city?: string } | null>(STORAGE_KEYS.currentUser, null);
+    const user = storage.get<{ city?: string } | null>(
+      STORAGE_KEYS.currentUser,
+      null,
+    );
 
     return {
       activeListings: customProds.length,

@@ -1,12 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  MessageSquare,
-  X,
-  Send,
-  Bot,
-  AlertCircle,
-} from "lucide-react";
+import { MessageSquare, X, Send, Bot, AlertCircle } from "lucide-react";
 import { api } from "@/utils/api";
 import { Button } from "@/components/common/Button";
 import type { Product, Category } from "@/types";

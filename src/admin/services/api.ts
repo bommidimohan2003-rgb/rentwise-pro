@@ -185,46 +185,7 @@ const INITIAL_USERS: AdminUser[] = [
   },
 ];
 
-const INITIAL_AGENTS: AdminAgent[] = [
-  {
-    id: "agt-1",
-    fullName: "Gear Hub India (Bengaluru)",
-    email: "bengaluru@payent.com",
-    avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150",
-    productsCount: 24,
-    bookingsCount: 142,
-    revenue: 340000,
-    rating: 4.9,
-    status: "active",
-    createdAt: "2026-01-01T00:00:00Z",
-  },
-  {
-    id: "agt-2",
-    fullName: "Cine Rental Express (Mumbai)",
-    email: "mumbai@payent.com",
-    avatar:
-      "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150",
-    productsCount: 18,
-    bookingsCount: 98,
-    revenue: 280000,
-    rating: 5.0,
-    status: "active",
-    createdAt: "2026-01-15T00:00:00Z",
-  },
-  {
-    id: "agt-3",
-    fullName: "Pro Drone Hub (Delhi NCR)",
-    email: "delhi@payent.com",
-    avatar:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-    productsCount: 12,
-    bookingsCount: 64,
-    revenue: 195000,
-    rating: 4.8,
-    status: "active",
-    createdAt: "2026-02-01T00:00:00Z",
-  },
-];
+const INITIAL_AGENTS: AdminAgent[] = [];
 
 const INITIAL_PRODUCTS: AdminProduct[] = [
   {

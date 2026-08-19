@@ -37,8 +37,8 @@ export function OTPVerification() {
   );
   const isResetFlow = !pendingUser;
   const targetContact = isResetFlow
-    ? email
-    : pendingUser?.phone || "your phone number";
+    ? "your registered mobile phone"
+    : pendingUser?.phone || "your mobile number";
 
   // Timer countdown
   useEffect(() => {

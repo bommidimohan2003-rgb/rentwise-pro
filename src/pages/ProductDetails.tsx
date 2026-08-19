@@ -29,6 +29,8 @@ import { ProductAngleViewer } from "@/components/common/ProductAngleViewer";
 import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
 import { tracker } from "@/utils/eventTracker";
 import { api } from "@/utils/api";
+import { storage } from "@/utils/storage";
+import { products as MOCK_PRODUCTS } from "@/utils/mockData";
 import type { Product } from "@/types";
 
 const mockDates = [
@@ -49,19 +51,43 @@ export default function ProductDetails() {
   const [product, setProduct] = useState<Product | null>(null);
   const [productLoading, setProductLoading] = useState(true);
 
-  // Load product from live API catalog
+  // Load product from local custom items, MOCK_PRODUCTS, and live API catalog
   useEffect(() => {
     let isMounted = true;
     setProductLoading(true);
-    api.getPublicProducts().then((items) => {
-      if (!isMounted) return;
-      const found = items?.find((p: Product) => p.id === id) ?? null;
-      setProduct(found);
-      setProductLoading(false);
-    }).catch(() => {
-      if (isMounted) setProductLoading(false);
-    });
-    return () => { isMounted = false; };
+
+    async function loadTargetProduct() {
+      // 1. Check local custom products
+      const localCustom = storage.get<Product[]>("payent_custom_products", []);
+      let found = localCustom.find((p: Product) => p.id === id);
+
+      // 2. Check MOCK_PRODUCTS catalog
+      if (!found) {
+        found = MOCK_PRODUCTS.find((p: Product) => p.id === id);
+      }
+
+      // 3. Check public products API
+      if (!found) {
+        try {
+          const items = await api.getPublicProducts();
+          if (Array.isArray(items)) {
+            found = items.find((p: Product) => p.id === id);
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (isMounted) {
+        setProduct(found || null);
+        setProductLoading(false);
+      }
+    }
+
+    loadTargetProduct();
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
   const [selectedDate, setSelectedDate] = useState(0);
   const [selectedTime, setSelectedTime] = useState("12:00 PM");
@@ -122,7 +148,6 @@ export default function ProductDetails() {
       </MainLayout>
     );
   }
-
 
   const productSchema = {
     "@type": "Product",
@@ -509,7 +534,16 @@ export default function ProductDetails() {
             </h2>
             <div className="grid gap-5 md:grid-cols-3">
               {/* Reviews from backend will be rendered here once GET /api/reviews endpoint is implemented */}
-              {([] as Array<{id: string; author: string; avatar?: string; rating: number; comment: string; date: string}>).map((r) => (
+              {(
+                [] as Array<{
+                  id: string;
+                  author: string;
+                  avatar?: string;
+                  rating: number;
+                  comment: string;
+                  date: string;
+                }>
+              ).map((r) => (
                 <div
                   key={r.id}
                   className="rounded-3xl bg-card border border-border p-6 space-y-3 shadow-md"
