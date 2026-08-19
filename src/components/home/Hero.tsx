@@ -121,8 +121,8 @@ export function Hero() {
               transition={{ duration: 0.4 }}
               className="inline-flex items-center gap-2"
             >
-              <div className="h-0.5 w-8 bg-primary" />
-              <span className="text-xs font-black uppercase tracking-[0.25em] text-foreground/80 dark:text-neutral-300 font-mono">
+              <div className="h-0.5 w-6 sm:w-8 bg-primary" />
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] sm:tracking-[0.25em] text-foreground/80 dark:text-neutral-300 font-mono">
                 PAYENT RESERVE &bull; FLAGSHIP TECH 2026
               </span>
             </motion.div>
@@ -132,10 +132,10 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight leading-[1.08] font-display text-foreground dark:text-white"
+              className="text-3xl xs:text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight leading-tight sm:leading-[1.08] font-display text-foreground dark:text-white"
             >
-              Rent Professional Tech <br />
-              Gear On Demand. Earn <br />
+              Rent Professional Tech <br className="hidden sm:inline" />
+              Gear On Demand. Earn <br className="hidden sm:inline" />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-purple-400 to-cyan-400">
                 When Your Kit Is Idle.
               </span>
@@ -146,7 +146,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="text-base sm:text-lg text-muted-foreground dark:text-neutral-300 max-w-xl leading-relaxed font-medium"
+              className="text-sm sm:text-lg text-muted-foreground dark:text-neutral-300 max-w-xl leading-relaxed font-medium"
             >
               Discover our curated collection of flagship cinema cameras, aerial drones, studio audio, and workstation laptops — crafted with uncompromising attention to detail and backed by Razorpay Escrow.
             </motion.p>
@@ -156,11 +156,11 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 }}
-              className="flex flex-wrap items-center gap-4 pt-2"
+              className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 sm:gap-4 pt-2"
             >
               <Link
                 to="/categories"
-                className="bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 px-8 py-4 rounded-2xl font-bold text-sm flex items-center gap-2.5 group cursor-pointer shadow-xl transition-all"
+                className="w-full xs:w-auto justify-center bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-sm flex items-center gap-2.5 group cursor-pointer shadow-xl transition-all"
               >
                 <Zap className="h-4 w-4 fill-current text-white dark:text-black" />
                 <span>Explore Flagship Collection</span>
@@ -169,7 +169,7 @@ export function Hero() {
 
               <Link
                 to="/become-lender"
-                className="px-7 py-4 rounded-2xl font-bold text-sm border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground dark:text-white transition-all flex items-center gap-2 cursor-pointer backdrop-blur-2xl"
+                className="w-full xs:w-auto justify-center px-6 sm:px-7 py-3.5 sm:py-4 rounded-2xl font-bold text-sm border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground dark:text-white transition-all flex items-center gap-2 cursor-pointer backdrop-blur-2xl"
               >
                 <Plus className="h-4 w-4 text-primary" />
                 <span>List Gear & Earn Yield</span>
@@ -183,24 +183,24 @@ export function Hero() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="relative p-5 overflow-hidden rounded-3xl border border-border dark:border-white/15 bg-card dark:bg-[#0B0F17] backdrop-blur-2xl shadow-xl dark:shadow-2xl dark:shadow-black max-w-md lg:max-w-none mx-auto"
+              className="relative p-3.5 sm:p-5 overflow-hidden rounded-2xl sm:rounded-3xl border border-border dark:border-white/15 bg-card dark:bg-[#0B0F17] backdrop-blur-2xl shadow-xl dark:shadow-2xl dark:shadow-black max-w-md lg:max-w-none mx-auto"
             >
               {/* Top Selector bar */}
-              <div className="flex items-center justify-between gap-2 pb-3.5 border-b border-border dark:border-white/10 mb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pb-3 border-b border-border dark:border-white/10 mb-3 sm:mb-4">
                 <div className="flex items-center gap-1.5">
                   <SlidersHorizontal className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-foreground dark:text-white font-mono">
+                  <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-foreground dark:text-white font-mono">
                     Reserve Showcase
                   </span>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex items-center gap-1 bg-secondary/80 dark:bg-black/60 p-1 rounded-xl border border-border dark:border-white/10">
+                <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1 bg-secondary/80 dark:bg-black/60 p-1 rounded-xl border border-border dark:border-white/10 overflow-x-auto no-scrollbar">
                   {featuredGear.map((gear, idx) => (
                     <button
                       key={gear.id}
                       onClick={() => setSelectedIndex(idx)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
+                      className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                         selectedIndex === idx
                           ? "bg-black dark:bg-white text-white dark:text-black shadow-md"
                           : "text-muted-foreground dark:text-neutral-300 hover:text-foreground dark:hover:text-white hover:bg-secondary dark:hover:bg-white/10"

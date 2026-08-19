@@ -70,7 +70,7 @@ export function Categories() {
         </div>
 
         {/* Category Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {baseCategories.map((cat, idx) => {
             const IconComp = cat.icon;
 
