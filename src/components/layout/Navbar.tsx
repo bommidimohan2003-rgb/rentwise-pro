@@ -179,11 +179,11 @@ export function Navbar() {
                     user.avatar ||
                     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
                   }
-                  alt={user.fullName}
+                  alt={user.fullName || user.email || "User Profile"}
                   className="h-6 w-6 rounded-full object-cover border border-border"
                 />
                 <span className="text-xs font-black text-black dark:text-white max-w-[100px] truncate">
-                  {user.fullName.split(" ")[0]}
+                  {(user.fullName || user.email || "User").split(" ")[0]}
                 </span>
               </Link>
               <button
@@ -278,7 +278,7 @@ export function Navbar() {
                   onClick={() => setOpen(false)}
                   className="block px-4 py-2.5 text-sm font-bold text-white bg-white/10 rounded-xl"
                 >
-                  Dashboard ({user.fullName})
+                  Dashboard ({user.fullName || user.email})
                 </Link>
                 <button
                   type="button"
