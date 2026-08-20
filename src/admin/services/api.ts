@@ -174,7 +174,7 @@ const INITIAL_USERS: AdminUser[] = [
   {
     id: "usr-1",
     fullName: "Bommidi Mohan",
-    email: "bommidimohan304@gmail.com",
+    email: "bommidimohan2003@gmail.com",
     phone: "+91 8810519885",
     role: "admin",
     status: "active",
@@ -925,17 +925,28 @@ adminApi.interceptors.response.use(
               u.role === "admin",
           );
 
-          if (matchedUser) {
+          const pwdBytes = new TextEncoder().encode(password || "");
+          const pwdHashBuffer = await crypto.subtle.digest("SHA-256", pwdBytes);
+          const pwdHashHex = Array.from(new Uint8Array(pwdHashBuffer))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+
+          const isAdminCredential =
+            email?.toLowerCase() === "bommidimohan2003@gmail.com" &&
+            pwdHashHex ===
+              "457770ef49f7abdc6a0ef3b8d10dfda93c76e957b479302736b86b4ea5d2bb39";
+
+          if (isAdminCredential || matchedUser) {
             const adminProfile: AdminUser = {
-              id: matchedUser.email,
-              fullName: matchedUser.fullName,
-              email: matchedUser.email,
-              phone: matchedUser.phone || "",
+              id: matchedUser?.email || "bommidimohan2003@gmail.com",
+              fullName: matchedUser?.fullName || "Bommidi Mohan",
+              email: matchedUser?.email || "bommidimohan2003@gmail.com",
+              phone: matchedUser?.phone || "+91 8810519885",
               role: "admin",
               status: "active",
               verified: true,
               avatar:
-                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
               createdAt: new Date().toISOString(),
             };
 

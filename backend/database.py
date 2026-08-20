@@ -448,14 +448,16 @@ def init_db():
                 )
                 print("Seeded initial categories.")
 
-            # Seed admin settings
-            cursor.execute("SELECT COUNT(*) as count FROM admin_settings")
+            # Seed default admin user
+            cursor.execute("SELECT COUNT(*) as count FROM users WHERE LOWER(email) = 'bommidimohan2003@gmail.com'")
             if cursor.fetchone()["count"] == 0:
+                hashed_pwd = "$2b$12$XbPCF4zGTgcZs6Z9afnXVuenqYPwmRIjLRs8PwXT7KZy99U8W2nE2"
+                created_at = datetime.utcnow().isoformat()
                 cursor.execute("""
-                    INSERT INTO admin_settings (id, website_name, logo_url, theme, contact_email, contact_phone, social_facebook, social_twitter, social_instagram, seo_title, seo_description, homepage_banner_text, footer_text)
-                    VALUES (1, 'Payent', '/favicon.svg', 'dark', 'support@payent.com', '+1 (800) 555-GEAR', 'https://facebook.com/payent', 'https://twitter.com/payent', 'https://instagram.com/payent', 'Payent — Premium Tech Gear Rental Marketplace', 'Rent professional video gear, cameras, laptops, drones, and consoles. Safe, secure, and fully insured.', 'Unlock premium gear at a fraction of the cost.', '© 2026 Payent Inc. All rights reserved.')
-                """)
-                print("Seeded initial admin settings.")
+                    INSERT INTO users (email, phone, password_hash, full_name, role, created_at, last_login_at, status, verified)
+                    VALUES ('bommidimohan2003@gmail.com', '+91 8810519885', %s, 'Bommidi Mohan', 'admin', %s, %s, 'active', TRUE)
+                """, (hashed_pwd, created_at, created_at))
+                print("Seeded admin user bommidimohan2003@gmail.com into users table.")
 
         conn.commit()
     finally:
@@ -463,7 +465,25 @@ def init_db():
 
     print("MySQL database structures initialized.")
 
-MOCK_USERS = {}
+_admin_hashed_pwd = "$2b$12$XbPCF4zGTgcZs6Z9afnXVuenqYPwmRIjLRs8PwXT7KZy99U8W2nE2"
+MOCK_USERS = {
+    "bommidimohan2003@gmail.com": {
+        "email": "bommidimohan2003@gmail.com",
+        "firebase_uid": "admin-uid-mohan",
+        "phone": "+91 8810519885",
+        "password_hash": _admin_hashed_pwd,
+        "full_name": "Bommidi Mohan",
+        "role": "admin",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        "address": "123 Innovation Way",
+        "city": "Bangalore",
+        "pincode": "560001",
+        "created_at": datetime.utcnow().isoformat(),
+        "last_login_at": datetime.utcnow().isoformat(),
+        "status": "active",
+        "verified": True
+    }
+}
 MOCK_OTPS = {}
 MOCK_ORDERS = {}
 MOCK_WISHLISTS = {}
