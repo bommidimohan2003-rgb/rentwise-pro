@@ -3,6 +3,8 @@ import { LogOut, ArrowRight, ShieldAlert } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
+import { STORAGE_KEYS, storage } from "@/utils/storage";
+
 export interface SessionExpiredProps {
   loginUrl?: "/login" | "/admin/login";
   onClose?: () => void;
@@ -22,8 +24,13 @@ export function SessionExpired({
   const handleSignInAgain = () => {
     setRedirecting(true);
 
+    storage.remove(STORAGE_KEYS.token);
+    storage.remove(STORAGE_KEYS.currentUser);
+
     // Save flag for login page to pick up notice
     if (typeof window !== "undefined") {
+      localStorage.removeItem("payent:admin:token");
+      localStorage.removeItem("payent:admin:current_user");
       sessionStorage.setItem(
         "payent_session_expired_notice",
         "Your session has expired. Please sign in again to continue.",

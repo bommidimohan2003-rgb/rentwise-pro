@@ -179,11 +179,13 @@ export const api = {
     });
     if (!res.ok) {
       if (res.status === 401 && typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("payent-session-expired", {
-            detail: { loginPath: "/login" },
-          }),
-        );
+        if (!token.startsWith("google-offline-") && !token.startsWith("google-demo-")) {
+          window.dispatchEvent(
+            new CustomEvent("payent-session-expired", {
+              detail: { loginPath: "/login" },
+            }),
+          );
+        }
       }
       const data = await res.json().catch(() => ({}));
       const error = new Error(data.detail || "Failed to fetch user profile.");

@@ -40,11 +40,23 @@ export const storage = {
     if (typeof window === "undefined") return;
     const namespaced = getNamespacedKey(key);
     window.localStorage.setItem(namespaced, JSON.stringify(value));
+    window.dispatchEvent(
+      new CustomEvent("payent:storage_change", {
+        detail: { key: namespaced, originalKey: key, value },
+      }),
+    );
+    window.dispatchEvent(new Event("storage"));
   },
   remove(key: string) {
     if (typeof window === "undefined") return;
     const namespaced = getNamespacedKey(key);
     window.localStorage.removeItem(namespaced);
+    window.dispatchEvent(
+      new CustomEvent("payent:storage_change", {
+        detail: { key: namespaced, originalKey: key, value: null },
+      }),
+    );
+    window.dispatchEvent(new Event("storage"));
   },
 };
 

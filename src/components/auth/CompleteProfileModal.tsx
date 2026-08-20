@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/common/Input";
 import { Button } from "@/components/common/Button";
-import { Phone, MapPin, Building2, Compass, ShieldCheck } from "lucide-react";
+import { Phone, MapPin, Building2, Compass, ShieldCheck, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 interface CompleteProfileModalProps {
@@ -24,6 +24,10 @@ interface CompleteProfileModalProps {
   email: string;
   fullName?: string;
   isAdminRoute?: boolean;
+  initialPhone?: string;
+  initialAddress?: string;
+  initialCity?: string;
+  initialPincode?: string;
 }
 
 export function CompleteProfileModal({
@@ -33,11 +37,15 @@ export function CompleteProfileModal({
   email,
   fullName,
   isAdminRoute = false,
+  initialPhone = "",
+  initialAddress = "",
+  initialCity = "",
+  initialPincode = "",
 }: CompleteProfileModalProps) {
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [pincode, setPincode] = useState("");
+  const [phone, setPhone] = useState(initialPhone);
+  const [address, setAddress] = useState(initialAddress);
+  const [city, setCity] = useState(initialCity);
+  const [pincode, setPincode] = useState(initialPincode);
   const [adminCode, setAdminCode] = useState(
     isAdminRoute ? "PAYENT-ADMIN-2026" : "",
   );
@@ -108,6 +116,16 @@ export function CompleteProfileModal({
               {error}
             </div>
           )}
+
+          <Input
+            label="Google Account Email"
+            type="email"
+            value={email}
+            readOnly
+            disabled
+            icon={<Mail className="h-4 w-4 text-primary" />}
+            className="bg-secondary/40 font-medium text-foreground cursor-not-allowed opacity-90"
+          />
 
           <Input
             label="Phone Number"

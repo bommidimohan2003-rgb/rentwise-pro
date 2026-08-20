@@ -217,6 +217,12 @@ function RootComponent() {
       const customEv = e as CustomEvent<{
         loginPath?: "/login" | "/admin/login";
       }>;
+      storage.remove("payent:token");
+      storage.remove("payent:currentUser");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("payent:admin:token");
+        localStorage.removeItem("payent:admin:current_user");
+      }
       setSessionExpiredInfo({
         show: true,
         loginUrl: customEv.detail?.loginPath || "/login",

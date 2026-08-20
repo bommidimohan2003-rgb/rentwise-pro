@@ -128,6 +128,7 @@ def init_db():
     add_column_safely("users", "city VARCHAR(100)")
     add_column_safely("users", "pincode VARCHAR(20)")
     add_column_safely("users", "firebase_uid VARCHAR(255) UNIQUE NULL")
+    add_column_safely("users", "last_login_at VARCHAR(100)")
 
     # Create token_blocklist table for server-side JWT revocation
     execute_query("""
@@ -561,13 +562,23 @@ def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: 
             print(f"[SECURITY NOTICE]: Refusing auto-link for unverified email: {clean_email}")
             raise ValueError(f"Cannot auto-link Google identity to unverified account: {clean_email}")
 
+        now_iso = datetime.utcnow().isoformat()
         clean_email = existing_user["email"]
         existing_user["firebase_uid"] = firebase_uid or existing_user.get("firebase_uid")
         existing_user["verified"] = True
+        existing_user["last_login_at"] = now_iso
         if full_name:
             existing_user["full_name"] = full_name
         if avatar:
             existing_user["avatar"] = avatar
+        if phone:
+            existing_user["phone"] = phone
+        if address:
+            existing_user["address"] = address
+        if city:
+            existing_user["city"] = city
+        if pincode:
+            existing_user["pincode"] = pincode
         MOCK_USERS[clean_email] = existing_user
         try:
             execute_query(
@@ -576,10 +587,15 @@ def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: 
                     firebase_uid = COALESCE(NULLIF(%s, ''), firebase_uid),
                     full_name = COALESCE(NULLIF(%s, ''), full_name),
                     avatar = COALESCE(NULLIF(%s, ''), avatar),
+                    phone = COALESCE(NULLIF(%s, ''), phone),
+                    address = COALESCE(NULLIF(%s, ''), address),
+                    city = COALESCE(NULLIF(%s, ''), city),
+                    pincode = COALESCE(NULLIF(%s, ''), pincode),
+                    last_login_at = %s,
                     verified = TRUE
                 WHERE LOWER(email) = LOWER(%s)
                 """,
-                (firebase_uid or "", full_name or "", avatar or "", clean_email)
+                (firebase_uid or "", full_name or "", avatar or "", phone or "", address or "", city or "", pincode or "", now_iso, clean_email)
             )
         except Exception as e:
             print(f"Notice: Database write error in save_google_user update: {e}")
@@ -597,6 +613,7 @@ def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: 
         "city": city or "",
         "pincode": pincode or "",
         "created_at": created_at,
+        "last_login_at": created_at,
         "status": "active",
         "verified": True
     }
@@ -605,16 +622,20 @@ def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: 
     try:
         execute_query(
             """
-            INSERT INTO users (email, firebase_uid, phone, password_hash, full_name, role, avatar, address, city, pincode, created_at, status, verified)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', TRUE)
+            INSERT INTO users (email, firebase_uid, phone, password_hash, full_name, role, avatar, address, city, pincode, created_at, last_login_at, status, verified)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', TRUE)
             ON DUPLICATE KEY UPDATE
                 firebase_uid = COALESCE(NULLIF(VALUES(firebase_uid), ''), firebase_uid),
                 full_name = COALESCE(NULLIF(VALUES(full_name), ''), full_name),
                 phone = COALESCE(NULLIF(VALUES(phone), ''), phone),
                 avatar = COALESCE(NULLIF(VALUES(avatar), ''), avatar),
+                address = COALESCE(NULLIF(VALUES(address), ''), address),
+                city = COALESCE(NULLIF(VALUES(city), ''), city),
+                pincode = COALESCE(NULLIF(VALUES(pincode), ''), pincode),
+                last_login_at = VALUES(last_login_at),
                 verified = TRUE
             """,
-            (clean_email, firebase_uid or "", phone or "", None, full_name, role or "user", avatar or "", address or "", city or "", pincode or "", created_at)
+            (clean_email, firebase_uid or "", phone or "", None, full_name, role or "user", avatar or "", address or "", city or "", pincode or "", created_at, created_at)
         )
     except Exception as e:
         print(f"Notice: Database write error in save_google_user insert: {e}")
