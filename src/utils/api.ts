@@ -266,11 +266,20 @@ export const api = {
   },
 
   async getPublicCustomProducts() {
-    const res = await fetch(`${API_BASE}/api/products/custom/public`, {
-      method: "GET",
-    });
-    if (!res.ok) throw new Error("Failed to fetch public custom products");
-    return res.json();
+    if (!API_BASE) {
+      return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/products/custom/public`, {
+        method: "GET",
+      });
+      if (!res.ok) {
+        return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+      }
+      return await res.json();
+    } catch {
+      return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+    }
   },
 
   async getPublicProducts() {
@@ -278,6 +287,7 @@ export const api = {
   },
 
   async getPublicCategories() {
+    if (!API_BASE) return null;
     try {
       const res = await fetch(`${API_BASE}/api/categories/public`);
       if (!res.ok) return null;
@@ -471,6 +481,7 @@ export const api = {
 
   // Recommendation Engine API Methods
   async getSimilarRecommendations(productId: string): Promise<Product[]> {
+    if (!API_BASE) return [];
     try {
       const res = await fetch(
         `${API_BASE}/api/recommendations/similar/${encodeURIComponent(productId)}`,
@@ -483,6 +494,7 @@ export const api = {
   },
 
   async getTrendingRecommendations(): Promise<Product[]> {
+    if (!API_BASE) return [];
     try {
       const res = await fetch(`${API_BASE}/api/recommendations/trending`);
       if (!res.ok) return [];
@@ -495,6 +507,7 @@ export const api = {
   async getFrequentlyTogetherRecommendations(
     productId: string,
   ): Promise<Product[]> {
+    if (!API_BASE) return [];
     try {
       const res = await fetch(
         `${API_BASE}/api/recommendations/frequently-together/${encodeURIComponent(productId)}`,
@@ -507,6 +520,7 @@ export const api = {
   },
 
   async getPersonalizedRecommendations(userEmail?: string, sessionId?: string) {
+    if (!API_BASE) return null;
     try {
       const params = new URLSearchParams();
       if (userEmail) params.append("user_email", userEmail);
@@ -522,6 +536,7 @@ export const api = {
   },
 
   async getMLStatus() {
+    if (!API_BASE) return null;
     try {
       const res = await fetch(`${API_BASE}/api/recommendations/ml-status`);
       if (!res.ok) return null;
@@ -538,6 +553,7 @@ export const api = {
     sessionId?: string,
     limit: number = 20,
   ) {
+    if (!API_BASE) return null;
     try {
       const res = await fetch(`${API_BASE}/api/search`, {
         method: "POST",
@@ -558,6 +574,7 @@ export const api = {
   },
 
   async getSearchStats() {
+    if (!API_BASE) return null;
     try {
       const res = await fetch(`${API_BASE}/api/search/stats`);
       if (!res.ok) return null;
