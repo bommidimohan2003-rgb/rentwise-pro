@@ -3886,12 +3886,252 @@ def get_search_stats():
 
     popular_queries = get_popular_search_queries(limit=6)
 
+
+# ----------------------------------------------------------------------
+# Real Admin API Endpoints
+# ----------------------------------------------------------------------
+
+@app.get("/api/admin/dashboard/stats")
+def get_admin_dashboard_stats():
+    """
+    GET /api/admin/dashboard/stats
+    Returns real metric aggregates from MySQL database tables.
+    """
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+    total_users_res = fetch_one("SELECT COUNT(*) as cnt FROM users")
+    total_users = total_users_res["cnt"] if total_users_res else 0
+
+    total_products_res = fetch_one("SELECT COUNT(*) as cnt FROM custom_products")
+    total_products = total_products_res["cnt"] if total_products_res else 0
+
+    pending_products_res = fetch_one("SELECT COUNT(*) as cnt FROM custom_products WHERE status = 'pending'")
+    pending_products = pending_products_res["cnt"] if pending_products_res else 0
+
+    approved_products_res = fetch_one("SELECT COUNT(*) as cnt FROM custom_products WHERE status = 'approved'")
+    approved_products = approved_products_res["cnt"] if approved_products_res else 0
+
+    rejected_products_res = fetch_one("SELECT COUNT(*) as cnt FROM custom_products WHERE status = 'rejected'")
+    rejected_products = rejected_products_res["cnt"] if rejected_products_res else 0
+
+    total_categories_res = fetch_one("SELECT COUNT(*) as cnt FROM categories")
+    total_categories = total_categories_res["cnt"] if total_categories_res else 0
+
+    orders_today_res = fetch_one("SELECT COUNT(*) as cnt, COALESCE(SUM(total), 0) as rev FROM orders WHERE created_at LIKE %s", (f"{today_str}%",))
+    bookings_today = orders_today_res["cnt"] if orders_today_res else 0
+    revenue_today = int(orders_today_res["rev"]) if orders_today_res else 0
+
+    total_orders_res = fetch_one("SELECT COUNT(*) as cnt, COALESCE(SUM(total), 0) as rev FROM orders")
+    monthly_bookings = total_orders_res["cnt"] if total_orders_res else 0
+    monthly_revenue = int(total_orders_res["rev"]) if total_orders_res else 0
+
+    pending_reports_res = fetch_one("SELECT COUNT(*) as cnt FROM reports WHERE status = 'open'")
+    pending_reports = pending_reports_res["cnt"] if pending_reports_res else 0
+
+    unread_notifications_res = fetch_one("SELECT COUNT(*) as cnt FROM admin_notifications WHERE is_read = FALSE")
+    unread_notifications = unread_notifications_res["cnt"] if unread_notifications_res else 0
+
+    events_res = fetch_one("SELECT COUNT(*) as cnt FROM user_events")
+    total_events = events_res["cnt"] if events_res else 0
+    website_visitors = max(total_events, total_users)
+
     return {
-        "is_indexed": ml_search_engine.is_indexed,
-        "indexed_products_count": len(ml_search_engine.products),
-        "vocabulary_size": len(ml_search_engine.vocabulary),
-        "popular_queries": popular_queries
+        "totalUsers": total_users,
+        "totalAgents": 0,
+        "totalProducts": total_products,
+        "pendingProducts": pending_products,
+        "approvedProducts": approved_products,
+        "rejectedProducts": rejected_products,
+        "totalCategories": total_categories,
+        "bookingsToday": bookings_today,
+        "monthlyBookings": monthly_bookings,
+        "revenueToday": revenue_today,
+        "monthlyRevenue": monthly_revenue,
+        "pendingReports": pending_reports,
+        "unreadNotifications": unread_notifications,
+        "websiteVisitors": website_visitors,
     }
+
+
+@app.get("/api/admin/dashboard/charts")
+def get_admin_dashboard_charts(days: int = 30):
+    """
+    GET /api/admin/dashboard/charts
+    Returns real monthly revenue, bookings, user growth, product growth, and category distribution from database.
+    """
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    current_month_idx = datetime.utcnow().month - 1
+    display_months = months[:current_month_idx + 1] if current_month_idx >= 0 else months
+
+    # Orders & Revenue chart
+    all_orders = fetch_all("SELECT total, created_at FROM orders") or []
+    monthly_rev_map = {m: 0 for m in display_months}
+    monthly_booking_map = {m: 0 for m in display_months}
+    for o in all_orders:
+        created = o.get("created_at") or ""
+        try:
+            m_idx = int(created.split("-")[1]) - 1
+            if 0 <= m_idx < len(months) and months[m_idx] in monthly_rev_map:
+                monthly_rev_map[months[m_idx]] += o.get("total", 0)
+                monthly_booking_map[months[m_idx]] += 1
+        except Exception:
+            pass
+
+    revenue_chart = [{"name": m, "revenue": monthly_rev_map[m]} for m in display_months]
+    booking_chart = [{"name": m, "bookings": monthly_booking_map[m]} for m in display_months]
+
+    # User growth
+    all_users = fetch_all("SELECT created_at FROM users") or []
+    monthly_users_map = {m: 0 for m in display_months}
+    for u in all_users:
+        created = u.get("created_at") or ""
+        try:
+            m_idx = int(created.split("-")[1]) - 1
+            if 0 <= m_idx < len(months) and months[m_idx] in monthly_users_map:
+                monthly_users_map[months[m_idx]] += 1
+        except Exception:
+            pass
+    
+    cumulative_users = 0
+    user_growth = []
+    for m in display_months:
+        cumulative_users += monthly_users_map[m]
+        user_growth.append({"name": m, "users": cumulative_users})
+
+    # Product growth & category distribution
+    all_prods = fetch_all("SELECT category, created_at FROM custom_products") or []
+    cat_dist_map = {}
+    monthly_prods_map = {m: 0 for m in display_months}
+    for p in all_prods:
+        cat = p.get("category") or "Other"
+        cat_dist_map[cat] = cat_dist_map.get(cat, 0) + 1
+        created = p.get("created_at") or ""
+        try:
+            m_idx = int(created.split("-")[1]) - 1
+            if 0 <= m_idx < len(months) and months[m_idx] in monthly_prods_map:
+                monthly_prods_map[months[m_idx]] += 1
+        except Exception:
+            pass
+
+    cumulative_prods = 0
+    product_growth = []
+    for m in display_months:
+        cumulative_prods += monthly_prods_map[m]
+        product_growth.append({"name": m, "products": cumulative_prods})
+
+    category_distribution = [{"name": k, "value": v} for k, v in cat_dist_map.items()] if cat_dist_map else [
+        {"name": "Cameras", "value": 0},
+        {"name": "Drones", "value": 0},
+        {"name": "Laptops", "value": 0},
+    ]
+
+    return {
+        "revenueChart": revenue_chart,
+        "bookingChart": booking_chart,
+        "userGrowth": user_growth,
+        "productGrowth": product_growth,
+        "categoryDistribution": category_distribution,
+        "topProducts": [],
+    }
+
+
+@app.get("/api/admin/dashboard/activities")
+def get_admin_dashboard_activities():
+    """
+    GET /api/admin/dashboard/activities
+    Returns real recent system activity logs.
+    """
+    logs = fetch_all("SELECT * FROM admin_logs ORDER BY timestamp DESC LIMIT 20") or []
+    result = []
+    for l in logs:
+        result.append({
+            "id": l.get("id"),
+            "timestamp": l.get("timestamp"),
+            "userName": l.get("user_name"),
+            "action": l.get("action"),
+            "module": l.get("module"),
+            "ipAddress": l.get("ip_address"),
+        })
+    return result
+
+
+@app.get("/api/admin/products")
+def get_admin_products():
+    """
+    GET /api/admin/products
+    Returns all real products in custom_products table.
+    """
+    prods = fetch_all("SELECT * FROM custom_products ORDER BY created_at DESC") or []
+    result = []
+    for p in prods:
+        result.append({
+            "id": p.get("id"),
+            "title": p.get("title"),
+            "description": p.get("description"),
+            "category": p.get("category"),
+            "price": p.get("price"),
+            "rating": p.get("rating", 5.0),
+            "reviewsCount": p.get("reviews_count", 0),
+            "available": bool(p.get("available", True)),
+            "status": p.get("status", "pending"),
+            "featured": bool(p.get("featured", False)),
+            "hidden": bool(p.get("hidden", False)),
+            "image": p.get("image", ""),
+            "images": [p.get("image", "")],
+            "documents": [],
+            "createdAt": p.get("created_at", ""),
+            "owner": {
+                "id": p.get("owner_id", p.get("owner_name", "User")),
+                "name": p.get("owner_name", "Lender"),
+                "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+                "rating": 4.9,
+                "email": p.get("owner_id", "lender@payent.com"),
+            }
+        })
+    return result
+
+
+@app.post("/api/admin/products/{product_id}/approve")
+def approve_admin_product(product_id: str):
+    """
+    POST /api/admin/products/{product_id}/approve
+    Approve custom product listing in MySQL database.
+    """
+    execute_query("UPDATE custom_products SET status = 'approved' WHERE id = %s", (product_id,))
+    return {"success": True, "message": "Product approved successfully."}
+
+
+@app.post("/api/admin/products/{product_id}/reject")
+def reject_admin_product(product_id: str):
+    """
+    POST /api/admin/products/{product_id}/reject
+    Reject custom product listing in MySQL database.
+    """
+    execute_query("UPDATE custom_products SET status = 'rejected' WHERE id = %s", (product_id,))
+    return {"success": True, "message": "Product rejected successfully."}
+
+
+@app.get("/api/admin/users")
+def get_admin_users():
+    """
+    GET /api/admin/users
+    Returns all real users from users table.
+    """
+    users = fetch_all("SELECT * FROM users ORDER BY created_at DESC") or []
+    result = []
+    for u in users:
+        result.append({
+            "id": u.get("email"),
+            "fullName": u.get("full_name") or u.get("email", "").split("@")[0],
+            "email": u.get("email"),
+            "phone": u.get("phone") or "",
+            "role": u.get("role", "user"),
+            "status": u.get("status", "active"),
+            "verified": bool(u.get("verified", True)),
+            "avatar": u.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+            "createdAt": u.get("created_at") or "",
+        })
+    return result
 
 
 if __name__ == "__main__":

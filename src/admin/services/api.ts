@@ -1027,31 +1027,120 @@ adminApi.interceptors.response.use(
             INITIAL_NOTIFICATIONS,
           );
 
-          const pendingProducts = products.filter(
+          const todayPrefix = new Date().toISOString().slice(0, 10);
+
+          const registeredUsers =
+            typeof window !== "undefined"
+              ? JSON.parse(localStorage.getItem("payent:users") || "[]")
+              : [];
+
+          const realCustomProducts =
+            typeof window !== "undefined"
+              ? JSON.parse(localStorage.getItem("payent:custom_products") || "[]")
+              : [];
+
+          const realOrders =
+            typeof window !== "undefined"
+              ? JSON.parse(localStorage.getItem("payent:orders") || "[]")
+              : [];
+
+          // Merge real registered users
+          const combinedUsersMap = new Map<string, AdminUser>();
+          users.forEach((u) => combinedUsersMap.set(u.email.toLowerCase(), u));
+          registeredUsers.forEach(
+            (ru: {
+              email?: string;
+              fullName?: string;
+              phone?: string;
+              role?: "admin" | "agent" | "user";
+              createdAt?: string;
+            }) => {
+              if (ru.email) {
+                combinedUsersMap.set(ru.email.toLowerCase(), {
+                  id: ru.email,
+                  fullName: ru.fullName || ru.email.split("@")[0],
+                  email: ru.email,
+                  phone: ru.phone || "",
+                  role: ru.role || "user",
+                  status: "active",
+                  verified: true,
+                  avatar:
+                    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+                  createdAt: ru.createdAt || new Date().toISOString(),
+                });
+              }
+            },
+          );
+          const allCalculatedUsers = Array.from(combinedUsersMap.values());
+
+          // Merge real custom products
+          const combinedProductsMap = new Map<string, AdminProduct>();
+          products.forEach((p) => combinedProductsMap.set(p.id, p));
+          realCustomProducts.forEach(
+            (cp: {
+              id?: string;
+              title?: string;
+              category?: string;
+              price?: number;
+              status?: "pending" | "approved" | "rejected";
+              createdAt?: string;
+            }) => {
+              if (cp.id) {
+                combinedProductsMap.set(cp.id, {
+                  id: cp.id,
+                  title: cp.title || "Custom Listing",
+                  description: "User listed product",
+                  category: cp.category || "General",
+                  price: Number(cp.price) || 0,
+                  rating: 5.0,
+                  reviewsCount: 0,
+                  available: true,
+                  status: cp.status || "approved",
+                  featured: false,
+                  hidden: false,
+                  image: "",
+                  images: [],
+                  documents: [],
+                  createdAt: cp.createdAt || new Date().toISOString(),
+                  owner: {
+                    id: "lender",
+                    name: "User",
+                    avatar: "",
+                    rating: 5,
+                    email: "",
+                  },
+                });
+              }
+            },
+          );
+          const allCalculatedProducts = Array.from(
+            combinedProductsMap.values(),
+          );
+
+          const pendingProducts = allCalculatedProducts.filter(
             (p) => p.status === "pending",
           ).length;
-          const approvedProducts = products.filter(
+          const approvedProducts = allCalculatedProducts.filter(
             (p) => p.status === "approved",
           ).length;
-          const rejectedProducts = products.filter(
+          const rejectedProducts = allCalculatedProducts.filter(
             (p) => p.status === "rejected",
           ).length;
 
-          const bookingsToday = bookings.filter(
-            (b) =>
-              b.createdAt.startsWith("2026-07-18") ||
-              b.createdAt.startsWith("2026-07-17"),
-          ).length;
-          const monthlyBookings = bookings.length;
+          const ordersToday = realOrders.filter((o: { createdAt?: string }) =>
+            o.createdAt?.startsWith(todayPrefix),
+          );
+          const bookingsToday = ordersToday.length;
+          const revenueToday = ordersToday.reduce(
+            (sum: number, o: { total?: number }) => sum + (Number(o.total) || 0),
+            0,
+          );
 
-          const revenueToday = bookings
-            .filter(
-              (b) =>
-                b.createdAt.startsWith("2026-07-18") ||
-                b.createdAt.startsWith("2026-07-17"),
-            )
-            .reduce((sum, b) => sum + b.amount, 0);
-          const monthlyRevenue = bookings.reduce((sum, b) => sum + b.amount, 0);
+          const monthlyBookings = realOrders.length;
+          const monthlyRevenue = realOrders.reduce(
+            (sum: number, o: { total?: number }) => sum + (Number(o.total) || 0),
+            0,
+          );
 
           const pendingReports = reports.filter(
             (r) => r.status === "open",
@@ -1063,9 +1152,9 @@ adminApi.interceptors.response.use(
           return {
             status: 200,
             data: {
-              totalUsers: users.length,
+              totalUsers: allCalculatedUsers.length,
               totalAgents: agents.length,
-              totalProducts: products.length,
+              totalProducts: allCalculatedProducts.length,
               pendingProducts,
               approvedProducts,
               rejectedProducts,
@@ -1076,7 +1165,7 @@ adminApi.interceptors.response.use(
               monthlyRevenue,
               pendingReports,
               unreadNotifications,
-              websiteVisitors: 15420,
+              websiteVisitors: Math.max(allCalculatedUsers.length * 12, 1),
             },
             headers: {},
             config,
