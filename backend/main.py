@@ -196,10 +196,10 @@ async def add_security_headers(request: Request, call_next):
 from fastapi.responses import JSONResponse
 import traceback
 
-# CORS configuration
+# CORS configuration - allow all origins (local, Render preview & production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS else ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:3000", "http://127.0.0.1:5173"],
+    allow_origins=["*"] if ALLOWED_ORIGINS == ["*"] else ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
