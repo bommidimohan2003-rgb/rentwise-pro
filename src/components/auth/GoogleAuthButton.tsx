@@ -81,40 +81,7 @@ export function GoogleAuthButton({
           ? err.message
           : errorObj?.message || "Google sign-in failed. Please try again.";
 
-      // Handle Firebase domain authorization / configuration errors gracefully in dev mode
-      if (
-        code === "auth/unauthorized-domain" ||
-        code === "auth/invalid-api-key" ||
-        code === "auth/api-key-not-valid" ||
-        msg.includes("unauthorized-domain") ||
-        msg.includes("api-key")
-      ) {
-        console.warn("[Google Auth] Firebase configuration notice:", code, msg);
-        const demoEmail = "demo.google@payent.com";
-        const fallbackUser = {
-          id: `google-user-${Date.now()}`,
-          email: demoEmail,
-          fullName: "Google Demo User",
-          role: isAdminRoute ? "admin" : "user",
-          verified: true,
-        };
-        const fallbackToken = `google-demo-token-${Date.now()}`;
-        storage.set(STORAGE_KEYS.token, fallbackToken);
-        storage.set(STORAGE_KEYS.currentUser, fallbackUser);
-
-        if (isAdminRoute) {
-          localStorage.setItem("payent:admin:token", fallbackToken);
-          localStorage.setItem(
-            "payent:admin:current_user",
-            JSON.stringify(fallbackUser),
-          );
-        }
-
-        toast.success(`Signed in as ${fallbackUser.fullName} (Demo Mode)`);
-        onSuccess?.();
-        return;
-      }
-
+      console.warn("[Google Auth] Error during sign-in:", code, msg);
       toast.error(msg);
     } finally {
       setLoading(false);

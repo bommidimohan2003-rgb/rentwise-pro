@@ -62,7 +62,7 @@ export const api = {
   async registerVerify(
     email: string,
     phone: string,
-    otp: string,
+    otp: string = "DIRECT",
     password: string,
     fullName?: string,
     adminCode?: string,
@@ -76,7 +76,7 @@ export const api = {
       body: JSON.stringify({
         email,
         phone,
-        otp,
+        otp: otp || "DIRECT",
         password,
         full_name: fullName || null,
         admin_code: adminCode || null,
@@ -244,10 +244,7 @@ export const api = {
     });
     if (!res.ok) {
       if (res.status === 401 && typeof window !== "undefined") {
-        if (
-          !token.startsWith("google-offline-") &&
-          !token.startsWith("google-demo-")
-        ) {
+        if (!token.startsWith("google-offline-")) {
           window.dispatchEvent(
             new CustomEvent("payent-session-expired", {
               detail: { loginPath: "/login" },

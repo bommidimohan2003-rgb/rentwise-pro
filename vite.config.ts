@@ -18,6 +18,12 @@ export default defineConfig({
     include: ["firebase/app", "firebase/auth"],
   },
   server: {
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:8001",
+        changeOrigin: true,
+      },
+    },
     headers: {
       // Remove COOP restriction so Google Sign-In popup can call window.close/closed on opener
       "Cross-Origin-Opener-Policy": "unsafe-none",

@@ -144,23 +144,10 @@ export function OTPVerification() {
             .
           </p>
           <p className="text-muted-foreground text-xs mt-1.5 italic">
-            Check your mobile device for the SMS verification code from Twilio.
+            Check your mobile device or email for the verification code.
           </p>
         </div>
       </div>
-
-      {/* Demo Mode OTP Display */}
-      {(() => {
-        const generatedOtp = storage.get<string | null>(STORAGE_KEYS.otp, null);
-        return generatedOtp ? (
-          <div className="bg-card border border-border text-foreground rounded-xl p-3.5 text-xs font-semibold text-center select-all shadow-sm">
-            Demo Mode Verification Code:{" "}
-            <span className="font-mono text-sm tracking-widest text-foreground bg-secondary px-2 py-0.5 rounded border border-border ml-1.5">
-              {generatedOtp}
-            </span>
-          </div>
-        ) : null;
-      })()}
 
       <div className="flex justify-between gap-2">
         {digits.map((d, i) => (

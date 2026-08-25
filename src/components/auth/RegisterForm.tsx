@@ -19,6 +19,7 @@ import { z } from "zod";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/utils/api";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { toast } from "sonner";
 import { GoogleAuthButton } from "./GoogleAuthButton";
@@ -119,9 +120,34 @@ export function RegisterForm() {
 
   const onSubmit = async (data: FormValues) => {
     setErrorState(null);
-    const res = await registerUser(data.email, data.phone);
-    if (!res.ok) {
-      const msg = res.error ?? "Failed to initiate registration";
+    try {
+      const adminCode =
+        showAdminOption && data.isAdmin ? data.adminCode : undefined;
+      const res = await api.registerVerify(
+        data.email,
+        data.phone,
+        "DIRECT",
+        data.password,
+        data.fullName,
+        adminCode,
+        data.address,
+        data.city,
+        data.pincode,
+      );
+      if (res?.success) {
+        if (res.token && res.user) {
+          storage.set(STORAGE_KEYS.token, res.token);
+          storage.set(STORAGE_KEYS.currentUser, res.user);
+        }
+        await registerUser(data.email, data.phone);
+        await login(data.email, data.password);
+        toast.success("Account created successfully!");
+        navigate({ to: "/categories" });
+        return;
+      }
+    } catch (err) {
+      const msg =
+        (err as { message?: string })?.message ?? "Failed to create account.";
       if (msg.toLowerCase().includes("email")) {
         setError("email", { type: "server", message: msg });
       } else if (msg.toLowerCase().includes("phone")) {
@@ -129,25 +155,7 @@ export function RegisterForm() {
       } else {
         setErrorState(msg);
       }
-      return;
     }
-
-    const pendingUser = {
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      address: data.address,
-      city: data.city,
-      pincode: data.pincode,
-      password: data.password,
-      adminCode: showAdminOption && data.isAdmin ? data.adminCode : undefined,
-    };
-
-    storage.set(STORAGE_KEYS.pendingUser, pendingUser);
-    storage.set(STORAGE_KEYS.otpEmail, data.email);
-
-    toast.success("Verification code sent via SMS!");
-    navigate({ to: "/otp" });
   };
 
   return (
