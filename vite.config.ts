@@ -18,6 +18,7 @@ export default defineConfig({
     include: ["firebase/app", "firebase/auth"],
   },
   server: {
+    allowedHosts: true,
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8001",
