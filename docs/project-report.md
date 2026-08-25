@@ -34,7 +34,11 @@ The backend is a FastAPI service served by uvicorn or gunicorn. Data access uses
 
 ### Deployment Model
 
-The application uses Vercel for serverless deployment across both frontend (React/Vite) and backend (FastAPI Python ASGI serverless functions via `api/index.py` and `vercel.json`). MySQL serves as the external persistent datastore, and backend rate limiting is DB-backed across serverless execution instances.
+The application is configured for deployment on [Render.com](https://render.com) using the Infrastructure-as-Code `render.yaml` blueprint:
+- **Backend Service (`payent-backend`)**: Python 3.11 web service executing FastAPI via Gunicorn + Uvicorn workers with health probe checks at `/api/health`.
+- **Frontend Site (`payent-frontend`)**: React/Vite static site built with `npm run build` with single-page application (SPA) client-side rewrite rules.
+- **Datastore**: External or Render-managed MySQL instance.
+- **Documentation**: See `docs/render-deployment.md` for step-by-step setup details.
 
 ## Repository Layout
 

@@ -89,11 +89,7 @@ export function GoogleAuthButton({
         msg.includes("unauthorized-domain") ||
         msg.includes("api-key")
       ) {
-        console.warn(
-          "[Google Auth] Firebase configuration notice:",
-          code,
-          msg,
-        );
+        console.warn("[Google Auth] Firebase configuration notice:", code, msg);
         const demoEmail = "demo.google@payent.com";
         const fallbackUser = {
           id: `google-user-${Date.now()}`,

@@ -62,10 +62,14 @@ export function Categories() {
             <span>Reserve Catalog</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground dark:text-white font-display">
-            Curated Gear <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-600 dark:via-purple-400 to-cyan-600 dark:to-cyan-400">Collections</span>
+            Curated Gear{" "}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-600 dark:via-purple-400 to-cyan-600 dark:to-cyan-400">
+              Collections
+            </span>
           </h2>
           <p className="text-sm text-muted-foreground dark:text-neutral-400 font-medium">
-            Certified flagship equipment available for immediate concierge dispatch across major metro cities.
+            Certified flagship equipment available for immediate concierge
+            dispatch across major metro cities.
           </p>
         </div>
 

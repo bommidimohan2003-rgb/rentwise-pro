@@ -244,7 +244,10 @@ export const api = {
     });
     if (!res.ok) {
       if (res.status === 401 && typeof window !== "undefined") {
-        if (!token.startsWith("google-offline-") && !token.startsWith("google-demo-")) {
+        if (
+          !token.startsWith("google-offline-") &&
+          !token.startsWith("google-demo-")
+        ) {
           window.dispatchEvent(
             new CustomEvent("payent-session-expired", {
               detail: { loginPath: "/login" },

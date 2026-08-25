@@ -1,29 +1,40 @@
 import { motion } from "framer-motion";
-import { ShieldCheck, Lock, Headphones, Award, Sparkles, RefreshCw } from "lucide-react";
+import {
+  ShieldCheck,
+  Lock,
+  Headphones,
+  Award,
+  Sparkles,
+  RefreshCw,
+} from "lucide-react";
 
 const brandValues = [
   {
     icon: ShieldCheck,
     title: "Escrow Deposit Security",
-    subtitle: "Razorpay-backed escrow protection keeps funds 100% safe until return.",
+    subtitle:
+      "Razorpay-backed escrow protection keeps funds 100% safe until return.",
     badge: "Escrow Shield",
   },
   {
     icon: Award,
     title: "Biometric Identity Pass",
-    subtitle: "Every lender & renter undergoes instant government KYC verification.",
+    subtitle:
+      "Every lender & renter undergoes instant government KYC verification.",
     badge: "ID Verified",
   },
   {
     icon: RefreshCw,
     title: "Zero Capital Depreciation",
-    subtitle: "Never waste ₹4L+ on tech gear that depreciates before your next shoot.",
+    subtitle:
+      "Never waste ₹4L+ on tech gear that depreciates before your next shoot.",
     badge: "Asset Smart",
   },
   {
     icon: Headphones,
     title: "24/7 Production Concierge",
-    subtitle: "Dedicated live tech assistance and replacement gear dispatch in 2 hours.",
+    subtitle:
+      "Dedicated live tech assistance and replacement gear dispatch in 2 hours.",
     badge: "Concierge 24/7",
   },
 ];
@@ -48,7 +59,9 @@ export function WhyChoose() {
             </span>
           </h2>
           <p className="text-sm md:text-base text-muted-foreground dark:text-neutral-400 font-medium">
-            Standard rental houses charge exorbitant deposits and rigid 24-hour penalties. Payent gives you liquid access to certified, insured tech hardware at your terms.
+            Standard rental houses charge exorbitant deposits and rigid 24-hour
+            penalties. Payent gives you liquid access to certified, insured tech
+            hardware at your terms.
           </p>
         </div>
 

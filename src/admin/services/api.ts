@@ -1036,7 +1036,9 @@ adminApi.interceptors.response.use(
 
           const realCustomProducts =
             typeof window !== "undefined"
-              ? JSON.parse(localStorage.getItem("payent:custom_products") || "[]")
+              ? JSON.parse(
+                  localStorage.getItem("payent:custom_products") || "[]",
+                )
               : [];
 
           const realOrders =
@@ -1132,13 +1134,15 @@ adminApi.interceptors.response.use(
           );
           const bookingsToday = ordersToday.length;
           const revenueToday = ordersToday.reduce(
-            (sum: number, o: { total?: number }) => sum + (Number(o.total) || 0),
+            (sum: number, o: { total?: number }) =>
+              sum + (Number(o.total) || 0),
             0,
           );
 
           const monthlyBookings = realOrders.length;
           const monthlyRevenue = realOrders.reduce(
-            (sum: number, o: { total?: number }) => sum + (Number(o.total) || 0),
+            (sum: number, o: { total?: number }) =>
+              sum + (Number(o.total) || 0),
             0,
           );
 

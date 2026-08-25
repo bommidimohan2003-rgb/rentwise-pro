@@ -1,6 +1,14 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { Search, ShieldCheck, CheckCircle2, Star, Sparkles, Zap, Lock } from "lucide-react";
+import {
+  Search,
+  ShieldCheck,
+  CheckCircle2,
+  Star,
+  Sparkles,
+  Zap,
+  Lock,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export function HowItWorks() {
@@ -34,7 +42,9 @@ export function HowItWorks() {
               {/* App Section: Reserve Flagship Gear */}
               <div className="space-y-3 text-left">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-foreground dark:text-white">Reserve Flagship Gear</p>
+                  <p className="text-xs font-bold text-foreground dark:text-white">
+                    Reserve Flagship Gear
+                  </p>
                   <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                     VIP Escrow
                   </span>
@@ -125,7 +135,8 @@ export function HowItWorks() {
                     1. Select Flagship Hardware
                   </h3>
                   <p className="text-xs md:text-sm text-muted-foreground dark:text-neutral-400 font-medium mt-1 leading-relaxed">
-                    Choose from verified cinema cameras, workstations, and drones from certified lenders in your city.
+                    Choose from verified cinema cameras, workstations, and
+                    drones from certified lenders in your city.
                   </p>
                 </div>
               </motion.div>
@@ -146,7 +157,8 @@ export function HowItWorks() {
                     2. Razorpay Escrow Authorization
                   </h3>
                   <p className="text-xs md:text-sm text-muted-foreground dark:text-neutral-400 font-medium mt-1 leading-relaxed">
-                    Lock in your rental dates with encrypted deposit protection. Funds remain safe in escrow until return.
+                    Lock in your rental dates with encrypted deposit protection.
+                    Funds remain safe in escrow until return.
                   </p>
                 </div>
               </motion.div>
@@ -167,7 +179,8 @@ export function HowItWorks() {
                     3. White-Glove Hand-Off & Execution
                   </h3>
                   <p className="text-xs md:text-sm text-muted-foreground dark:text-neutral-400 font-medium mt-1 leading-relaxed">
-                    Receive your gear via 2-hour doorstep delivery, create your masterpiece, and return hassle-free.
+                    Receive your gear via 2-hour doorstep delivery, create your
+                    masterpiece, and return hassle-free.
                   </p>
                 </div>
               </motion.div>

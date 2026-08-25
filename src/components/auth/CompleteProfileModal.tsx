@@ -8,7 +8,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/common/Input";
 import { Button } from "@/components/common/Button";
-import { Phone, MapPin, Building2, Compass, ShieldCheck, Mail } from "lucide-react";
+import {
+  Phone,
+  MapPin,
+  Building2,
+  Compass,
+  ShieldCheck,
+  Mail,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface CompleteProfileModalProps {

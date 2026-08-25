@@ -293,7 +293,8 @@ export function Testimonials() {
             </span>
           </h2>
           <p className="text-neutral-400 text-sm sm:text-base max-w-lg mx-auto font-medium">
-            Real feedback from verified filmmakers, drone operators, and lenders. Click any card to inspect biometric verification.
+            Real feedback from verified filmmakers, drone operators, and
+            lenders. Click any card to inspect biometric verification.
           </p>
         </motion.div>
 

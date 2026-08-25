@@ -33,7 +33,9 @@ export function CallToAction() {
 
           {/* Subtitle */}
           <p className="text-muted-foreground dark:text-neutral-300 text-xs sm:text-base max-w-2xl mx-auto font-medium leading-relaxed">
-            Join India's premiere peer-to-peer tech rental ecosystem. Reserve certified cinema gear, drones, and workstation laptops — or monetize your idle hardware today.
+            Join India's premiere peer-to-peer tech rental ecosystem. Reserve
+            certified cinema gear, drones, and workstation laptops — or monetize
+            your idle hardware today.
           </p>
 
           {/* CTA Buttons */}
@@ -59,10 +61,12 @@ export function CallToAction() {
           {/* Security Banner */}
           <div className="pt-5 sm:pt-6 border-t border-border dark:border-white/10 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-6 text-[11px] sm:text-xs text-muted-foreground dark:text-neutral-400 font-bold">
             <span className="inline-flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-emerald-500 dark:text-emerald-400" /> Razorpay Escrow Protection
+              <ShieldCheck className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />{" "}
+              Razorpay Escrow Protection
             </span>
             <span className="inline-flex items-center gap-1.5 text-center">
-              <Crown className="h-4 w-4 text-amber-500 dark:text-amber-400 shrink-0" /> ₹5L Insurance Backed (Terms & Conditions Apply)
+              <Crown className="h-4 w-4 text-amber-500 dark:text-amber-400 shrink-0" />{" "}
+              ₹5L Insurance Backed (Terms & Conditions Apply)
             </span>
           </div>
         </motion.div>

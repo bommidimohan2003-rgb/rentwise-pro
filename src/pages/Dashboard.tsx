@@ -110,7 +110,10 @@ export default function Dashboard() {
     <DashboardLayout>
       <div>
         <h1 className="text-3xl md:text-4xl font-bold">
-          Welcome back{user ? `, ${(user.fullName || user.email || "User").split(" ")[0]}` : ""}
+          Welcome back
+          {user
+            ? `, ${(user.fullName || user.email || "User").split(" ")[0]}`
+            : ""}
         </h1>
         <p className="mt-2 text-muted-foreground">
           Here's what's happening with your rentals.

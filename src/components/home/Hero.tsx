@@ -148,7 +148,9 @@ export function Hero() {
               transition={{ duration: 0.4, delay: 0.2 }}
               className="text-sm sm:text-lg text-muted-foreground dark:text-neutral-300 max-w-xl leading-relaxed font-medium"
             >
-              Discover our curated collection of flagship cinema cameras, aerial drones, studio audio, and workstation laptops — crafted with uncompromising attention to detail and backed by Razorpay Escrow.
+              Discover our curated collection of flagship cinema cameras, aerial
+              drones, studio audio, and workstation laptops — crafted with
+              uncompromising attention to detail and backed by Razorpay Escrow.
             </motion.p>
 
             {/* Editorial Dual CTAs */}
@@ -237,7 +239,10 @@ export function Hero() {
 
                 {/* Price Pill */}
                 <div className="absolute bottom-3 right-3 bg-black/90 dark:bg-white/95 text-white dark:text-black backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 font-display font-extrabold text-xs shadow-lg">
-                  ₹{activeGear.price} <span className="text-[10px] font-medium opacity-80">/ day</span>
+                  ₹{activeGear.price}{" "}
+                  <span className="text-[10px] font-medium opacity-80">
+                    / day
+                  </span>
                 </div>
               </div>
 
@@ -252,7 +257,11 @@ export function Hero() {
                       </h3>
                     </div>
                     <p className="text-[11px] text-muted-foreground dark:text-neutral-400 mt-0.5">
-                      Lender: <span className="text-foreground dark:text-white font-bold">{activeGear.owner}</span> &bull; ★ {activeGear.ownerRating}
+                      Lender:{" "}
+                      <span className="text-foreground dark:text-white font-bold">
+                        {activeGear.owner}
+                      </span>{" "}
+                      &bull; ★ {activeGear.ownerRating}
                     </p>
                   </div>
 

@@ -552,7 +552,8 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Items uploaded by users waiting for admin authorization before releasing into public retail marketplace.
+                Items uploaded by users waiting for admin authorization before
+                releasing into public retail marketplace.
               </p>
             </div>
           </div>
@@ -577,7 +578,8 @@ export default function Dashboard() {
               All User Uploads Moderated & Live
             </h4>
             <p className="text-xs text-muted-foreground mt-1">
-              Zero pending items in queue. All user gear listings have been reviewed and approved!
+              Zero pending items in queue. All user gear listings have been
+              reviewed and approved!
             </p>
           </div>
         ) : (

@@ -37,8 +37,6 @@ dist-ssr
 # Python Cache
 __pycache__/
 *.pyc
-.vercel
-.vercel_python_packages/
 *.docx
 ~$*
 .env*

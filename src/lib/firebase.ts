@@ -31,8 +31,7 @@ const firebaseConfig = {
   appId:
     import.meta.env.VITE_FIREBASE_APP_ID ||
     "1:405693280587:web:f33c0d5823bcf52d4078ce",
-  measurementId:
-    import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-MQXTJ87BXS",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-MQXTJ87BXS",
 };
 
 function getFirebaseApp(): FirebaseApp | null {
@@ -71,7 +70,8 @@ googleProvider.setCustomParameters({
 });
 
 function isMobileBrowser(): boolean {
-  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+  if (typeof window === "undefined" || typeof navigator === "undefined")
+    return false;
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent,
   );
@@ -93,9 +93,8 @@ export async function upsertFirestoreUser(user: {
   if (!currentApp) return;
 
   try {
-    const { getFirestore, doc, setDoc, serverTimestamp } = await import(
-      "firebase/firestore"
-    );
+    const { getFirestore, doc, setDoc, serverTimestamp } =
+      await import("firebase/firestore");
     const firestoreDb = getFirestore(currentApp);
     const userRef = doc(firestoreDb, "users", user.uid);
     await setDoc(

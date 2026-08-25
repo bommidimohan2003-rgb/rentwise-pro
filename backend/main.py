@@ -209,24 +209,15 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": f"Internal Server Error: {str(exc)}"},
     )
 
-@app.get("/api/health")
-def health_check():
-    return {"status": "ok", "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()}
-
 @app.get("/")
-def read_root():
-    return {
-        "status": "online",
-        "service": "Payent FastAPI Backend API",
-        "documentation": "/docs"
-    }
-
+@app.get("/api/health")
 @app.get("/health")
+@app.get("/healthz")
 def health_check():
     return {
         "status": "ok",
-        "service": "Payent Backend",
-        "timestamp": datetime.datetime.utcnow().isoformat()
+        "service": "Payent FastAPI Backend API",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
 
 # Pydantic Schemas
@@ -1619,9 +1610,8 @@ def broadcast_admin_event(event_type: str, data: dict):
         logger.warning(f"Could not broadcast WS event {event_type}: {e}")
 
 @app.websocket("/api/admin/ws")
-# NOTE (F-18): This WebSocket route is NOT functional on Vercel serverless (HTTP-only platform).
-# On Vercel, clients fall through to the HTTP polling fallback at GET /api/admin/events/poll.
-# This route works only on long-lived deployments (Railway, Render, Docker, bare server).
+# NOTE (F-18): This WebSocket route is supported on long-lived server deployments (Railway, Render, Docker, bare server).
+# Clients fall through to the HTTP polling fallback at GET /api/admin/events/poll when WebSockets are unavailable.
 async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):
     # 1. Rate limiting WebSocket connection attempts per IP
     client_ip = websocket.client.host if websocket.client else "unknown"
