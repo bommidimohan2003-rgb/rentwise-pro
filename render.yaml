@@ -47,8 +47,8 @@ services:
     runtime: node
     region: singapore
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: node .output/server/index.mjs
+    buildCommand: npm install
+    startCommand: npm run dev -- --host 0.0.0.0 --port $PORT
     envVars:
       - key: NODE_VERSION
         value: 20.18.0
