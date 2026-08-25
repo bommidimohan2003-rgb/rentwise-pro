@@ -21,15 +21,17 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: MYSQL_HOST
-        sync: false
+        value: "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"
       - key: MYSQL_PORT
-        value: "3306"
+        value: "4000"
       - key: MYSQL_USER
-        sync: false
+        value: "3NNZ4KBh8x122Nu.root"
       - key: MYSQL_PASSWORD
-        sync: false
-      - key: MYSQL_DATABASE
+        value: "dLNnr55ayiUqR9vU"
+      - key: MYSQL_DB
         value: "payent_db"
+      - key: MYSQL_SSL
+        value: "true"
       - key: CORS_ORIGINS
         value: "https://payent-frontend.onrender.com"
       - key: TWILIO_ACCOUNT_SID
