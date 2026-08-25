@@ -4190,6 +4190,32 @@ def get_admin_products():
         })
     return result
 
+# ---------------------------------------------------------------------------
+# Full-Stack React Frontend SPA Static File Handler
+# ---------------------------------------------------------------------------
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+dist_dir = os.path.join(root_dir, "dist")
+
+if os.path.exists(dist_dir):
+    assets_dir = os.path.join(dist_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_fullstack_spa(full_path: str):
+        if full_path.startswith("api/") or full_path == "api":
+            raise HTTPException(status_code=404, detail="API route not found")
+        target_path = os.path.join(dist_dir, full_path)
+        if os.path.exists(target_path) and os.path.isfile(target_path):
+            return FileResponse(target_path)
+        index_path = os.path.join(dist_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        return {"message": "Payent Full-Stack Service"}
+
 
 @app.post("/api/admin/products/{product_id}/approve")
 def approve_admin_product(product_id: str):
