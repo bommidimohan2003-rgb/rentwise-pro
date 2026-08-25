@@ -213,7 +213,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": f"Internal Server Error: {str(exc)}"},
     )
 
-@app.get("/")
 @app.get("/api/health")
 @app.get("/health")
 @app.get("/healthz")
@@ -4194,27 +4193,41 @@ def get_admin_products():
 # Full-Stack React Frontend SPA Static File Handler
 # ---------------------------------------------------------------------------
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 dist_dir = os.path.join(root_dir, "dist")
+assets_dir = os.path.join(dist_dir, "assets")
 
-if os.path.exists(dist_dir):
-    assets_dir = os.path.join(dist_dir, "assets")
-    if os.path.exists(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+if os.path.exists(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
-    @app.get("/{full_path:path}")
-    async def serve_fullstack_spa(full_path: str):
-        if full_path.startswith("api/") or full_path == "api":
-            raise HTTPException(status_code=404, detail="API route not found")
-        target_path = os.path.join(dist_dir, full_path)
+@app.get("/{full_path:path}")
+async def serve_fullstack_spa(full_path: str = ""):
+    if full_path.startswith("api/") or full_path == "api":
+        raise HTTPException(status_code=404, detail="API route not found")
+    
+    current_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dist")
+    if full_path:
+        target_path = os.path.join(current_dist, full_path)
         if os.path.exists(target_path) and os.path.isfile(target_path):
             return FileResponse(target_path)
-        index_path = os.path.join(dist_dir, "index.html")
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return {"message": "Payent Full-Stack Service"}
+    
+    index_path = os.path.join(current_dist, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    
+    return HTMLResponse(
+        content="""<!DOCTYPE html><html><head><title>Payent API Backend</title></head>
+        <body style="font-family:sans-serif; background:#0f172a; color:#f8fafc; display:flex; align-items:center; justify-content:center; height:100vh; margin:0;">
+        <div style="text-align:center; max-width:500px; padding:2rem; background:#1e293b; border-radius:1rem;">
+        <h1 style="color:#38bdf8;">Payent API Backend Service</h1>
+        <p>The FastAPI backend is online and connected to <strong>TiDB Cloud MySQL</strong>.</p>
+        <p style="color:#94a3b8; font-size:0.9rem;">To access the full-stack interface, deploy the static frontend site on Render or run <code>npm run build</code>.</p>
+        <a href="/api/health" style="color:#38bdf8;">Check API Health</a>
+        </div></body></html>""",
+        status_code=200
+    )
 
 
 @app.post("/api/admin/products/{product_id}/approve")
