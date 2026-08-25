@@ -1,23 +1,21 @@
-# Render Blueprint Specification for Payent Tech Gear Rental Platform (Full-Stack Unified Web Service)
+# Render Blueprint Specification for Payent Tech Gear Rental Platform
 # Documentation: https://render.com/docs/blueprint-spec
 
 services:
   # ---------------------------------------------------------------------------
-  # Unified Full-Stack Web Service (FastAPI + React 19 SPA + TiDB Cloud)
+  # 1. FastAPI Python Backend Web Service (TiDB Cloud MySQL)
   # ---------------------------------------------------------------------------
   - type: web
-    name: payent-fullstack
+    name: payent-backend
     runtime: python
     region: singapore
     plan: free
-    buildCommand: npm install && npm run build && pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn backend.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
-      - key: NODE_VERSION
-        value: 20.18.0
       - key: IS_PRODUCTION
         value: "true"
       - key: JWT_SECRET_KEY
@@ -40,3 +38,22 @@ services:
         sync: false
       - key: RAZORPAY_WEBHOOK_SECRET
         sync: false
+
+  # ---------------------------------------------------------------------------
+  # 2. TanStack Start React Frontend Web Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: payent-frontend
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node .output/server/index.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: payent-backend
+          property: url
