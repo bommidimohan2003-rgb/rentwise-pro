@@ -20,6 +20,9 @@ if (fs.existsSync(assetsDir)) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payent - Premium Tech Gear Rental Marketplace</title>
+  <script>
+    window.PAYENT_API_URL = window.PAYENT_API_URL || "";
+  </script>
   ${cssFile ? `<link rel="stylesheet" href="/assets/${cssFile}">` : ""}
 </head>
 <body class="bg-slate-950 text-slate-50 antialiased">
