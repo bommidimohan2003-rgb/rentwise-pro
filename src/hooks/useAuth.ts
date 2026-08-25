@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
-import { auth, handleRedirectResult, onIdTokenChanged } from "@/lib/firebase";
 import type { User } from "@/types";
 
 export function useAuth() {
@@ -10,48 +9,7 @@ export function useAuth() {
 
   useEffect(() => {
     const initAuth = async () => {
-      // 1. Check for pending Google OAuth redirect result
-      try {
-        const redirectRes = await handleRedirectResult();
-        if (redirectRes?.email) {
-          const { email, displayName, idToken } = redirectRes;
-          try {
-            const syncRes = await api.googleSync({
-              email,
-              fullName: displayName || undefined,
-              idToken,
-            });
-            if (syncRes?.success) {
-              const loggedUser: User = syncRes.user || {
-                id: email,
-                fullName: displayName || email.split("@")[0],
-                email,
-                role: "user",
-              };
-              const userToken = syncRes.token || `google-session-${Date.now()}`;
-              storage.set(STORAGE_KEYS.token, userToken);
-              storage.set(STORAGE_KEYS.currentUser, loggedUser);
-              setUser(loggedUser);
-            }
-          } catch (syncErr) {
-            console.warn("[Auth] Redirect googleSync notice:", syncErr);
-            const fallbackUser: User = {
-              id: `google-user-${Date.now()}`,
-              fullName: displayName || email.split("@")[0],
-              email,
-              role: "user",
-            };
-            const fallbackToken = `google-offline-token-${Date.now()}`;
-            storage.set(STORAGE_KEYS.token, fallbackToken);
-            storage.set(STORAGE_KEYS.currentUser, fallbackUser);
-            setUser(fallbackUser);
-          }
-        }
-      } catch (err) {
-        console.warn("[Auth] Redirect result check warning:", err);
-      }
-
-      // 2. Hydrate cached user session
+      // 1. Hydrate cached user session
       const cachedUser = storage.get<User | null>(
         STORAGE_KEYS.currentUser,
         null,
@@ -96,32 +54,12 @@ export function useAuth() {
 
     initAuth();
 
-    // 3. Register Firebase onIdTokenChanged to silently auto-refresh tokens in background
-    let unsubscribeIdToken: (() => void) | undefined;
-    try {
-      unsubscribeIdToken = onIdTokenChanged(auth, async (fbUser) => {
-        if (fbUser) {
-          try {
-            const newToken = await fbUser.getIdToken();
-            if (newToken) {
-              storage.set(STORAGE_KEYS.token, newToken);
-            }
-          } catch (tokenErr) {
-            console.warn("[Auth] Background token refresh notice:", tokenErr);
-          }
-        }
-      });
-    } catch (e) {
-      console.warn("[Auth] Failed to subscribe to onIdTokenChanged:", e);
-    }
-
     const onStorage = () => {
       setUser(storage.get<User | null>(STORAGE_KEYS.currentUser, null));
     };
     window.addEventListener("storage", onStorage);
     window.addEventListener("payent:storage_change", onStorage);
     return () => {
-      if (unsubscribeIdToken) unsubscribeIdToken();
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("payent:storage_change", onStorage);
     };
