@@ -112,7 +112,8 @@ from database import (
     get_precomputed_similarities,
     get_user_category_affinities,
     get_popular_search_queries,
-    MOCK_CUSTOM_PRODUCTS
+    MOCK_CUSTOM_PRODUCTS,
+    fetch_all
 )
 from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
 from search_ml import ml_search_engine
@@ -993,6 +994,59 @@ def fetch_user_listings(email: str = Depends(get_current_user_email)):
 def fetch_public_listings():
     listings = get_all_approved_custom_products()
     return [format_product_dict(p) for p in listings]
+
+@app.get("/api/products/custom/{id}")
+@app.get("/api/products/{id}")
+def fetch_product_by_id(id: str):
+    product = fetch_one_product(id)
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
+    return format_product_dict(product)
+
+class CreateSupportTicketSchema(BaseModel):
+    subject: str
+    message: str
+    priority: Optional[str] = "medium"
+
+@app.get("/api/support")
+def fetch_user_support_tickets(email: str = Depends(get_current_user_email)):
+    clean_email = email.strip().lower()
+    tickets = fetch_all("SELECT * FROM support_tickets WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
+    res = []
+    for t in tickets:
+        msgs = json.loads(t["messages"]) if isinstance(t.get("messages"), str) else (t.get("messages") or [])
+        res.append({
+            "id": t["id"],
+            "subject": t["subject"],
+            "status": t["status"],
+            "priority": t["priority"],
+            "createdAt": t["created_at"],
+            "messages": msgs
+        })
+    return res
+
+@app.post("/api/support")
+def create_user_support_ticket(data: CreateSupportTicketSchema, email: str = Depends(get_current_user_email)):
+    clean_email = email.strip().lower()
+    user_rec = get_user(clean_email) or {}
+    ticket_id = f"TICK-{int(time.time() * 1000)}"
+    now_str = datetime.datetime.utcnow().isoformat()
+    init_messages = [{
+        "id": f"msg-{int(time.time() * 1000)}",
+        "sender": user_rec.get("full_name") or clean_email.split("@")[0],
+        "senderType": "user",
+        "content": data.message,
+        "timestamp": now_str
+    }]
+    execute_query("""
+        INSERT INTO support_tickets (id, user_email, user_name, subject, status, priority, messages, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        ticket_id, clean_email, user_rec.get("full_name") or clean_email.split("@")[0],
+        data.subject, "open", data.priority or "medium",
+        json.dumps(init_messages), now_str
+    ))
+    return {"success": True, "ticketId": ticket_id}
 
 @app.get("/api/categories/public")
 def fetch_public_categories():

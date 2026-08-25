@@ -34,6 +34,8 @@ else:
     MYSQL_PASSWORD = os.getenv("MYSQLPASSWORD", os.getenv("MYSQL_PASSWORD", "Bmohan"))
     MYSQL_DB = os.getenv("MYSQLDATABASE", os.getenv("MYSQL_DB", "payent_db"))
 
+MYSQL_SSL = os.getenv("MYSQL_SSL", "true").lower() in ("true", "1", "yes")
+
 # ENVIRONMENT Config
 ENV = os.getenv("ENV", os.getenv("ENVIRONMENT", "development")).lower()
 IS_PRODUCTION = ENV in ("production", "prod")

@@ -57,25 +57,38 @@ export default function ProductDetails() {
     setProductLoading(true);
 
     async function loadTargetProduct() {
-      // 1. Check local custom products
-      const localCustom = storage.get<Product[]>("payent_custom_products", []);
-      let found = localCustom.find((p: Product) => p.id === id);
-
-      // 2. Check MOCK_PRODUCTS catalog
-      if (!found) {
-        found = MOCK_PRODUCTS.find((p: Product) => p.id === id);
+      // 1. Fetch live product from TiDB Cloud backend API by ID
+      let found: Product | null = null;
+      try {
+        found = await api.getProductById(id);
+      } catch {
+        /* ignore */
       }
 
-      // 3. Check public products API
+      // 2. Check local custom products
+      if (!found) {
+        const localCustom = storage.get<Product[]>(
+          "payent_custom_products",
+          [],
+        );
+        found = localCustom.find((p: Product) => p.id === id) || null;
+      }
+
+      // 3. Check public products API catalog
       if (!found) {
         try {
           const items = await api.getPublicProducts();
           if (Array.isArray(items)) {
-            found = items.find((p: Product) => p.id === id);
+            found = items.find((p: Product) => p.id === id) || null;
           }
         } catch {
-          // ignore
+          /* ignore */
         }
+      }
+
+      // 4. Fallback to static catalog if unavailable
+      if (!found) {
+        found = MOCK_PRODUCTS.find((p: Product) => p.id === id) || null;
       }
 
       if (isMounted) {

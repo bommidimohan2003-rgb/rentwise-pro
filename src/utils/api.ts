@@ -648,4 +648,42 @@ export const api = {
       return null;
     }
   },
+
+  async getProductById(id: string): Promise<Product | null> {
+    try {
+      const res = await fetch(`${API_BASE}/api/products/${id}`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getSupportTickets(token: string) {
+    try {
+      const res = await fetch(`${API_BASE}/api/support`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async createSupportTicket(
+    token: string,
+    ticket: { subject: string; message: string; priority?: string },
+  ) {
+    const res = await fetch(`${API_BASE}/api/support`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(ticket),
+    });
+    if (!res.ok) throw new Error("Failed to create support ticket");
+    return await res.json();
+  },
 };

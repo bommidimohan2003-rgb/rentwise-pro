@@ -7,13 +7,23 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 import pymysql
+import ssl
 import logging
 from datetime import datetime
-from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB
+from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB, MYSQL_SSL
 
 logger = logging.getLogger("payent.database")
 
+def get_ssl_kwargs():
+    if MYSQL_SSL or "tidbcloud.com" in (MYSQL_HOST or "").lower():
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return {"ssl": ctx}
+    return {}
+
 def get_db_connection():
+    ssl_kwargs = get_ssl_kwargs()
     # Attempt connecting directly to the specified database first
     try:
         return pymysql.connect(
@@ -23,7 +33,8 @@ def get_db_connection():
             password=MYSQL_PASSWORD,
             database=MYSQL_DB,
             cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=2
+            connect_timeout=5,
+            **ssl_kwargs
         )
     except Exception:
         # Fallback to connecting without database and creating database if it does not exist yet
@@ -34,7 +45,8 @@ def get_db_connection():
                 user=MYSQL_USER,
                 password=MYSQL_PASSWORD,
                 cursorclass=pymysql.cursors.DictCursor,
-                connect_timeout=2
+                connect_timeout=5,
+                **ssl_kwargs
             )
             try:
                 with conn.cursor() as cursor:
@@ -127,7 +139,7 @@ def init_db():
     add_column_safely("users", "address VARCHAR(500)")
     add_column_safely("users", "city VARCHAR(100)")
     add_column_safely("users", "pincode VARCHAR(20)")
-    add_column_safely("users", "firebase_uid VARCHAR(255) UNIQUE NULL")
+    add_column_safely("users", "firebase_uid VARCHAR(255) NULL")
     add_column_safely("users", "last_login_at VARCHAR(100)")
 
     # Create token_blocklist table for server-side JWT revocation
