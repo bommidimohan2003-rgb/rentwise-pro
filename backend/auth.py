@@ -52,8 +52,6 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
         return False, "Password must contain at least one lowercase letter."
     if not re.search(r"\d", password):
         return False, "Password must contain at least one digit."
-    if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>/?]", password):
-        return False, "Password must contain at least one special character."
     
     if password.lower() in COMMON_WEAK_PASSWORDS:
         return False, "This password is too common and easily guessed. Please choose a stronger password."
@@ -141,3 +139,4 @@ def decode_access_token(token: str, expected_type: str = "access") -> dict:
         return decoded_token
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         return None
+
