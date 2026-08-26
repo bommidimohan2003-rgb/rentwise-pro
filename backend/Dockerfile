@@ -22,8 +22,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source code
 COPY . .
 
+# Set working directory to backend module
+WORKDIR /app/backend
+
 # Expose server port
 EXPOSE 8000
 
-# Run database schema initialization and start Uvicorn server
-CMD ["sh", "-c", "python -c 'from database import init_db; init_db()' && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Start Uvicorn ASGI server directly (database schema migration executes via FastAPI lifespan handler)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2"]
