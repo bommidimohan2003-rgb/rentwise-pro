@@ -22,42 +22,33 @@ def get_ssl_kwargs():
         return {"ssl": ctx}
     return {}
 
+_last_db_failure_timestamp = 0.0
+
 def get_db_connection():
+    global _last_db_failure_timestamp
+    now = datetime.now().timestamp()
+    # Fail fast if DB connection failed within last 5 seconds to prevent API request timeouts
+    if _last_db_failure_timestamp > 0 and (now - _last_db_failure_timestamp) < 5.0:
+        return None
+
     ssl_kwargs = get_ssl_kwargs()
-    # Attempt connecting directly to the specified database first
     try:
-        return pymysql.connect(
+        conn = pymysql.connect(
             host=MYSQL_HOST,
             port=MYSQL_PORT,
             user=MYSQL_USER,
             password=MYSQL_PASSWORD,
             database=MYSQL_DB,
             cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=5,
+            connect_timeout=3,
             **ssl_kwargs
         )
-    except Exception:
-        # Fallback to connecting without database and creating database if it does not exist yet
-        try:
-            conn = pymysql.connect(
-                host=MYSQL_HOST,
-                port=MYSQL_PORT,
-                user=MYSQL_USER,
-                password=MYSQL_PASSWORD,
-                cursorclass=pymysql.cursors.DictCursor,
-                connect_timeout=5,
-                **ssl_kwargs
-            )
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DB}`")
-                conn.select_db(MYSQL_DB)
-            except Exception:
-                pass
-            return conn
-        except Exception as inner_e:
-            print(f"Notice: MySQL database host '{MYSQL_HOST}' unavailable ({inner_e}). Operating in degraded fallback mode.")
-            return None
+        _last_db_failure_timestamp = 0.0
+        return conn
+    except Exception as e:
+        _last_db_failure_timestamp = now
+        logger.warning(f"MySQL connection to '{MYSQL_HOST}' failed ({e}). Operating in degraded fallback mode.")
+        return None
 
 def execute_query(query: str, params: tuple = ()):
     try:
