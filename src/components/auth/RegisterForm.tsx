@@ -47,7 +47,16 @@ const schema = z
       .min(5, "Enter complete street address (at least 5 characters)"),
     city: z.string().trim().min(2, "Enter city name"),
     pincode: z.string().trim().min(6, "Enter valid 6-digit PIN code").max(10),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Include at least one uppercase letter (A-Z)")
+      .regex(/[a-z]/, "Include at least one lowercase letter (a-z)")
+      .regex(/[0-9]/, "Include at least one number (0-9)")
+      .regex(
+        /[^A-Za-z0-9]/,
+        "Include at least one special character (!@#$%^&*)",
+      ),
     confirm: z.string().min(1, "Please confirm your password"),
     terms: z.literal(true, {
       errorMap: () => ({ message: "Please accept the Terms & Privacy Policy" }),
@@ -76,7 +85,7 @@ function strength(pw: string) {
 }
 
 export function RegisterForm() {
-  const { user, register: registerUser } = useAuth();
+  const { user, register: registerUser, login } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
@@ -147,13 +156,25 @@ export function RegisterForm() {
     } catch (err) {
       const msg =
         (err as { message?: string })?.message ?? "Failed to create account.";
-      if (msg.toLowerCase().includes("email")) {
+      const lower = msg.toLowerCase();
+      if (lower.includes("email") || lower.includes("exists")) {
         setError("email", { type: "server", message: msg });
-      } else if (msg.toLowerCase().includes("phone")) {
+      } else if (lower.includes("phone")) {
         setError("phone", { type: "server", message: msg });
+      } else if (
+        lower.includes("password") ||
+        lower.includes("breach") ||
+        lower.includes("character") ||
+        lower.includes("common") ||
+        lower.includes("safer")
+      ) {
+        setError("password", { type: "server", message: msg });
+      } else if (lower.includes("admin")) {
+        setError("adminCode", { type: "server", message: msg });
       } else {
         setErrorState(msg);
       }
+      toast.error(msg);
     }
   };
 
