@@ -175,11 +175,22 @@ app = FastAPI(
     redoc_url=None
 )
 
-# Security Headers Middleware
+# Custom Universal CORS & Security Headers Middleware
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def custom_cors_and_security_middleware(request: Request, call_next):
+    origin = request.headers.get("origin")
+    
+    # Immediately handle CORS OPTIONS preflight request
     if request.method == "OPTIONS":
-        return await call_next(request)
+        response = Response(status_code=204)
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+            response.headers["Access-Control-Allow-Headers"] = request.headers.get("access-control-request-headers", "*")
+            response.headers["Access-Control-Max-Age"] = "86400"
+            response.headers["Vary"] = "Origin"
+        return response
 
     # Enforce request body size limit (max 10MB)
     content_length = request.headers.get("content-length")
@@ -187,6 +198,15 @@ async def add_security_headers(request: Request, call_next):
         return Response(content=json.dumps({"detail": "Payload too large. Maximum allowed size is 10MB."}), status_code=413, media_type="application/json")
 
     response = await call_next(request)
+    
+    # Attach CORS headers to response
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Vary"] = "Origin"
+
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
@@ -194,20 +214,6 @@ async def add_security_headers(request: Request, call_next):
     if IS_PRODUCTION:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
-
-from fastapi.responses import JSONResponse
-import traceback
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_origin_regex=r".*",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=86400,
-)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
