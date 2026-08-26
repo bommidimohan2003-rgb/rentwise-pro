@@ -4,7 +4,7 @@ FROM python:3.11-slim
 # Prevent Python from writing .pyc files & enable unbuffered stdout logging
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app:/app/backend
 
 WORKDIR /app
 
@@ -19,14 +19,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code into /app
+# Copy application source code
 COPY . .
-
-# Normalize directory structure: if built with root context, sync backend/ contents to /app root
-RUN if [ -d "/app/backend" ] && [ -f "/app/backend/main.py" ]; then cp -rn /app/backend/* /app/; fi
 
 # Expose server port
 EXPOSE 8000
 
-# Start Uvicorn server (main:app will always resolve in /app)
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2"]
+# Start Uvicorn server: handles both root build context (backend.main:app) and backend build context (main:app)
+CMD ["sh", "-c", "if [ -f backend/main.py ]; then uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}; else uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}; fi"]
