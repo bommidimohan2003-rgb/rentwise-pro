@@ -175,40 +175,57 @@ app = FastAPI(
     redoc_url=None
 )
 
-# Security Headers Middleware
+# Custom Bulletproof CORS & Security Headers Middleware
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def cors_and_security_middleware(request: Request, call_next):
+    origin = request.headers.get("origin")
+    
+    # Handle CORS OPTIONS preflight request immediately
     if request.method == "OPTIONS":
-        return await call_next(request)
+        response = Response(status_code=204)
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            response.headers["Access-Control-Allow-Headers"] = request.headers.get("access-control-request-headers", "*")
+            response.headers["Access-Control-Max-Age"] = "86400"
+            response.headers["Vary"] = "Origin"
+        return response
 
     # Enforce request body size limit (max 10MB)
     content_length = request.headers.get("content-length")
     if content_length and int(content_length) > 10 * 1024 * 1024:
         return Response(content=json.dumps({"detail": "Payload too large. Maximum allowed size is 10MB."}), status_code=413, media_type="application/json")
 
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logger.error(f"Unhandled Exception on {request.method} {request.url.path}: {exc}\n{traceback.format_exc()}")
+        response = Response(
+            content=json.dumps({"detail": f"Internal Server Error: {str(exc)}"}),
+            status_code=500,
+            media_type="application/json"
+        )
+
+    # Inject CORS headers on all HTTP responses if Origin header is present
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Vary"] = "Origin"
+
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     if IS_PRODUCTION:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
     return response
 
 from fastapi.responses import JSONResponse
 import traceback
-
-# CORS configuration - dynamically support Vercel preview & production origins
-allowed_origins_list = [o for o in ALLOWED_ORIGINS if o != "*"]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins_list if allowed_origins_list else ["*"],
-    allow_origin_regex=r"https://.*\.vercel\.app" if not allowed_origins_list else None,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
