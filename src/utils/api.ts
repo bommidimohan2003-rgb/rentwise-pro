@@ -6,17 +6,17 @@ const getApiBase = () => {
     const win = window as unknown as { PAYENT_API_URL?: string };
     if (win.PAYENT_API_URL) return win.PAYENT_API_URL;
   }
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
     const isLocal = host === "localhost" || host === "127.0.0.1";
     if (isLocal) return "http://127.0.0.1:8001";
     if (host.endsWith(".vercel.app")) {
-      return "https://rentwise-pro-production.up.railway.app";
+      return "";
     }
     return window.location.origin;
+  }
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
   }
   return "";
 };
