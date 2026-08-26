@@ -178,6 +178,9 @@ app = FastAPI(
 # Security Headers Middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     # Enforce request body size limit (max 10MB)
     content_length = request.headers.get("content-length")
     if content_length and int(content_length) > 10 * 1024 * 1024:
@@ -188,7 +191,6 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';"
     if IS_PRODUCTION:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
@@ -196,10 +198,13 @@ async def add_security_headers(request: Request, call_next):
 from fastapi.responses import JSONResponse
 import traceback
 
-# CORS configuration - allow all origins (local, Render preview & production)
+# CORS configuration - dynamically support Vercel preview & production origins
+allowed_origins_list = [o for o in ALLOWED_ORIGINS if o != "*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if ALLOWED_ORIGINS == ["*"] else ALLOWED_ORIGINS,
+    allow_origins=allowed_origins_list if allowed_origins_list else ["*"],
+    allow_origin_regex=r"https://.*\.vercel\.app" if not allowed_origins_list else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
