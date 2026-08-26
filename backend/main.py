@@ -198,26 +198,11 @@ async def add_security_headers(request: Request, call_next):
 from fastapi.responses import JSONResponse
 import traceback
 
-# Comprehensive list of allowed frontend origins
-allowed_origins_set = {
-    "https://rentwise-pro-chi.vercel.app",
-    "https://payent.vercel.app",
-    "https://pay-rent-payent.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-}
-for o in ALLOWED_ORIGINS:
-    if o != "*":
-        allowed_origins_set.add(o)
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=list(allowed_origins_set),
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r".*",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
     max_age=86400,
