@@ -34,11 +34,13 @@ The backend is a FastAPI service served by uvicorn or gunicorn. Data access uses
 
 ### Deployment Model
 
-The application is configured for deployment on [Render.com](https://render.com) using the Infrastructure-as-Code `render.yaml` blueprint:
-- **Backend Service (`payent-backend`)**: Python 3.11 web service executing FastAPI via Gunicorn + Uvicorn workers with health probe checks at `/api/health`.
-- **Frontend Site (`payent-frontend`)**: React/Vite static site built with `npm run build` with single-page application (SPA) client-side rewrite rules.
-- **Datastore**: External or Render-managed MySQL instance.
-- **Documentation**: See `docs/render-deployment.md` for step-by-step setup details.
+The application is configured for production hosting using the Vercel ➔ Railway ➔ TiDB Cloud ➔ Razorpay Verified Webhooks architecture:
+
+- **Frontend Site (`payent-frontend`)**: React 19 / Vite SPA deployed on Vercel with `vercel.json` SPA rewrite rules mapping `/*` to `index.html`.
+- **Backend Service (`payent-backend`)**: FastAPI ASGI web service deployed on Railway via `railway.json` / `backend/Dockerfile` with health probe checks at `/api/health`.
+- **Datastore**: TiDB Cloud (Serverless/Dedicated MySQL-compatible database with SSL connection pooling).
+- **Payment Gateway**: Razorpay HMAC-SHA256 signature verified webhooks (`/api/payments/webhook`).
+- **Documentation**: See `docs/deployment-guide.md` for step-by-step setup details.
 
 ## Repository Layout
 
@@ -48,12 +50,12 @@ The main areas are:
 - `backend/` for the FastAPI service and its supporting modules.
 - `src/admin/` for the separate admin app experience.
 - `docs/` for documentation and design notes.
-- Deployment config files at the repository root for hosting and environment setup.
+- `vercel.json` and `railway.json` at the repository root for platform deployment.
 
 A few repository facts matter for planning:
 
 - `rentwise-pro-main/` duplicate snapshot has been removed as part of Phase 1.
-- `api/index.py` is the load-bearing Vercel serverless ASGI entrypoint re-exporting `backend.main:app`.
+- Render hosting blueprints (`render.yaml` and `docs/render-deployment.md`) have been removed and replaced with `vercel.json`, `railway.json`, and `docs/deployment-guide.md`.
 - `scratch/` directory and `scratch/update_catalog.py` orphaned maintenance script have been removed.
 - `requirements.txt` dependencies at repository root are synchronized with `backend/requirements.txt` (including `firebase-admin`, `razorpay`, `twilio`).
 

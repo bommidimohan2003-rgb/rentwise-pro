@@ -32,18 +32,31 @@ When the database is initialized (`init_db` in `backend/database.py`), default d
 
 ---
 
-## How to Run & Verify
+35: ## How to Run & Verify
+36: 
+37: 1. **Start Backend**:
+38:    - Execute `backend/run.bat` (Windows) or `backend/run.sh` (Linux/macOS) to boot the FastAPI uvicorn server on `http://127.0.0.1:8000`.
+39:    - On startup, the script automatically verifies and migrates columns on the MySQL instance (credentials loaded from `.env`).
+40: 
+41: 2. **Start Frontend**:
+42:    - Run `npm install` and then `npm run dev` to start the local development server.
+43:    - Go to `http://localhost:5173`.
+44: 
+45: 3. **Verify Connection**:
+46:    - Register your admin account at `/register` using your `ADMIN_SETUP_CODE` (default: `PAYENT-ADMIN-2026`).
+47:    - Log in to the admin panel using your registered admin credentials.
+48:    - The Topbar should connect directly to the live server.
+49:    - Stop the backend server to see the Topbar instantly reflect `⚠️ Offline Demo Mode`, fallback gracefully, and restore real-time state as soon as the server is booted back up.
+50: 
+51: ---
+52: 
+53: ## Production Deployment Architecture
+54: 
+55: The platform is configured for production hosting with the following target stack:
+56: - **Frontend**: Vercel (React 19 / Vite SPA via `vercel.json`)
+57: - **Backend**: Railway (FastAPI ASGI Service via `railway.json` & `backend/Dockerfile`)
+58: - **Database**: TiDB Cloud (Serverless/Dedicated MySQL with SSL)
+59: - **Payments**: Razorpay Verified HMAC Webhooks (`/api/payments/webhook`)
+60: 
+61: For step-by-step instructions on setting up environment variables and deploying, see [docs/deployment-guide.md](docs/deployment-guide.md).
 
-1. **Start Backend**:
-   - Execute `backend/run.bat` (Windows) or `backend/run.sh` (Linux/macOS) to boot the FastAPI uvicorn server on `http://127.0.0.1:8000`.
-   - On startup, the script automatically verifies and migrates columns on the MySQL instance (credentials loaded from `.env`).
-
-2. **Start Frontend**:
-   - Run `npm install` and then `npm run dev` to start the local development server.
-   - Go to `http://localhost:5173`.
-
-3. **Verify Connection**:
-   - Register your admin account at `/register` using your `ADMIN_SETUP_CODE` (default: `PAYENT-ADMIN-2026`).
-   - Log in to the admin panel using your registered admin credentials.
-   - The Topbar should connect directly to the live server.
-   - Stop the backend server to see the Topbar instantly reflect `⚠️ Offline Demo Mode`, fallback gracefully, and restore real-time state as soon as the server is booted back up.

@@ -29,9 +29,6 @@ const getApiBase = () => {
     const host = window.location.hostname;
     const isLocal = host === "localhost" || host === "127.0.0.1";
     if (isLocal) return "http://127.0.0.1:8001";
-    if (host.endsWith(".onrender.com")) {
-      return "https://payent-backend.onrender.com";
-    }
     return window.location.origin;
   }
   return "";
