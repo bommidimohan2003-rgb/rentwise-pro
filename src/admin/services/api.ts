@@ -817,16 +817,24 @@ initDB();
 // 4. Axios Client & Interceptors
 // ----------------------------------------------------------------------
 
-const isLocal =
-  typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1");
-const API_BASE =
-  import.meta.env.VITE_API_URL !== undefined
-    ? import.meta.env.VITE_API_URL
-    : isLocal
-      ? "http://127.0.0.1:8001"
-      : "";
+const getAdminApiBase = () => {
+  if (typeof window !== "undefined") {
+    const win = window as unknown as { PAYENT_API_URL?: string };
+    if (win.PAYENT_API_URL) return win.PAYENT_API_URL;
+  }
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (typeof window !== "undefined") {
+    const isLocal =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+    if (isLocal) return "http://127.0.0.1:8001";
+    return window.location.origin;
+  }
+  return "";
+};
+const API_BASE = getAdminApiBase();
 
 export const adminApi = axios.create({
   baseURL: `${API_BASE}/api/admin`,

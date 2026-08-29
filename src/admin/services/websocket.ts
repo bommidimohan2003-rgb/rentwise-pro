@@ -58,7 +58,9 @@ class AdminWebSocketService {
   public connect() {
     if (typeof window === "undefined") return;
 
-    const token = localStorage.getItem("payent:admin:token");
+    const token =
+      localStorage.getItem("payent:admin:token") ||
+      localStorage.getItem("payent:token");
     if (!token) {
       this.setStatus("DISCONNECTED");
       return;
@@ -75,14 +77,29 @@ class AdminWebSocketService {
     this.isExplicitDisconnect = false;
     this.setStatus("CONNECTING");
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1"
-        ? "127.0.0.1:8001"
-        : window.location.host;
+    let apiBase = import.meta.env.VITE_API_URL || "";
+    if (typeof window !== "undefined") {
+      const win = window as unknown as { PAYENT_API_URL?: string };
+      if (win.PAYENT_API_URL) apiBase = win.PAYENT_API_URL;
+    }
 
-    const wsUrl = `${protocol}//${host}/api/admin/ws?token=${encodeURIComponent(token)}`;
+    let wsUrl = "";
+    if (apiBase) {
+      const wsProtocol = apiBase.startsWith("https:") ? "wss:" : "ws:";
+      const cleanBase = apiBase.replace(/^https?:\/\//, "");
+      wsUrl = `${wsProtocol}//${cleanBase}/api/admin/ws?token=${encodeURIComponent(token)}`;
+    } else {
+      const isLocal =
+        typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1");
+      if (isLocal) {
+        wsUrl = `ws://127.0.0.1:8001/api/admin/ws?token=${encodeURIComponent(token)}`;
+      } else {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        wsUrl = `${protocol}//${window.location.host}/api/admin/ws?token=${encodeURIComponent(token)}`;
+      }
+    }
 
     try {
       this.ws = new WebSocket(wsUrl);
