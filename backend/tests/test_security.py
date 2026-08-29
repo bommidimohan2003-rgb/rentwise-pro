@@ -34,7 +34,8 @@ from main import (
 
 class TestSecurityFunctions(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         try:
             init_db()
         except Exception:

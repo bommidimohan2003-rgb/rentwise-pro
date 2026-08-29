@@ -112,6 +112,7 @@ from database import (
     get_precomputed_similarities,
     get_user_category_affinities,
     get_popular_search_queries,
+    has_admin_user,
     MOCK_CUSTOM_PRODUCTS,
     fetch_all
 )
@@ -132,6 +133,7 @@ from config import (
     TWILIO_AUTH_TOKEN,
     TWILIO_VERIFY_SERVICE_SID,
     ADMIN_SETUP_CODE,
+    ADMIN_CREATION_SECRET,
     ALLOWED_ORIGINS,
     IS_PRODUCTION,
     RAZORPAY_KEY_ID,
@@ -310,6 +312,12 @@ class LoginRequestSchema(BaseModel):
     email: EmailStr
     password: str
 
+class CreateAdminSchema(BaseModel):
+    name: Optional[str] = "Admin"
+    email: EmailStr
+    password: str
+    secret: Optional[str] = None
+
 class ForgotPasswordRequestSchema(BaseModel):
     email: EmailStr
 
@@ -465,6 +473,32 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
         )
 
     return payload["sub"]
+
+def require_authenticated_user(authorization: Optional[str] = Header(None)) -> dict:
+    email = get_current_user_email(authorization)
+    user = get_user(email)
+    if not user:
+        user = {
+            "email": email,
+            "full_name": email.split("@")[0],
+            "role": "user",
+            "status": "active"
+        }
+    if user.get("status") == "suspended":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended. Please contact support."
+        )
+    return user
+
+def require_admin(current_user: dict = Depends(require_authenticated_user)) -> dict:
+    role = str(current_user.get("role", "")).upper()
+    if role != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. Admin access required."
+        )
+    return current_user
 
 # Refresh Token Schema
 class RefreshTokenSchema(BaseModel):
@@ -797,6 +831,69 @@ def forgot_password_reset(data: ForgotPasswordResetSchema):
     delete_otp(clean_email)
     
     return {"success": True, "message": "Password reset successful."}
+
+@app.post("/api/auth/create-admin", status_code=status.HTTP_201_CREATED)
+def create_admin(
+    data: CreateAdminSchema,
+    request: Request,
+    x_admin_creation_secret: Optional[str] = Header(None, alias="X-Admin-Creation-Secret")
+):
+    """
+    Secure one-time admin account creation endpoint.
+    Guarded by ADMIN_CREATION_SECRET and duplicate admin rejection logic.
+    """
+    provided_secret = x_admin_creation_secret or data.secret
+    if not ADMIN_CREATION_SECRET or provided_secret != ADMIN_CREATION_SECRET:
+        logger.warning(f"Unauthorized admin creation attempt for {data.email} from IP {request.client.host if request.client else 'unknown'}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing admin creation secret."
+        )
+
+    if has_admin_user():
+        logger.warning(f"Admin creation attempt rejected for {data.email} — an admin account already exists.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An administrator account already exists. Bootstrap registration disabled."
+        )
+
+    valid_pass, msg = validate_password_strength(data.password)
+    if not valid_pass:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=msg
+        )
+
+    clean_email = data.email.lower().strip()
+    existing = get_user(clean_email)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"An account with email '{clean_email}' already exists."
+        )
+
+    hashed = hash_password(data.password)
+    display_name = data.name or clean_email.split("@")[0]
+
+    created_user = create_user(
+        email=clean_email,
+        phone="+10000000000",
+        password_hash=hashed,
+        full_name=display_name,
+        role="admin"
+    )
+
+    logger.info(f"First administrator account created successfully for {clean_email}")
+
+    return {
+        "success": True,
+        "message": "First administrator account created successfully.",
+        "user": {
+            "name": display_name,
+            "email": clean_email,
+            "role": "ADMIN"
+        }
+    }
 
 @app.get("/api/me")
 def get_me(current_user_email: str = Depends(get_current_user_email)):

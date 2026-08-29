@@ -18,21 +18,21 @@ if DATABASE_URL:
         MYSQL_PORT = url.port or 3306
         MYSQL_USER = url.username or "root"
         MYSQL_PASSWORD = url.password or ""
-        MYSQL_DB = url.path.lstrip("/") or "payent_db"
+        MYSQL_DB = url.path.lstrip("/") or "project_payentdb"
     except Exception as e:
         print(f"Warning: Failed to parse DATABASE_URL: {e}")
         MYSQL_HOST = os.getenv("MYSQLHOST", os.getenv("MYSQL_HOST", "localhost"))
         MYSQL_PORT = int(os.getenv("MYSQLPORT", os.getenv("MYSQL_PORT", "3306")))
         MYSQL_USER = os.getenv("MYSQLUSER", os.getenv("MYSQL_USER", "root"))
         MYSQL_PASSWORD = os.getenv("MYSQLPASSWORD", os.getenv("MYSQL_PASSWORD", "Bmohan"))
-        MYSQL_DB = os.getenv("MYSQLDATABASE", os.getenv("MYSQL_DB", "payent_db"))
+        MYSQL_DB = os.getenv("MYSQLDATABASE", os.getenv("MYSQL_DB", "project_payentdb"))
 else:
     # Railway environment variable aliases (MYSQLHOST / MYSQL_HOST, etc.)
     MYSQL_HOST = os.getenv("MYSQLHOST", os.getenv("MYSQL_HOST", "localhost"))
     MYSQL_PORT = int(os.getenv("MYSQLPORT", os.getenv("MYSQL_PORT", "3306")))
     MYSQL_USER = os.getenv("MYSQLUSER", os.getenv("MYSQL_USER", "root"))
     MYSQL_PASSWORD = os.getenv("MYSQLPASSWORD", os.getenv("MYSQL_PASSWORD", "Bmohan"))
-    MYSQL_DB = os.getenv("MYSQLDATABASE", os.getenv("MYSQL_DB", "payent_db"))
+    MYSQL_DB = os.getenv("MYSQLDATABASE", os.getenv("MYSQL_DB", "project_payentdb"))
 
 MYSQL_SSL = os.getenv("MYSQL_SSL", "true").lower() in ("true", "1", "yes")
 
@@ -43,6 +43,7 @@ IS_PRODUCTION = ENV in ("production", "prod")
 # Security & Secrets Audit
 DEFAULT_SECRET = "payent_super_secret_key_change_me_in_production"
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", DEFAULT_SECRET)
+ADMIN_CREATION_SECRET = os.getenv("ADMIN_CREATION_SECRET", os.getenv("ADMIN_SETUP_CODE", "PAYENT-ADMIN-SECRET-2026"))
 RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 
 if IS_PRODUCTION:

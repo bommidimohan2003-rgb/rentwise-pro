@@ -22,6 +22,29 @@ def get_ssl_kwargs():
         return {"ssl": ctx}
     return {}
 
+def ensure_database_exists():
+    """Ensure the target TiDB / MySQL database exists before table initialization."""
+    ssl_kwargs = get_ssl_kwargs()
+    try:
+        conn = pymysql.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=5,
+            **ssl_kwargs
+        )
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DB}`")
+            conn.commit()
+            logger.info(f"Database '{MYSQL_DB}' ensured successfully on MySQL server.")
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.warning(f"Notice: Auto database creation for '{MYSQL_DB}' notice: {e}")
+
 _last_db_failure_timestamp = 0.0
 
 def get_db_connection():
@@ -95,6 +118,9 @@ def fetch_all(query: str, params: tuple = ()):
         return []
 
 def init_db():
+    # Ensure database exists before table setup
+    ensure_database_exists()
+
     # Helper to safely add column if not exists
     def add_column_safely(table: str, column_def: str):
         try:
@@ -105,6 +131,14 @@ def init_db():
                 pass  # Column already exists
             else:
                 print(f"Notice: Altering {table} for {column_def} got: {e}")
+
+    # Helper to safely add index if not exists
+    def add_index_safely(table: str, index_name: str, column_def: str):
+        try:
+            execute_query(f"CREATE INDEX {index_name} ON {table} ({column_def})")
+            print(f"Added index {index_name} on {table}({column_def}).")
+        except Exception:
+            pass  # Index already exists or unsupported syntax
 
     # Create users table
     execute_query("""
@@ -408,6 +442,14 @@ def init_db():
     except Exception as e:
         print(f"Failed to migrate orders.product_image: {e}")
 
+    # Ensure performance indexes exist on frequently queried fields
+    add_index_safely("users", "idx_users_role", "role")
+    add_index_safely("orders", "idx_orders_user_email", "user_email")
+    add_index_safely("orders", "idx_orders_rzp_order", "razorpay_order_id")
+    add_index_safely("orders", "idx_orders_rzp_payment", "razorpay_payment_id")
+    add_index_safely("payments", "idx_payments_booking", "booking_id")
+    add_index_safely("payments", "idx_payments_customer", "customer_id")
+
     # Seed initial data if tables are empty
     conn = get_db_connection()
     try:
@@ -506,6 +548,20 @@ def get_user(email: str):
     except Exception as e:
         logger.warning("DB read error in get_user for %s — falling back to MOCK_USERS: %s", clean_email, e)
     return MOCK_USERS.get(clean_email)
+
+def has_admin_user() -> bool:
+    """Check if at least one administrator account exists in the database."""
+    try:
+        row = fetch_one("SELECT COUNT(*) as count FROM users WHERE LOWER(role) = 'admin'")
+        if row and row.get("count", 0) > 0:
+            return True
+    except Exception as e:
+        logger.warning(f"Error checking admin user existence in DB: {e}")
+
+    for u in MOCK_USERS.values():
+        if u.get("role", "").lower() == "admin":
+            return True
+    return False
 
 def get_admin_notifications(limit: int = 20) -> list:
     """Fetch recent admin notifications for serverless HTTP polling."""
