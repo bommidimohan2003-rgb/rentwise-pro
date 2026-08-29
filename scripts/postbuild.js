@@ -36,7 +36,13 @@ if (fs.existsSync(assetsDir)) {
     fs.mkdirSync(distDir, { recursive: true });
   }
   fs.cpSync(publicDir, distDir, { recursive: true });
+
+  const rootPublicDir = path.resolve("public");
+  if (fs.existsSync(rootPublicDir)) {
+    fs.cpSync(rootPublicDir, distDir, { recursive: true });
+  }
+
   console.log(
-    `[Postbuild] Injected JS (${jsFile}) and CSS (${cssFile}) into index.html and copied to dist/`,
+    `[Postbuild] Injected JS (${jsFile}) and CSS (${cssFile}) into index.html and copied public files to dist/`,
   );
 }
