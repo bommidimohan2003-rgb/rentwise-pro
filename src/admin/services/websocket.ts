@@ -1,6 +1,4 @@
-// ----------------------------------------------------------------------
-// Admin Live WebSocket Client Service
-// ----------------------------------------------------------------------
+import { adminApi } from "./api";
 
 export type ConnectionStatus = "LIVE" | "CONNECTING" | "DISCONNECTED";
 
@@ -12,15 +10,44 @@ export interface WSEvent<T = unknown> {
 
 type Listener = (event: WSEvent) => void;
 
+const DEFAULT_RAILWAY_HOST = "rentwise-pro-production.up.railway.app";
+
+function getWebSocketUrl(token: string): string {
+  let apiBase = import.meta.env.VITE_API_URL || "";
+  if (typeof window !== "undefined") {
+    const win = window as unknown as { PAYENT_API_URL?: string };
+    if (win.PAYENT_API_URL) apiBase = win.PAYENT_API_URL;
+  }
+
+  if (apiBase) {
+    const wsProtocol = apiBase.startsWith("https:") ? "wss:" : "ws:";
+    const cleanBase = apiBase
+      .replace(/^https?:\/\//, "")
+      .replace(/\/+$/, "");
+    return `${wsProtocol}//${cleanBase}/api/admin/ws?token=${encodeURIComponent(token)}`;
+  }
+
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return `ws://127.0.0.1:8001/api/admin/ws?token=${encodeURIComponent(token)}`;
+    }
+  }
+
+  // Direct WebSocket connection to persistent Railway ASGI backend host
+  return `wss://${DEFAULT_RAILWAY_HOST}/api/admin/ws?token=${encodeURIComponent(token)}`;
+}
+
 class AdminWebSocketService {
   private ws: WebSocket | null = null;
   private status: ConnectionStatus = "DISCONNECTED";
   private listeners: Map<string, Set<Listener>> = new Map();
   private statusListeners: Set<(status: ConnectionStatus) => void> = new Set();
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 10;
+  private maxReconnectAttempts = 5;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private pingTimer: NodeJS.Timeout | null = null;
+  private pollTimer: NodeJS.Timeout | null = null;
   private isExplicitDisconnect = false;
 
   constructor() {
@@ -77,31 +104,7 @@ class AdminWebSocketService {
     this.isExplicitDisconnect = false;
     this.setStatus("CONNECTING");
 
-    let apiBase = import.meta.env.VITE_API_URL || "";
-    if (typeof window !== "undefined") {
-      const win = window as unknown as { PAYENT_API_URL?: string };
-      if (win.PAYENT_API_URL) apiBase = win.PAYENT_API_URL;
-    }
-
-    let wsUrl = "";
-    if (apiBase) {
-      const wsProtocol = apiBase.startsWith("https:") ? "wss:" : "ws:";
-      const cleanBase = apiBase
-        .replace(/^https?:\/\//, "")
-        .replace(/\/+$/, "");
-      wsUrl = `${wsProtocol}//${cleanBase}/api/admin/ws?token=${encodeURIComponent(token)}`;
-    } else {
-      const isLocal =
-        typeof window !== "undefined" &&
-        (window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1");
-      if (isLocal) {
-        wsUrl = `ws://127.0.0.1:8001/api/admin/ws?token=${encodeURIComponent(token)}`;
-      } else {
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        wsUrl = `${protocol}//${window.location.host}/api/admin/ws?token=${encodeURIComponent(token)}`;
-      }
-    }
+    const wsUrl = getWebSocketUrl(token);
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -109,6 +112,7 @@ class AdminWebSocketService {
       this.ws.onopen = () => {
         this.setStatus("LIVE");
         this.reconnectAttempts = 0;
+        this.stopPolling();
         this.startHeartbeat();
       };
 
@@ -122,28 +126,31 @@ class AdminWebSocketService {
       };
 
       this.ws.onerror = () => {
-        // Error handler
+        // Suppress noisy console error frames and fallback to polling
       };
 
       this.ws.onclose = (event) => {
         this.stopHeartbeat();
-        this.setStatus("DISCONNECTED");
 
         if (event.code === 4003) {
-          console.warn(
-            "WebSocket rejected with Forbidden (4003). Check admin token.",
-          );
+          this.setStatus("DISCONNECTED");
           return;
         }
 
         if (!this.isExplicitDisconnect) {
-          this.scheduleReconnect();
+          if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            this.setStatus("DISCONNECTED");
+            this.startPolling();
+          } else {
+            this.scheduleReconnect();
+          }
+        } else {
+          this.setStatus("DISCONNECTED");
         }
       };
-    } catch (err) {
-      console.warn("Could not establish WebSocket connection:", err);
+    } catch {
       this.setStatus("DISCONNECTED");
-      this.scheduleReconnect();
+      this.startPolling();
     }
   }
 
@@ -191,6 +198,28 @@ class AdminWebSocketService {
     if (this.pingTimer) {
       clearInterval(this.pingTimer);
       this.pingTimer = null;
+    }
+  }
+
+  private startPolling() {
+    this.stopPolling();
+    this.pollTimer = setInterval(async () => {
+      if (this.isExplicitDisconnect) return;
+      try {
+        const res = await adminApi.get("/events/poll");
+        if (res.data && Array.isArray(res.data.events)) {
+          res.data.events.forEach((evt: WSEvent) => this.emit(evt));
+        }
+      } catch {
+        /* ignore polling error */
+      }
+    }, 15000);
+  }
+
+  private stopPolling() {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
     }
   }
 
