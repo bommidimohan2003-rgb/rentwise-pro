@@ -30,7 +30,6 @@ import { RecommendationSection } from "@/components/recommendations/Recommendati
 import { tracker } from "@/utils/eventTracker";
 import { api } from "@/utils/api";
 import { storage } from "@/utils/storage";
-import { products as MOCK_PRODUCTS } from "@/utils/mockData";
 import type { Product } from "@/types";
 
 const mockDates = [
@@ -65,16 +64,7 @@ export default function ProductDetails() {
         /* ignore */
       }
 
-      // 2. Check local custom products
-      if (!found) {
-        const localCustom = storage.get<Product[]>(
-          "payent_custom_products",
-          [],
-        );
-        found = localCustom.find((p: Product) => p.id === id) || null;
-      }
-
-      // 3. Check public products API catalog
+      // 2. Check public products API catalog
       if (!found) {
         try {
           const items = await api.getPublicProducts();
@@ -86,9 +76,13 @@ export default function ProductDetails() {
         }
       }
 
-      // 4. Fallback to static catalog if unavailable
+      // 3. Check local custom products
       if (!found) {
-        found = MOCK_PRODUCTS.find((p: Product) => p.id === id) || null;
+        const localCustom = storage.get<Product[]>(
+          "payent_custom_products",
+          [],
+        );
+        found = localCustom.find((p: Product) => p.id === id) || null;
       }
 
       if (isMounted) {

@@ -19,7 +19,6 @@ import { Input } from "@/components/common/Input";
 import { Modal } from "@/components/common/Modal";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { api } from "@/utils/api";
-import { products as MOCK_PRODUCTS } from "@/utils/mockData";
 import { tracker } from "@/utils/eventTracker";
 import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
 import type { Order, Product } from "@/types";
@@ -54,30 +53,38 @@ export default function Checkout() {
     setProductLoading(true);
 
     async function loadTargetProduct() {
-      // 1. Check local custom products (items created via Become a Lender or Categories modal)
-      const localCustom = storage.get<Product[]>("payent_custom_products", []);
-      let found = localCustom.find((p: Product) => p.id === search.id);
-
-      // 2. Check MOCK_PRODUCTS catalog
-      if (!found) {
-        found = MOCK_PRODUCTS.find((p: Product) => p.id === search.id);
+      let found: Product | null = null;
+      if (search.id) {
+        try {
+          found = await api.getProductById(search.id);
+        } catch {
+          /* ignore */
+        }
       }
 
-      // 3. Check public products API
       if (!found) {
         try {
           const items = await api.getPublicProducts();
           if (Array.isArray(items)) {
-            found = items.find((p: Product) => p.id === search.id);
+            found =
+              items.find((p: Product) => p.id === search.id) ||
+              items[0] ||
+              null;
           }
         } catch {
-          // ignore
+          /* ignore */
         }
       }
 
-      // 4. Fallback if search.id was missing or unresolvable
-      if (!found && MOCK_PRODUCTS.length > 0) {
-        found = MOCK_PRODUCTS[0];
+      if (!found) {
+        const localCustom = storage.get<Product[]>(
+          "payent_custom_products",
+          [],
+        );
+        found =
+          localCustom.find((p: Product) => p.id === search.id) ||
+          localCustom[0] ||
+          null;
       }
 
       if (isMounted) {
