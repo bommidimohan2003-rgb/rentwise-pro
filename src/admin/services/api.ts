@@ -838,7 +838,7 @@ const API_BASE = getAdminApiBase();
 
 export const adminApi = axios.create({
   baseURL: `${API_BASE}/api/admin`,
-  timeout: 10000,
+  timeout: 30000,
 });
 
 adminApi.interceptors.request.use((config) => {

@@ -1849,7 +1849,8 @@ async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):
         return
 
     user = get_user(payload["sub"])
-    if not user or str(user.get("role", "")).lower() != "admin":
+    role = (user.get("role") if user else payload.get("role", "")).lower()
+    if role != "admin":
         await websocket.close(code=4003, reason="Forbidden. Admin access required.")
         return
 
