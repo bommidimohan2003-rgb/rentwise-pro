@@ -86,7 +86,9 @@ class AdminWebSocketService {
     let wsUrl = "";
     if (apiBase) {
       const wsProtocol = apiBase.startsWith("https:") ? "wss:" : "ws:";
-      const cleanBase = apiBase.replace(/^https?:\/\//, "");
+      const cleanBase = apiBase
+        .replace(/^https?:\/\//, "")
+        .replace(/\/+$/, "");
       wsUrl = `${wsProtocol}//${cleanBase}/api/admin/ws?token=${encodeURIComponent(token)}`;
     } else {
       const isLocal =

@@ -1826,9 +1826,10 @@ def broadcast_admin_event(event_type: str, data: dict):
         logger.warning(f"Could not broadcast WS event {event_type}: {e}")
 
 @app.websocket("/api/admin/ws")
-# NOTE (F-18): This WebSocket route is supported on long-lived server deployments (Railway, Render, Docker, bare server).
-# Clients fall through to the HTTP polling fallback at GET /api/admin/events/poll when WebSockets are unavailable.
 async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):
+    # Accept websocket connection upfront
+    await websocket.accept()
+
     # 1. Rate limiting WebSocket connection attempts per IP
     client_ip = websocket.client.host if websocket.client else "unknown"
     key = f"ws_conn:{client_ip}"
@@ -1848,12 +1849,13 @@ async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):
         return
 
     user = get_user(payload["sub"])
-    if not user or user.get("role") != "admin":
+    if not user or str(user.get("role", "")).lower() != "admin":
         await websocket.close(code=4003, reason="Forbidden. Admin access required.")
         return
 
-    # 3. Connection Accepted
-    await ws_manager.connect(websocket)
+    # 3. Add to live connections manager
+    if websocket not in ws_manager.active_connections:
+        ws_manager.active_connections.append(websocket)
     logger.info(f"WebSocket admin session connected for {user['email']} from IP {client_ip}")
 
     try:
