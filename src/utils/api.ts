@@ -1,5 +1,5 @@
 import { storage, STORAGE_KEYS } from "./storage";
-import type { Order, Product } from "@/types";
+import type { Order, Product, User } from "@/types";
 
 const getApiBase = () => {
   if (typeof window !== "undefined") {
