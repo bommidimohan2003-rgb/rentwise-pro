@@ -630,11 +630,19 @@ export const api = {
     });
   },
 
+  _statsCache: null as { timestamp: number; data: unknown } | null,
+
   async getPublicStats() {
+    const now = Date.now();
+    if (this._statsCache && now - this._statsCache.timestamp < 30000) {
+      return this._statsCache.data;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/stats/public`);
       if (res.ok) {
-        return await res.json();
+        const data = await res.json();
+        this._statsCache = { timestamp: now, data };
+        return data;
       }
     } catch {
       // Backend request failed; use actual local client datastore

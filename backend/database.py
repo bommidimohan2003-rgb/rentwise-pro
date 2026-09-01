@@ -45,12 +45,64 @@ def ensure_database_exists():
     except Exception as e:
         logger.warning(f"Notice: Auto database creation for '{MYSQL_DB}' notice: {e}")
 
+try:
+    from dbutils.pooled_db import PooledDB
+    HAS_POOLED_DB = True
+except ImportError:
+    HAS_POOLED_DB = False
+
+_db_pool = None
 _last_db_failure_timestamp = 0.0
+
+def get_db_pool():
+    global _db_pool, _last_db_failure_timestamp
+    if not HAS_POOLED_DB:
+        return None
+    if _db_pool is not None:
+        return _db_pool
+
+    now = datetime.now().timestamp()
+    if _last_db_failure_timestamp > 0 and (now - _last_db_failure_timestamp) < 5.0:
+        return None
+
+    ssl_kwargs = get_ssl_kwargs()
+    try:
+        _db_pool = PooledDB(
+            creator=pymysql,
+            mincached=2,
+            maxcached=10,
+            maxshared=10,
+            maxconnections=20,
+            blocking=True,
+            maxusage=1000,
+            ping=1,
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            database=MYSQL_DB,
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=3,
+            **ssl_kwargs
+        )
+        _last_db_failure_timestamp = 0.0
+        logger.info("TiDB Cloud connection pool initialized successfully with DBUtils PooledDB.")
+        return _db_pool
+    except Exception as e:
+        _last_db_failure_timestamp = now
+        logger.warning(f"Failed to initialize TiDB connection pool ({e}). Operating in direct fallback mode.")
+        return None
 
 def get_db_connection():
     global _last_db_failure_timestamp
+    pool = get_db_pool()
+    if pool is not None:
+        try:
+            return pool.connection()
+        except Exception as e:
+            logger.warning(f"Pooled connection acquisition error: {e}")
+
     now = datetime.now().timestamp()
-    # Fail fast if DB connection failed within last 5 seconds to prevent API request timeouts
     if _last_db_failure_timestamp > 0 and (now - _last_db_failure_timestamp) < 5.0:
         return None
 
@@ -445,10 +497,17 @@ def init_db():
     # Ensure performance indexes exist on frequently queried fields
     add_index_safely("users", "idx_users_role", "role")
     add_index_safely("orders", "idx_orders_user_email", "user_email")
+    add_index_safely("orders", "idx_orders_product_id", "product_id")
+    add_index_safely("orders", "idx_orders_status", "status")
     add_index_safely("orders", "idx_orders_rzp_order", "razorpay_order_id")
     add_index_safely("orders", "idx_orders_rzp_payment", "razorpay_payment_id")
+    add_index_safely("custom_products", "idx_cp_user_email", "user_email")
+    add_index_safely("custom_products", "idx_cp_category", "category")
+    add_index_safely("custom_products", "idx_cp_available", "available")
     add_index_safely("payments", "idx_payments_booking", "booking_id")
     add_index_safely("payments", "idx_payments_customer", "customer_id")
+    add_index_safely("notifications", "idx_notif_user_read", "user_email")
+    add_index_safely("reviews", "idx_reviews_product", "product_id")
 
     # Seed initial data if tables are empty
     conn = get_db_connection()

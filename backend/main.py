@@ -1257,66 +1257,105 @@ def create_user_support_ticket(data: CreateSupportTicketSchema, email: str = Dep
     ))
     return {"success": True, "ticketId": ticket_id}
 
+_cache_store = {}
+
+def get_cached(key: str, ttl_seconds: int, fetch_func):
+    now = time.time()
+    if key in _cache_store:
+        cached_time, cached_val = _cache_store[key]
+        if now - cached_time < ttl_seconds:
+            return cached_val
+    val = fetch_func()
+    _cache_store[key] = (now, val)
+    return val
+
+def invalidate_cache(key_prefix: str = None):
+    if not key_prefix:
+        _cache_store.clear()
+        return
+    keys_to_del = [k for k in _cache_store if k.startswith(key_prefix)]
+    for k in keys_to_del:
+        _cache_store.pop(k, None)
+
 @app.get("/api/categories/public")
 def fetch_public_categories():
-    conn = get_db_connection()
-    if not conn:
-        # DB unavailable – return seeded fallback categories
-        return [
-            {"id": "cameras", "name": "Cameras", "icon": "Camera", "count": 0, "color": "bg-blue-100 text-blue-800", "enabled": True},
-            {"id": "laptops", "name": "Laptops", "icon": "Laptop", "count": 0, "color": "bg-purple-100 text-purple-800", "enabled": True},
-            {"id": "drones", "name": "Drones", "icon": "Plane", "count": 0, "color": "bg-emerald-100 text-emerald-800", "enabled": True},
-            {"id": "bikes", "name": "Bikes & Rides", "icon": "Bike", "count": 0, "color": "bg-amber-100 text-amber-800", "enabled": True},
-            {"id": "tools", "name": "Electronic Drilling Tools", "icon": "Hammer", "count": 0, "color": "bg-red-100 text-red-800", "enabled": True},
-            {"id": "powerbanks", "name": "Power Banks", "icon": "Zap", "count": 0, "color": "bg-cyan-100 text-cyan-800", "enabled": True},
-        ]
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT id, name, icon, color, enabled FROM categories WHERE enabled = 1")
-            rows = cursor.fetchall()
-            res = []
-            for r in rows:
-                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE category = %s AND (hidden = 0 OR hidden IS NULL)", (r["name"],))
-                cnt = cursor.fetchone()["count"]
-                res.append({
-                    "id": r["id"],
-                    "name": r["name"],
-                    "icon": r["icon"] or "Laptop",
-                    "count": cnt,
-                    "color": r["color"] or "bg-secondary text-foreground",
-                    "enabled": bool(r["enabled"])
-                })
-    finally:
-        conn.close()
-    return res
+    def _load_categories():
+        conn = get_db_connection()
+        if not conn:
+            return [
+                {"id": "cameras", "name": "Cameras", "icon": "Camera", "count": 0, "color": "bg-blue-100 text-blue-800", "enabled": True},
+                {"id": "laptops", "name": "Laptops", "icon": "Laptop", "count": 0, "color": "bg-purple-100 text-purple-800", "enabled": True},
+                {"id": "drones", "name": "Drones", "icon": "Plane", "count": 0, "color": "bg-emerald-100 text-emerald-800", "enabled": True},
+                {"id": "bikes", "name": "Bikes & Rides", "icon": "Bike", "count": 0, "color": "bg-amber-100 text-amber-800", "enabled": True},
+                {"id": "tools", "name": "Electronic Drilling Tools", "icon": "Hammer", "count": 0, "color": "bg-red-100 text-red-800", "enabled": True},
+                {"id": "powerbanks", "name": "Power Banks", "icon": "Zap", "count": 0, "color": "bg-cyan-100 text-cyan-800", "enabled": True},
+            ]
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id, name, icon, color, enabled FROM categories WHERE enabled = 1")
+                categories = cursor.fetchall()
+                
+                cursor.execute("""
+                    SELECT category, COUNT(*) as count 
+                    FROM custom_products 
+                    WHERE (hidden = 0 OR hidden IS NULL) 
+                    GROUP BY category
+                """)
+                counts_map = {r["category"]: r["count"] for r in cursor.fetchall() if r.get("category")}
+                
+                res = []
+                for r in categories:
+                    cnt = counts_map.get(r["name"], 0)
+                    res.append({
+                        "id": r["id"],
+                        "name": r["name"],
+                        "icon": r["icon"] or "Laptop",
+                        "count": cnt,
+                        "color": r["color"] or "bg-secondary text-foreground",
+                        "enabled": bool(r["enabled"])
+                    })
+                return res
+        finally:
+            conn.close()
+
+    return get_cached("public_categories", 60, _load_categories)
 
 @app.get("/api/stats/public")
 def fetch_public_stats():
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE (hidden = 0 OR hidden IS NULL)")
-            active_products = cursor.fetchone()["count"]
+    def _load_stats():
+        conn = get_db_connection()
+        if not conn:
+            return {
+                "activeListings": 25,
+                "totalRentals": 142,
+                "happyLenders": 18,
+                "citiesCovered": 12
+            }
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE (hidden = 0 OR hidden IS NULL)")
+                active_products = cursor.fetchone()["count"]
 
-            cursor.execute("SELECT COUNT(*) as count FROM orders")
-            total_rentals = cursor.fetchone()["count"]
+                cursor.execute("SELECT COUNT(*) as count FROM orders")
+                total_rentals = cursor.fetchone()["count"]
 
-            cursor.execute("SELECT COUNT(DISTINCT u.email) as count FROM users u JOIN custom_products p ON u.email = p.user_email")
-            happy_lenders = cursor.fetchone()["count"]
+                cursor.execute("SELECT COUNT(DISTINCT user_email) as count FROM custom_products WHERE user_email IS NOT NULL AND user_email != ''")
+                happy_lenders = cursor.fetchone()["count"]
 
-            cursor.execute("SELECT COUNT(DISTINCT city) as count FROM users WHERE city IS NOT NULL AND city != ''")
-            cities = cursor.fetchone()["count"]
-            if cities == 0:
-                cities = 12
-    finally:
-        conn.close()
+                cursor.execute("SELECT COUNT(DISTINCT city) as count FROM users WHERE city IS NOT NULL AND city != ''")
+                cities = cursor.fetchone()["count"]
+                if cities == 0:
+                    cities = 12
+                return {
+                    "activeListings": max(active_products, 25),
+                    "totalRentals": max(total_rentals, 142),
+                    "happyLenders": max(happy_lenders, 18),
+                    "citiesCovered": cities
+                }
+        finally:
+            conn.close()
 
-    return {
-        "activeListings": max(active_products, 25),
-        "totalRentals": max(total_rentals, 142),
-        "happyLenders": max(happy_lenders, 18),
-        "citiesCovered": cities
-    }
+    return get_cached("public_stats", 60, _load_stats)
 
 @app.post("/api/products/custom")
 def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_current_user_email)):
