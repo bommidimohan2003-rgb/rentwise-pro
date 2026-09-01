@@ -83,6 +83,7 @@ def get_db_pool():
             database=MYSQL_DB,
             cursorclass=pymysql.cursors.DictCursor,
             connect_timeout=3,
+            autocommit=True,
             **ssl_kwargs
         )
         _last_db_failure_timestamp = 0.0
