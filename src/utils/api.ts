@@ -243,28 +243,39 @@ export const api = {
       };
     }
 
-    const res = await fetch(`${API_BASE}/api/me`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!res.ok) {
-      if (res.status === 401 && typeof window !== "undefined") {
-        if (!token.startsWith("google-offline-")) {
-          window.dispatchEvent(
-            new CustomEvent("payent-session-expired", {
-              detail: { loginPath: "/login" },
-            }),
-          );
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/me`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        if (res.status === 401 && typeof window !== "undefined") {
+          if (!token.startsWith("google-offline-")) {
+            window.dispatchEvent(
+              new CustomEvent("payent-session-expired", {
+                detail: { loginPath: "/login" },
+              }),
+            );
+          }
         }
+        const data = await res.json().catch(() => ({}));
+        const error = new Error(data.detail || "Failed to fetch user profile.");
+        (error as Error & { status?: number }).status = res.status;
+        throw error;
       }
-      const data = await res.json().catch(() => ({}));
-      const error = new Error(data.detail || "Failed to fetch user profile.");
-      (error as Error & { status?: number }).status = res.status;
-      throw error;
+      return await res.json();
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      throw err;
     }
-    return await res.json();
   },
 
   async getWishlist(token: string) {

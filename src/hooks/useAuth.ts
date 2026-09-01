@@ -16,6 +16,7 @@ export function useAuth() {
       );
       if (cachedUser) {
         setUser(cachedUser);
+        setReady(true);
       }
 
       const token = storage.get<string | null>(STORAGE_KEYS.token, null);
