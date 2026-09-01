@@ -680,12 +680,28 @@ def login(data: LoginRequestSchema, request: Request, response: Response):
         max_age=7 * 86400
     )
 
+    display_name = user.get("full_name") or clean_email.split("@")[0]
+    user_record = {
+        "id": user["email"],
+        "fullName": display_name,
+        "email": user["email"],
+        "phone": user.get("phone", ""),
+        "address": user.get("address", ""),
+        "city": user.get("city", ""),
+        "pincode": user.get("pincode", ""),
+        "avatar": user.get("avatar") or f"https://ui-avatars.com/api/?name={display_name}&background=10b981&color=fff",
+        "role": user.get("role", "customer"),
+        "status": user.get("status", "active"),
+        "verified": True
+    }
+
     logger.info(f"Successful user login for {clean_email} from IP {client_ip}")
     return {
         "success": True,
         "token": access_token,
         "refreshToken": refresh_token,
         "role": user["role"],
+        "user": user_record,
         "message": "Login successful."
     }
 
@@ -883,14 +899,19 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User profile not found."
         )
+    display_name = user.get("full_name") or user["email"].split("@")[0]
     return {
+        "id": user["email"],
         "email": user["email"],
-        "fullName": user.get("full_name"),
-        "role": user.get("role"),
-        "phone": user.get("phone"),
-        "address": user.get("address"),
-        "city": user.get("city"),
-        "pincode": user.get("pincode")
+        "fullName": display_name,
+        "role": user.get("role", "customer"),
+        "phone": user.get("phone", ""),
+        "address": user.get("address", ""),
+        "city": user.get("city", ""),
+        "pincode": user.get("pincode", ""),
+        "avatar": user.get("avatar") or f"https://ui-avatars.com/api/?name={display_name}&background=10b981&color=fff",
+        "status": user.get("status", "active"),
+        "verified": True
     }
 
 # Schemas and Routes for database persistence

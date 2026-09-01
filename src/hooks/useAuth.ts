@@ -24,10 +24,19 @@ export function useAuth() {
         try {
           const profile = await api.getMe(token);
           const loggedUser: User = {
-            id: profile.email,
-            fullName: profile.fullName || profile.email.split("@")[0],
-            email: profile.email,
-            role: profile.role,
+            id: profile.email || profile.id || cachedUser?.id || token,
+            fullName:
+              profile.fullName ||
+              cachedUser?.fullName ||
+              profile.email?.split("@")[0] ||
+              "User",
+            email: profile.email || cachedUser?.email || "",
+            phone: profile.phone || cachedUser?.phone || "",
+            address: profile.address || cachedUser?.address || "",
+            city: profile.city || cachedUser?.city || "",
+            pincode: profile.pincode || cachedUser?.pincode || "",
+            avatar: profile.avatar || cachedUser?.avatar,
+            role: profile.role || cachedUser?.role || "customer",
           };
           storage.set(STORAGE_KEYS.currentUser, loggedUser);
           setUser(loggedUser);
@@ -73,25 +82,53 @@ export function useAuth() {
         storage.set(STORAGE_KEYS.token, res.token);
 
         let loggedUser: User;
-        try {
-          const profile = await api.getMe(res.token);
+        if (res.user) {
           loggedUser = {
-            id: profile.email || email,
-            fullName: profile.fullName || email.split("@")[0],
-            email: profile.email || email,
-            role: profile.role || "customer",
+            id: res.user.email || res.user.id || email,
+            fullName:
+              res.user.fullName ||
+              res.user.name ||
+              email.split("@")[0],
+            email: res.user.email || email,
+            phone: res.user.phone || "",
+            address: res.user.address || "",
+            city: res.user.city || "",
+            pincode: res.user.pincode || "",
+            avatar: res.user.avatar,
+            role: res.user.role || res.role || "customer",
           };
-        } catch {
-          loggedUser = {
-            id: email,
-            fullName: email.split("@")[0],
-            email: email,
-            role: "customer",
-          };
+        } else {
+          try {
+            const profile = await api.getMe(res.token);
+            loggedUser = {
+              id: profile.email || email,
+              fullName:
+                profile.fullName ||
+                profile.name ||
+                email.split("@")[0],
+              email: profile.email || email,
+              phone: profile.phone || "",
+              address: profile.address || "",
+              city: profile.city || "",
+              pincode: profile.pincode || "",
+              avatar: profile.avatar,
+              role: profile.role || res.role || "customer",
+            };
+          } catch {
+            loggedUser = {
+              id: email,
+              fullName: email.split("@")[0],
+              email: email,
+              role: res.role || "customer",
+            };
+          }
         }
 
         storage.set(STORAGE_KEYS.currentUser, loggedUser);
         setUser(loggedUser);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("payent:storage_change"));
+        }
         return { ok: true };
       }
       return { ok: false, error: "Invalid credentials from server." };
