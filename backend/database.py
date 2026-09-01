@@ -1028,8 +1028,8 @@ def create_custom_product(email: str, product: dict):
     owner_avatar = owner_info.get("avatar") or product.get("owner_avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
     owner_rating = float(owner_info.get("rating") or product.get("owner_rating") or 5.0)
 
-    is_available = bool(product.get("available", True))
-    prod_status = str(product.get("status", "approved"))
+    prod_status = str(product.get("status", "pending"))
+    is_available = bool(product.get("available", False if prod_status == "pending" else True))
 
     product_entry = {
         "id": str(product.get("id", "")),

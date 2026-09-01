@@ -535,9 +535,9 @@ export default function Categories() {
       category: card.name,
       rating: 5.0,
       reviews: 0,
-      available: true,
+      available: false,
       isReference: false,
-      status: "approved",
+      status: "pending",
       owner: {
         name: user ? user.fullName || user.email : "Verified Lender",
         email: user?.email || "",
@@ -555,7 +555,7 @@ export default function Categories() {
       api
         .createCustomProduct(userToken, newProduct)
         .then(() => {
-          toast.success("Listing submitted to MySQL database! Your gear is live.");
+          toast.success("Listing submitted for Admin Approval! Your product is pending review and will go live once approved by an Admin.");
           fetchPublicProducts();
           window.dispatchEvent(new CustomEvent("payent_products_updated"));
         })
