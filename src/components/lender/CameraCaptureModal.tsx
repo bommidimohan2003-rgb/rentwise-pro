@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Sparkles,
   Layers,
+  FlipHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 
@@ -19,12 +20,19 @@ interface CameraCaptureModalProps {
   angleTag?: string;
 }
 
+const AVAILABLE_ANGLES = [
+  "Front View",
+  "Back View",
+  "Side View",
+  "Top/Detail View",
+];
+
 export function CameraCaptureModal({
   isOpen,
   onClose,
   onCapture,
   onFallbackUpload,
-  angleTag = "Front View",
+  angleTag: initialAngleTag = "Front View",
 }: CameraCaptureModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -34,9 +42,13 @@ export function CameraCaptureModal({
   const [facingMode, setFacingMode] = useState<"environment" | "user">(
     "environment"
   );
+  const [selectedAngle, setSelectedAngle] = useState<string>(initialAngleTag);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isShuttering, setIsShuttering] = useState(false);
-  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+
+  useEffect(() => {
+    setSelectedAngle(initialAngleTag);
+  }, [initialAngleTag]);
 
   // Play shutter sound via Web Audio API
   const playShutterSound = useCallback(() => {
@@ -60,19 +72,6 @@ export function CameraCaptureModal({
     }
   }, []);
 
-  // Check available cameras
-  useEffect(() => {
-    if (!isOpen) return;
-    if (!navigator.mediaDevices?.enumerateDevices) return;
-    navigator.mediaDevices
-      .enumerateDevices()
-      .then((devices) => {
-        const videoInputs = devices.filter((d) => d.kind === "videoinput");
-        setHasMultipleCameras(videoInputs.length > 1);
-      })
-      .catch(() => {});
-  }, [isOpen]);
-
   // Stop camera stream tracks
   const stopStream = useCallback(() => {
     if (streamRef.current) {
@@ -89,16 +88,16 @@ export function CameraCaptureModal({
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setHasPermission(false);
-      setErrorMsg("Camera access is not supported by your browser or environment.");
+      setErrorMsg("Camera access is not supported by your browser or device environment.");
       return;
     }
 
     try {
       const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          facingMode: facingMode === "environment" ? { ideal: "environment" } : { ideal: "user" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
         },
         audio: false,
       };
@@ -117,7 +116,7 @@ export function CameraCaptureModal({
       const message =
         err instanceof Error
           ? err.message
-          : "Unable to access camera. Please check permissions.";
+          : "Unable to access camera. Please allow camera permissions in your browser.";
       setErrorMsg(message);
     }
   }, [facingMode, stopStream]);
@@ -135,7 +134,7 @@ export function CameraCaptureModal({
     };
   }, [isOpen, capturedImage, startCamera, stopStream]);
 
-  // Toggle camera direction
+  // Toggle camera direction between Back ("environment") and Front ("user")
   const handleToggleCamera = () => {
     setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
   };
@@ -163,7 +162,7 @@ export function CameraCaptureModal({
           ctx.scale(-1, 1);
         }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
         setCapturedImage(dataUrl);
         stopStream();
       }
@@ -177,7 +176,7 @@ export function CameraCaptureModal({
 
   const handleConfirm = () => {
     if (capturedImage) {
-      onCapture(capturedImage, angleTag);
+      onCapture(capturedImage, selectedAngle);
       setCapturedImage(null);
       onClose();
     }
@@ -186,37 +185,60 @@ export function CameraCaptureModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 shadow-2xl text-white flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary/20 grid place-items-center text-primary">
-              <Camera className="h-4 w-4" />
+        <div className="flex flex-col border-b border-zinc-800 px-5 py-3.5 space-y-3 bg-zinc-900/90">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-xl bg-primary/20 grid place-items-center text-primary border border-primary/30">
+                <Camera className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  Snap Product Photo
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
+                    {facingMode === "environment" ? "Back Camera" : "Front Camera"}
+                  </span>
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  Tag: <span className="text-primary font-medium">{selectedAngle}</span>
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-semibold text-white">
-                Snap Gear Photo
-              </h3>
-              <p className="text-xs text-zinc-400">
-                Angle: <span className="text-primary font-medium">{angleTag}</span>
-              </p>
-            </div>
+            <button
+              onClick={() => {
+                stopStream();
+                setCapturedImage(null);
+                onClose();
+              }}
+              className="rounded-full p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            onClick={() => {
-              stopStream();
-              setCapturedImage(null);
-              onClose();
-            }}
-            className="rounded-full p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
+
+          {/* Photo Angle Selector Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {AVAILABLE_ANGLES.map((angle) => (
+              <button
+                key={angle}
+                type="button"
+                onClick={() => setSelectedAngle(angle)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                  selectedAngle === angle
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                }`}
+              >
+                {angle}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Viewfinder / Preview Body */}
-        <div className="relative aspect-[4/3] w-full bg-black flex items-center justify-center overflow-hidden">
+        <div className="relative aspect-[4/3] w-full bg-black flex items-center justify-center overflow-hidden flex-1 min-h-[280px]">
           {/* Visual Camera Shutter Flash */}
           {isShuttering && (
             <div className="absolute inset-0 z-40 bg-white animate-in fade-in fade-out duration-150" />
@@ -230,44 +252,44 @@ export function CameraCaptureModal({
                 alt="Captured product snapshot"
                 className="h-full w-full object-cover"
               />
-              <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                Snapshot ready
+              <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-xs px-3.5 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-emerald-400" />
+                <span>{selectedAngle} Snapshot Ready</span>
               </div>
             </div>
-          ) : hasPermission === false ? (
-            /* Permission / Error State */
-            <div className="p-8 text-center max-w-md mx-auto space-y-4">
-              <div className="h-14 w-14 rounded-full bg-red-500/10 text-red-400 grid place-items-center mx-auto border border-red-500/20">
-                <AlertCircle className="h-7 w-7" />
+          ) : hasPermission === false || hasPermission === null ? (
+            /* Permission / Turn On Camera Prompt State */
+            <div className="p-6 text-center max-w-md mx-auto space-y-4 my-auto">
+              <div className="h-16 w-16 rounded-full bg-primary/20 text-primary grid place-items-center mx-auto border border-primary/30 shadow-lg">
+                <Camera className="h-8 w-8 animate-bounce" />
               </div>
               <div>
-                <h4 className="text-lg font-semibold text-white">
-                  Camera Unavailable
+                <h4 className="text-lg font-bold text-white">
+                  Turn On Camera Access
                 </h4>
-                <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
+                <p className="mt-1.5 text-xs text-zinc-300 leading-relaxed">
                   {errorMsg ||
-                    "Please grant camera access in your browser settings or select an image file directly from your device."}
+                    "Tap the button below to enable camera permissions on your browser and capture product images."}
                 </p>
               </div>
-              <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="pt-2 flex flex-col gap-2.5 items-center w-full">
                 <Button
-                  variant="outline"
                   onClick={startCamera}
-                  className="border-zinc-700 text-zinc-200 hover:bg-zinc-800"
+                  className="w-full bg-primary text-primary-foreground font-bold text-sm py-3.5 rounded-xl shadow-lg hover:bg-primary/90 flex items-center justify-center gap-2"
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry Camera
+                  <Camera className="h-5 w-5" />
+                  Turn On Camera & Allow Access
                 </Button>
                 <Button
+                  variant="outline"
                   onClick={() => {
                     onClose();
                     onFallbackUpload();
                   }}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-xs"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload Image File
+                  Upload Image File From Gallery
                 </Button>
               </div>
             </div>
@@ -290,8 +312,8 @@ export function CameraCaptureModal({
                   <div className="w-4 h-4 border-t-2 border-l-2 border-primary" />
                   <div className="w-4 h-4 border-t-2 border-r-2 border-primary" />
                 </div>
-                <div className="text-center bg-black/50 backdrop-blur-md self-center px-3 py-1 rounded-full text-xs text-white/90 border border-white/10">
-                  Center your item clearly in the frame
+                <div className="text-center bg-black/60 backdrop-blur-md self-center px-3.5 py-1.5 rounded-full text-xs text-white font-medium border border-white/10">
+                  Framing: {selectedAngle} ({facingMode === "environment" ? "Back Camera" : "Front Camera"})
                 </div>
                 <div className="flex justify-between">
                   <div className="w-4 h-4 border-b-2 border-l-2 border-primary" />
@@ -299,17 +321,16 @@ export function CameraCaptureModal({
                 </div>
               </div>
 
-              {/* Camera Switch Pill if multiple cameras */}
-              {hasMultipleCameras && (
-                <button
-                  type="button"
-                  onClick={handleToggleCamera}
-                  className="absolute top-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full border border-white/20 hover:bg-black/80 transition-colors flex items-center gap-1.5"
-                >
-                  <RefreshCw className="h-3.5 w-3.5 text-primary" />
-                  Flip Camera
-                </button>
-              )}
+              {/* Flip Camera Button (Always Visible) */}
+              <button
+                type="button"
+                onClick={handleToggleCamera}
+                className="absolute top-4 right-4 bg-black/70 backdrop-blur-md text-white text-xs px-3.5 py-2 rounded-full border border-white/20 hover:bg-black/90 active:scale-95 transition-all flex items-center gap-2 shadow-lg"
+                title="Switch between back camera and front camera"
+              >
+                <FlipHorizontal className="h-4 w-4 text-primary" />
+                <span>Switch to {facingMode === "environment" ? "Front" : "Back"} Camera</span>
+              </button>
             </div>
           )}
         </div>
@@ -331,7 +352,7 @@ export function CameraCaptureModal({
                 className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 font-medium"
               >
                 <Check className="h-4 w-4 mr-2" />
-                Use This Photo
+                Use {selectedAngle} Photo
               </Button>
             </>
           ) : (
