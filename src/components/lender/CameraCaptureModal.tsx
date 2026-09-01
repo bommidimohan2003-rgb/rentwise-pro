@@ -9,6 +9,7 @@ import {
   Sparkles,
   Layers,
   FlipHorizontal,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 
@@ -36,6 +37,7 @@ export function CameraCaptureModal({
 }: CameraCaptureModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const nativeCameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -80,7 +82,28 @@ export function CameraCaptureModal({
     }
   }, []);
 
-  // Start camera stream
+  // Trigger native phone camera app via HTML5 file input
+  const triggerNativeCamera = useCallback(() => {
+    if (nativeCameraInputRef.current) {
+      nativeCameraInputRef.current.click();
+    }
+  }, []);
+
+  const handleNativeFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (result) {
+          setCapturedImage(result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Start camera stream with automated progressive retries
   const startCamera = useCallback(async () => {
     stopStream();
     setHasPermission(null);
@@ -88,38 +111,75 @@ export function CameraCaptureModal({
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setHasPermission(false);
-      setErrorMsg("Camera access is not supported by your browser or device environment.");
+      setErrorMsg("WebRTC stream unavailable. Launching native phone camera...");
       return;
     }
 
-    try {
-      const constraints: MediaStreamConstraints = {
+    const constraintConfigs: MediaStreamConstraints[] = [
+      {
         video: {
           facingMode: facingMode === "environment" ? { ideal: "environment" } : { ideal: "user" },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         },
         audio: false,
-      };
+      },
+      {
+        video: {
+          facingMode: facingMode === "environment" ? "environment" : "user",
+        },
+        audio: false,
+      },
+      {
+        video: true,
+        audio: false,
+      },
+    ];
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    let stream: MediaStream | null = null;
+    let lastErr: unknown = null;
+
+    for (const config of constraintConfigs) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(config);
+        if (stream) break;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+
+    if (stream) {
       streamRef.current = stream;
-
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        try {
+          await videoRef.current.play();
+        } catch {
+          // Play fallback
+        }
       }
       setHasPermission(true);
-    } catch (err: unknown) {
-      console.warn("[CameraCaptureModal] Camera permission error:", err);
+    } else {
+      console.warn("[CameraCaptureModal] WebRTC Camera permission error:", lastErr);
       setHasPermission(false);
       const message =
-        err instanceof Error
-          ? err.message
-          : "Unable to access camera. Please allow camera permissions in your browser.";
+        lastErr instanceof Error
+          ? lastErr.message
+          : "Camera permission denied or blocked by browser settings.";
       setErrorMsg(message);
     }
   }, [facingMode, stopStream]);
+
+  // Automated action for "Turn On Camera & Allow Access" button
+  const handleTurnOnCameraClick = async () => {
+    await startCamera();
+    // If WebRTC remains blocked or denied, automatically trigger native camera app
+    setTimeout(() => {
+      if (!streamRef.current) {
+        triggerNativeCamera();
+      }
+    }, 400);
+  };
 
   // Manage camera open state
   useEffect(() => {
@@ -186,6 +246,16 @@ export function CameraCaptureModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200">
+      {/* Hidden Native Camera HTML5 File Input Fallback */}
+      <input
+        ref={nativeCameraInputRef}
+        type="file"
+        accept="image/*"
+        capture={facingMode === "environment" ? "environment" : "user"}
+        onChange={handleNativeFileChange}
+        className="hidden"
+      />
+
       <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 shadow-2xl text-white flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex flex-col border-b border-zinc-800 px-5 py-3.5 space-y-3 bg-zinc-900/90">
@@ -269,17 +339,27 @@ export function CameraCaptureModal({
                 </h4>
                 <p className="mt-1.5 text-xs text-zinc-300 leading-relaxed">
                   {errorMsg ||
-                    "Tap the button below to enable camera permissions on your browser and capture product images."}
+                    "Tap below to turn on device camera. If browser permissions are restricted, your phone's native camera app will open automatically."}
                 </p>
               </div>
               <div className="pt-2 flex flex-col gap-2.5 items-center w-full">
                 <Button
-                  onClick={startCamera}
+                  onClick={handleTurnOnCameraClick}
                   className="w-full bg-primary text-primary-foreground font-bold text-sm py-3.5 rounded-xl shadow-lg hover:bg-primary/90 flex items-center justify-center gap-2"
                 >
                   <Camera className="h-5 w-5" />
                   Turn On Camera & Allow Access
                 </Button>
+
+                <Button
+                  onClick={triggerNativeCamera}
+                  variant="outline"
+                  className="w-full border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold"
+                >
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  Open Phone Camera App Directly
+                </Button>
+
                 <Button
                   variant="outline"
                   onClick={() => {
