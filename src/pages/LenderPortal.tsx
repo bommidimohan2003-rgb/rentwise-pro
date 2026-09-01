@@ -95,9 +95,12 @@ export default function LenderPortal() {
 
   const handleDeleteListing = async (productId: string) => {
     // Clean from local storage
-    const currentCustom = storage.get<Product[]>("payent_custom_products", []);
+    const currentCustom = storage.get<Product[]>(
+      STORAGE_KEYS.customProducts,
+      [],
+    );
     const updatedCustom = currentCustom.filter((p) => p.id !== productId);
-    storage.set("payent_custom_products", updatedCustom);
+    storage.set(STORAGE_KEYS.customProducts, updatedCustom);
 
     if (token) {
       try {

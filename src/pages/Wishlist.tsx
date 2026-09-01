@@ -5,7 +5,7 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
 import { Button } from "@/components/common/Button";
 import { useWishlist } from "@/hooks/useWishlist";
-import { storage } from "@/utils/storage";
+import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { Product } from "@/types";
 
@@ -14,7 +14,7 @@ export default function Wishlist() {
   const navigate = useNavigate();
 
   const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
-    return storage.get<Product[]>("payent_custom_products", []);
+    return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
   });
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export default function Wishlist() {
         if (Array.isArray(serverProducts) && serverProducts.length > 0) {
           setAllProductsList((prev) => {
             const localCustom = storage.get<Product[]>(
-              "payent_custom_products",
+              STORAGE_KEYS.customProducts,
               [],
             );
             const map = new Map<string, Product>();

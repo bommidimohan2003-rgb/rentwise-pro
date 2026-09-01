@@ -3,7 +3,6 @@ const USER_SPECIFIC_KEYS = new Set([
   "payent:notifications",
   "payent:messages",
   "payent:orders",
-  "payent:customProducts",
 ]);
 
 function getNamespacedKey(key: string): string {

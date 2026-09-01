@@ -29,7 +29,7 @@ import { ProductAngleViewer } from "@/components/common/ProductAngleViewer";
 import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
 import { tracker } from "@/utils/eventTracker";
 import { api } from "@/utils/api";
-import { storage } from "@/utils/storage";
+import { storage, STORAGE_KEYS } from "@/utils/storage";
 import type { Product } from "@/types";
 
 const mockDates = [
@@ -79,7 +79,7 @@ export default function ProductDetails() {
       // 3. Check local custom products
       if (!found) {
         const localCustom = storage.get<Product[]>(
-          "payent_custom_products",
+          STORAGE_KEYS.customProducts,
           [],
         );
         found = localCustom.find((p: Product) => p.id === id) || null;

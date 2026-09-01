@@ -911,7 +911,7 @@ def get_all_approved_custom_products():
         if conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM custom_products WHERE status = 'approved' AND (hidden = 0 OR hidden IS NULL) ORDER BY created_at DESC")
+                    cursor.execute("SELECT * FROM custom_products WHERE (status = 'approved' OR status IS NULL) AND (hidden = 0 OR hidden IS NULL) ORDER BY created_at DESC")
                     rows = cursor.fetchall()
                     if rows:
                         return rows
@@ -919,7 +919,7 @@ def get_all_approved_custom_products():
                 conn.close()
     except Exception as e:
         print(f"Notice: Database read error in get_all_approved_custom_products: {e}")
-    return [p for p in MOCK_CUSTOM_PRODUCTS.values() if p.get("status") == "approved"]
+    return [p for p in MOCK_CUSTOM_PRODUCTS.values() if p.get("status") in ("approved", None) and not p.get("hidden")]
 
 def create_custom_product(email: str, product: dict):
     clean_email = (email or "").strip().lower()
@@ -927,8 +927,12 @@ def create_custom_product(email: str, product: dict):
     
     owner_info = product.get("owner") if isinstance(product.get("owner"), dict) else {}
     owner_name = owner_info.get("name") or product.get("owner_name") or clean_email.split("@")[0]
+    owner_email = owner_info.get("email") or clean_email
     owner_avatar = owner_info.get("avatar") or product.get("owner_avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
     owner_rating = float(owner_info.get("rating") or product.get("owner_rating") or 5.0)
+
+    is_available = bool(product.get("available", True))
+    prod_status = str(product.get("status", "approved"))
 
     product_entry = {
         "id": str(product.get("id", "")),
@@ -940,13 +944,14 @@ def create_custom_product(email: str, product: dict):
         "category": str(product.get("category", "General")),
         "rating": float(product.get("rating", 5.0)),
         "reviews": int(product.get("reviews", 0)),
-        "available": False,
-        "status": "pending",
+        "available": is_available,
+        "status": prod_status,
         "owner_name": owner_name,
         "owner_avatar": owner_avatar,
         "owner_rating": owner_rating,
         "owner": {
             "name": owner_name,
+            "email": owner_email,
             "avatar": owner_avatar,
             "rating": owner_rating
         },
@@ -972,8 +977,8 @@ def create_custom_product(email: str, product: dict):
                         product_entry["category"],
                         product_entry["rating"],
                         product_entry["reviews"],
-                        0,
-                        "pending",
+                        1 if is_available else 0,
+                        prod_status,
                         owner_name,
                         owner_avatar,
                         owner_rating,

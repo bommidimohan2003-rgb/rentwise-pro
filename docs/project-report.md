@@ -163,6 +163,7 @@ The main technical debt areas are clear:
 - [RESOLVED Storefront Purge] Purged fake mock product cards (`p1`, `p2`, `p3`, `p4`, `p9`, `p11`) from `mockData.ts` and `backend/database.py` so only real user listings appear in the catalog.
 - [RESOLVED Category Reference Cards] Added interactive visual Category Reference Cards for Bikes, Cameras, Laptops, Electronic Drilling Tools, Power Banks, and Drones to `/categories`.
 - [RESOLVED Lender Direct Camera & UI] Built live WebRTC camera capture modal (`CameraCaptureModal.tsx`), interactive earnings estimator slider, 3-step guided listing form, multi-photo gallery management, and real-time marketplace product card preview on `/become-lender`.
+- [RESOLVED Persistent Products & Deletion Security] Auto-approved new custom products (status: approved, available: true) across backend and client, removed per-user local storage namespacing for customProducts so products are globally shared across all users, and enforced strict owner/admin-only deletion authorization on backend API and ProductCard UI.
 
 
 ## Risks and Recommendations

@@ -292,14 +292,14 @@ export const productsService = {
   async approveProduct(id: string): Promise<AdminProduct> {
     if (typeof window !== "undefined") {
       try {
-        const raw = localStorage.getItem("payent_custom_products");
+        const raw = localStorage.getItem("payent:customProducts");
         if (raw) {
           const customList: AdminProduct[] = JSON.parse(raw);
           const updatedList = customList.map((p) =>
             p.id === id ? { ...p, status: "approved", available: true } : p,
           );
           localStorage.setItem(
-            "payent_custom_products",
+            "payent:customProducts",
             JSON.stringify(updatedList),
           );
           window.dispatchEvent(new CustomEvent("payent_products_updated"));
@@ -322,14 +322,14 @@ export const productsService = {
   async rejectProduct(id: string): Promise<AdminProduct> {
     if (typeof window !== "undefined") {
       try {
-        const raw = localStorage.getItem("payent_custom_products");
+        const raw = localStorage.getItem("payent:customProducts");
         if (raw) {
           const customList: AdminProduct[] = JSON.parse(raw);
           const updatedList = customList.map((p) =>
             p.id === id ? { ...p, status: "rejected", available: false } : p,
           );
           localStorage.setItem(
-            "payent_custom_products",
+            "payent:customProducts",
             JSON.stringify(updatedList),
           );
           window.dispatchEvent(new CustomEvent("payent_products_updated"));

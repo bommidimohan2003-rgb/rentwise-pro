@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { useSearch, useNavigate, Link } from "@tanstack/react-router";
 import { NoSearchResults } from "@/components/states/NoSearchResults";
 import { tracker } from "@/utils/eventTracker";
-import { storage } from "@/utils/storage";
+import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { api } from "@/utils/api";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -134,12 +134,15 @@ export default function Categories() {
   }, [search.q]);
 
   const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
-    return storage.get<Product[]>("payent_custom_products", []);
+    return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
   });
 
   useEffect(() => {
     const handleProductsUpdate = () => {
-      const localCustom = storage.get<Product[]>("payent_custom_products", []);
+      const localCustom = storage.get<Product[]>(
+        STORAGE_KEYS.customProducts,
+        [],
+      );
       setAllProductsList(localCustom);
     };
 
@@ -159,7 +162,7 @@ export default function Categories() {
         if (Array.isArray(serverProducts) && serverProducts.length > 0) {
           setAllProductsList((prev) => {
             const localCustom = storage.get<Product[]>(
-              "payent_custom_products",
+              STORAGE_KEYS.customProducts,
               [],
             );
             const map = new Map<string, Product>();
@@ -537,15 +540,16 @@ export default function Categories() {
     const card = selectedCardForListing;
     const newProduct: Product = {
       id: `p-custom-${Date.now()}`,
-      title: details.title,
-      description: details.description,
-      price: details.price,
-      image: card.image,
-      category: card.id,
+      title: modalTitle.trim(),
+      description: modalDescription.trim(),
+      price: priceNum,
+      image: modalImage || fallbackImg,
+      category: modalCategory,
       rating: 5.0,
       reviews: 0,
-      available: false,
-      status: "pending",
+      available: true,
+      isReference: false,
+      status: "approved",
       owner: {
         name: user ? user.fullName || user.email : "Verified Lender",
         email: user?.email || "",
@@ -555,12 +559,11 @@ export default function Categories() {
     };
 
     // Store in local custom products
-    const currentCustom = storage.get<Product[]>("payent_custom_products", []);
+    const currentCustom = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
     const updatedCustom = [newProduct, ...currentCustom];
-    storage.set("payent_custom_products", updatedCustom);
-    toast.success(
-      "Listing submitted! Pending admin approval before retail launch.",
-    );
+    storage.set(STORAGE_KEYS.customProducts, updatedCustom);
+    window.dispatchEvent(new CustomEvent("payent_products_updated"));
+    toast.success("Listing submitted successfully! Your gear is live.");
 
     // Update state immediately so listing grid refreshes
     setAllProductsList((prev) => {

@@ -78,7 +78,7 @@ export default function Checkout() {
 
       if (!found) {
         const localCustom = storage.get<Product[]>(
-          "payent_custom_products",
+          STORAGE_KEYS.customProducts,
           [],
         );
         found =

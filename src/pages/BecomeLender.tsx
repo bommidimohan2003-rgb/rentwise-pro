@@ -257,9 +257,9 @@ export default function BecomeLender() {
       category: category,
       rating: 5.0,
       reviews: 0,
-      available: false,
+      available: true,
       isReference: false,
-      status: "pending",
+      status: "approved",
       owner: {
         name: user?.fullName || user?.email || "Verified Lender",
         email: user?.email || "",
@@ -286,12 +286,13 @@ export default function BecomeLender() {
     }
 
     // Save to local custom products cache
-    const cachedCustom = storage.get<unknown[]>("payent_custom_products", []);
-    storage.set("payent_custom_products", [newProduct, ...cachedCustom]);
+    const cachedCustom = storage.get<unknown[]>(STORAGE_KEYS.customProducts, []);
+    storage.set(STORAGE_KEYS.customProducts, [newProduct, ...cachedCustom]);
+    window.dispatchEvent(new CustomEvent("payent_products_updated"));
 
     setIsSubmitting(false);
     setDone(true);
-    toast.success("Listing submitted successfully! Live under admin review.");
+    toast.success("Listing submitted successfully! Your gear is now live in the marketplace.");
   };
 
   return (

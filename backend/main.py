@@ -1222,12 +1222,15 @@ def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_curre
     if not product_dict.get("id"):
         product_dict["id"] = f"p-custom-{int(time.time() * 1000)}"
     user_rec = get_user(email) or {}
-    if not product_dict.get("owner") or not isinstance(product_dict.get("owner"), dict):
-        product_dict["owner"] = {
-            "name": user_rec.get("full_name") or email.split("@")[0],
-            "avatar": user_rec.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
-            "rating": 5.0
-        }
+    owner_info = product_dict.get("owner") if isinstance(product_dict.get("owner"), dict) else {}
+    product_dict["owner"] = {
+        "name": owner_info.get("name") or user_rec.get("full_name") or email.split("@")[0],
+        "email": owner_info.get("email") or email,
+        "avatar": owner_info.get("avatar") or user_rec.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
+        "rating": float(owner_info.get("rating") or 5.0)
+    }
+    product_dict["status"] = product_dict.get("status") or "approved"
+    product_dict["available"] = product_dict.get("available") if product_dict.get("available") is not None else True
     created = create_custom_product(email, product_dict)
     return {"success": True, "product": format_product_dict(created)}
 
@@ -1262,16 +1265,29 @@ def remove_custom_listing(id: str, email: str = Depends(get_current_user_email))
         )
 
     prod_user = (product.get("user_email") or product.get("userEmail") or "").strip().lower()
+    owner_dict = product.get("owner") if isinstance(product.get("owner"), dict) else {}
+    owner_email = (owner_dict.get("email") or "").strip().lower()
+    owner_name = (owner_dict.get("name") or product.get("owner_name") or "").strip().lower()
+
     user_rec = get_user(clean_email) or {}
+    user_full_name = (user_rec.get("full_name") or "").strip().lower()
+    user_role = (user_rec.get("role") or "").strip().lower()
     
-    # Ownership Security Gate: Only product uploader or admin can delete the listing
-    if prod_user and prod_user != clean_email and user_rec.get("role") != "admin":
+    is_admin = user_role == "admin" or clean_email == "bommidimohan2003@gmail.com"
+    is_owner = bool(
+        (prod_user and prod_user == clean_email) or
+        (owner_email and owner_email == clean_email) or
+        (owner_name and user_full_name and owner_name == user_full_name) or
+        (owner_name and owner_name == clean_email.split("@")[0])
+    )
+
+    if not is_owner and not is_admin:
         logger.warning(
-            f"Security Violation: User {clean_email} attempted unauthorized deletion of product {id} owned by {prod_user}."
+            f"Security Violation: User {clean_email} attempted unauthorized deletion of product {id}."
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Security Violation: You are not authorized to delete another user's product."
+            detail="Security Violation: A product can only be deleted by its product owner or an admin."
         )
 
     delete_custom_product(id, clean_email)

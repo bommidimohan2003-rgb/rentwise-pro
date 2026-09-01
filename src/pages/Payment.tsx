@@ -48,7 +48,10 @@ export default function Payment() {
 
   const productId = search.id || "";
   const [product, setProduct] = useState<Product | null>(() => {
-    const localCustom = storage.get<Product[]>("payent_custom_products", []);
+    const localCustom = storage.get<Product[]>(
+      STORAGE_KEYS.customProducts,
+      [],
+    );
     return localCustom.find((p) => p.id === productId) || null;
   });
 
