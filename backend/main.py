@@ -965,12 +965,13 @@ def toggle_wishlist_item(data: WishlistToggleSchema, email: str = Depends(get_cu
 
 @app.get("/api/orders")
 def fetch_orders(email: str = Depends(get_current_user_email)):
-    orders = get_orders(email)
+    clean_email = email.strip().lower()
+    orders = get_orders(clean_email)
     # If empty, seed initial demo orders for the user
     if not orders:
         demo_orders = [
             {
-                "id": "o0",
+                "id": f"o-{int(time.time() * 1000)}-1",
                 "productId": "p1",
                 "productTitle": "Sony Alpha 7 IV",
                 "productImage": "https://images.unsplash.com/photo-1610448721566-47369c768e70?auto=format&fit=crop&w=1200&q=80",
@@ -978,10 +979,10 @@ def fetch_orders(email: str = Depends(get_current_user_email)):
                 "endDate": "Mar 18",
                 "total": 12000,
                 "status": "active",
-                "created_at": datetime.utcnow().isoformat()
+                "created_at": datetime.datetime.utcnow().isoformat()
             },
             {
-                "id": "o1",
+                "id": f"o-{int(time.time() * 1000)}-2",
                 "productId": "p2",
                 "productTitle": "DJI Mavic 3 Pro",
                 "productImage": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1200&q=80",
@@ -989,29 +990,30 @@ def fetch_orders(email: str = Depends(get_current_user_email)):
                 "endDate": "Mar 18",
                 "total": 15000,
                 "status": "pending",
-                "created_at": datetime.utcnow().isoformat()
+                "created_at": datetime.datetime.utcnow().isoformat()
             }
         ]
         for o in demo_orders:
             execute_query("""
                 INSERT INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (o["id"], email, o["productId"], o["productTitle"], o["productImage"], o["startDate"], o["endDate"], o["total"], o["status"], o["created_at"]))
-        orders = get_orders(email)
+            """, (o["id"], clean_email, o["productId"], o["productTitle"], o["productImage"], o["startDate"], o["endDate"], o["total"], o["status"], o["created_at"]))
+        orders = get_orders(clean_email)
     
     result = []
     for o in orders:
-        result.append({
-            "id": o["id"],
-            "productId": o["product_id"],
-            "productTitle": o["product_title"],
-            "productImage": o["product_image"],
-            "startDate": o["start_date"],
-            "endDate": o["end_date"],
-            "total": o["total"],
-            "status": o["status"],
-            "createdAt": o["created_at"]
-        })
+        if isinstance(o, dict):
+            result.append({
+                "id": str(o.get("id", "")),
+                "productId": str(o.get("product_id") or o.get("productId") or ""),
+                "productTitle": str(o.get("product_title") or o.get("productTitle") or "Gear Rental"),
+                "productImage": str(o.get("product_image") or o.get("productImage") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"),
+                "startDate": str(o.get("start_date") or o.get("startDate") or "Today"),
+                "endDate": str(o.get("end_date") or o.get("endDate") or "Tomorrow"),
+                "total": float(o.get("total", 0)),
+                "status": str(o.get("status", "active")),
+                "createdAt": str(o.get("created_at") or o.get("createdAt") or "")
+            })
     return result
 
 @app.post("/api/orders")

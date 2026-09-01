@@ -326,7 +326,19 @@ export const api = {
         Authorization: `Bearer ${token}`,
       },
     });
-    if (!res.ok) throw new Error("Failed to fetch orders");
+    if (!res.ok) {
+      if (res.status === 401 && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("payent-session-expired", {
+            detail: { loginPath: "/login" },
+          }),
+        );
+      }
+      const data = await res.json().catch(() => ({}));
+      throw new Error(
+        parseApiError(data, "Failed to retrieve order history from database."),
+      );
+    }
     return res.json();
   },
 
