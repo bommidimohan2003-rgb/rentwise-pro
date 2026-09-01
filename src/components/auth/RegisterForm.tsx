@@ -49,14 +49,8 @@ const schema = z
     pincode: z.string().trim().min(6, "Enter valid 6-digit PIN code").max(10),
     password: z
       .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Include at least one uppercase letter (A-Z)")
-      .regex(/[a-z]/, "Include at least one lowercase letter (a-z)")
-      .regex(/[0-9]/, "Include at least one number (0-9)")
-      .regex(
-        /[^A-Za-z0-9]/,
-        "Include at least one special character (!@#$%^&*)",
-      ),
+      .min(6, "Password must be at least 6 characters")
+      .max(128),
     confirm: z.string().min(1, "Please confirm your password"),
     terms: z.literal(true, {
       errorMap: () => ({ message: "Please accept the Terms & Privacy Policy" }),
@@ -77,7 +71,7 @@ type FormValues = z.infer<typeof schema>;
 
 function strength(pw: string) {
   let s = 0;
-  if (pw.length >= 8) s++;
+  if (pw.length >= 6) s++;
   if (/[A-Z]/.test(pw)) s++;
   if (/[0-9]/.test(pw)) s++;
   if (/[^A-Za-z0-9]/.test(pw)) s++;
@@ -148,7 +142,10 @@ export function RegisterForm() {
           storage.set(STORAGE_KEYS.currentUser, res.user);
         }
         await registerUser(data.email, data.phone);
-        await login(data.email, data.password);
+        const loginRes = await login(data.email, data.password);
+        if (!loginRes.ok && res.user) {
+          storage.set(STORAGE_KEYS.currentUser, res.user);
+        }
         toast.success("Account created successfully!");
         navigate({ to: "/categories" });
         return;

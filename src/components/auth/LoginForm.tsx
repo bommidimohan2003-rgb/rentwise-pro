@@ -84,7 +84,17 @@ export function LoginForm() {
       STORAGE_KEYS.currentUser,
       null,
     );
-    if (currentUser?.role === "admin") {
+
+    const searchParams =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : null;
+    const redirectUrl =
+      searchParams?.get("redirect") || searchParams?.get("returnUrl");
+
+    if (redirectUrl && redirectUrl.startsWith("/")) {
+      navigate({ to: redirectUrl as "/dashboard" });
+    } else if (currentUser?.role === "admin") {
       const userToken = storage.get<string | null>(STORAGE_KEYS.token, null);
       if (userToken) {
         localStorage.setItem("payent:admin:token", userToken);
