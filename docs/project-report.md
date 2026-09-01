@@ -162,6 +162,8 @@ The main technical debt areas are clear:
 - [RESOLVED Storefront Purge] Gated Twilio SMS OTP verification so production environments raise errors on failure instead of falling back to mock OTP.
 - [RESOLVED Storefront Purge] Purged fake mock product cards (`p1`, `p2`, `p3`, `p4`, `p9`, `p11`) from `mockData.ts` and `backend/database.py` so only real user listings appear in the catalog.
 - [RESOLVED Category Reference Cards] Added interactive visual Category Reference Cards for Bikes, Cameras, Laptops, Electronic Drilling Tools, Power Banks, and Drones to `/categories`.
+- [RESOLVED Lender Direct Camera & UI] Built live WebRTC camera capture modal (`CameraCaptureModal.tsx`), interactive earnings estimator slider, 3-step guided listing form, multi-photo gallery management, and real-time marketplace product card preview on `/become-lender`.
+
 
 ## Risks and Recommendations
 
