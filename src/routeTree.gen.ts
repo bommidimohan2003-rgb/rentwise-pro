@@ -45,6 +45,7 @@ import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminDashboardRouteImport } from './routes/admin/dashboard'
 import { Route as AdminCategoriesRouteImport } from './routes/admin/categories'
 import { Route as AdminBookingsRouteImport } from './routes/admin/bookings'
+import { Route as AdminApiKeysRouteImport } from './routes/admin/api-keys'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminAgentsRouteImport } from './routes/admin/agents'
 import { Route as AdminActivityLogsRouteImport } from './routes/admin/activity-logs'
@@ -230,6 +231,11 @@ const AdminBookingsRoute = AdminBookingsRouteImport.update({
   path: '/bookings',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminApiKeysRoute = AdminApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -276,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/admin/activity-logs': typeof AdminActivityLogsRoute
   '/admin/agents': typeof AdminAgentsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/api-keys': typeof AdminApiKeysRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -317,6 +324,7 @@ export interface FileRoutesByTo {
   '/admin/activity-logs': typeof AdminActivityLogsRoute
   '/admin/agents': typeof AdminAgentsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/api-keys': typeof AdminApiKeysRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -360,6 +368,7 @@ export interface FileRoutesById {
   '/admin/activity-logs': typeof AdminActivityLogsRoute
   '/admin/agents': typeof AdminAgentsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/api-keys': typeof AdminApiKeysRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -404,6 +413,7 @@ export interface FileRouteTypes {
     | '/admin/activity-logs'
     | '/admin/agents'
     | '/admin/analytics'
+    | '/admin/api-keys'
     | '/admin/bookings'
     | '/admin/categories'
     | '/admin/dashboard'
@@ -445,6 +455,7 @@ export interface FileRouteTypes {
     | '/admin/activity-logs'
     | '/admin/agents'
     | '/admin/analytics'
+    | '/admin/api-keys'
     | '/admin/bookings'
     | '/admin/categories'
     | '/admin/dashboard'
@@ -487,6 +498,7 @@ export interface FileRouteTypes {
     | '/admin/activity-logs'
     | '/admin/agents'
     | '/admin/analytics'
+    | '/admin/api-keys'
     | '/admin/bookings'
     | '/admin/categories'
     | '/admin/dashboard'
@@ -784,6 +796,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBookingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/api-keys': {
+      id: '/admin/api-keys'
+      path: '/api-keys'
+      fullPath: '/admin/api-keys'
+      preLoaderRoute: typeof AdminApiKeysRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/analytics': {
       id: '/admin/analytics'
       path: '/analytics'
@@ -831,6 +850,7 @@ interface AdminRouteChildren {
   AdminActivityLogsRoute: typeof AdminActivityLogsRoute
   AdminAgentsRoute: typeof AdminAgentsRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminApiKeysRoute: typeof AdminApiKeysRoute
   AdminBookingsRoute: typeof AdminBookingsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
@@ -851,6 +871,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminActivityLogsRoute: AdminActivityLogsRoute,
   AdminAgentsRoute: AdminAgentsRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminApiKeysRoute: AdminApiKeysRoute,
   AdminBookingsRoute: AdminBookingsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminDashboardRoute: AdminDashboardRoute,

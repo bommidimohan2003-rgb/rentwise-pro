@@ -495,20 +495,27 @@ def init_db():
     except Exception as e:
         print(f"Failed to migrate orders.product_image: {e}")
 
-    # Ensure performance indexes exist on frequently queried fields
-    add_index_safely("users", "idx_users_role", "role")
-    add_index_safely("orders", "idx_orders_user_email", "user_email")
-    add_index_safely("orders", "idx_orders_product_id", "product_id")
-    add_index_safely("orders", "idx_orders_status", "status")
-    add_index_safely("orders", "idx_orders_rzp_order", "razorpay_order_id")
-    add_index_safely("orders", "idx_orders_rzp_payment", "razorpay_payment_id")
-    add_index_safely("custom_products", "idx_cp_user_email", "user_email")
-    add_index_safely("custom_products", "idx_cp_category", "category")
-    add_index_safely("custom_products", "idx_cp_available", "available")
-    add_index_safely("payments", "idx_payments_booking", "booking_id")
-    add_index_safely("payments", "idx_payments_customer", "customer_id")
-    add_index_safely("notifications", "idx_notif_user_read", "user_email")
-    add_index_safely("reviews", "idx_reviews_product", "product_id")
+    # Create api_keys table for secure API key authentication & permissions
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS api_keys (
+            id VARCHAR(255) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            key_prefix VARCHAR(50) NOT NULL,
+            key_hash VARCHAR(255) NOT NULL,
+            user_email VARCHAR(255) NOT NULL,
+            scopes VARCHAR(1000) DEFAULT 'read',
+            rate_limit INT DEFAULT 100,
+            is_active BOOLEAN DEFAULT TRUE,
+            expires_at VARCHAR(100) NULL,
+            last_used_at VARCHAR(100) NULL,
+            created_at VARCHAR(100) NOT NULL,
+            updated_at VARCHAR(100) NOT NULL
+        )
+    """)
+
+    add_index_safely("api_keys", "idx_api_keys_prefix", "key_prefix")
+    add_index_safely("api_keys", "idx_api_keys_user", "user_email")
+    add_index_safely("api_keys", "idx_api_keys_active", "is_active")
 
     # Seed initial data if tables are empty
     conn = get_db_connection()
@@ -1784,6 +1791,186 @@ def get_popular_search_queries(limit: int = 5) -> list:
                     counts[sq] = counts.get(sq, 0) + 1
         sorted_queries = sorted(counts.items(), key=lambda x: x[1], reverse=True)
         return [sq for sq, _ in sorted_queries[:limit]]
+
+
+# ----------------------------------------------------------------------
+# API Key Management Database Operations
+# ----------------------------------------------------------------------
+
+MOCK_API_KEYS = {}
+
+def get_api_keys_db(page: int = 1, limit: int = 25, search: str = None):
+    try:
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    where_clause = ""
+                    params = []
+                    if search:
+                        where_clause = "WHERE name LIKE %s OR key_prefix LIKE %s OR user_email LIKE %s"
+                        pattern = f"%{search}%"
+                        params = [pattern, pattern, pattern]
+                    
+                    cursor.execute(f"SELECT COUNT(*) as count FROM api_keys {where_clause}", tuple(params))
+                    total = cursor.fetchone()["count"]
+                    
+                    offset = (page - 1) * limit
+                    cursor.execute(f"""
+                        SELECT id, name, key_prefix, user_email, scopes, rate_limit, is_active, expires_at, last_used_at, created_at, updated_at
+                        FROM api_keys
+                        {where_clause}
+                        ORDER BY created_at DESC
+                        LIMIT %s OFFSET %s
+                    """, tuple(params + [limit, offset]))
+                    items = cursor.fetchall()
+                    for item in items:
+                        item["is_active"] = bool(item.get("is_active", True))
+                    return {"items": items, "total": total, "page": page, "limit": limit}
+            finally:
+                conn.close()
+    except Exception as e:
+        logger.warning(f"Failed to fetch api_keys from DB: {e}")
+
+    items = list(MOCK_API_KEYS.values())
+    if search:
+        s = search.lower()
+        items = [k for k in items if s in k["name"].lower() or s in k["key_prefix"].lower() or s in k["user_email"].lower()]
+    total = len(items)
+    offset = (page - 1) * limit
+    page_items = items[offset:offset + limit]
+    clean_items = [{k: v for k, v in item.items() if k != "key_hash"} for item in page_items]
+    return {"items": clean_items, "total": total, "page": page, "limit": limit}
+
+def get_api_key_by_id_db(key_id: str):
+    try:
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT id, name, key_prefix, user_email, scopes, rate_limit, is_active, expires_at, last_used_at, created_at, updated_at
+                        FROM api_keys WHERE id = %s
+                    """, (key_id,))
+                    res = cursor.fetchone()
+                    if res:
+                        res["is_active"] = bool(res.get("is_active", True))
+                        return res
+            finally:
+                conn.close()
+    except Exception as e:
+        logger.warning(f"Failed to fetch api_key by id from DB: {e}")
+
+    item = MOCK_API_KEYS.get(key_id)
+    if item:
+        return {k: v for k, v in item.items() if k != "key_hash"}
+    return None
+
+def get_api_key_by_hash_db(key_hash: str):
+    try:
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT id, name, key_prefix, key_hash, user_email, scopes, rate_limit, is_active, expires_at, last_used_at, created_at, updated_at
+                        FROM api_keys WHERE key_hash = %s
+                    """, (key_hash,))
+                    res = cursor.fetchone()
+                    if res:
+                        res["is_active"] = bool(res.get("is_active", True))
+                        return res
+            finally:
+                conn.close()
+    except Exception as e:
+        logger.warning(f"Failed to fetch api_key by hash from DB: {e}")
+
+    for k in MOCK_API_KEYS.values():
+        if k.get("key_hash") == key_hash:
+            return dict(k)
+    return None
+
+def create_api_key_db(data: dict):
+    now_str = datetime.utcnow().isoformat()
+    key_id = data.get("id") or f"ak_{int(datetime.utcnow().timestamp())}_{random.randint(100, 999)}"
+    record = {
+        "id": key_id,
+        "name": data["name"],
+        "key_prefix": data["key_prefix"],
+        "key_hash": data["key_hash"],
+        "user_email": data["user_email"],
+        "scopes": data.get("scopes", "read"),
+        "rate_limit": int(data.get("rate_limit", 100)),
+        "is_active": bool(data.get("is_active", True)),
+        "expires_at": data.get("expires_at"),
+        "last_used_at": None,
+        "created_at": now_str,
+        "updated_at": now_str,
+    }
+    try:
+        execute_query("""
+            INSERT INTO api_keys (id, name, key_prefix, key_hash, user_email, scopes, rate_limit, is_active, expires_at, last_used_at, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            record["id"], record["name"], record["key_prefix"], record["key_hash"],
+            record["user_email"], record["scopes"], record["rate_limit"],
+            1 if record["is_active"] else 0, record["expires_at"], record["last_used_at"],
+            record["created_at"], record["updated_at"]
+        ))
+    except Exception as e:
+        logger.warning(f"Failed to insert api_key into DB: {e}")
+
+    MOCK_API_KEYS[key_id] = record
+    return {k: v for k, v in record.items() if k != "key_hash"}
+
+def update_api_key_db(key_id: str, updates: dict):
+    now_str = datetime.utcnow().isoformat()
+    fields = ["updated_at = %s"]
+    params = [now_str]
+
+    if "name" in updates:
+        fields.append("name = %s")
+        params.append(updates["name"])
+    if "scopes" in updates:
+        fields.append("scopes = %s")
+        params.append(updates["scopes"])
+    if "rate_limit" in updates:
+        fields.append("rate_limit = %s")
+        params.append(int(updates["rate_limit"]))
+    if "is_active" in updates:
+        fields.append("is_active = %s")
+        params.append(1 if updates["is_active"] else 0)
+    if "expires_at" in updates:
+        fields.append("expires_at = %s")
+        params.append(updates["expires_at"])
+
+    params.append(key_id)
+    try:
+        execute_query(f"UPDATE api_keys SET {', '.join(fields)} WHERE id = %s", tuple(params))
+    except Exception as e:
+        logger.warning(f"Failed to update api_key in DB: {e}")
+
+    if key_id in MOCK_API_KEYS:
+        MOCK_API_KEYS[key_id].update(updates)
+        MOCK_API_KEYS[key_id]["updated_at"] = now_str
+    return get_api_key_by_id_db(key_id)
+
+def delete_api_key_db(key_id: str):
+    try:
+        execute_query("DELETE FROM api_keys WHERE id = %s", (key_id,))
+    except Exception as e:
+        logger.warning(f"Failed to delete api_key from DB: {e}")
+    MOCK_API_KEYS.pop(key_id, None)
+    return True
+
+def touch_api_key_last_used_db(key_id: str):
+    now_str = datetime.utcnow().isoformat()
+    try:
+        execute_query("UPDATE api_keys SET last_used_at = %s WHERE id = %s", (now_str, key_id))
+    except Exception:
+        pass
+    if key_id in MOCK_API_KEYS:
+        MOCK_API_KEYS[key_id]["last_used_at"] = now_str
 
 
 

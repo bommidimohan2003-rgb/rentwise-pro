@@ -1955,6 +1955,19 @@ class SupportReplySchema(BaseModel):
 class SupportStatusSchema(BaseModel):
     status: str
 
+class APIKeyCreateSchema(BaseModel):
+    name: str
+    scopes: Optional[list[str]] = ["users:read", "products:read"]
+    rate_limit: Optional[int] = 100
+    expires_at: Optional[str] = None
+
+class APIKeyUpdateSchema(BaseModel):
+    name: Optional[str] = None
+    scopes: Optional[list[str]] = None
+    rate_limit: Optional[int] = None
+    is_active: Optional[bool] = None
+    expires_at: Optional[str] = None
+
 
 # ----------------------------------------------------------------------
 # Admin Live WebSocket Real-Time Broadcast Infrastructure
@@ -2347,6 +2360,157 @@ def admin_reset_analytics(current_admin: dict = Depends(check_admin_user)):
     broadcast_admin_event("dashboard.reset", {"message": "Analytics and metrics reset to zero"})
     
     return {"success": True, "message": "Total analytics, revenue, and active listings reset to 0."}
+
+# ----------------------------------------------------------------------
+# Secure API Key Management Security & Admin Endpoints
+# ----------------------------------------------------------------------
+import hashlib
+
+def generate_secure_api_key():
+    token = secrets.token_urlsafe(32)
+    full_key = f"rw_live_{token}"
+    prefix = f"rw_live_{token[:6]}"
+    key_hash = hashlib.sha256(full_key.encode("utf-8")).hexdigest()
+    return full_key, prefix, key_hash
+
+def require_api_key(required_scopes: Optional[list[str]] = None):
+    def _dependency(
+        authorization: Optional[str] = Header(None),
+        x_api_key: Optional[str] = Header(None, alias="X-API-Key")
+    ):
+        raw_key = None
+        if authorization and authorization.startswith("Bearer rw_live_"):
+            raw_key = authorization.split(" ")[1]
+        elif x_api_key and x_api_key.startswith("rw_live_"):
+            raw_key = x_api_key
+        elif authorization and authorization.startswith("rw_live_"):
+            raw_key = authorization
+        
+        if not raw_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unauthorized. Valid API Key required in Authorization header or X-API-Key."
+            )
+        
+        key_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        record = get_api_key_by_hash_db(key_hash)
+        if not record or not record.get("is_active"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unauthorized. Invalid or revoked API key."
+            )
+        
+        expires_at = record.get("expires_at")
+        if expires_at:
+            try:
+                exp_dt = datetime.datetime.fromisoformat(expires_at)
+                if datetime.datetime.utcnow() > exp_dt:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Unauthorized. API key has expired."
+                    )
+            except Exception:
+                pass
+        
+        key_scopes = [s.strip() for s in (record.get("scopes") or "").split(",") if s.strip()]
+        if required_scopes:
+            for scope in required_scopes:
+                if scope not in key_scopes and "admin" not in key_scopes and "*" not in key_scopes:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Forbidden. API key lacks required scope '{scope}'."
+                    )
+        
+        # Enforce rate limiting per key
+        key_id = record.get("id")
+        rate_limit = record.get("rate_limit") or 100
+        rl_key = f"apikey_rl:{key_id}"
+        is_locked, lock_secs = record_failed_auth_attempt(rl_key, max_attempts=rate_limit, lock_duration_secs=60)
+        if is_locked:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Rate limit exceeded for API key ({rate_limit} req/min). Try again in {lock_secs}s."
+            )
+        
+        touch_api_key_last_used_db(key_id)
+        return record
+    return _dependency
+
+@app.get("/api/admin/api-keys")
+def admin_get_api_keys(
+    page: int = Query(1, ge=1),
+    limit: int = Query(25, ge=1, le=100),
+    q: Optional[str] = None,
+    current_admin: dict = Depends(check_admin_user)
+):
+    return get_api_keys_db(page=page, limit=limit, search=q)
+
+@app.post("/api/admin/api-keys")
+def admin_create_api_key(data: APIKeyCreateSchema, current_admin: dict = Depends(check_admin_user)):
+    if not data.name or not data.name.strip():
+        raise HTTPException(status_code=400, detail="API Key name is required.")
+    
+    full_secret, prefix, key_hash = generate_secure_api_key()
+    scopes_str = ",".join(data.scopes) if data.scopes else "read"
+    
+    created = create_api_key_db({
+        "name": data.name.strip(),
+        "key_prefix": prefix,
+        "key_hash": key_hash,
+        "user_email": current_admin["email"],
+        "scopes": scopes_str,
+        "rate_limit": data.rate_limit or 100,
+        "is_active": True,
+        "expires_at": data.expires_at
+    })
+    
+    # Broadcast event to connected admin clients
+    broadcast_admin_event("apikey.created", {"id": created["id"], "name": created["name"]})
+    
+    return {
+        "success": True,
+        "apiKey": created,
+        "secretKey": full_secret,
+        "message": "API key generated successfully. Save this secret key now as it cannot be retrieved again."
+    }
+
+@app.get("/api/admin/api-keys/{key_id}")
+def admin_get_api_key(key_id: str, current_admin: dict = Depends(check_admin_user)):
+    item = get_api_key_by_id_db(key_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="API Key not found.")
+    return item
+
+@app.put("/api/admin/api-keys/{key_id}")
+def admin_update_api_key(key_id: str, data: APIKeyUpdateSchema, current_admin: dict = Depends(check_admin_user)):
+    item = get_api_key_by_id_db(key_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="API Key not found.")
+    
+    updates = {}
+    if data.name is not None:
+        updates["name"] = data.name.strip()
+    if data.scopes is not None:
+        updates["scopes"] = ",".join(data.scopes)
+    if data.rate_limit is not None:
+        updates["rate_limit"] = data.rate_limit
+    if data.is_active is not None:
+        updates["is_active"] = data.is_active
+    if data.expires_at is not None:
+        updates["expires_at"] = data.expires_at
+
+    updated = update_api_key_db(key_id, updates)
+    broadcast_admin_event("apikey.updated", {"id": key_id})
+    return {"success": True, "apiKey": updated}
+
+@app.delete("/api/admin/api-keys/{key_id}")
+def admin_delete_api_key(key_id: str, current_admin: dict = Depends(check_admin_user)):
+    item = get_api_key_by_id_db(key_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="API Key not found.")
+    delete_api_key_db(key_id)
+    broadcast_admin_event("apikey.deleted", {"id": key_id})
+    return {"success": True, "message": f"API Key '{item['name']}' has been revoked and deleted."}
 
 @app.get("/api/admin/dashboard/charts")
 def admin_charts(days: int = Query(30), current_admin: dict = Depends(check_admin_user)):
