@@ -795,29 +795,19 @@ def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request)
 def forgot_password_reset(data: ForgotPasswordResetSchema):
     clean_email = data.email.lower().strip()
     user = get_user(clean_email)
-    phone = user.get("phone") if user and user.get("phone") else ""
-    
-    is_valid = check_verification(phone, data.otp, clean_email)
-    if not is_valid:
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification code."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No registered account found with email '{clean_email}'."
         )
     
-    # Hash new password and update/upsert user account
+    phone = user.get("phone") if user and user.get("phone") else "+10000000000"
+    
+    # Hash new password and update user account in datastore
     hashed = hash_password(data.new_password)
-    if user:
-        update_user_password(clean_email, hashed)
-    else:
-        # Create user record if not present in DB
-        create_user(
-            email=clean_email,
-            phone=phone or "+10000000000",
-            password_hash=hashed,
-            full_name=clean_email.split("@")[0]
-        )
+    update_user_password(clean_email, hashed)
     
-    # Delete verification token
+    # Clean up any cached verification tokens
     delete_otp(clean_email)
     
     return {"success": True, "message": "Password reset successful."}

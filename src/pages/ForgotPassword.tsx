@@ -6,8 +6,8 @@ export default function ForgotPassword() {
   return (
     <AuthLayout
       mode="forgot-password"
-      title="Reset Your Password"
-      subtitle="Enter your account email to receive a 6-digit OTP code and reset your password directly."
+      title="Direct Password Reset"
+      subtitle="Enter your registered account email and your new password to update credentials directly."
     >
       <Form />
       <p className="mt-4 text-xs text-center text-muted-foreground font-medium">
