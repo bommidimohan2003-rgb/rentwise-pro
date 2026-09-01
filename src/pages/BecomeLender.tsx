@@ -20,9 +20,12 @@ import {
   Bike,
   Wrench,
   BatteryCharging,
-  Gamepad2,
   Headphones,
   Check,
+  MapPin,
+  ShieldCheck,
+  Tag as TagIcon,
+  Sparkle,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
@@ -98,23 +101,23 @@ const CATEGORIES = [
 const perks = [
   {
     icon: IndianRupee,
-    title: "Passive Rental Earnings",
-    body: "Turn idle tech gear into steady earnings up to ₹1.2 Lakh/month.",
-    image: "1579621970563-ebec7560ff3e",
+    title: "Passive Rental Income",
+    body: "Turn idle tech gear into steady monthly yield with verified local borrowers.",
+    image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=600&q=80",
     tag: "High Yield",
   },
   {
     icon: Shield,
     title: "₹50,000 Damage Insurance",
-    body: "Every single rental is covered against accidental damages & theft.",
-    image: "1516321318423-f06f85e504b3",
+    body: "Every single rental is fully insured against physical damage & theft.",
+    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
     tag: "Zero Risk",
   },
   {
     icon: Zap,
-    title: "2-Minute Direct Camera Listing",
-    body: "Snap gear photos directly from your phone camera and launch instantly.",
-    image: "1498050108023-c5249f4df085",
+    title: "2-Min Direct Camera Listing",
+    body: "Snap product photos directly from your phone camera and go live instantly.",
+    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80",
     tag: "Instant Snap",
   },
 ];
@@ -314,117 +317,122 @@ export default function BecomeLender() {
         />
       )}
 
-      <section className="relative overflow-hidden pt-12 pb-24">
-        {/* Background Ambient Glowing Orbs */}
-        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-primary/10 blur-[120px] rounded-full -z-10" />
+      <section className="relative overflow-hidden pt-8 sm:pt-14 pb-28 bg-gradient-to-b from-background via-background/95 to-secondary/30">
+        {/* Background Ambient Glow Orbs */}
+        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[450px] bg-gradient-to-br from-primary/20 via-purple-500/10 to-emerald-500/10 blur-[130px] rounded-full -z-10" />
 
-        {/* Hero Header */}
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider shadow-sm">
-              <Sparkles className="h-3.5 w-3.5" />
-              Lender Marketplace Hub
-            </div>
-            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
-              Monetize your tech gear. <br className="hidden sm:inline" />
-              <span className="bg-gradient-to-r from-primary via-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                Snap photos & earn.
-              </span>
-            </h1>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-              List high-demand cameras, laptops, drones & gadgets in 2 minutes.
-              Covered by ₹50,000 Payent Damage Protection.
-            </p>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
+          {/* HERO BANNER SECTION */}
+          <div className="relative rounded-3xl p-8 sm:p-12 border border-border/80 dark:border-white/10 bg-card/60 dark:bg-card/40 backdrop-blur-2xl shadow-2xl overflow-hidden">
+            <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Quick Stat Badges */}
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm text-muted-foreground font-medium">
-              <div className="flex items-center gap-2">
-                <BadgeCheck className="h-4 w-4 text-emerald-500" />
-                <span>Verified Borrower Network</span>
+            <div className="relative z-10 max-w-3xl space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider shadow-sm backdrop-blur-md">
+                <Sparkle className="h-3.5 w-3.5 fill-primary" />
+                Payent Direct Listing Engine
               </div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                <span>₹50K Damage Insurance</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-amber-500" />
-                <span>Direct Camera Instant Listing</span>
+
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-foreground leading-[1.08] font-display">
+                Monetize your gear. <br />
+                <span className="bg-gradient-to-r from-primary via-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                  Snap & list in 2 mins.
+                </span>
+              </h1>
+
+              <p className="text-muted-foreground text-base sm:text-xl leading-relaxed max-w-2xl font-medium">
+                Turn your cameras, laptops, drones & rides into passive income with direct live camera capture and ₹50,000 damage protection.
+              </p>
+
+              {/* Quick Stat Badges */}
+              <div className="pt-2 flex flex-wrap items-center gap-4 text-xs sm:text-sm font-semibold">
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-background/80 dark:bg-zinc-900/80 border border-border/80 shadow-sm">
+                  <BadgeCheck className="h-4 w-4 text-emerald-500" />
+                  <span className="text-foreground">Verified Borrower Network</span>
+                </div>
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-background/80 dark:bg-zinc-900/80 border border-border/80 shadow-sm">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <span className="text-foreground">₹50K Damage Coverage</span>
+                </div>
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-background/80 dark:bg-zinc-900/80 border border-border/80 shadow-sm">
+                  <Camera className="h-4 w-4 text-amber-500" />
+                  <span className="text-foreground">Direct WebRTC Camera</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Perks Grid */}
-          <div className="mt-14 grid md:grid-cols-3 gap-6">
+          {/* PERKS GRID SECTION */}
+          <div className="grid md:grid-cols-3 gap-6">
             {perks.map((p) => (
               <div
                 key={p.title}
-                className="card-premium overflow-hidden group flex flex-col h-full border border-border/80 bg-card/60 backdrop-blur-md hover:border-primary/50 transition-all duration-300 shadow-sm"
+                className="group relative overflow-hidden rounded-3xl border border-border/80 dark:border-white/10 bg-card/60 dark:bg-card/40 backdrop-blur-xl p-6 shadow-lg hover:shadow-2xl hover:border-primary/50 transition-all duration-300 flex flex-col justify-between"
               >
-                <div className="relative h-36 w-full overflow-hidden bg-secondary">
+                <div className="relative aspect-16/10 w-full overflow-hidden rounded-2xl bg-secondary mb-5">
                   <img
-                    src={`https://images.unsplash.com/photo-${p.image}?auto=format&fit=crop&w=600&q=80`}
+                    src={p.image}
                     alt={p.title}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-108"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-                  <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-full border border-white/10">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <span className="absolute top-3 right-3 text-[10px] font-black uppercase tracking-wider bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full border border-white/20 shadow-md">
                     {p.tag}
                   </span>
-                  <div className="absolute bottom-3 left-3 h-9 w-9 rounded-xl bg-primary/20 backdrop-blur-md border border-primary/30 grid place-items-center text-primary shadow-lg">
-                    <p.icon className="h-4 w-4" />
+                  <div className="absolute bottom-3 left-3 h-10 w-10 rounded-xl bg-primary/20 backdrop-blur-md border border-primary/40 grid place-items-center text-primary shadow-xl">
+                    <p.icon className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold text-base text-foreground">
-                      {p.title}
-                    </h3>
-                    <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                      {p.body}
-                    </p>
-                  </div>
+
+                <div>
+                  <h3 className="font-extrabold text-lg text-foreground font-display">
+                    {p.title}
+                  </h3>
+                  <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    {p.body}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
 
           {/* MAIN LISTING WORKFLOW SECTION */}
-          <div className="mt-16" id="listing-form">
+          <div id="listing-form" className="pt-4">
             {done ? (
-              /* Success Confirmation Card */
-              <div className="card-premium p-8 max-w-2xl mx-auto text-center space-y-6 animate-in fade-in zoom-in duration-300">
-                <div className="h-16 w-16 rounded-full bg-emerald-500/10 text-emerald-500 grid place-items-center mx-auto border border-emerald-500/30">
-                  <CheckCircle2 className="h-10 w-10" />
+              /* Success Confirmation View */
+              <div className="max-w-2xl mx-auto rounded-3xl p-8 sm:p-12 border border-emerald-500/30 bg-card/80 dark:bg-card/60 backdrop-blur-2xl text-center space-y-6 shadow-2xl animate-in fade-in zoom-in duration-300">
+                <div className="h-20 w-20 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 grid place-items-center mx-auto shadow-lg">
+                  <CheckCircle2 className="h-12 w-12" />
                 </div>
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-500">
-                    Listing Pending Review
+
+                <div className="space-y-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-emerald-500">
+                    Listing Successfully Queued
                   </span>
-                  <h2 className="text-2xl sm:text-3xl font-bold mt-1 text-foreground">
-                    Your Gear Listing is Submitted!
+                  <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground font-display">
+                    Your Gear is Listed!
                   </h2>
-                  <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-                    "{title}" has been successfully queued for listing. Our team is running automated safety checks before pushing it live to retail borrowers.
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    "{title}" has been submitted and is currently undergoing fast automated verification before launching live to borrowers.
                   </p>
                 </div>
 
                 {/* Submitted Product Card Preview */}
-                <div className="p-4 rounded-2xl bg-secondary/50 border border-border/80 max-w-sm mx-auto text-left flex gap-4 items-center">
+                <div className="p-4 rounded-2xl bg-secondary/60 border border-border/80 max-w-sm mx-auto text-left flex gap-4 items-center shadow-md">
                   <img
                     src={primaryImage}
                     alt={title}
-                    className="h-16 w-16 rounded-xl object-cover border border-border shrink-0"
+                    className="h-18 w-18 rounded-xl object-cover border border-border shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-semibold text-sm truncate text-foreground">
+                    <h4 className="font-bold text-sm truncate text-foreground">
                       {title}
                     </h4>
                     <p className="text-xs text-muted-foreground capitalize">
                       {category} • ₹{price}/day
                     </p>
-                    <span className="mt-1 inline-flex items-center text-[10px] font-semibold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                      Under Review
+                    <span className="mt-1.5 inline-flex items-center text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                      Under Admin Review
                     </span>
                   </div>
                 </div>
@@ -440,12 +448,13 @@ export default function BecomeLender() {
                       setCurrentStep(1);
                     }}
                     variant="outline"
+                    className="rounded-2xl font-bold"
                   >
                     <Plus className="h-4 w-4 mr-2" /> List Another Item
                   </Button>
                   <Button
                     onClick={() => navigate({ to: "/dashboard" })}
-                    className="bg-primary text-primary-foreground"
+                    className="bg-primary text-primary-foreground rounded-2xl font-bold px-6"
                   >
                     Go to Lender Dashboard
                     <ArrowRight className="h-4 w-4 ml-2" />
@@ -453,83 +462,106 @@ export default function BecomeLender() {
                 </div>
               </div>
             ) : (
-              /* Guided Form Container */
+              /* Guided Form & Live Preview Grid */
               <div className="grid lg:grid-cols-12 gap-8 items-start">
-                {/* Form Side (8 cols on desktop) */}
-                <div className="lg:col-span-7 card-premium p-6 sm:p-8 space-y-6">
+                {/* Form Side (7 cols desktop) */}
+                <div className="lg:col-span-7 rounded-3xl border border-border/80 dark:border-white/10 bg-card/60 dark:bg-card/40 backdrop-blur-2xl p-6 sm:p-10 space-y-8 shadow-xl">
                   {/* Stepper Navigation */}
-                  <div className="flex items-center justify-between border-b border-border/80 pb-5">
-                    <div>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                  <div className="space-y-4 border-b border-border/80 pb-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-wider text-primary">
                         Step {currentStep} of 3
                       </span>
-                      <h2 className="text-xl font-bold text-foreground">
-                        {currentStep === 1 && "Gear Basics & Description"}
-                        {currentStep === 2 && "Pricing & Deposit Terms"}
-                        {currentStep === 3 && "Photos & Direct Camera Capture"}
-                      </h2>
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        {currentStep === 1 && "Gear Overview"}
+                        {currentStep === 2 && "Pricing & Terms"}
+                        {currentStep === 3 && "Direct Camera Photos"}
+                      </span>
                     </div>
 
-                    {/* Step Indicator Pills */}
-                    <div className="flex items-center gap-1.5">
-                      {[1, 2, 3].map((step) => (
-                        <button
-                          key={step}
-                          type="button"
-                          onClick={() => setCurrentStep(step as 1 | 2 | 3)}
-                          className={`h-2.5 rounded-full transition-all ${
-                            currentStep === step
-                              ? "w-8 bg-primary"
-                              : currentStep > step
-                              ? "w-2.5 bg-emerald-500"
-                              : "w-2.5 bg-secondary"
-                          }`}
-                        />
-                      ))}
+                    {/* Step Timeline Progress Bar */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { num: 1, label: "Basics" },
+                        { num: 2, label: "Pricing" },
+                        { num: 3, label: "Photos" },
+                      ].map((step) => {
+                        const isActive = currentStep === step.num;
+                        const isCompleted = currentStep > step.num;
+                        return (
+                          <button
+                            key={step.num}
+                            type="button"
+                            onClick={() =>
+                              setCurrentStep(step.num as 1 | 2 | 3)
+                            }
+                            className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              isActive
+                                ? "border-primary bg-primary text-primary-foreground shadow-md"
+                                : isCompleted
+                                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500"
+                                : "border-border/80 bg-background/50 text-muted-foreground hover:bg-accent"
+                            }`}
+                          >
+                            {isCompleted ? (
+                              <Check className="h-3.5 w-3.5" />
+                            ) : (
+                              <span>{step.num}.</span>
+                            )}
+                            <span className="truncate">{step.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
                   <form onSubmit={onSubmit} className="space-y-6">
                     {/* STEP 1: GEAR BASICS */}
                     {currentStep === 1 && (
-                      <div className="space-y-5 animate-in fade-in duration-200">
+                      <div className="space-y-6 animate-in fade-in duration-200">
                         <Input
-                          label="Gear Title"
-                          placeholder="e.g. Sony Alpha A7 IV Camera + 24-70mm Lens"
+                          label="Item Title"
+                          placeholder="e.g. Sony Alpha A7 IV Camera + 24-70mm GM Lens"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
                           required
                         />
 
-                        {/* Visual Category Selector Pills */}
+                        {/* Category Selector Grid */}
                         <div>
-                          <label className="mb-2 block text-xs font-semibold text-foreground">
+                          <label className="mb-2.5 block text-xs font-bold uppercase tracking-wider text-foreground">
                             Category Selection
                           </label>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {CATEGORIES.map((c) => (
                               <button
                                 key={c.id}
                                 type="button"
                                 onClick={() => setCategory(c.id)}
-                                className={`p-2.5 rounded-xl border text-left flex flex-col gap-2 transition-all group overflow-hidden ${
+                                className={`p-2.5 rounded-2xl border text-left flex flex-col gap-2 transition-all group overflow-hidden ${
                                   category === c.id
-                                    ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/40 shadow-sm"
+                                    ? "border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary/40 shadow-md"
                                     : "border-border/80 bg-card hover:bg-accent text-muted-foreground"
                                 }`}
                               >
-                                <div className="relative h-16 w-full rounded-lg overflow-hidden bg-secondary">
+                                <div className="relative h-16 w-full rounded-xl overflow-hidden bg-secondary">
                                   <img
                                     src={c.image}
                                     alt={c.label}
-                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-108"
+                                    loading="lazy"
                                   />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                                  <div className="absolute bottom-1.5 left-1.5 h-6 w-6 rounded-md bg-black/60 backdrop-blur-md border border-white/10 grid place-items-center text-white">
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                  <div className="absolute bottom-1.5 left-1.5 h-6 w-6 rounded-lg bg-black/70 backdrop-blur-md border border-white/20 grid place-items-center text-white">
                                     <c.icon className="h-3.5 w-3.5" />
                                   </div>
+                                  {category === c.id && (
+                                    <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary text-white grid place-items-center shadow-md">
+                                      <Check className="h-3 w-3" />
+                                    </div>
+                                  )}
                                 </div>
-                                <span className="text-xs truncate font-medium">
+                                <span className="text-xs truncate font-semibold">
                                   {c.label}
                                 </span>
                               </button>
@@ -539,18 +571,18 @@ export default function BecomeLender() {
 
                         {/* Condition Selector */}
                         <div>
-                          <label className="mb-1.5 block text-xs font-semibold text-foreground">
+                          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-foreground">
                             Item Condition
                           </label>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-3 gap-3">
                             {["Like New", "Excellent", "Good"].map((cond) => (
                               <button
                                 key={cond}
                                 type="button"
                                 onClick={() => setCondition(cond)}
-                                className={`py-2 px-3 rounded-xl border text-xs font-medium text-center transition-all ${
+                                className={`py-3 px-4 rounded-2xl border text-xs font-bold text-center transition-all ${
                                   condition === cond
-                                    ? "border-primary bg-primary/10 text-primary font-bold"
+                                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/40 shadow-sm"
                                     : "border-border bg-card text-muted-foreground hover:bg-accent"
                                 }`}
                               >
@@ -561,14 +593,14 @@ export default function BecomeLender() {
                         </div>
 
                         <div>
-                          <label className="mb-1.5 block text-xs font-semibold text-foreground">
+                          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-foreground">
                             Detailed Description & Included Accessories
                           </label>
                           <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Detail your item condition, included batteries, chargers, SD cards, carrying cases, and usage requirements..."
-                            className="w-full rounded-xl border bg-card p-4 min-h-[120px] transition-colors border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/40 text-sm placeholder:text-muted-foreground"
+                            placeholder="Describe your item condition, included batteries, chargers, SD cards, carrying cases, and usage guidelines..."
+                            className="w-full rounded-2xl border bg-card p-4 min-h-[130px] transition-colors border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/40 text-sm placeholder:text-muted-foreground"
                             required
                           />
                         </div>
@@ -585,7 +617,7 @@ export default function BecomeLender() {
                               }
                               setCurrentStep(2);
                             }}
-                            className="bg-primary text-primary-foreground px-6"
+                            className="bg-primary text-primary-foreground px-8 rounded-2xl font-bold"
                           >
                             Continue to Pricing
                             <ChevronRight className="h-4 w-4 ml-1" />
@@ -596,7 +628,7 @@ export default function BecomeLender() {
 
                     {/* STEP 2: PRICING & TERMS */}
                     {currentStep === 2 && (
-                      <div className="space-y-5 animate-in fade-in duration-200">
+                      <div className="space-y-6 animate-in fade-in duration-200">
                         <div>
                           <Input
                             label="Daily Rental Rate (₹ / Day)"
@@ -606,23 +638,23 @@ export default function BecomeLender() {
                             onChange={(e) => setPrice(e.target.value)}
                             required
                           />
-                          <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-1">
-                            <Info className="h-3.5 w-3.5 text-primary" />
-                            Suggested daily rate for {category}: ₹
+                          <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+                            <Info className="h-4 w-4 text-primary" />
+                            Suggested rate for {category}: ₹
                             {CATEGORIES.find((c) => c.id === category)
                               ?.avgPrice || 750}
                             /day based on market demand.
                           </p>
                         </div>
 
-                        {/* Security & Insurance Highlight */}
-                        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 space-y-2">
+                        {/* Insurance Protection Badge Card */}
+                        <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 space-y-2 shadow-sm">
                           <div className="flex items-center gap-2 font-bold text-sm">
                             <Shield className="h-4 w-4" />
-                            ₹50,000 Payent Lender Protection Included
+                            ₹50,000 Payent Damage Coverage Included
                           </div>
                           <p className="text-xs text-muted-foreground leading-relaxed">
-                            Your equipment is automatically protected against physical damage or non-return by verified borrowers.
+                            Your equipment is automatically insured against accidental damage or non-return by verified borrowers.
                           </p>
                         </div>
 
@@ -631,6 +663,7 @@ export default function BecomeLender() {
                             type="button"
                             variant="outline"
                             onClick={() => setCurrentStep(1)}
+                            className="rounded-2xl font-bold"
                           >
                             <ChevronLeft className="h-4 w-4 mr-1" /> Back
                           </Button>
@@ -643,25 +676,24 @@ export default function BecomeLender() {
                               }
                               setCurrentStep(3);
                             }}
-                            className="bg-primary text-primary-foreground px-6"
+                            className="bg-primary text-primary-foreground px-8 rounded-2xl font-bold"
                           >
-                            Continue to Photo Capture
+                            Continue to Photos
                             <ChevronRight className="h-4 w-4 ml-1" />
                           </Button>
                         </div>
                       </div>
                     )}
 
-                    {/* STEP 3: PHOTOS & DIRECT CAMERA CAPTURE */}
+                    {/* STEP 3: DIRECT CAMERA CAPTURE & UPLOAD */}
                     {currentStep === 3 && (
-                      <div className="space-y-5 animate-in fade-in duration-200">
-                        {/* Dual Action Buttons: Camera Snap & File Upload */}
+                      <div className="space-y-6 animate-in fade-in duration-200">
                         <div>
-                          <label className="text-xs font-semibold text-foreground block mb-2">
-                            Add Gear Photos (Click Camera or Upload)
+                          <label className="text-xs font-bold uppercase tracking-wider text-foreground block mb-3">
+                            Snap Photos with Camera or Upload
                           </label>
 
-                          <div className="grid sm:grid-cols-2 gap-3">
+                          <div className="grid sm:grid-cols-2 gap-4">
                             {/* DIRECT CAMERA ACTION BUTTON */}
                             <button
                               type="button"
@@ -675,37 +707,37 @@ export default function BecomeLender() {
                                 );
                                 setIsCameraOpen(true);
                               }}
-                              className="p-4 rounded-2xl border-2 border-primary/40 bg-primary/10 hover:bg-primary/20 hover:border-primary transition-all text-left flex items-center gap-3.5 group shadow-sm"
+                              className="p-5 rounded-3xl border-2 border-primary/50 bg-gradient-to-br from-primary/20 via-rose-500/10 to-primary/5 hover:border-primary transition-all text-left flex items-center gap-4 group shadow-md"
                             >
-                              <div className="h-12 w-12 rounded-xl bg-primary text-primary-foreground grid place-items-center group-hover:scale-105 transition-transform shadow-md">
-                                <Camera className="h-6 w-6" />
+                              <div className="h-14 w-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center group-hover:scale-108 transition-transform shadow-lg">
+                                <Camera className="h-7 w-7" />
                               </div>
                               <div>
-                                <h4 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                                <h4 className="font-extrabold text-sm text-foreground flex items-center gap-1.5 font-display">
                                   Take Photo with Camera
                                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                                 </h4>
-                                <p className="text-[11px] text-muted-foreground">
-                                  Use live camera stream to snap gear directly
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  Snap product photos directly from device camera
                                 </p>
                               </div>
                             </button>
 
-                            {/* GALLERY FILE UPLOAD ACTION BUTTON */}
+                            {/* FILE UPLOAD DROPZONE BUTTON */}
                             <button
                               type="button"
                               onClick={() => fileInputRef.current?.click()}
-                              className="p-4 rounded-2xl border-2 border-dashed border-border bg-card hover:bg-accent hover:border-muted-foreground transition-all text-left flex items-center gap-3.5 group"
+                              className="p-5 rounded-3xl border-2 border-dashed border-border bg-card hover:bg-accent hover:border-muted-foreground transition-all text-left flex items-center gap-4 group"
                             >
-                              <div className="h-12 w-12 rounded-xl bg-secondary text-foreground grid place-items-center group-hover:scale-105 transition-transform">
-                                <Upload className="h-5 w-5" />
+                              <div className="h-14 w-14 rounded-2xl bg-secondary text-foreground grid place-items-center group-hover:scale-108 transition-transform">
+                                <Upload className="h-6 w-6" />
                               </div>
                               <div>
-                                <h4 className="font-bold text-sm text-foreground">
+                                <h4 className="font-extrabold text-sm text-foreground font-display">
                                   Upload Image File
                                 </h4>
-                                <p className="text-[11px] text-muted-foreground">
-                                  Select photos from your device library
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  Select existing photos from gallery
                                 </p>
                               </div>
                             </button>
@@ -714,19 +746,19 @@ export default function BecomeLender() {
 
                         {/* Photo Gallery Thumbnails */}
                         {photos.length > 0 && (
-                          <div className="space-y-2">
-                            <span className="text-xs font-semibold text-foreground flex items-center justify-between">
-                              <span>Captured Photos ({photos.length})</span>
-                              <span className="text-[11px] text-muted-foreground">
-                                Click photo to mark as main thumbnail
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-foreground">
+                              <span>Captured Gallery ({photos.length})</span>
+                              <span className="text-[11px] text-muted-foreground font-normal">
+                                Tap thumbnail to select primary image
                               </span>
-                            </span>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
                               {photos.map((photo) => (
                                 <div
                                   key={photo.id}
                                   onClick={() => handleSetPrimaryPhoto(photo.id)}
-                                  className={`relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer group bg-black/40 ${
+                                  className={`relative aspect-square rounded-2xl overflow-hidden border-2 cursor-pointer group bg-black/40 shadow-sm ${
                                     photo.isPrimary
                                       ? "border-primary ring-2 ring-primary/40"
                                       : "border-border hover:border-primary/50"
@@ -737,14 +769,14 @@ export default function BecomeLender() {
                                     alt="Gear angle"
                                     className="h-full w-full object-cover"
                                   />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-90" />
-                                  <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-md">
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90" />
+                                  <span className="absolute bottom-2 left-2 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-md backdrop-blur-md">
                                     {photo.tag}
                                   </span>
 
                                   {photo.isPrimary && (
-                                    <span className="absolute top-2 left-2 text-[9px] font-bold uppercase text-black bg-primary px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                                      <Check className="h-2.5 w-2.5" /> Main
+                                    <span className="absolute top-2 left-2 text-[9px] font-black uppercase text-black bg-primary px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                                      <Check className="h-2.5 w-2.5" /> Primary
                                     </span>
                                   )}
 
@@ -754,7 +786,7 @@ export default function BecomeLender() {
                                       e.stopPropagation();
                                       handleRemovePhoto(photo.id);
                                     }}
-                                    className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/70 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center hover:bg-red-500 hover:text-white"
+                                    className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/80 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center hover:bg-red-500 hover:text-white"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -764,21 +796,22 @@ export default function BecomeLender() {
                           </div>
                         )}
 
-                        <div className="pt-2 flex justify-between items-center">
+                        <div className="pt-4 flex justify-between items-center border-t border-border/80">
                           <Button
                             type="button"
                             variant="outline"
                             onClick={() => setCurrentStep(2)}
+                            className="rounded-2xl font-bold"
                           >
                             <ChevronLeft className="h-4 w-4 mr-1" /> Back
                           </Button>
                           <Button
                             type="submit"
                             size="lg"
-                            className="bg-primary text-primary-foreground px-8 font-bold"
+                            className="bg-primary text-primary-foreground px-10 rounded-2xl font-extrabold shadow-lg"
                             loading={isSubmitting}
                           >
-                            Submit Gear Listing
+                            Submit Listing
                             <ArrowRight className="h-4 w-4 ml-2" />
                           </Button>
                         </div>
@@ -787,81 +820,109 @@ export default function BecomeLender() {
                   </form>
                 </div>
 
-                {/* Live Marketplace Card Preview Side Panel (5 cols desktop) */}
+                {/* Live Marketplace Product Card Preview (5 cols desktop) */}
                 <div className="lg:col-span-5 sticky top-24 space-y-4">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <Layers className="h-3.5 w-3.5 text-primary" /> Live Listing Preview
+                  <div className="flex items-center justify-between px-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-2 font-display">
+                      <Layers className="h-4 w-4 text-primary" /> Live Catalog Preview
                     </span>
-                    <span className="text-[10px] text-emerald-500 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                      Real-time Card
+                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                      Real-time Preview
                     </span>
                   </div>
 
                   {/* Simulated Marketplace Product Card */}
-                  <div className="card-premium overflow-hidden border border-border/80 bg-card shadow-lg">
-                    <div className="relative aspect-video w-full overflow-hidden bg-secondary">
+                  <div className="rounded-3xl overflow-hidden border border-border/80 dark:border-white/10 bg-card shadow-xl space-y-0">
+                    <div className="relative aspect-4/3 w-full overflow-hidden bg-secondary">
                       <img
                         src={primaryImage}
                         alt="Product preview"
                         className="h-full w-full object-cover"
                       />
+
+                      {/* Top Badges */}
                       <div className="absolute top-3 left-3 flex gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider bg-black/70 backdrop-blur-md text-white px-2.5 py-1 rounded-full border border-white/10">
-                          {category}
-                        </span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500 text-white px-2.5 py-1 rounded-full shadow-sm">
-                          Available
-                        </span>
+                        <div className="flex items-center gap-1 bg-[#FF5A5F] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                          <ShieldCheck className="h-3 w-3" />
+                          <span>Verified</span>
+                        </div>
                       </div>
-                      <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-md text-white font-extrabold text-sm px-3 py-1 rounded-xl border border-white/10">
-                        ₹{price || "850"} <span className="text-[10px] font-normal text-zinc-400">/ day</span>
+
+                      <div className="absolute top-3 right-3 p-2 rounded-full bg-background/80 text-foreground shadow-md">
+                        <TagIcon className="h-3.5 w-3.5" />
+                      </div>
+
+                      {/* Rating Star Badge */}
+                      <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/70 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/10">
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        <span>5.0 (New)</span>
                       </div>
                     </div>
 
-                    <div className="p-5 space-y-3">
-                      <div>
-                        <h3 className="font-bold text-lg text-foreground line-clamp-1">
-                          {title || "High-Resolution Tech Gear"}
-                        </h3>
-                        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                          {description ||
-                            "Item description and accessories will appear here once entered..."}
-                        </p>
-                      </div>
-
-                      <div className="pt-3 border-t border-border/60 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={
-                              user?.avatar ||
-                              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80"
-                            }
-                            alt="Owner avatar"
-                            className="h-7 w-7 rounded-full object-cover border border-border"
-                          />
-                          <div>
-                            <p className="text-xs font-semibold text-foreground leading-none">
-                              {user?.fullName || "Verified Lender"}
-                            </p>
-                            <span className="text-[10px] text-emerald-500 font-medium">
-                              ✓ Verified Lender
+                    <div className="p-5 space-y-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="inline-block text-[10px] font-black text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full capitalize">
+                            {category}
+                          </span>
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                            <MapPin className="h-3 w-3 text-primary" />
+                            <span className="truncate max-w-[110px]">
+                              Jubilee Hills, Hyd
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1 text-xs font-semibold text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-lg">
-                          <Star className="h-3.5 w-3.5 fill-amber-500" /> 5.0 (New)
+                        <h3 className="font-extrabold text-base leading-snug line-clamp-2 text-foreground font-display">
+                          {title || "High-Resolution Tech Gear"}
+                        </h3>
+                      </div>
+
+                      <div className="space-y-2 pt-3 border-t border-border/60">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-[11px] text-muted-foreground font-bold">
+                            Daily Rate
+                          </span>
+                          <div>
+                            <span className="text-xl font-black text-foreground tracking-tight font-display">
+                              ₹{price || "850"}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-medium">
+                              {" "}
+                              /day
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={
+                                user?.avatar ||
+                                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80"
+                              }
+                              alt="Owner"
+                              className="h-7 w-7 rounded-full object-cover border border-border"
+                            />
+                            <div className="text-[11px]">
+                              <p className="font-bold text-foreground leading-none">
+                                {user?.fullName || "Verified Lender"}
+                              </p>
+                              <p className="text-[9px] text-emerald-500 font-semibold mt-0.5">
+                                ✓ Verified Owner
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Protection Info Pill */}
-                  <div className="p-4 rounded-xl border border-border bg-secondary/40 text-xs text-muted-foreground flex items-center gap-3">
+                  {/* Security Policy Card */}
+                  <div className="p-4 rounded-2xl border border-border/80 bg-secondary/40 text-xs text-muted-foreground flex items-center gap-3 shadow-sm">
                     <Shield className="h-5 w-5 text-primary shrink-0" />
                     <span>
-                      Listings are published with automatic ₹50K damage insurance and identity verification for all rental requests.
+                      Automatic ₹50,000 damage policy and identity verification for all rental requests.
                     </span>
                   </div>
                 </div>
