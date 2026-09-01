@@ -1091,22 +1091,25 @@ function ListingPermissionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl rounded-3xl border border-border/80 bg-card p-6 shadow-2xl space-y-5 overflow-hidden max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl rounded-3xl border border-primary/30 bg-card/95 p-6 shadow-2xl space-y-5 overflow-hidden max-h-[92vh] overflow-y-auto backdrop-blur-2xl">
+        {/* Ambient subtle glow background */}
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-border/60 pb-4">
+        <div className="flex items-start justify-between border-b border-border/60 pb-4 relative z-10">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                <Check className="h-4 w-4" />
+              <span className="p-2 rounded-xl bg-gradient-to-tr from-primary/20 to-amber-500/20 text-primary border border-primary/30 shadow-inner">
+                <Check className="h-4 w-4 text-primary" />
               </span>
               <h2 className="text-lg font-black text-foreground tracking-tight font-display">
                 Confirm Listing Permission
               </h2>
             </div>
             <p className="text-xs text-muted-foreground font-medium">
-              Review details and grant explicit permission to publish this item
-              under your lender account.
+              Review reference model details and authorize publishing under your lender account.
             </p>
           </div>
           <button
@@ -1118,29 +1121,29 @@ function ListingPermissionModal({
         </div>
 
         {/* Content Body */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
           {/* Card Preview Banner */}
-          <div className="flex items-center gap-4 p-3 rounded-2xl bg-secondary/50 border border-border/60">
-            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-card p-1 border border-border/50 flex items-center justify-center">
+          <div className="flex items-center gap-4 p-3.5 rounded-2xl bg-secondary/60 border border-primary/20 shadow-inner">
+            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-card p-1 border border-border/60 flex items-center justify-center shadow-md">
               <img
                 src={card.image}
                 alt={card.name}
-                className="h-full w-full object-contain"
+                className="h-full w-full object-cover rounded-xl"
               />
             </div>
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
                   {card.name}
                 </span>
-                <span className="text-[10px] text-muted-foreground font-bold">
+                <span className="text-[10px] text-amber-500 font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
                   {card.badgeText}
                 </span>
               </div>
-              <p className="text-xs font-black text-foreground truncate">
+              <p className="text-sm font-black text-foreground truncate font-display">
                 {title || card.defaultTitle}
               </p>
-              <p className="text-[11px] font-bold text-primary">
+              <p className="text-xs font-black text-amber-500 font-mono">
                 ₹{price || card.defaultPrice} / day
               </p>
             </div>
@@ -1156,7 +1159,7 @@ function ListingPermissionModal({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 placeholder="e.g. Sony FX3 Cinema Camera"
                 required
               />
@@ -1171,7 +1174,7 @@ function ListingPermissionModal({
                   type="text"
                   value={card.name}
                   disabled
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-secondary/50 text-xs font-semibold text-muted-foreground cursor-not-allowed"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border/60 bg-secondary/50 text-xs font-semibold text-muted-foreground cursor-not-allowed uppercase"
                 />
               </div>
 
@@ -1183,7 +1186,7 @@ function ListingPermissionModal({
                   type="number"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   placeholder="2500"
                   required
                 />
@@ -1192,32 +1195,32 @@ function ListingPermissionModal({
 
             <div>
               <label className="block text-xs font-extrabold text-foreground mb-1">
-                Description
+                Description & Specifications
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary resize-none"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
                 placeholder="Item condition, included accessories, rental guidelines..."
               />
             </div>
           </div>
 
           {/* Authorization Checkbox */}
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-primary/5 border border-primary/20">
+          <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
             <input
               type="checkbox"
               id="permission-check"
               checked={permissionGranted}
               onChange={(e) => setPermissionGranted(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-primary text-primary focus:ring-primary cursor-pointer"
+              className="mt-0.5 h-4 w-4 rounded border-emerald-500 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
             />
             <label
               htmlFor="permission-check"
               className="text-[11px] font-medium text-foreground cursor-pointer leading-tight"
             >
-              <span className="font-extrabold text-primary">
+              <span className="font-extrabold text-emerald-500">
                 Listing Authorization:
               </span>{" "}
               I confirm I own or am authorized to rent this item, and I agree to
@@ -1226,18 +1229,18 @@ function ListingPermissionModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/60">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-border text-xs font-extrabold text-muted-foreground hover:bg-secondary transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border border-border/80 text-xs font-extrabold text-foreground hover:bg-secondary transition-colors cursor-pointer"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#FF5A5F] hover:bg-[#ff4349] active:scale-95 text-white text-xs font-black tracking-tight shadow-md hover:shadow-lg transition-all cursor-pointer border border-white/20"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary via-amber-500 to-primary text-white dark:text-black text-xs font-black tracking-tight shadow-lg shadow-primary/20 hover:opacity-95 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
             >
               <Check className="h-4 w-4" />
               <span>Confirm & Publish Listing</span>
