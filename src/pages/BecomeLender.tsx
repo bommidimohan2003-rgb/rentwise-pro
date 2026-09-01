@@ -35,6 +35,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { CameraCaptureModal } from "@/components/lender/CameraCaptureModal";
 
+import bikeImg from "@/assets/images/bike.png";
+
 const CATEGORIES = [
   {
     id: "cameras",
@@ -65,8 +67,7 @@ const CATEGORIES = [
     label: "Bikes & Rides",
     icon: Bike,
     avgPrice: 450,
-    image:
-      "https://images.unsplash.com/photo-1485965120138-e538ac21d810?auto=format&fit=crop&w=800&q=80",
+    image: bikeImg,
   },
   {
     id: "tools",
@@ -83,14 +84,6 @@ const CATEGORIES = [
     avgPrice: 250,
     image:
       "https://images.unsplash.com/photo-1609081219091-a3f2b4c10eb3?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "gaming",
-    label: "Gaming Consoles",
-    icon: Gamepad2,
-    avgPrice: 900,
-    image:
-      "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=800&q=80",
   },
   {
     id: "audio",
@@ -517,14 +510,24 @@ export default function BecomeLender() {
                                 key={c.id}
                                 type="button"
                                 onClick={() => setCategory(c.id)}
-                                className={`p-3 rounded-xl border text-left flex flex-col gap-2 transition-all ${
+                                className={`p-2.5 rounded-xl border text-left flex flex-col gap-2 transition-all group overflow-hidden ${
                                   category === c.id
                                     ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/40 shadow-sm"
                                     : "border-border/80 bg-card hover:bg-accent text-muted-foreground"
                                 }`}
                               >
-                                <c.icon className="h-5 w-5" />
-                                <span className="text-xs truncate">
+                                <div className="relative h-16 w-full rounded-lg overflow-hidden bg-secondary">
+                                  <img
+                                    src={c.image}
+                                    alt={c.label}
+                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                                  <div className="absolute bottom-1.5 left-1.5 h-6 w-6 rounded-md bg-black/60 backdrop-blur-md border border-white/10 grid place-items-center text-white">
+                                    <c.icon className="h-3.5 w-3.5" />
+                                  </div>
+                                </div>
+                                <span className="text-xs truncate font-medium">
                                   {c.label}
                                 </span>
                               </button>
