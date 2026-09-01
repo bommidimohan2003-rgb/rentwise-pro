@@ -322,7 +322,7 @@ export default function BecomeLender() {
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[450px] bg-gradient-to-br from-primary/20 via-purple-500/10 to-emerald-500/10 blur-[130px] rounded-full -z-10" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* HERO BANNER SECTION */}
+          {/* HERO BANNER SECTION (STATIC / NO HOVER EFFECTS) */}
           <div className="relative rounded-3xl p-8 sm:p-12 border border-border/80 dark:border-white/10 bg-card/60 dark:bg-card/40 backdrop-blur-2xl shadow-2xl overflow-hidden">
             <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -361,18 +361,18 @@ export default function BecomeLender() {
             </div>
           </div>
 
-          {/* PERKS GRID SECTION */}
+          {/* PERKS GRID SECTION (STATIC / NO HOVER EFFECTS) */}
           <div className="grid md:grid-cols-3 gap-6">
             {perks.map((p) => (
               <div
                 key={p.title}
-                className="group relative overflow-hidden rounded-3xl border border-border/80 dark:border-white/10 bg-card/60 dark:bg-card/40 backdrop-blur-xl p-6 shadow-lg hover:shadow-2xl hover:border-primary/50 transition-all duration-300 flex flex-col justify-between"
+                className="relative overflow-hidden rounded-3xl border border-border/80 dark:border-white/10 bg-card/60 dark:bg-card/40 backdrop-blur-xl p-6 shadow-lg flex flex-col justify-between"
               >
                 <div className="relative aspect-16/10 w-full overflow-hidden rounded-2xl bg-secondary mb-5">
                   <img
                     src={p.image}
                     alt={p.title}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-108"
+                    className="h-full w-full object-cover"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -495,12 +495,12 @@ export default function BecomeLender() {
                             onClick={() =>
                               setCurrentStep(step.num as 1 | 2 | 3)
                             }
-                            className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                            className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${
                               isActive
                                 ? "border-primary bg-primary text-primary-foreground shadow-md"
                                 : isCompleted
                                 ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500"
-                                : "border-border/80 bg-background/50 text-muted-foreground hover:bg-accent"
+                                : "border-border/80 bg-background/50 text-muted-foreground"
                             }`}
                           >
                             {isCompleted ? (
@@ -527,7 +527,7 @@ export default function BecomeLender() {
                           required
                         />
 
-                        {/* Category Selector Grid */}
+                        {/* Category Selector Grid (NO HOVER EFFECTS) */}
                         <div>
                           <label className="mb-2.5 block text-xs font-bold uppercase tracking-wider text-foreground">
                             Category Selection
@@ -538,17 +538,17 @@ export default function BecomeLender() {
                                 key={c.id}
                                 type="button"
                                 onClick={() => setCategory(c.id)}
-                                className={`p-2.5 rounded-2xl border text-left flex flex-col gap-2 transition-all group overflow-hidden ${
+                                className={`p-2.5 rounded-2xl border text-left flex flex-col gap-2 overflow-hidden cursor-pointer ${
                                   category === c.id
                                     ? "border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary/40 shadow-md"
-                                    : "border-border/80 bg-card hover:bg-accent text-muted-foreground"
+                                    : "border-border/80 bg-card text-muted-foreground"
                                 }`}
                               >
                                 <div className="relative h-16 w-full rounded-xl overflow-hidden bg-secondary">
                                   <img
                                     src={c.image}
                                     alt={c.label}
-                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-108"
+                                    className="h-full w-full object-cover"
                                     loading="lazy"
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -580,10 +580,10 @@ export default function BecomeLender() {
                                 key={cond}
                                 type="button"
                                 onClick={() => setCondition(cond)}
-                                className={`py-3 px-4 rounded-2xl border text-xs font-bold text-center transition-all ${
+                                className={`py-3 px-4 rounded-2xl border text-xs font-bold text-center cursor-pointer ${
                                   condition === cond
                                     ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/40 shadow-sm"
-                                    : "border-border bg-card text-muted-foreground hover:bg-accent"
+                                    : "border-border bg-card text-muted-foreground"
                                 }`}
                               >
                                 {cond}
@@ -600,7 +600,7 @@ export default function BecomeLender() {
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Describe your item condition, included batteries, chargers, SD cards, carrying cases, and usage guidelines..."
-                            className="w-full rounded-2xl border bg-card p-4 min-h-[130px] transition-colors border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/40 text-sm placeholder:text-muted-foreground"
+                            className="w-full rounded-2xl border bg-card p-4 min-h-[130px] border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/40 text-sm placeholder:text-muted-foreground"
                             required
                           />
                         </div>
@@ -685,7 +685,7 @@ export default function BecomeLender() {
                       </div>
                     )}
 
-                    {/* STEP 3: DIRECT CAMERA CAPTURE & UPLOAD */}
+                    {/* STEP 3: DIRECT CAMERA CAPTURE & UPLOAD (NO HOVER EFFECTS) */}
                     {currentStep === 3 && (
                       <div className="space-y-6 animate-in fade-in duration-200">
                         <div>
@@ -707,9 +707,9 @@ export default function BecomeLender() {
                                 );
                                 setIsCameraOpen(true);
                               }}
-                              className="p-5 rounded-3xl border-2 border-primary/50 bg-gradient-to-br from-primary/20 via-rose-500/10 to-primary/5 hover:border-primary transition-all text-left flex items-center gap-4 group shadow-md"
+                              className="p-5 rounded-3xl border-2 border-primary/50 bg-gradient-to-br from-primary/20 via-rose-500/10 to-primary/5 text-left flex items-center gap-4 shadow-md cursor-pointer"
                             >
-                              <div className="h-14 w-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center group-hover:scale-108 transition-transform shadow-lg">
+                              <div className="h-14 w-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-lg">
                                 <Camera className="h-7 w-7" />
                               </div>
                               <div>
@@ -727,9 +727,9 @@ export default function BecomeLender() {
                             <button
                               type="button"
                               onClick={() => fileInputRef.current?.click()}
-                              className="p-5 rounded-3xl border-2 border-dashed border-border bg-card hover:bg-accent hover:border-muted-foreground transition-all text-left flex items-center gap-4 group"
+                              className="p-5 rounded-3xl border-2 border-dashed border-border bg-card text-left flex items-center gap-4 cursor-pointer"
                             >
-                              <div className="h-14 w-14 rounded-2xl bg-secondary text-foreground grid place-items-center group-hover:scale-108 transition-transform">
+                              <div className="h-14 w-14 rounded-2xl bg-secondary text-foreground grid place-items-center">
                                 <Upload className="h-6 w-6" />
                               </div>
                               <div>
@@ -758,10 +758,10 @@ export default function BecomeLender() {
                                 <div
                                   key={photo.id}
                                   onClick={() => handleSetPrimaryPhoto(photo.id)}
-                                  className={`relative aspect-square rounded-2xl overflow-hidden border-2 cursor-pointer group bg-black/40 shadow-sm ${
+                                  className={`relative aspect-square rounded-2xl overflow-hidden border-2 cursor-pointer bg-black/40 shadow-sm ${
                                     photo.isPrimary
                                       ? "border-primary ring-2 ring-primary/40"
-                                      : "border-border hover:border-primary/50"
+                                      : "border-border"
                                   }`}
                                 >
                                   <img
@@ -786,7 +786,7 @@ export default function BecomeLender() {
                                       e.stopPropagation();
                                       handleRemovePhoto(photo.id);
                                     }}
-                                    className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/80 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center hover:bg-red-500 hover:text-white"
+                                    className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/80 text-red-400 grid place-items-center"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
