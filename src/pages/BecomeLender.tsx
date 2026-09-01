@@ -35,7 +35,12 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { CameraCaptureModal } from "@/components/lender/CameraCaptureModal";
 
+import cameraImg from "@/assets/images/camera.png";
+import laptopImg from "@/assets/images/laptop.png";
+import droneImg from "@/assets/images/drone.png";
 import bikeImg from "@/assets/images/bike.png";
+import toolImg from "@/assets/images/tool.png";
+import powerbankImg from "@/assets/images/powerbank.png";
 
 const CATEGORIES = [
   {
@@ -43,24 +48,21 @@ const CATEGORIES = [
     label: "Cameras",
     icon: Camera,
     avgPrice: 850,
-    image:
-      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80",
+    image: cameraImg,
   },
   {
     id: "laptops",
     label: "Laptops",
     icon: Laptop,
     avgPrice: 1200,
-    image:
-      "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=800&q=80",
+    image: laptopImg,
   },
   {
     id: "drones",
     label: "Drones",
     icon: Zap,
     avgPrice: 1500,
-    image:
-      "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?auto=format&fit=crop&w=800&q=80",
+    image: droneImg,
   },
   {
     id: "bikes",
@@ -74,16 +76,14 @@ const CATEGORIES = [
     label: "Tools & Power",
     icon: Wrench,
     avgPrice: 500,
-    image:
-      "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=800&q=80",
+    image: toolImg,
   },
   {
     id: "powerbanks",
     label: "Power Banks",
     icon: BatteryCharging,
     avgPrice: 250,
-    image:
-      "https://images.unsplash.com/photo-1609081219091-a3f2b4c10eb3?auto=format&fit=crop&w=800&q=80",
+    image: powerbankImg,
   },
   {
     id: "audio",
@@ -304,13 +304,15 @@ export default function BecomeLender() {
       />
 
       {/* Direct Camera Capture WebRTC Modal */}
-      <CameraCaptureModal
-        isOpen={isCameraOpen}
-        onClose={() => setIsCameraOpen(false)}
-        onCapture={handleCameraCapture}
-        onFallbackUpload={() => fileInputRef.current?.click()}
-        angleTag={activeAngleTag}
-      />
+      {isCameraOpen && (
+        <CameraCaptureModal
+          isOpen={isCameraOpen}
+          onClose={() => setIsCameraOpen(false)}
+          onCapture={handleCameraCapture}
+          onFallbackUpload={() => fileInputRef.current?.click()}
+          angleTag={activeAngleTag}
+        />
+      )}
 
       <section className="relative overflow-hidden pt-12 pb-24">
         {/* Background Ambient Glowing Orbs */}

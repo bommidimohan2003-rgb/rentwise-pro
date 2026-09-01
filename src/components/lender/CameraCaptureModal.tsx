@@ -62,6 +62,7 @@ export function CameraCaptureModal({
 
   // Check available cameras
   useEffect(() => {
+    if (!isOpen) return;
     if (!navigator.mediaDevices?.enumerateDevices) return;
     navigator.mediaDevices
       .enumerateDevices()
@@ -70,7 +71,7 @@ export function CameraCaptureModal({
         setHasMultipleCameras(videoInputs.length > 1);
       })
       .catch(() => {});
-  }, []);
+  }, [isOpen]);
 
   // Stop camera stream tracks
   const stopStream = useCallback(() => {
