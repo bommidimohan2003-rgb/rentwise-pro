@@ -221,6 +221,8 @@ export function Hero() {
                     key={activeGear.id}
                     src={activeGear.image}
                     alt={activeGear.title}
+                    fetchPriority="high"
+                    loading="eager"
                     initial={{ opacity: 0, scale: 1.08 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}

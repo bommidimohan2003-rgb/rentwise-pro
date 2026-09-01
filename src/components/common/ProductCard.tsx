@@ -117,7 +117,9 @@ export function ProductCard({
         <div className="relative aspect-4/3 overflow-hidden bg-secondary/80">
           <img
             src={imgSrc}
-            alt=""
+            alt={product.title}
+            loading="lazy"
+            decoding="async"
             onError={() => {
               if (imgSrc !== fallbackImg) setImgSrc(fallbackImg);
             }}

@@ -274,6 +274,12 @@ function RootComponent() {
     };
   }, []);
 
+  const [showChatbot, setShowChatbot] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShowChatbot(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
@@ -288,7 +294,7 @@ function RootComponent() {
         />
       )}
 
-      <HelpChatbot />
+      {showChatbot && <HelpChatbot />}
       <Toaster position="bottom-right" richColors />
     </QueryClientProvider>
   );
