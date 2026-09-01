@@ -903,16 +903,19 @@ export default function Categories() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: i * 0.05 }}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card/90 dark:bg-card/50 backdrop-blur-md p-3 transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/15 hover:-translate-y-1"
+                  onClick={() =>
+                    handleOpenListingPermissionFromProduct(refProd)
+                  }
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card/90 dark:bg-card/50 backdrop-blur-md p-3 transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/15 hover:-translate-y-1 cursor-pointer"
                 >
-                  {/* Top Image Container */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-secondary/60">
+                  {/* Top Enlarged Image Container */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-secondary/60 min-h-[165px]">
                     <img
                       src={refProd.image}
                       alt={refProd.title}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-90" />
 
                     {/* Badges */}
                     <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/90 text-black text-[9px] font-black uppercase tracking-wider shadow-md">
@@ -933,7 +936,7 @@ export default function Categories() {
                     </div>
                   </div>
 
-                  {/* Body Content */}
+                  {/* Body Content (Clean Card Face: Image, Title, Price, Add Listing Button) */}
                   <div className="mt-3 flex-1 flex flex-col justify-between">
                     <div>
                       <div className="text-[10px] font-black uppercase tracking-widest text-primary">
@@ -942,9 +945,6 @@ export default function Categories() {
                       <h3 className="text-xs font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors mt-0.5">
                         {refProd.title}
                       </h3>
-                      <p className="text-[11px] text-muted-foreground/80 line-clamp-2 mt-1 leading-relaxed">
-                        {refProd.description}
-                      </p>
                     </div>
 
                     {/* Price & Action Button */}
@@ -963,9 +963,10 @@ export default function Categories() {
 
                       <button
                         type="button"
-                        onClick={() =>
-                          handleOpenListingPermissionFromProduct(refProd)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenListingPermissionFromProduct(refProd);
+                        }}
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-black text-[10px] font-extrabold shadow-md active:scale-95 transition-all cursor-pointer shrink-0"
                       >
                         <Plus className="h-3 w-3" />
