@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 import {
   Search as SearchIcon,
   Tag,
@@ -18,6 +19,8 @@ import {
   Info,
   Plus,
   ExternalLink,
+  Sparkles,
+  MapPin,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
@@ -837,41 +840,137 @@ export default function Categories() {
           </div>
         </div>
 
-        {/* Category Reference Items Section (BELOW SEARCH BAR) */}
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                <Tag className="h-4 w-4" />
+        {/* Category Reference Items Section (Redesigned in-place) */}
+        <div className="relative p-5 md:p-6 rounded-3xl border border-primary/25 bg-gradient-to-b from-card/95 via-card/80 to-card/95 backdrop-blur-2xl shadow-2xl space-y-5 transition-all overflow-hidden group/box my-4">
+          {/* Ambient subtle glow background */}
+          <div className="absolute -top-24 -right-24 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none group-hover/box:bg-primary/20 transition-all duration-700" />
+          <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Section Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10 border-b border-border/60 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-primary/20 via-amber-500/20 to-primary/10 border border-primary/30 grid place-items-center text-primary shadow-inner">
+                <Sparkles className="h-5 w-5 text-primary animate-pulse" />
               </div>
-              <h2 className="text-xs font-black uppercase tracking-wider text-foreground font-display">
-                Category Reference Items
-              </h2>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-black uppercase tracking-wider text-foreground font-display flex items-center gap-2">
+                    Category Reference Items
+                  </h2>
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 uppercase tracking-widest">
+                    Quick Guide Models
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Standard gear models for reference. Click{" "}
+                  <span className="text-primary font-bold">+ Add Listing</span>{" "}
+                  to publish your item instantly.
+                </p>
+              </div>
             </div>
 
             {cat !== "all" && (
               <button
                 onClick={() => setCat("all")}
-                className="text-xs font-extrabold text-primary hover:underline cursor-pointer flex items-center gap-1.5 bg-primary/10 px-3 py-1 rounded-full border border-primary/20 transition-all hover:bg-primary/20"
+                className="text-xs font-extrabold text-primary hover:underline cursor-pointer flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 transition-all hover:bg-primary/20 self-start sm:self-center"
               >
-                <span>Reset Filters</span>
+                <span>Reset Category Filter</span>
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
 
-          {/* Grid of Reference Products using EXACT SAME ProductCard Design */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            {filteredReferenceProducts.map((refProd, i) => (
-              <ProductCard
-                key={refProd.id}
-                product={refProd}
-                index={i}
-                onListGear={(prod) =>
-                  handleOpenListingPermissionFromProduct(prod)
-                }
-              />
-            ))}
+          {/* Grid of Reference Products */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 relative z-10">
+            {filteredReferenceProducts.map((refProd, i) => {
+              const CategoryIcon =
+                categoryIcons[
+                  refProd.category.toLowerCase() as keyof typeof categoryIcons
+                ] ||
+                categoryIcons[
+                  refProd.category as keyof typeof categoryIcons
+                ] ||
+                Tag;
+
+              return (
+                <motion.div
+                  key={refProd.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.05 }}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card/90 dark:bg-card/50 backdrop-blur-md p-3 transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/15 hover:-translate-y-1"
+                >
+                  {/* Top Image Container */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-secondary/60">
+                    <img
+                      src={refProd.image}
+                      alt={refProd.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+
+                    {/* Badges */}
+                    <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/90 text-black text-[9px] font-black uppercase tracking-wider shadow-md">
+                      <CategoryIcon className="h-3 w-3" />
+                      <span>Category Guide</span>
+                    </div>
+
+                    <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-md text-amber-400 text-[10px] font-bold border border-amber-500/20">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      <span>{refProd.rating || 5.0}</span>
+                    </div>
+
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 text-[10px] font-semibold text-white/90">
+                      <MapPin className="h-3 w-3 text-primary shrink-0" />
+                      <span className="truncate max-w-[110px]">
+                        Jubilee Hills, Hyd
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Body Content */}
+                  <div className="mt-3 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-primary">
+                        {refProd.category}
+                      </div>
+                      <h3 className="text-xs font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors mt-0.5">
+                        {refProd.title}
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground/80 line-clamp-2 mt-1 leading-relaxed">
+                        {refProd.description}
+                      </p>
+                    </div>
+
+                    {/* Price & Action Button */}
+                    <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between gap-1.5">
+                      <div>
+                        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                          Day Rate
+                        </span>
+                        <span className="text-xs font-black text-foreground">
+                          ₹{refProd.price.toLocaleString("en-IN")}
+                          <span className="text-[10px] font-normal text-muted-foreground">
+                            /day
+                          </span>
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleOpenListingPermissionFromProduct(refProd)
+                        }
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-black text-[10px] font-extrabold shadow-md active:scale-95 transition-all cursor-pointer shrink-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>+ Add Listing</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
 
