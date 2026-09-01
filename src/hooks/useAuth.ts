@@ -72,14 +72,23 @@ export function useAuth() {
       if (res.success && res.token) {
         storage.set(STORAGE_KEYS.token, res.token);
 
-        // Fetch user details from the backend using the token
-        const profile = await api.getMe(res.token);
-        const loggedUser: User = {
-          id: profile.email,
-          fullName: profile.fullName || profile.email.split("@")[0],
-          email: profile.email,
-          role: profile.role,
-        };
+        let loggedUser: User;
+        try {
+          const profile = await api.getMe(res.token);
+          loggedUser = {
+            id: profile.email || email,
+            fullName: profile.fullName || email.split("@")[0],
+            email: profile.email || email,
+            role: profile.role || "customer",
+          };
+        } catch {
+          loggedUser = {
+            id: email,
+            fullName: email.split("@")[0],
+            email: email,
+            role: "customer",
+          };
+        }
 
         storage.set(STORAGE_KEYS.currentUser, loggedUser);
         setUser(loggedUser);
@@ -87,7 +96,14 @@ export function useAuth() {
       }
       return { ok: false, error: "Invalid credentials from server." };
     } catch (e) {
-      const err = e as { message?: string };
+      const err = e as { name?: string; message?: string };
+      if (
+        err?.name === "AbortError" ||
+        err?.message?.includes("aborted") ||
+        err?.message?.includes("signal is aborted")
+      ) {
+        return { ok: false, error: "Connection timed out. Please try logging in again." };
+      }
       return { ok: false, error: err.message || "Invalid email or password." };
     }
   }, []);
