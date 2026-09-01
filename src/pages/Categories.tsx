@@ -523,13 +523,16 @@ export default function Categories() {
     if (!selectedCardForListing) return;
 
     const card = selectedCardForListing;
+    const fallbackImg =
+      card.image ||
+      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600";
     const newProduct: Product = {
       id: `p-custom-${Date.now()}`,
-      title: modalTitle.trim(),
-      description: modalDescription.trim(),
-      price: priceNum,
-      image: modalImage || fallbackImg,
-      category: modalCategory,
+      title: (details.title || card.defaultTitle).trim(),
+      description: (details.description || card.defaultDesc).trim(),
+      price: details.price || Number(card.defaultPrice) || 1000,
+      image: fallbackImg,
+      category: card.name,
       rating: 5.0,
       reviews: 0,
       available: true,
@@ -1014,8 +1017,8 @@ export default function Categories() {
         {/* Product Cards Grid */}
         {filtered.length ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((p, i) => (
-              <ProductCard key={p.id} product={p} index={i} />
+            {filtered.map((p) => (
+              <ProductCard key={p.id} product={p} />
             ))}
           </div>
         ) : (
