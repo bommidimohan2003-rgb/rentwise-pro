@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Sparkles,
   ArrowRight,
-  Sliders,
   Info,
   Trash2,
   Plus,
@@ -161,10 +160,6 @@ export default function BecomeLender() {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [activeAngleTag, setActiveAngleTag] = useState("Front View");
 
-  // Calculator State
-  const [calcCategory, setCalcCategory] = useState("cameras");
-  const [calcDays, setCalcDays] = useState(12);
-
   // File input ref for fallbacks
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -231,11 +226,6 @@ export default function BecomeLender() {
     photos[0]?.url ||
     CATEGORIES.find((c) => c.id === category)?.image ||
     CATEGORIES[0].image;
-
-  // Revenue estimation formula
-  const currentCategoryData =
-    CATEGORIES.find((c) => c.id === calcCategory) || CATEGORIES[0];
-  const calculatedMonthlyRevenue = currentCategoryData.avgPrice * calcDays;
 
   // Form Submit Handler
   const onSubmit = async (e: React.FormEvent) => {
@@ -402,87 +392,6 @@ export default function BecomeLender() {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Interactive Earnings Calculator Widget */}
-          <div className="mt-16 card-premium p-6 sm:p-8 border border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 shadow-xl relative overflow-hidden">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-2 max-w-xl">
-                <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
-                  <Sliders className="h-3.5 w-3.5" /> Earnings Estimator
-                </div>
-                <h3 className="text-2xl font-bold text-foreground">
-                  How much can your gear earn each month?
-                </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Select your gear type and estimated rental days per month to calculate your passive yield.
-                </p>
-              </div>
-
-              {/* Revenue Result Pill */}
-              <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 sm:p-5 text-center min-w-[220px]">
-                <span className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">
-                  Est. Monthly Income
-                </span>
-                <div className="mt-1 text-3xl sm:text-4xl font-extrabold text-primary flex items-center justify-center">
-                  ₹{calculatedMonthlyRevenue.toLocaleString("en-IN")}
-                </div>
-                <span className="text-[11px] text-emerald-500 font-medium flex items-center justify-center gap-1 mt-1">
-                  <CheckCircle2 className="h-3 w-3" /> Based on ₹
-                  {currentCategoryData.avgPrice}/day
-                </span>
-              </div>
-            </div>
-
-            {/* Slider Controls */}
-            <div className="mt-6 pt-6 border-t border-border/60 grid sm:grid-cols-2 gap-6">
-              <div>
-                <label className="text-xs font-semibold text-foreground mb-2 block">
-                  Select Gear Category
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {CATEGORIES.slice(0, 4).map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCalcCategory(c.id)}
-                      className={`p-2.5 rounded-xl border text-xs font-medium flex flex-col items-center gap-1 transition-all ${
-                        calcCategory === c.id
-                          ? "border-primary bg-primary/10 text-primary font-semibold shadow-sm"
-                          : "border-border/80 bg-background/50 hover:bg-accent text-muted-foreground"
-                      }`}
-                    >
-                      <c.icon className="h-4 w-4" />
-                      <span className="truncate">{c.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-semibold text-foreground">
-                    Rented Days / Month
-                  </label>
-                  <span className="text-xs font-bold text-primary">
-                    {calcDays} Days
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={3}
-                  max={28}
-                  value={calcDays}
-                  onChange={(e) => setCalcDays(Number(e.target.value))}
-                  className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                  <span>3 Days (Part-time)</span>
-                  <span>15 Days</span>
-                  <span>28 Days (Full-time)</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* MAIN LISTING WORKFLOW SECTION */}
