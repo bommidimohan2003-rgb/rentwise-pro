@@ -58,6 +58,8 @@ const categoryIconMap: Record<
   powerbanks: Zap,
 };
 
+const categoryIcons = categoryIconMap;
+
 const matchCategory = (productCat: string, targetId: string) => {
   if (!productCat) return false;
   const pCat = productCat.toLowerCase().trim();
