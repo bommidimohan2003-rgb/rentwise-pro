@@ -827,27 +827,56 @@ def get_orders(email: str):
 
 def create_order(email: str, order: dict):
     clean_email = (email or "").strip().lower()
-    MOCK_ORDERS[order["id"]] = {**order, "user_email": clean_email}
+    pid = order.get("productId") or order.get("product_id") or ""
+    title = order.get("productTitle") or order.get("product_title") or "Gear Rental"
+    img = order.get("productImage") or order.get("product_image") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
+    start = order.get("startDate") or order.get("start_date") or "Today"
+    end = order.get("endDate") or order.get("end_date") or "Tomorrow"
+    created = order.get("createdAt") or order.get("created_at") or datetime.utcnow().isoformat()
+    status = order.get("status") or "active"
+    total = float(order.get("total", 0))
+
+    normalized = {
+        "id": order["id"],
+        "user_email": clean_email,
+        "userEmail": clean_email,
+        "productId": pid,
+        "product_id": pid,
+        "productTitle": title,
+        "product_title": title,
+        "productImage": img,
+        "product_image": img,
+        "startDate": start,
+        "start_date": start,
+        "endDate": end,
+        "end_date": end,
+        "total": total,
+        "status": status,
+        "createdAt": created,
+        "created_at": created
+    }
+    MOCK_ORDERS[order["id"]] = normalized
+
     execute_query("""
         INSERT INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         order["id"],
         clean_email,
-        order["productId"],
-        order["productTitle"],
-        order["productImage"],
-        order["startDate"],
-        order["endDate"],
-        order["total"],
-        order["status"],
-        order.get("createdAt") or datetime.utcnow().isoformat()
+        pid,
+        title,
+        img,
+        start,
+        end,
+        total,
+        status,
+        created
     ))
 
     # Create matching payment transaction
     tx_id = f"tx-{order['id']}"
     user = get_user(clean_email)
-    customer_name = user["full_name"] if user else clean_email.split("@")[0]
+    customer_name = user["full_name"] if (user and isinstance(user, dict) and "full_name" in user) else clean_email.split("@")[0]
     
     execute_query("""
         INSERT INTO payments (id, booking_id, customer_id, customer_name, amount, status, method, invoice_url, created_at)
@@ -858,18 +887,19 @@ def create_order(email: str, order: dict):
         order["id"],
         clean_email,
         customer_name,
-        order["total"],
-        "successful" if order["status"] != "cancelled" else "failed",
+        total,
+        "successful" if status != "cancelled" else "failed",
         "UPI / Card",
         "#",
-        order.get("createdAt") or datetime.utcnow().isoformat()
+        created
     ))
-    return order
+    return normalized
 
 def cancel_order(order_id: str):
-    if order_id in MOCK_ORDERS:
-        MOCK_ORDERS[order_id]["status"] = "cancelled"
-    execute_query("UPDATE orders SET status = 'cancelled' WHERE id = %s", (order_id,))
+    for key, o in list(MOCK_ORDERS.items()):
+        if key == order_id or o.get("id") == order_id or o.get("productId") == order_id or o.get("product_id") == order_id:
+            MOCK_ORDERS[key]["status"] = "cancelled"
+    execute_query("UPDATE orders SET status = 'cancelled' WHERE id = %s OR product_id = %s", (order_id, order_id))
 
 # Custom Products CRUD
 def get_custom_products(email: str):

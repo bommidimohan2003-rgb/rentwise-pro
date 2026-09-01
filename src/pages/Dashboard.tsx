@@ -156,14 +156,14 @@ export default function Dashboard() {
                   className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary transition-colors"
                 >
                   <img
-                    src={o.productImage}
+                    src={o.productImage || o.product_image || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"}
                     alt=""
                     className="h-14 w-14 rounded-lg object-cover"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{o.productTitle}</div>
+                    <div className="font-medium truncate">{o.productTitle || o.product_title || "Gear Rental"}</div>
                     <div className="text-xs text-muted-foreground">
-                      {o.startDate} – {o.endDate}
+                      {o.startDate || o.start_date || "Today"} – {o.endDate || o.end_date || "Tomorrow"}
                     </div>
                   </div>
                   <div className="text-right flex flex-col items-end gap-1.5">

@@ -50,7 +50,9 @@ export default function Orders() {
       .then(() => {
         setOrders((prev) =>
           prev.map((o) =>
-            o.id === orderId ? { ...o, status: "cancelled" as const } : o,
+            o.id === orderId || o.productId === orderId || o.product_id === orderId
+              ? { ...o, status: "cancelled" as const }
+              : o,
           ),
         );
         toast.success("Order cancelled successfully.");
@@ -103,13 +105,13 @@ export default function Orders() {
                   className="grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 items-center border-b border-border last:border-0"
                 >
                   <img
-                    src={o.productImage}
+                    src={o.productImage || o.product_image || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"}
                     alt=""
                     className="h-14 w-14 rounded-lg object-cover"
                   />
-                  <div className="font-medium">{o.productTitle}</div>
+                  <div className="font-medium">{o.productTitle || o.product_title || "Gear Rental"}</div>
                   <div className="text-sm text-muted-foreground">
-                    {o.startDate} – {o.endDate}
+                    {o.startDate || o.start_date || "Today"} – {o.endDate || o.end_date || "Tomorrow"}
                   </div>
                   <div className="font-semibold">₹{o.total}</div>
                   <div className="flex flex-col gap-1 items-start">

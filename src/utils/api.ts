@@ -339,31 +339,159 @@ export const api = {
         parseApiError(data, "Failed to retrieve order history from database."),
       );
     }
-    return res.json();
+    const data = await res.json();
+    const rawOrders = Array.isArray(data) ? data : [];
+    const normalized = rawOrders.map((o: Record<string, unknown>) => {
+      const pid = String(o.productId || o.product_id || "");
+      const title = String(o.productTitle || o.product_title || "Gear Rental");
+      const img = String(
+        o.productImage ||
+          o.product_image ||
+          "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+      );
+      const start = String(o.startDate || o.start_date || "Today");
+      const end = String(o.endDate || o.end_date || "Tomorrow");
+      const created = String(
+        o.createdAt || o.created_at || new Date().toISOString(),
+      );
+      return {
+        id: String(o.id || ""),
+        productId: pid,
+        product_id: pid,
+        productTitle: title,
+        product_title: title,
+        productImage: img,
+        product_image: img,
+        startDate: start,
+        start_date: start,
+        endDate: end,
+        end_date: end,
+        total: Number(o.total || 0),
+        status: (o.status as Order["status"]) || "active",
+        createdAt: created,
+        created_at: created,
+      };
+    }) as Order[];
+    storage.set(STORAGE_KEYS.orders, normalized);
+    return normalized;
+  },
+
+  async getOrderDetails(token: string, orderId: string) {
+    const res = await fetch(`${API_BASE}/api/orders/${orderId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to retrieve order details."));
+    }
+    const o = await res.json();
+    const pid = String(o.productId || o.product_id || "");
+    const title = String(o.productTitle || o.product_title || "Gear Rental");
+    const img = String(
+      o.productImage ||
+        o.product_image ||
+        "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+    );
+    const start = String(o.startDate || o.start_date || "Today");
+    const end = String(o.endDate || o.end_date || "Tomorrow");
+    const created = String(
+      o.createdAt || o.created_at || new Date().toISOString(),
+    );
+
+    return {
+      id: String(o.id || ""),
+      productId: pid,
+      product_id: pid,
+      productTitle: title,
+      product_title: title,
+      productImage: img,
+      product_image: img,
+      startDate: start,
+      start_date: start,
+      endDate: end,
+      end_date: end,
+      total: Number(o.total || 0),
+      status: (o.status as Order["status"]) || "active",
+      createdAt: created,
+      created_at: created,
+    } as Order;
   },
 
   async createOrder(token: string, orderData: Order) {
+    const pid = orderData.productId || orderData.product_id || "";
+    const title =
+      orderData.productTitle || orderData.product_title || "Gear Rental";
+    const img =
+      orderData.productImage ||
+      orderData.product_image ||
+      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600";
+    const start = orderData.startDate || orderData.start_date || "Today";
+    const end = orderData.endDate || orderData.end_date || "Tomorrow";
+
+    const payload = {
+      id: orderData.id,
+      productId: pid,
+      product_id: pid,
+      productTitle: title,
+      product_title: title,
+      productImage: img,
+      product_image: img,
+      startDate: start,
+      start_date: start,
+      endDate: end,
+      end_date: end,
+      total: orderData.total,
+      status: orderData.status || "active",
+      createdAt:
+        orderData.createdAt || orderData.created_at || new Date().toISOString(),
+    };
+
+    const currentOrders = storage.get<Order[]>(STORAGE_KEYS.orders, []);
+    if (!currentOrders.some((o) => o.id === orderData.id)) {
+      storage.set(STORAGE_KEYS.orders, [payload as Order, ...currentOrders]);
+    }
+
     const res = await fetch(`${API_BASE}/api/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(orderData),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to create order");
     return res.json();
   },
 
   async cancelOrder(token: string, orderId: string) {
-    const res = await fetch(`${API_BASE}/api/orders/${orderId}/cancel`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!res.ok) throw new Error("Failed to cancel order");
-    return res.json();
+    let res: Response | null = null;
+    try {
+      res = await fetch(`${API_BASE}/api/orders/${orderId}/cancel`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch {
+      /* fetch network error / backend offline */
+    }
+
+    if (res && !res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to cancel order"));
+    }
+
+    const currentOrders = storage.get<Order[]>(STORAGE_KEYS.orders, []);
+    const updatedOrders = currentOrders.map((o) =>
+      o.id === orderId || o.productId === orderId || (o as { product_id?: string }).product_id === orderId
+        ? { ...o, status: "cancelled" as const }
+        : o,
+    );
+    storage.set(STORAGE_KEYS.orders, updatedOrders);
+    return res ? res.json() : { success: true };
   },
 
   async getCustomProducts(token: string) {
@@ -471,7 +599,35 @@ export const api = {
       },
     });
     if (!res.ok) throw new Error("Failed to fetch lender orders");
-    return res.json();
+    const data = await res.json();
+    const rawOrders = Array.isArray(data) ? data : [];
+    return rawOrders.map((r: Record<string, unknown>) => {
+      const pid = String(r.productId || r.product_id || "");
+      const title = String(r.productTitle || r.product_title || "Gear Rental");
+      const img = String(r.productImage || r.product_image || "");
+      const start = String(r.startDate || r.start_date || "");
+      const end = String(r.endDate || r.end_date || "");
+      const created = String(r.createdAt || r.created_at || "");
+
+      return {
+        ...r,
+        id: String(r.id || ""),
+        productId: pid,
+        product_id: pid,
+        productTitle: title,
+        product_title: title,
+        productImage: img,
+        product_image: img,
+        startDate: start,
+        start_date: start,
+        endDate: end,
+        end_date: end,
+        total: Number(r.total || 0),
+        status: r.status || "active",
+        createdAt: created,
+        created_at: created,
+      };
+    });
   },
 
   async getPublicStats() {

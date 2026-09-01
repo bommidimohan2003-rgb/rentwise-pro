@@ -920,13 +920,18 @@ class WishlistToggleSchema(BaseModel):
 
 class OrderSchema(BaseModel):
     id: str
-    productId: str
-    productTitle: str
-    productImage: str
-    startDate: str
-    endDate: str
-    total: int
-    status: str
+    productId: Optional[str] = None
+    product_id: Optional[str] = None
+    productTitle: Optional[str] = None
+    product_title: Optional[str] = None
+    productImage: Optional[str] = None
+    product_image: Optional[str] = None
+    startDate: Optional[str] = None
+    start_date: Optional[str] = None
+    endDate: Optional[str] = None
+    end_date: Optional[str] = None
+    total: float
+    status: Optional[str] = "active"
 
 class ProductOwnerSchema(BaseModel):
     name: Optional[str] = "Verified Lender"
@@ -1003,34 +1008,73 @@ def fetch_orders(email: str = Depends(get_current_user_email)):
     result = []
     for o in orders:
         if isinstance(o, dict):
+            pid = str(o.get("product_id") or o.get("productId") or "")
+            title = str(o.get("product_title") or o.get("productTitle") or "Gear Rental")
+            img = str(o.get("product_image") or o.get("productImage") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600")
+            start = str(o.get("start_date") or o.get("startDate") or "Today")
+            end = str(o.get("end_date") or o.get("endDate") or "Tomorrow")
+            created = str(o.get("created_at") or o.get("createdAt") or "")
             result.append({
                 "id": str(o.get("id", "")),
-                "productId": str(o.get("product_id") or o.get("productId") or ""),
-                "productTitle": str(o.get("product_title") or o.get("productTitle") or "Gear Rental"),
-                "productImage": str(o.get("product_image") or o.get("productImage") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"),
-                "startDate": str(o.get("start_date") or o.get("startDate") or "Today"),
-                "endDate": str(o.get("end_date") or o.get("endDate") or "Tomorrow"),
+                "productId": pid,
+                "product_id": pid,
+                "productTitle": title,
+                "product_title": title,
+                "productImage": img,
+                "product_image": img,
+                "startDate": start,
+                "start_date": start,
+                "endDate": end,
+                "end_date": end,
                 "total": float(o.get("total", 0)),
                 "status": str(o.get("status", "active")),
-                "createdAt": str(o.get("created_at") or o.get("createdAt") or "")
+                "createdAt": created,
+                "created_at": created,
+                "userEmail": clean_email,
+                "user_email": clean_email
             })
     return result
 
 @app.post("/api/orders")
 def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
-    create_order(email, data.dict())
-    user = get_user(email)
-    cust_name = user["full_name"] if user else email.split("@")[0]
+    clean_email = email.strip().lower()
+    order_dict = data.dict()
+    pid = data.productId or data.product_id or ""
+    title = data.productTitle or data.product_title or "Gear Rental"
+    img = data.productImage or data.product_image or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
+    start = data.startDate or data.start_date or "Today"
+    end = data.endDate or data.end_date or "Tomorrow"
+
+    normalized_order = {
+        "id": data.id,
+        "productId": pid,
+        "product_id": pid,
+        "productTitle": title,
+        "product_title": title,
+        "productImage": img,
+        "product_image": img,
+        "startDate": start,
+        "start_date": start,
+        "endDate": end,
+        "end_date": end,
+        "total": data.total,
+        "status": data.status or "active",
+        "createdAt": datetime.datetime.utcnow().isoformat()
+    }
+    
+    create_order(clean_email, normalized_order)
+    user = get_user(clean_email)
+    cust_name = user["full_name"] if (user and isinstance(user, dict) and "full_name" in user) else clean_email.split("@")[0]
     
     broadcast_admin_event("booking.created", {
         "id": data.id,
-        "productId": data.productId,
-        "productTitle": data.productTitle,
-        "productImage": data.productImage,
-        "customerId": email,
+        "productId": pid,
+        "productTitle": title,
+        "productImage": img,
+        "customerId": clean_email,
         "customerName": cust_name,
-        "startDate": data.startDate,
-        "endDate": data.endDate,
+        "startDate": start,
+        "endDate": end,
         "amount": data.total,
         "status": "pending",
         "createdAt": datetime.datetime.utcnow().isoformat()
@@ -1039,7 +1083,7 @@ def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
     broadcast_admin_event("payment.created", {
         "id": f"pay-{data.id}",
         "bookingId": data.id,
-        "customerId": email,
+        "customerId": clean_email,
         "customerName": cust_name,
         "amount": data.total,
         "status": "successful",
@@ -1050,26 +1094,82 @@ def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
 
 @app.post("/api/orders/{id}/cancel")
 def cancel_user_order(id: str, email: str = Depends(get_current_user_email)):
-    order = fetch_one("SELECT * FROM orders WHERE id = %s", (id,))
+    clean_email = email.strip().lower()
+    order = fetch_one("SELECT * FROM orders WHERE id = %s OR product_id = %s", (id, id))
+    if not order and id in MOCK_ORDERS:
+        order = MOCK_ORDERS[id]
+
     if not order:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
-    user = get_user(email)
-    if order["user_email"] != email and user.get("role") != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to cancel this order.")
+        user_orders = get_orders(clean_email)
+        for uo in user_orders:
+            if uo.get("id") == id or uo.get("productId") == id or uo.get("product_id") == id:
+                order = uo
+                break
+
+    if order:
+        order_owner = (order.get("user_email") or order.get("userEmail") or "").strip().lower()
+        user = get_user(clean_email)
+        is_admin = (user.get("role") == "admin") if (user and isinstance(user, dict)) else False
+
+        if order_owner and order_owner != clean_email and not is_admin:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to cancel this order.")
+
     cancel_order(id)
-    logger.info(f"Order {id} cancelled by {email}")
+    if order and order.get("id"):
+        cancel_order(str(order.get("id")))
+
+    logger.info(f"Order {id} cancelled by {clean_email}")
     broadcast_admin_event("booking.cancelled", {"id": id, "status": "cancelled"})
     return {"success": True, "message": "Order cancelled successfully."}
 
 @app.get("/api/orders/{id}")
 def get_order_details(id: str, email: str = Depends(get_current_user_email)):
+    clean_email = email.strip().lower()
     order = fetch_one("SELECT * FROM orders WHERE id = %s", (id,))
+    if not order and id in MOCK_ORDERS:
+        order = MOCK_ORDERS[id]
+    if not order:
+        user_orders = get_orders(clean_email)
+        for uo in user_orders:
+            if uo.get("id") == id:
+                order = uo
+                break
+
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found.")
-    user = get_user(email)
-    if order["user_email"] != email and user.get("role") != "admin":
+
+    order_owner = (order.get("user_email") or order.get("userEmail") or "").strip().lower()
+    user = get_user(clean_email)
+    is_admin = (user.get("role") == "admin") if (user and isinstance(user, dict)) else False
+    if order_owner and order_owner != clean_email and not is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden. You do not have permission to view this order.")
-    return order
+
+    pid = str(order.get("product_id") or order.get("productId") or "")
+    title = str(order.get("product_title") or order.get("productTitle") or "Gear Rental")
+    img = str(order.get("product_image") or order.get("productImage") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600")
+    start = str(order.get("start_date") or order.get("startDate") or "Today")
+    end = str(order.get("end_date") or order.get("endDate") or "Tomorrow")
+    created = str(order.get("created_at") or order.get("createdAt") or "")
+
+    return {
+        "id": str(order.get("id", "")),
+        "productId": pid,
+        "product_id": pid,
+        "productTitle": title,
+        "product_title": title,
+        "productImage": img,
+        "product_image": img,
+        "startDate": start,
+        "start_date": start,
+        "endDate": end,
+        "end_date": end,
+        "total": float(order.get("total", 0)),
+        "status": str(order.get("status", "active")),
+        "createdAt": created,
+        "created_at": created,
+        "user_email": order_owner,
+        "userEmail": order_owner
+    }
 
 def format_product_dict(p: dict) -> dict:
     owner_info = p.get("owner") if isinstance(p.get("owner"), dict) else {}
@@ -1648,39 +1748,58 @@ def process_admin_refund(data: RefundPaymentSchema, current_admin: dict = Depend
 
 @app.get("/api/lender/orders")
 def fetch_lender_orders(email: str = Depends(get_current_user_email)):
-    conn = get_db_connection()
+    clean_email = email.strip().lower()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT o.*, u.full_name AS renter_name, u.phone AS renter_phone, u.email AS renter_email
-                FROM orders o
-                JOIN custom_products cp ON o.product_id = cp.id
-                JOIN users u ON o.user_email = u.email
-                WHERE cp.user_email = %s
-                ORDER BY o.created_at DESC
-            """, (email,))
-            rows = cursor.fetchall()
-            result = []
-            for r in rows:
-                result.append({
-                    "id": r["id"],
-                    "productId": r["product_id"],
-                    "productTitle": r["product_title"],
-                    "productImage": r["product_image"],
-                    "startDate": r["start_date"],
-                    "endDate": r["end_date"],
-                    "total": r["total"],
-                    "status": r["status"],
-                    "createdAt": r["created_at"],
-                    "renter": {
-                        "name": r["renter_name"],
-                        "email": r["renter_email"],
-                        "phone": r["renter_phone"]
-                    }
-                })
-            return result
-    finally:
-        conn.close()
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT o.*, u.full_name AS renter_name, u.phone AS renter_phone, u.email AS renter_email
+                        FROM orders o
+                        JOIN custom_products cp ON (o.product_id = cp.id OR o.product_id = cp.title)
+                        JOIN users u ON LOWER(o.user_email) = LOWER(u.email)
+                        WHERE LOWER(cp.user_email) = %s
+                        ORDER BY o.created_at DESC
+                    """, (clean_email,))
+                    rows = cursor.fetchall()
+                    result = []
+                    for r in rows:
+                        pid = str(r.get("product_id") or r.get("productId") or "")
+                        title = str(r.get("product_title") or r.get("productTitle") or "Gear Rental")
+                        img = str(r.get("product_image") or r.get("productImage") or "")
+                        start = str(r.get("start_date") or r.get("startDate") or "")
+                        end = str(r.get("end_date") or r.get("endDate") or "")
+                        created = str(r.get("created_at") or r.get("createdAt") or "")
+                        result.append({
+                            "id": str(r.get("id", "")),
+                            "productId": pid,
+                            "product_id": pid,
+                            "productTitle": title,
+                            "product_title": title,
+                            "productImage": img,
+                            "product_image": img,
+                            "startDate": start,
+                            "start_date": start,
+                            "endDate": end,
+                            "end_date": end,
+                            "total": float(r.get("total", 0)),
+                            "status": str(r.get("status", "active")),
+                            "createdAt": created,
+                            "created_at": created,
+                            "renter": {
+                                "name": r.get("renter_name") or clean_email.split("@")[0],
+                                "email": r.get("renter_email") or clean_email,
+                                "phone": r.get("renter_phone") or ""
+                            }
+                        })
+                    return result
+            finally:
+                conn.close()
+    except Exception as e:
+        logger.warning(f"Failed to fetch lender orders from DB: {e}")
+    
+    return []
 
 @app.get("/api/notifications")
 def fetch_notifications(email: str = Depends(get_current_user_email)):

@@ -62,6 +62,14 @@ export interface Order {
   total: number;
   status: "active" | "completed" | "cancelled" | "pending";
   createdAt: string;
+  product_id?: string;
+  product_title?: string;
+  product_image?: string;
+  start_date?: string;
+  end_date?: string;
+  created_at?: string;
+  user_email?: string;
+  userEmail?: string;
 }
 
 export interface Notification {
