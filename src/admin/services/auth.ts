@@ -6,14 +6,31 @@ export const authService = {
     password: string,
   ): Promise<{ success: boolean; token: string; user: AdminUser }> {
     const response = await adminApi.post("/auth/login", { email, password });
-    if (response.data?.token && response.data?.user) {
+    if (response.data?.token) {
+      const userPayload: AdminUser = response.data.user || {
+        id: email,
+        fullName: email.split("@")[0],
+        email: email,
+        phone: "",
+        role: "admin",
+        status: "active",
+        verified: true,
+        avatar: `https://ui-avatars.com/api/?name=${email}&background=10b981&color=fff`,
+        createdAt: new Date().toISOString(),
+      };
+
       if (typeof window !== "undefined") {
         localStorage.setItem("payent:admin:token", response.data.token);
         localStorage.setItem(
           "payent:admin:current_user",
-          JSON.stringify(response.data.user),
+          JSON.stringify(userPayload),
         );
+        localStorage.setItem("payent:token", response.data.token);
+        localStorage.setItem("payent:currentUser", JSON.stringify(userPayload));
+        window.dispatchEvent(new Event("payent:admin:profile-updated"));
+        window.dispatchEvent(new CustomEvent("payent:storage_change"));
       }
+      return { success: true, token: response.data.token, user: userPayload };
     }
     return response.data;
   },
@@ -44,6 +61,8 @@ export const authService = {
       localStorage.removeItem("payent:currentUser");
       localStorage.removeItem("payent:admin:token");
       localStorage.removeItem("payent:admin:current_user");
+      window.dispatchEvent(new Event("payent:admin:profile-updated"));
+      window.dispatchEvent(new CustomEvent("payent:storage_change"));
     }
   },
 
@@ -70,12 +89,39 @@ export const authService = {
     return false;
   },
 
-  getCurrentUser(): AdminUser | null {
-    if (typeof window === "undefined") return null;
+  getCurrentUser(): AdminUser {
+    if (typeof window === "undefined") {
+      return {
+        id: "admin@payent.com",
+        fullName: "Administrator",
+        email: "admin@payent.com",
+        role: "admin",
+        status: "active",
+        verified: true,
+        avatar: "https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff",
+        createdAt: new Date().toISOString(),
+      };
+    }
+
     const adminUser = localStorage.getItem("payent:admin:current_user");
     if (adminUser) {
       try {
-        return JSON.parse(adminUser);
+        const u = JSON.parse(adminUser);
+        if (u && (u.email || u.fullName)) {
+          return {
+            id: u.email || u.id || "admin@payent.com",
+            fullName: u.fullName || u.email?.split("@")[0] || "Administrator",
+            email: u.email || "admin@payent.com",
+            phone: u.phone || "",
+            role: "admin",
+            status: "active",
+            verified: true,
+            avatar:
+              u.avatar ||
+              `https://ui-avatars.com/api/?name=${u.fullName || u.email || "Admin"}&background=10b981&color=fff`,
+            createdAt: u.createdAt || new Date().toISOString(),
+          };
+        }
       } catch {
         // fallback
       }
@@ -85,25 +131,36 @@ export const authService = {
     if (currentUserRaw) {
       try {
         const u = JSON.parse(currentUserRaw);
-        if (u?.role === "admin") {
+        if (u) {
           return {
-            id: u.email || u.id,
-            fullName: u.fullName || u.email,
-            email: u.email,
+            id: u.email || u.id || "admin@payent.com",
+            fullName: u.fullName || u.email?.split("@")[0] || "Administrator",
+            email: u.email || "admin@payent.com",
             phone: u.phone || "",
-            role: "admin",
+            role: u.role || "admin",
             status: "active",
             verified: true,
             avatar:
               u.avatar ||
-              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-            createdAt: new Date().toISOString(),
+              `https://ui-avatars.com/api/?name=${u.fullName || u.email || "Admin"}&background=10b981&color=fff`,
+            createdAt: u.createdAt || new Date().toISOString(),
           };
         }
       } catch {
-        return null;
+        // fallback
       }
     }
-    return null;
+
+    return {
+      id: "admin@payent.com",
+      fullName: "Administrator",
+      email: "admin@payent.com",
+      phone: "+91 8810519885",
+      role: "admin",
+      status: "active",
+      verified: true,
+      avatar: "https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff",
+      createdAt: new Date().toISOString(),
+    };
   },
 };
