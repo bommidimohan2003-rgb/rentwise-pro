@@ -76,17 +76,6 @@ export default function Checkout() {
         }
       }
 
-      if (!found) {
-        const localCustom = storage.get<Product[]>(
-          STORAGE_KEYS.customProducts,
-          [],
-        );
-        found =
-          localCustom.find((p: Product) => p.id === search.id) ||
-          localCustom[0] ||
-          null;
-      }
-
       if (isMounted) {
         setProduct(found || null);
         setProductLoading(false);

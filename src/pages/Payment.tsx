@@ -47,22 +47,23 @@ export default function Payment() {
   const navigate = useNavigate();
 
   const productId = search.id || "";
-  const [product, setProduct] = useState<Product | null>(() => {
-    const localCustom = storage.get<Product[]>(
-      STORAGE_KEYS.customProducts,
-      [],
-    );
-    return localCustom.find((p) => p.id === productId) || null;
-  });
+  const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     if (!productId) return;
-    api.getPublicProducts().then((all: Product[]) => {
-      if (!isMounted) return;
-      const found = all.find((p: Product) => p.id === productId);
-      if (found) setProduct(found);
-    });
+    api
+      .getProductById(productId)
+      .then((found) => {
+        if (isMounted && found) setProduct(found);
+      })
+      .catch(() => {
+        api.getPublicProducts().then((all: Product[]) => {
+          if (!isMounted) return;
+          const found = all.find((p: Product) => p.id === productId);
+          if (found) setProduct(found);
+        });
+      });
     return () => {
       isMounted = false;
     };

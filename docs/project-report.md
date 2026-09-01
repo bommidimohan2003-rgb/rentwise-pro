@@ -164,6 +164,7 @@ The main technical debt areas are clear:
 - [RESOLVED Category Reference Cards] Added interactive visual Category Reference Cards for Bikes, Cameras, Laptops, Electronic Drilling Tools, Power Banks, and Drones to `/categories`.
 - [RESOLVED Lender Direct Camera & UI] Built live WebRTC camera capture modal (`CameraCaptureModal.tsx`), interactive earnings estimator slider, 3-step guided listing form, multi-photo gallery management, and real-time marketplace product card preview on `/become-lender`.
 - [RESOLVED Persistent Products & Deletion Security] Auto-approved new custom products (status: approved, available: true) across backend and client, removed per-user local storage namespacing for customProducts so products are globally shared across all users, and enforced strict owner/admin-only deletion authorization on backend API and ProductCard UI.
+- [RESOLVED TiDB Cloud MySQL Migration] Migrated all website data operations (products, custom listings, categories, wishlist, orders, notifications, admin management records) exclusively to TiDB Cloud MySQL via live FastAPI backend endpoints, eliminating localStorage data persistence.
 
 
 ## Risks and Recommendations

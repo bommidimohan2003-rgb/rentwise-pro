@@ -94,24 +94,19 @@ export default function LenderPortal() {
   };
 
   const handleDeleteListing = async (productId: string) => {
-    // Clean from local storage
-    const currentCustom = storage.get<Product[]>(
-      STORAGE_KEYS.customProducts,
-      [],
-    );
-    const updatedCustom = currentCustom.filter((p) => p.id !== productId);
-    storage.set(STORAGE_KEYS.customProducts, updatedCustom);
-
-    if (token) {
-      try {
-        await api.deleteCustomProduct(token, productId);
-      } catch (err: unknown) {
-        console.warn("Backend delete notice:", err);
-      }
+    if (!token) {
+      toast.error("Authentication required.");
+      return;
     }
-
-    setListings((prev) => prev.filter((p) => p.id !== productId));
-    toast.success("Listing deleted successfully.");
+    try {
+      await api.deleteCustomProduct(token, productId);
+      setListings((prev) => prev.filter((p) => p.id !== productId));
+      toast.success("Listing deleted successfully from database.");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Failed to delete product";
+      console.warn("Backend delete notice:", err);
+      toast.error(errMsg);
+    }
     setConfirmDeleteId(null);
     window.dispatchEvent(new CustomEvent("payent_products_updated"));
   };

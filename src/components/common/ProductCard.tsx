@@ -263,36 +263,28 @@ export function ProductCard({
                       const userToken =
                         storage.get<string | null>(STORAGE_KEYS.token, null) ||
                         (user as { token?: string })?.token;
-                      const currentCustom = storage.get<Product[]>(
-                        STORAGE_KEYS.customProducts,
-                        [],
-                      );
-                      const updatedCustom = currentCustom.filter(
-                        (p) => p.id !== product.id,
-                      );
-                      storage.set(STORAGE_KEYS.customProducts, updatedCustom);
 
-                      if (userToken) {
-                        api
-                          .deleteCustomProduct(userToken, product.id)
-                          .then(() => {
-                            toast.success("Listing deleted successfully!");
-                          })
-                          .catch((err) => {
-                            console.warn("Backend database delete notice:", err);
-                            const msg =
-                              err instanceof Error
-                                ? err.message
-                                : "Failed to delete listing from database";
-                            toast.error(msg);
-                          });
-                      } else {
-                        toast.success("Listing deleted!");
+                      if (!userToken) {
+                        toast.error("Please log in to delete listings.");
+                        return;
                       }
 
-                      window.dispatchEvent(
-                        new CustomEvent("payent_products_updated"),
-                      );
+                      api
+                        .deleteCustomProduct(userToken, product.id)
+                        .then(() => {
+                          toast.success("Listing deleted permanently from MySQL database!");
+                          window.dispatchEvent(
+                            new CustomEvent("payent_products_updated"),
+                          );
+                        })
+                        .catch((err) => {
+                          console.warn("Backend database delete notice:", err);
+                          const msg =
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to delete listing from database";
+                          toast.error(msg);
+                        });
                     }}
                     className="h-8 w-8 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 flex items-center justify-center transition-all cursor-pointer shrink-0"
                     title="Delete Listing (Owner/Admin Only)"

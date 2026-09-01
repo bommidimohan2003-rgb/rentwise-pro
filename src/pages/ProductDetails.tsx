@@ -76,15 +76,6 @@ export default function ProductDetails() {
         }
       }
 
-      // 3. Check local custom products
-      if (!found) {
-        const localCustom = storage.get<Product[]>(
-          STORAGE_KEYS.customProducts,
-          [],
-        );
-        found = localCustom.find((p: Product) => p.id === id) || null;
-      }
-
       if (isMounted) {
         setProduct(found || null);
         setProductLoading(false);

@@ -133,50 +133,30 @@ export default function Categories() {
     }
   }, [search.q]);
 
-  const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
-    return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-  });
+  const [allProductsList, setAllProductsList] = useState<Product[]>([]);
 
-  useEffect(() => {
-    const handleProductsUpdate = () => {
-      const localCustom = storage.get<Product[]>(
-        STORAGE_KEYS.customProducts,
-        [],
-      );
-      setAllProductsList(localCustom);
-    };
-
-    window.addEventListener("payent_products_updated", handleProductsUpdate);
-    return () => {
-      window.removeEventListener(
-        "payent_products_updated",
-        handleProductsUpdate,
-      );
-    };
-  }, []);
-
-  useEffect(() => {
+  const fetchPublicProducts = useCallback(() => {
     api
       .getPublicProducts()
       .then((serverProducts) => {
-        if (Array.isArray(serverProducts) && serverProducts.length > 0) {
-          setAllProductsList((prev) => {
-            const localCustom = storage.get<Product[]>(
-              STORAGE_KEYS.customProducts,
-              [],
-            );
-            const map = new Map<string, Product>();
-            [...localCustom, ...serverProducts].forEach((p) =>
-              map.set(p.id, p),
-            );
-            return Array.from(map.values());
-          });
+        if (Array.isArray(serverProducts)) {
+          setAllProductsList(serverProducts);
         }
       })
       .catch((err) =>
         console.warn("[Categories] Server products fetch notice:", err),
       );
+  }, []);
 
+  useEffect(() => {
+    fetchPublicProducts();
+    window.addEventListener("payent_products_updated", fetchPublicProducts);
+    return () => {
+      window.removeEventListener("payent_products_updated", fetchPublicProducts);
+    };
+  }, [fetchPublicProducts]);
+
+  useEffect(() => {
     api
       .getPublicCategories()
       .then((cats) => {
@@ -558,25 +538,25 @@ export default function Categories() {
       },
     };
 
-    // Store in local custom products
-    const currentCustom = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-    const updatedCustom = [newProduct, ...currentCustom];
-    storage.set(STORAGE_KEYS.customProducts, updatedCustom);
-    window.dispatchEvent(new CustomEvent("payent_products_updated"));
-    toast.success("Listing submitted successfully! Your gear is live.");
+    // Submit listing directly to TiDB Cloud MySQL backend API
+    const userToken =
+      storage.get<string | null>(STORAGE_KEYS.token, null) ||
+      (user as { token?: string })?.token;
 
-    // Update state immediately so listing grid refreshes
-    setAllProductsList((prev) => {
-      const map = new Map<string, Product>();
-      [newProduct, ...prev].forEach((p) => map.set(p.id, p));
-      return Array.from(map.values());
-    });
-
-    const userToken = (user as { token?: string })?.token;
-    if (user && userToken) {
-      api.createCustomProduct(userToken, newProduct).catch((err) => {
-        console.warn("Backend sync notice:", err);
-      });
+    if (userToken) {
+      api
+        .createCustomProduct(userToken, newProduct)
+        .then(() => {
+          toast.success("Listing submitted to MySQL database! Your gear is live.");
+          fetchPublicProducts();
+          window.dispatchEvent(new CustomEvent("payent_products_updated"));
+        })
+        .catch((err) => {
+          console.warn("Backend creation notice:", err);
+          toast.error("Failed to submit listing to database.");
+        });
+    } else {
+      toast.error("Please log in to submit a listing.");
     }
 
     toast.success(`Listing Confirmed!`, {

@@ -13,31 +13,17 @@ export default function Wishlist() {
   const { ids } = useWishlist();
   const navigate = useNavigate();
 
-  const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
-    return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-  });
+  const [allProductsList, setAllProductsList] = useState<Product[]>([]);
 
   useEffect(() => {
     api
-      .getPublicCustomProducts()
+      .getPublicProducts()
       .then((serverProducts) => {
-        if (Array.isArray(serverProducts) && serverProducts.length > 0) {
-          setAllProductsList((prev) => {
-            const localCustom = storage.get<Product[]>(
-              STORAGE_KEYS.customProducts,
-              [],
-            );
-            const map = new Map<string, Product>();
-            [...localCustom, ...serverProducts].forEach((p) =>
-              map.set(p.id, p),
-            );
-            return Array.from(map.values());
-          });
+        if (Array.isArray(serverProducts)) {
+          setAllProductsList(serverProducts);
         }
       })
-      .catch((err) =>
-        console.warn("[Wishlist] Server products fetch notice:", err),
-      );
+      .catch((err) => console.warn("Failed to load wishlist products:", err));
   }, []);
 
   const items = allProductsList.filter((p) => ids.includes(p.id));

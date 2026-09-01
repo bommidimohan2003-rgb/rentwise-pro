@@ -290,29 +290,12 @@ export const productsService = {
   },
 
   async approveProduct(id: string): Promise<AdminProduct> {
-    if (typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem("payent:customProducts");
-        if (raw) {
-          const customList: AdminProduct[] = JSON.parse(raw);
-          const updatedList = customList.map((p) =>
-            p.id === id ? { ...p, status: "approved", available: true } : p,
-          );
-          localStorage.setItem(
-            "payent:customProducts",
-            JSON.stringify(updatedList),
-          );
-          window.dispatchEvent(new CustomEvent("payent_products_updated"));
-        }
-      } catch (e) {
-        console.warn("[productsService] local approve notice:", e);
-      }
-    }
     try {
       const response = await adminApi.post(`/products/${id}/approve`);
+      window.dispatchEvent(new CustomEvent("payent_products_updated"));
       return response.data;
     } catch (err) {
-      console.warn("[productsService] approveProduct fallback:", err);
+      console.warn("[productsService] approveProduct notice:", err);
       const prod =
         FALLBACK_PRODUCTS.find((p) => p.id === id) || FALLBACK_PRODUCTS[0];
       return { ...prod, status: "approved", available: true };
@@ -320,29 +303,12 @@ export const productsService = {
   },
 
   async rejectProduct(id: string): Promise<AdminProduct> {
-    if (typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem("payent:customProducts");
-        if (raw) {
-          const customList: AdminProduct[] = JSON.parse(raw);
-          const updatedList = customList.map((p) =>
-            p.id === id ? { ...p, status: "rejected", available: false } : p,
-          );
-          localStorage.setItem(
-            "payent:customProducts",
-            JSON.stringify(updatedList),
-          );
-          window.dispatchEvent(new CustomEvent("payent_products_updated"));
-        }
-      } catch (e) {
-        console.warn("[productsService] local reject notice:", e);
-      }
-    }
     try {
       const response = await adminApi.post(`/products/${id}/reject`);
+      window.dispatchEvent(new CustomEvent("payent_products_updated"));
       return response.data;
     } catch (err) {
-      console.warn("[productsService] rejectProduct fallback:", err);
+      console.warn("[productsService] rejectProduct notice:", err);
       const prod =
         FALLBACK_PRODUCTS.find((p) => p.id === id) || FALLBACK_PRODUCTS[0];
       return { ...prod, status: "rejected", available: false };

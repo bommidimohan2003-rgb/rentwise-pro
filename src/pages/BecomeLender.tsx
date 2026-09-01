@@ -279,20 +279,23 @@ export default function BecomeLender() {
     if (token) {
       try {
         await api.createCustomProduct(token, newProduct);
+        toast.success(
+          "Listing submitted successfully! Your gear is live in the MySQL database catalog.",
+        );
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         console.warn("[BecomeLender] Backend submission notice:", msg);
+        toast.error(`Database listing failed: ${msg}`);
       }
+    } else {
+      toast.error("Please log in to publish your gear.");
+      setIsSubmitting(false);
+      return;
     }
 
-    // Save to local custom products cache
-    const cachedCustom = storage.get<unknown[]>(STORAGE_KEYS.customProducts, []);
-    storage.set(STORAGE_KEYS.customProducts, [newProduct, ...cachedCustom]);
     window.dispatchEvent(new CustomEvent("payent_products_updated"));
-
     setIsSubmitting(false);
     setDone(true);
-    toast.success("Listing submitted successfully! Your gear is now live in the marketplace.");
   };
 
   return (

@@ -4,21 +4,17 @@ import { api } from "@/utils/api";
 
 export function useWishlist() {
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
-  const [ids, setIds] = useState<string[]>(() => {
-    return token ? storage.get<string[]>(STORAGE_KEYS.wishlist, []) : [];
-  });
+  const [ids, setIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!token) {
       setIds([]);
-      storage.remove(STORAGE_KEYS.wishlist);
       return;
     }
     api
       .getWishlist(token)
       .then((serverIds) => {
-        setIds(serverIds);
-        storage.set(STORAGE_KEYS.wishlist, serverIds);
+        setIds(serverIds || []);
       })
       .catch((err) => console.error("Failed to load backend wishlist:", err));
   }, [token]);
@@ -26,23 +22,24 @@ export function useWishlist() {
   const toggle = useCallback(
     (id: string) => {
       if (!token) return;
-      // Optimistic UI update
-      setIds((prev) => {
-        const next = prev.includes(id)
-          ? prev.filter((x) => x !== id)
-          : [...prev, id];
-        storage.set(STORAGE_KEYS.wishlist, next);
-        return next;
-      });
+      // Optimistic state update
+      setIds((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      );
 
-      api.toggleWishlist(token, id).catch((err) => {
-        console.error("Failed to toggle wishlist item on server:", err);
-        // Revert optimistic update on failure
-        api.getWishlist(token).then((serverIds) => {
-          setIds(serverIds);
-          storage.set(STORAGE_KEYS.wishlist, serverIds);
+      api
+        .toggleWishlist(token, id)
+        .then((data) => {
+          if (Array.isArray(data?.wishlist)) {
+            setIds(data.wishlist);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to toggle wishlist item on server:", err);
+          api.getWishlist(token).then((serverIds) => {
+            setIds(serverIds || []);
+          });
         });
-      });
     },
     [token],
   );
