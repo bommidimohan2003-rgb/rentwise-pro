@@ -521,45 +521,6 @@ def init_db():
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # Purge mock/test data & reset analytics records for clean startup
-            cursor.execute("""
-                DELETE FROM users
-                WHERE email LIKE '%@example.com'
-                   OR email IN (
-                       'test_regular_user@payent.com', 'test_admin_user@payent.com',
-                       'user_a_idor@payent.com', 'user_b_idor@payent.com', 'revocation_user@payent.com',
-                       'marcus.vance@techgear.io', 'elena.rostova@drones.com',
-                       'devon.carter@creatives.co', 'priya.sharma@studios.in',
-                       'marcus@payent.com', 'elena@payent.com', 'devon@payent.com',
-                       'bengaluru@payent.com', 'mumbai@payent.com', 'delhi@payent.com'
-                   )
-            """)
-            cursor.execute("DELETE FROM custom_products")
-            cursor.execute("DELETE FROM orders")
-            cursor.execute("DELETE FROM payments")
-            cursor.execute("DELETE FROM reviews WHERE user_name IN ('Michael Chang', 'Jessica Ross')")
-            cursor.execute("DELETE FROM reports WHERE owner_id LIKE '%@example.com' OR reporter_name = 'Michael Chang'")
-            cursor.execute("DELETE FROM admin_notifications WHERE message LIKE '%Alex Mercer%' OR message LIKE '%Michael Chang%' OR message LIKE '%Jessica Ross%'")
-            cursor.execute("DELETE FROM support_tickets WHERE user_email LIKE '%@example.com'")
-            cursor.execute("DELETE FROM admin_logs WHERE user_name IN ('Sarah Connor', 'Alex Mercer')")
-            print("Purged all test listings, orders, payments, and reset total revenue and active listings to 0.")
-
-            # Seed categories
-            cursor.execute("SELECT COUNT(*) as count FROM categories")
-            if cursor.fetchone()["count"] == 0:
-                categories_data = [
-                    ("cat-1", "Cameras", "Camera", "bg-secondary text-foreground", True),
-                    ("cat-2", "Drones", "Plane", "bg-secondary text-foreground", True),
-                    ("cat-3", "Laptops", "Laptop", "bg-secondary text-foreground", True),
-                    ("cat-4", "Audio", "Mic", "bg-secondary text-foreground", True),
-                    ("cat-5", "VR & AR", "Glasses", "bg-secondary text-foreground", True),
-                ]
-                cursor.executemany(
-                    "INSERT INTO categories (id, name, icon, color, enabled) VALUES (%s, %s, %s, %s, %s)",
-                    categories_data
-                )
-                print("Seeded initial categories.")
-
             # Seed default admin user
             cursor.execute("SELECT COUNT(*) as count FROM users WHERE LOWER(email) = 'bommidimohan2003@gmail.com'")
             if cursor.fetchone()["count"] == 0:
