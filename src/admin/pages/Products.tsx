@@ -84,7 +84,7 @@ export default function Products() {
           return [newProd, ...prev];
         });
         toast.info(
-          `Live: New product "${newProd.title || newProd.id}" submitted!`,
+          `Live WS: New product "${newProd.title || newProd.id}" submitted for Admin Approval!`,
         );
       }
     });
@@ -95,6 +95,15 @@ export default function Products() {
         setProducts((prev) =>
           prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)),
         );
+        if (updated.status === "approved") {
+          toast.success(
+            `Live WS: Listing "${updated.title || updated.id}" approved and published!`,
+          );
+        } else if (updated.status === "rejected") {
+          toast.warn(
+            `Live WS: Listing "${updated.title || updated.id}" rejected.`,
+          );
+        }
       }
     });
 

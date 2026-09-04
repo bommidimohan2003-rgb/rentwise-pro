@@ -1370,11 +1370,11 @@ def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_curre
         "avatar": owner_info.get("avatar") or user_rec.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
         "rating": float(owner_info.get("rating") or 5.0)
     }
-    product_dict["status"] = "approved"
-    product_dict["available"] = True
+    product_dict["status"] = "pending"
+    product_dict["available"] = False
     created = create_custom_product(email, product_dict)
     broadcast_admin_event("product.created", format_product_dict(created))
-    return {"success": True, "product": format_product_dict(created), "message": "Product submitted and published successfully."}
+    return {"success": True, "product": format_product_dict(created), "message": "Product submitted successfully. Pending Admin approval."}
 
 def fetch_one_product(product_id: str):
     if product_id in MOCK_CUSTOM_PRODUCTS:
@@ -3127,6 +3127,9 @@ def admin_delete_product(id: str, current_admin: dict = Depends(check_admin_user
 @app.post("/api/admin/products/{id}/approve")
 def admin_approve_product(id: str, current_admin: dict = Depends(check_admin_user)):
     execute_query("UPDATE custom_products SET status = 'approved', available = 1 WHERE id = %s", (id,))
+    if id in MOCK_CUSTOM_PRODUCTS:
+        MOCK_CUSTOM_PRODUCTS[id]["status"] = "approved"
+        MOCK_CUSTOM_PRODUCTS[id]["available"] = True
     
     # Log action
     now_str = datetime.datetime.utcnow().isoformat()
@@ -3142,6 +3145,9 @@ def admin_approve_product(id: str, current_admin: dict = Depends(check_admin_use
 @app.post("/api/admin/products/{id}/reject")
 def admin_reject_product(id: str, current_admin: dict = Depends(check_admin_user)):
     execute_query("UPDATE custom_products SET status = 'rejected', available = 0 WHERE id = %s", (id,))
+    if id in MOCK_CUSTOM_PRODUCTS:
+        MOCK_CUSTOM_PRODUCTS[id]["status"] = "rejected"
+        MOCK_CUSTOM_PRODUCTS[id]["available"] = False
     
     # Log action
     now_str = datetime.datetime.utcnow().isoformat()
@@ -4682,24 +4688,7 @@ async def serve_fullstack_spa(full_path: str = ""):
     )
 
 
-@app.post("/api/admin/products/{product_id}/approve")
-def approve_admin_product(product_id: str):
-    """
-    POST /api/admin/products/{product_id}/approve
-    Approve custom product listing in MySQL database.
-    """
-    execute_query("UPDATE custom_products SET status = 'approved' WHERE id = %s", (product_id,))
-    return {"success": True, "message": "Product approved successfully."}
 
-
-@app.post("/api/admin/products/{product_id}/reject")
-def reject_admin_product(product_id: str):
-    """
-    POST /api/admin/products/{product_id}/reject
-    Reject custom product listing in MySQL database.
-    """
-    execute_query("UPDATE custom_products SET status = 'rejected' WHERE id = %s", (product_id,))
-    return {"success": True, "message": "Product rejected successfully."}
 
 
 @app.get("/api/admin/users")

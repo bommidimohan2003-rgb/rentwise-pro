@@ -468,8 +468,14 @@ export default function ProductDetails() {
                     }}
                     className="w-full bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50 text-white dark:text-black font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>Rent Now - Confirm Booking</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <span>
+                      {product.available
+                        ? "Rent Now - Confirm Booking"
+                        : product.status === "pending"
+                          ? "Pending Admin Approval"
+                          : "Currently Booked"}
+                    </span>
+                    {product.available && <ArrowRight className="h-4 w-4" />}
                   </button>
                 )}
               </div>
