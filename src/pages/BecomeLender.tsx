@@ -257,9 +257,9 @@ export default function BecomeLender() {
       category: category,
       rating: 5.0,
       reviews: 0,
-      available: false,
+      available: true,
       isReference: false,
-      status: "pending",
+      status: "approved",
       owner: {
         name: user?.fullName || user?.email || "Verified Lender",
         email: user?.email || "",
@@ -280,7 +280,7 @@ export default function BecomeLender() {
       try {
         await api.createCustomProduct(token, newProduct);
         toast.success(
-          "Listing submitted for Admin Approval! Your tech gear listing is under review and will appear publicly once approved by an Admin.",
+          "Listing published successfully! Your tech gear listing is active and available for instant booking.",
         );
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);

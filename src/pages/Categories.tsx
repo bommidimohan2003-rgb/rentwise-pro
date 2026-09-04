@@ -535,9 +535,9 @@ export default function Categories() {
       category: card.name,
       rating: 5.0,
       reviews: 0,
-      available: false,
+      available: true,
       isReference: false,
-      status: "pending",
+      status: "approved",
       owner: {
         name: user ? user.fullName || user.email : "Verified Lender",
         email: user?.email || "",

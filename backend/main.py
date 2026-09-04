@@ -1370,11 +1370,11 @@ def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_curre
         "avatar": owner_info.get("avatar") or user_rec.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
         "rating": float(owner_info.get("rating") or 5.0)
     }
-    product_dict["status"] = "pending"
-    product_dict["available"] = False
+    product_dict["status"] = "approved"
+    product_dict["available"] = True
     created = create_custom_product(email, product_dict)
     broadcast_admin_event("product.created", format_product_dict(created))
-    return {"success": True, "product": format_product_dict(created), "message": "Product submitted successfully. Pending Admin approval."}
+    return {"success": True, "product": format_product_dict(created), "message": "Product submitted and published successfully."}
 
 def fetch_one_product(product_id: str):
     if product_id in MOCK_CUSTOM_PRODUCTS:

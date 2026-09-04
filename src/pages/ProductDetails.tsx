@@ -262,6 +262,10 @@ export default function ProductDetails() {
                   <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-extrabold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                     <Check className="h-3.5 w-3.5" /> Available Now
                   </span>
+                ) : product.status === "pending" ? (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-extrabold px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
+                    Pending Approval
+                  </span>
                 ) : (
                   <span className="text-xs text-destructive font-extrabold px-3 py-1 rounded-full bg-destructive/10 border border-destructive/20">
                     Currently Booked
