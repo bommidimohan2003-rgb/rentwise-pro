@@ -32,13 +32,37 @@ import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import type { Product } from "@/types";
 
-const mockDates = [
-  { day: "Mon", date: "20 May" },
-  { day: "Tue", date: "21 May" },
-  { day: "Wed", date: "22 May" },
-  { day: "Thu", date: "23 May" },
-  { day: "Fri", date: "24 May" },
-];
+const generateCurrentRentalDates = () => {
+  const dates = [];
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const dayName = daysOfWeek[d.getDay()];
+    const dayNum = d.getDate();
+    const monthName = months[d.getMonth()];
+    dates.push({
+      day: i === 0 ? "Today" : dayName,
+      date: `${dayNum} ${monthName}`,
+      isoDate: d.toISOString().slice(0, 10),
+    });
+  }
+  return dates;
+};
 
 const mockTimes = ["10:00 AM", "12:00 PM", "02:00 PM", "04:00 PM"];
 
@@ -91,6 +115,7 @@ export default function ProductDetails() {
   const [selectedTime, setSelectedTime] = useState("12:00 PM");
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [frequentlyTogether, setFrequentlyTogether] = useState<Product[]>([]);
+  const rentalDates = generateCurrentRentalDates();
 
   const isOwner = Boolean(
     user &&
@@ -351,7 +376,7 @@ export default function ProductDetails() {
                   Select Rental Start Date
                 </label>
                 <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-                  {mockDates.map((item, idx) => (
+                  {rentalDates.map((item, idx) => (
                     <button
                       key={item.date}
                       onClick={() => setSelectedDate(idx)}
@@ -463,7 +488,12 @@ export default function ProductDetails() {
                       }
                       navigate({
                         to: "/checkout",
-                        search: { id: product.id } as never,
+                        search: {
+                          id: product.id,
+                          start:
+                            rentalDates[selectedDate]?.isoDate ||
+                            new Date().toISOString().slice(0, 10),
+                        } as never,
                       });
                     }}
                     className="w-full bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50 text-white dark:text-black font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"

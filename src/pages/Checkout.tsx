@@ -11,8 +11,10 @@ import {
   Building2,
   Wallet,
   QrCode,
+  MapPin,
 } from "lucide-react";
 import { useMemo, useState, useRef, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
@@ -42,8 +44,12 @@ const loadRazorpayScript = (): Promise<boolean> => {
 };
 
 export default function Checkout() {
-  const search = useSearch({ from: "/checkout" }) as { id?: string };
+  const search = useSearch({ from: "/checkout" }) as {
+    id?: string;
+    start?: string;
+  };
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [productLoading, setProductLoading] = useState(true);
 
@@ -88,8 +94,13 @@ export default function Checkout() {
     };
   }, [search.id]);
 
-  // Dates
-  const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
+  // Dates (defaults to current date YYYY-MM-DD or selected start date)
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const initialStart = useMemo(
+    () => (search.start && search.start >= todayIso ? search.start : todayIso),
+    [search.start, todayIso],
+  );
+  const [start, setStart] = useState(initialStart);
   const [end, setEnd] = useState(
     new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10),
   );
@@ -437,6 +448,47 @@ export default function Checkout() {
 
         <div className="mt-8 grid lg:grid-cols-[1fr_380px] gap-8">
           <div className="space-y-6">
+            {/* Delivery Address Card (Prefilled from registration address) */}
+            <div className="spatial-card p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary shrink-0" /> Delivery
+                  Address
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: "/profile" })}
+                  className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                >
+                  Edit Profile Address
+                </button>
+              </div>
+              <div className="p-4 rounded-xl bg-secondary/40 border border-border/80 text-sm space-y-1.5">
+                <div className="font-extrabold text-foreground">
+                  {user?.fullName || "Valued Customer"}
+                </div>
+                <div className="text-muted-foreground font-medium">
+                  {user?.address ? (
+                    <>
+                      {user.address}
+                      {user.city ? `, ${user.city}` : ""}
+                      {user.pincode ? ` - ${user.pincode}` : ""}
+                    </>
+                  ) : (
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                      No street address registered. Please complete your
+                      delivery address in Profile.
+                    </span>
+                  )}
+                </div>
+                {user?.phone && (
+                  <div className="text-xs text-muted-foreground font-medium pt-1">
+                    Contact Phone: {user.phone}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Rental Dates Card */}
             <div className="spatial-card p-6">
               <h3 className="font-bold text-lg mb-4">Rental dates</h3>
