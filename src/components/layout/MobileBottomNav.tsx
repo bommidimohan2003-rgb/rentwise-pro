@@ -37,8 +37,8 @@ export function MobileBottomNav() {
   if (!user) return null;
 
   return (
-    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md lg:hidden">
-      <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border border-black/10 dark:border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.6)] rounded-full p-1.5 flex items-center justify-around">
+    <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[340px] lg:hidden">
+      <div className="bg-white/70 dark:bg-neutral-950/75 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-[0_16px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] ring-1 ring-black/5 dark:ring-white/10 rounded-full p-2 flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;
           let isActive = false;
@@ -61,35 +61,28 @@ export function MobileBottomNav() {
             <Link
               key={item.label}
               to={targetTo}
-              className="relative flex flex-1 flex-col items-center justify-center py-2 px-1 rounded-full transition-colors duration-200 select-none"
+              title={item.label}
+              aria-label={item.label}
+              className="relative flex flex-1 items-center justify-center py-2.5 px-2 rounded-full transition-all duration-200 select-none cursor-pointer"
             >
               {isActive && (
                 <motion.div
-                  layoutId="mobileNavActivePill"
-                  className="absolute inset-0 bg-neutral-200/80 dark:bg-neutral-800/90 rounded-full -z-10 shadow-xs"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  layoutId="mobileNavActiveGlassPill"
+                  className="absolute inset-0 bg-neutral-200/90 dark:bg-white/15 border border-black/5 dark:border-white/20 rounded-full -z-10 shadow-xs backdrop-blur-md"
+                  transition={{ type: "spring", stiffness: 450, damping: 35 }}
                 />
               )}
               <motion.div
-                whileTap={{ scale: 0.92 }}
-                className="flex flex-col items-center justify-center gap-0.5"
+                whileTap={{ scale: 0.88 }}
+                className="flex items-center justify-center"
               >
                 <Icon
-                  className={`h-5 w-5 transition-colors ${
+                  className={`h-6 w-6 transition-all duration-200 ${
                     isActive
-                      ? "text-[#FF5A5F] stroke-[2.5]"
-                      : "text-neutral-500 dark:text-neutral-400 stroke-[2]"
+                      ? "text-[#FF5A5F] stroke-[2.5] scale-105"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-foreground stroke-[1.75]"
                   }`}
                 />
-                <span
-                  className={`text-[11px] leading-none transition-colors ${
-                    isActive
-                      ? "font-extrabold text-foreground"
-                      : "font-medium text-neutral-600 dark:text-neutral-400"
-                  }`}
-                >
-                  {item.label}
-                </span>
               </motion.div>
             </Link>
           );
