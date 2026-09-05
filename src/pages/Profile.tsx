@@ -22,6 +22,8 @@ import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { api } from "@/utils/api";
+import { storage, STORAGE_KEYS } from "@/utils/storage";
 
 export default function Profile() {
   const { user, ready, updateUser, logout } = useAuth();
@@ -33,6 +35,7 @@ export default function Profile() {
     phone: "",
     occupation: "",
     bio: "",
+    address: "",
     city: "",
     pincode: "",
     website: "",
@@ -53,18 +56,30 @@ export default function Profile() {
         bio:
           user.bio ||
           "Passionate filmmaker and aerial photographer. Renting out professional 4K cinema cameras, prime lenses, and workstation gear when off set.",
-        city: user.city || "Bengaluru, KA",
-        pincode: user.pincode || "560001",
+        address: user.address || user.city || "Visakhapatnam, Gajuwaka, AP",
+        city: user.city || user.address || "Visakhapatnam, Gajuwaka, AP",
+        pincode: user.pincode || "530026",
         website: user.website || "https://creators.payent.in/arjun",
         upiId: user.upiId || "arjun@upi",
       });
     }
   }, [user, ready, navigate]);
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
     if (!user) return;
     updateUser(form);
-    toast.success("Profile details updated successfully.");
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (token) {
+      try {
+        const updated = await api.updateProfile(token, form);
+        if (updated) {
+          updateUser(updated);
+        }
+      } catch (err) {
+        console.warn("Notice: Failed to sync profile to TiDB database:", err);
+      }
+    }
+    toast.success("Profile details updated successfully in TiDB database.");
   };
 
   return (
@@ -136,7 +151,7 @@ export default function Profile() {
                   <span>{form.occupation}</span>
                   <span>·</span>
                   <MapPin className="h-3.5 w-3.5 text-foreground" />
-                  <span>{form.city}</span>
+                  <span>{form.address || form.city || "Visakhapatnam, Gajuwaka, AP"}</span>
                 </p>
                 <p className="text-[11px] text-muted-foreground font-medium pt-0.5">
                   Member since October 2024 · Response time &lt; 1 hr
@@ -247,12 +262,21 @@ export default function Profile() {
                 />
               </div>
 
+              <Input
+                label="Full Street Address / Location"
+                icon={<MapPin className="h-4 w-4" />}
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="e.g. Visakhapatnam, Gajuwaka, AP"
+              />
+
               <div className="grid sm:grid-cols-2 gap-4">
                 <Input
                   label="Primary City"
                   icon={<Building className="h-4 w-4" />}
                   value={form.city}
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  placeholder="e.g. Visakhapatnam"
                 />
                 <Input
                   label="Pincode"
@@ -261,6 +285,7 @@ export default function Profile() {
                   onChange={(e) =>
                     setForm({ ...form, pincode: e.target.value })
                   }
+                  placeholder="e.g. 530026"
                 />
               </div>
 

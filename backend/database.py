@@ -217,6 +217,8 @@ def init_db():
     add_column_safely("users", "address VARCHAR(500)")
     add_column_safely("users", "city VARCHAR(100)")
     add_column_safely("users", "pincode VARCHAR(20)")
+    add_column_safely("users", "occupation VARCHAR(255)")
+    add_column_safely("users", "bio TEXT")
     add_column_safely("users", "firebase_uid VARCHAR(255) NULL")
     add_column_safely("users", "last_login_at VARCHAR(100)")
 

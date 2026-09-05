@@ -909,8 +909,83 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
         "address": user.get("address", ""),
         "city": user.get("city", ""),
         "pincode": user.get("pincode", ""),
+        "occupation": user.get("occupation", ""),
+        "bio": user.get("bio", ""),
         "avatar": user.get("avatar") or f"https://ui-avatars.com/api/?name={display_name}&background=10b981&color=fff",
         "status": user.get("status", "active"),
+        "verified": True
+    }
+
+class UserProfileUpdateSchema(BaseModel):
+    fullName: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    pincode: Optional[str] = None
+    avatar: Optional[str] = None
+    occupation: Optional[str] = None
+    bio: Optional[str] = None
+
+@app.post("/api/user/profile")
+@app.post("/api/me/profile")
+def update_user_profile_route(data: UserProfileUpdateSchema, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    fields = []
+    params = []
+    if data.fullName is not None:
+        fields.append("full_name = %s")
+        params.append(data.fullName)
+    if data.phone is not None:
+        fields.append("phone = %s")
+        params.append(data.phone)
+    if data.address is not None:
+        fields.append("address = %s")
+        params.append(data.address)
+    if data.city is not None:
+        fields.append("city = %s")
+        params.append(data.city)
+    if data.pincode is not None:
+        fields.append("pincode = %s")
+        params.append(data.pincode)
+    if data.avatar is not None:
+        fields.append("avatar = %s")
+        params.append(data.avatar)
+    if data.occupation is not None:
+        fields.append("occupation = %s")
+        params.append(data.occupation)
+    if data.bio is not None:
+        fields.append("bio = %s")
+        params.append(data.bio)
+        
+    if fields:
+        params.append(clean_email)
+        execute_query(f"UPDATE users SET {', '.join(fields)} WHERE LOWER(email) = LOWER(%s)", tuple(params))
+        
+        if clean_email in MOCK_USERS:
+            if data.fullName is not None: MOCK_USERS[clean_email]["full_name"] = data.fullName
+            if data.phone is not None: MOCK_USERS[clean_email]["phone"] = data.phone
+            if data.address is not None: MOCK_USERS[clean_email]["address"] = data.address
+            if data.city is not None: MOCK_USERS[clean_email]["city"] = data.city
+            if data.pincode is not None: MOCK_USERS[clean_email]["pincode"] = data.pincode
+            if data.avatar is not None: MOCK_USERS[clean_email]["avatar"] = data.avatar
+            if data.occupation is not None: MOCK_USERS[clean_email]["occupation"] = data.occupation
+            if data.bio is not None: MOCK_USERS[clean_email]["bio"] = data.bio
+            
+    updated = get_user(clean_email) or {}
+    display_name = updated.get("full_name") or clean_email.split("@")[0]
+    return {
+        "id": clean_email,
+        "email": clean_email,
+        "fullName": display_name,
+        "role": updated.get("role", "customer"),
+        "phone": updated.get("phone", ""),
+        "address": updated.get("address", ""),
+        "city": updated.get("city", ""),
+        "pincode": updated.get("pincode", ""),
+        "occupation": updated.get("occupation", ""),
+        "bio": updated.get("bio", ""),
+        "avatar": updated.get("avatar") or f"https://ui-avatars.com/api/?name={display_name}&background=10b981&color=fff",
+        "status": updated.get("status", "active"),
         "verified": True
     }
 

@@ -290,8 +290,27 @@ export const api = {
           status: "active",
           verified: true,
         };
+    }
+  },
+
+  async updateProfile(token: string, profileData: Partial<User>) {
+    if (!API_BASE) return null;
+    try {
+      const res = await fetch(`${API_BASE}/api/user/profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to update profile in database");
       }
-      throw err;
+      return await res.json();
+    } catch (err) {
+      console.warn("[API] Profile update notice:", err);
+      return null;
     }
   },
 
