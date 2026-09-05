@@ -333,12 +333,14 @@ export default function ProductDetails() {
                     <div className="text-sm font-extrabold text-foreground truncate">
                       {product.owner.name}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-0.5 font-medium flex items-center gap-1">
+                    <div className="text-xs text-muted-foreground mt-0.5 font-medium flex items-center gap-1 flex-wrap">
+                      <MapPin className="h-3 w-3 text-primary inline shrink-0" />
+                      <span>{product.location || product.owner?.city || product.owner?.address || "Visakhapatnam, Gajuwaka, AP"}</span>
+                      <span>·</span>
                       <span>Verified Lender</span>
                       <span>·</span>
                       <Star className="h-3 w-3 fill-foreground text-foreground inline" />
                       <span>{product.owner.rating}</span>
-                      <span>· Responds in 1h</span>
                     </div>
                   </div>
                   <Button

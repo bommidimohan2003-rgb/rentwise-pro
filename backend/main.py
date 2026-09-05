@@ -1176,6 +1176,7 @@ def format_product_dict(p: dict) -> dict:
     owner_name = p.get("owner_name") or owner_info.get("name") or "Lender"
     owner_avatar = p.get("owner_avatar") or owner_info.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
     owner_rating = float(p.get("owner_rating") or owner_info.get("rating") or 5.0)
+    owner_city = p.get("location") or owner_info.get("city") or p.get("owner_city") or "Visakhapatnam, Gajuwaka, AP"
 
     return {
         "id": str(p.get("id", "")),
@@ -1187,10 +1188,12 @@ def format_product_dict(p: dict) -> dict:
         "rating": float(p.get("rating", 5.0)),
         "reviews": int(p.get("reviews", 0)),
         "available": bool(p.get("available", True)),
+        "location": owner_city,
         "owner": {
             "name": owner_name,
             "avatar": owner_avatar,
-            "rating": owner_rating
+            "rating": owner_rating,
+            "city": owner_city
         }
     }
 

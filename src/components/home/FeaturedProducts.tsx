@@ -81,8 +81,8 @@ export function FeaturedProducts() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.slice(0, 8).map((p, i) => (
-              <ProductCard key={p.id} product={p} index={i} />
+            {featuredProducts.slice(0, 8).map((p) => (
+              <ProductCard key={p.id} product={p} />
             ))}
           </div>
         </div>

@@ -395,10 +395,12 @@ export default function Categories() {
         reviews: 24,
         available: true,
         isReference: true,
+        location: "Visakhapatnam, Gajuwaka, AP",
         owner: {
           name: "Payent Reference Catalog",
           avatar: "https://i.pravatar.cc/100?img=12",
           rating: 5.0,
+          city: "Visakhapatnam, Gajuwaka, AP",
         },
       },
       {
@@ -413,10 +415,12 @@ export default function Categories() {
         reviews: 31,
         available: true,
         isReference: true,
+        location: "Visakhapatnam, Gajuwaka, AP",
         owner: {
           name: "Payent Reference Catalog",
           avatar: "https://i.pravatar.cc/100?img=32",
           rating: 5.0,
+          city: "Visakhapatnam, Gajuwaka, AP",
         },
       },
       {
@@ -431,10 +435,12 @@ export default function Categories() {
         reviews: 18,
         available: true,
         isReference: true,
+        location: "Visakhapatnam, Gajuwaka, AP",
         owner: {
           name: "Payent Reference Catalog",
           avatar: "https://i.pravatar.cc/100?img=45",
           rating: 5.0,
+          city: "Visakhapatnam, Gajuwaka, AP",
         },
       },
       {
@@ -449,10 +455,12 @@ export default function Categories() {
         reviews: 15,
         available: true,
         isReference: true,
+        location: "Visakhapatnam, Gajuwaka, AP",
         owner: {
           name: "Payent Reference Catalog",
           avatar: "https://i.pravatar.cc/100?img=11",
           rating: 5.0,
+          city: "Visakhapatnam, Gajuwaka, AP",
         },
       },
       {
@@ -467,10 +475,12 @@ export default function Categories() {
         reviews: 12,
         available: true,
         isReference: true,
+        location: "Visakhapatnam, Gajuwaka, AP",
         owner: {
           name: "Payent Reference Catalog",
           avatar: "https://i.pravatar.cc/100?img=47",
           rating: 5.0,
+          city: "Visakhapatnam, Gajuwaka, AP",
         },
       },
       {
@@ -485,10 +495,12 @@ export default function Categories() {
         reviews: 20,
         available: true,
         isReference: true,
+        location: "Visakhapatnam, Gajuwaka, AP",
         owner: {
           name: "Payent Reference Catalog",
           avatar: "https://i.pravatar.cc/100?img=47",
           rating: 5.0,
+          city: "Visakhapatnam, Gajuwaka, AP",
         },
       },
     ],
@@ -944,7 +956,7 @@ export default function Categories() {
                     <div className="absolute bottom-2 left-2 flex items-center gap-1 text-[10px] font-semibold text-white/90">
                       <MapPin className="h-3 w-3 text-primary shrink-0" />
                       <span className="truncate max-w-[110px]">
-                        {user?.city || user?.address || "Bengaluru, KA"}
+                        {refProd.location || refProd.owner?.city || refProd.owner?.address || "Visakhapatnam, Gajuwaka, AP"}
                       </span>
                     </div>
                   </div>
