@@ -261,7 +261,7 @@ export function HelpChatbot() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full btn-gradient shadow-lg flex items-center justify-center text-white"
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full btn-gradient shadow-lg hidden lg:flex items-center justify-center text-white"
         aria-label="Payent Support Chatbot"
       >
         <AnimatePresence mode="wait">

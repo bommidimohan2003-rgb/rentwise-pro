@@ -170,7 +170,7 @@ export function Navbar() {
                   </Link>
                 )}
                 <Link
-                  to="/dashboard"
+                  to="/profile"
                   className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 border border-border transition-all"
                 >
                   <img
