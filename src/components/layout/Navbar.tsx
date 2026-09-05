@@ -185,14 +185,6 @@ export function Navbar() {
                     {(user.fullName || user.email || "User").split(" ")[0]}
                   </span>
                 </Link>
-                <button
-                  type="button"
-                  onClick={logout}
-                  title="Log Out"
-                  className="p-2 text-black dark:text-white hover:text-destructive hover:bg-destructive/10 rounded-full transition-all cursor-pointer"
-                >
-                  <LogOut className="h-4 w-4 stroke-[2.5]" />
-                </button>
               </div>
             ) : (
               <>

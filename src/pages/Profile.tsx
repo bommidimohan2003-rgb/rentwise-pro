@@ -14,6 +14,7 @@ import {
   Building,
   Clock,
   Award,
+  LogOut,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
@@ -23,7 +24,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 export default function Profile() {
-  const { user, ready, updateUser } = useAuth();
+  const { user, ready, updateUser, logout } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -439,6 +440,33 @@ export default function Profile() {
                 Contact Support
               </Button>
             </div>
+          </div>
+        </div>
+
+        {/* Account Security & Log Out Section */}
+        <div className="card-premium p-6 border border-destructive/30 bg-destructive/5 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-base text-destructive flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                <span>Account Security & Session</span>
+              </h3>
+              <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                Logged in as <span className="font-bold text-foreground">{user?.email}</span>. Click below to safely sign out of your Payent account on this device.
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                logout();
+                toast.success("Logged out successfully.");
+                navigate({ to: "/login" });
+              }}
+              className="w-full sm:w-auto font-bold text-xs flex items-center justify-center gap-2 px-6 py-2.5 shadow-md hover:shadow-lg transition-all cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Log Out</span>
+            </Button>
           </div>
         </div>
       </div>
