@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-20 lg:pb-0">
       <Navbar />
       <div className="mx-auto max-w-7xl w-full px-4 md:px-6 py-8 flex gap-8 flex-1">
         <Sidebar />

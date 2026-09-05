@@ -165,6 +165,7 @@ The main technical debt areas are clear:
 - [RESOLVED Lender Direct Camera & UI] Built live WebRTC camera capture modal (`CameraCaptureModal.tsx`), interactive earnings estimator slider, 3-step guided listing form, multi-photo gallery management, and real-time marketplace product card preview on `/become-lender`.
 - [RESOLVED Persistent Products & Deletion Security] Auto-approved new custom products (status: approved, available: true) across backend and client, removed per-user local storage namespacing for customProducts so products are globally shared across all users, and enforced strict owner/admin-only deletion authorization on backend API and ProductCard UI.
 - [RESOLVED TiDB Cloud MySQL Migration] Migrated all website data operations (products, custom listings, categories, wishlist, orders, notifications, admin management records) exclusively to TiDB Cloud MySQL via live FastAPI backend endpoints, eliminating localStorage data persistence.
+- [RESOLVED Mobile Navigation Redesign] Redesigned mobile navigation layout to floating capsule bottom bar with active pill animations (Home, Browse, Become Lender, Dashboard) active post-login.
 
 
 ## Risks and Recommendations
