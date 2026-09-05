@@ -38,7 +38,7 @@ export function MobileBottomNav() {
 
   return (
     <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[340px] lg:hidden">
-      <div className="bg-white/70 dark:bg-neutral-950/75 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-[0_16px_40px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.7)] ring-1 ring-black/5 dark:ring-white/10 rounded-full p-2 flex items-center justify-around">
+      <div className="bg-white/40 dark:bg-black/40 backdrop-blur-3xl saturate-180 border border-white/50 dark:border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-black/5 dark:ring-white/10 rounded-full p-2 flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;
           let isActive = false;
@@ -68,7 +68,7 @@ export function MobileBottomNav() {
               {isActive && (
                 <motion.div
                   layoutId="mobileNavActiveGlassPill"
-                  className="absolute inset-0 bg-neutral-200/90 dark:bg-white/15 border border-black/5 dark:border-white/20 rounded-full -z-10 shadow-xs backdrop-blur-md"
+                  className="absolute inset-0 bg-black/10 dark:bg-white/15 border border-black/5 dark:border-white/20 rounded-full -z-10 shadow-xs backdrop-blur-xl"
                   transition={{ type: "spring", stiffness: 450, damping: 35 }}
                 />
               )}
