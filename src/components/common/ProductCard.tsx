@@ -94,14 +94,10 @@ export function ProductCard({
     user && !product.isReference && (isOwner || isAdmin),
   );
 
-  const userLocation =
+  const defaultLoggedInAddress =
     user?.city || user?.address || "Bengaluru, KA";
 
-  const location =
-    (product as Product & { location?: string; city?: string }).location ||
-    (product as Product & { location?: string; city?: string }).city ||
-    (product.owner as { city?: string })?.city ||
-    userLocation;
+  const location = user ? defaultLoggedInAddress : "Bengaluru, KA";
 
   const handleCardClick = () => {
     if (product.isReference) {
