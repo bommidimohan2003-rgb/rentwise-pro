@@ -138,19 +138,29 @@ export default function Categories() {
     }
   }, [search.q]);
 
-  const [allProductsList, setAllProductsList] = useState<Product[]>([]);
+  const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
+    return storage.get<Product[]>("payent_server_products", []);
+  });
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(() => {
+    const cached = storage.get<Product[]>("payent_server_products", []);
+    return cached.length === 0;
+  });
 
   const fetchPublicProducts = useCallback(() => {
     api
       .getPublicProducts()
       .then((serverProducts) => {
-        if (Array.isArray(serverProducts)) {
+        if (Array.isArray(serverProducts) && serverProducts.length > 0) {
           setAllProductsList(serverProducts);
+          storage.set("payent_server_products", serverProducts);
         }
       })
       .catch((err) =>
         console.warn("[Categories] Server products fetch notice:", err),
-      );
+      )
+      .finally(() => {
+        setIsLoadingProducts(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -909,7 +919,7 @@ export default function Categories() {
                   className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card/90 dark:bg-card/50 backdrop-blur-md p-3 transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/15 hover:-translate-y-1 cursor-pointer"
                 >
                   {/* Top Enlarged Image Container */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-secondary/60 min-h-[165px]">
+                  <div className="relative aspect-[16/11] w-full overflow-hidden rounded-xl bg-secondary/60 min-h-[190px]">
                     <img
                       src={refProd.image}
                       alt={refProd.title}
@@ -1016,7 +1026,25 @@ export default function Categories() {
         </div>
 
         {/* Product Cards Grid */}
-        {filtered.length ? (
+        {isLoadingProducts && allProductsList.length === 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="rounded-[22px] border border-border/60 bg-card p-3 space-y-3 animate-pulse"
+              >
+                <div className="aspect-[16/11] w-full rounded-2xl bg-secondary/80" />
+                <div className="h-3 w-1/3 rounded bg-secondary/80" />
+                <div className="h-4 w-3/4 rounded bg-secondary/80" />
+                <div className="h-3 w-full rounded bg-secondary/60" />
+                <div className="pt-2 border-t border-border/40 flex justify-between items-center">
+                  <div className="h-5 w-1/3 rounded bg-secondary/80" />
+                  <div className="h-8 w-1/2 rounded-xl bg-secondary/80" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map((p) => (
               <ProductCard key={p.id} product={p} />

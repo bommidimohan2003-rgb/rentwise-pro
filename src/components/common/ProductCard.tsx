@@ -129,24 +129,28 @@ export function ProductCard({
         onClick={handleCardClick}
         className="w-full flex flex-col justify-between overflow-hidden rounded-[22px] bg-card border border-border/60 hover:border-primary/40 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer h-full"
       >
-        {/* Card Header & Media */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/40 p-4 flex items-center justify-center">
+        {/* Card Header & Media (Enlarged Full-Cover Image Presentation) */}
+        <div className="relative aspect-[16/11] sm:aspect-[4/3] w-full overflow-hidden bg-secondary/60 p-0 flex items-center justify-center border-b border-border/40">
           <img
             src={imgSrc}
             alt={product.title}
             onError={() => setImgSrc(fallbackImg)}
-            className="h-full w-full object-contain object-center transition-transform duration-500 group-hover:scale-105"
+            loading="eager"
+            className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-108"
           />
+
+          {/* Ambient Image Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent pointer-events-none opacity-85 group-hover:opacity-95 transition-opacity" />
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
             {product.isReference ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-extrabold text-black shadow-md">
                 <Tag className="h-3 w-3" />
                 Category Guide
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-extrabold text-white shadow-md">
                 <ShieldCheck className="h-3 w-3" />
                 Verified Gear
               </span>
@@ -165,7 +169,7 @@ export function ProductCard({
                   liked ? "Removed from wishlist" : "Saved to wishlist!",
                 );
               }}
-              className="absolute top-3 right-3 z-10 rounded-full bg-background/80 backdrop-blur-md p-2 text-foreground/80 hover:text-red-500 transition-colors shadow-sm"
+              className="absolute top-3 right-3 z-10 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md p-2 text-white/90 hover:text-red-500 transition-colors shadow-md border border-white/20"
             >
               <Heart
                 className={cn(
@@ -176,13 +180,14 @@ export function ProductCard({
             </button>
           )}
 
-          <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[11px] font-semibold text-muted-foreground bg-background/60 backdrop-blur-md rounded-md px-2 py-1">
-            <span className="inline-flex items-center gap-1 truncate">
-              <MapPin className="h-3 w-3 text-primary shrink-0" />
-              {location}
+          {/* Bottom Overlay Location & Rating Bar */}
+          <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[11px] font-semibold text-white/90 bg-black/60 backdrop-blur-md rounded-xl px-2.5 py-1 border border-white/10 shadow-sm z-10">
+            <span className="inline-flex items-center gap-1 truncate max-w-[70%]">
+              <MapPin className="h-3 w-3 text-[#FF5A5F] shrink-0" />
+              <span className="truncate">{location}</span>
             </span>
-            <span className="inline-flex items-center gap-0.5 text-amber-500 font-bold shrink-0">
-              <Star className="h-3 w-3 fill-amber-500" />
+            <span className="inline-flex items-center gap-0.5 text-amber-400 font-black shrink-0">
+              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
               {product.rating?.toFixed(1) || "5.0"}
             </span>
           </div>
