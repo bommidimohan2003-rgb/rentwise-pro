@@ -290,6 +290,8 @@ export const api = {
           status: "active",
           verified: true,
         };
+      }
+      throw err;
     }
   },
 
