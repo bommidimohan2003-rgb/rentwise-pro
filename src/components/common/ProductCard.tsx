@@ -94,10 +94,18 @@ export function ProductCard({
     user && !product.isReference && (isOwner || isAdmin),
   );
 
-  const defaultLoggedInAddress =
-    user?.city || user?.address || "Bengaluru, KA";
+  const ownerLocation =
+    (product as Product & { location?: string; city?: string; address?: string }).location ||
+    (product as Product & { location?: string; city?: string; address?: string }).city ||
+    (product as Product & { location?: string; city?: string; address?: string }).address ||
+    (product.owner as { city?: string; address?: string; location?: string })?.city ||
+    (product.owner as { city?: string; address?: string; location?: string })?.address ||
+    (product.owner as { city?: string; address?: string; location?: string })?.location ||
+    (product as Product & { owner_city?: string; owner_address?: string }).owner_city ||
+    (product as Product & { owner_city?: string; owner_address?: string }).owner_address ||
+    "Visakhapatnam, Gajuwaka, AP";
 
-  const location = user ? defaultLoggedInAddress : "Bengaluru, KA";
+  const location = ownerLocation;
 
   const handleCardClick = () => {
     if (product.isReference) {

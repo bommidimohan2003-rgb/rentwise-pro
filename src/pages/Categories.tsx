@@ -536,6 +536,7 @@ export default function Categories() {
     const fallbackImg =
       card.image ||
       "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600";
+    const ownerCity = user?.city || user?.address || "Visakhapatnam, Gajuwaka, AP";
     const newProduct: Product = {
       id: `p-custom-${Date.now()}`,
       title: (details.title || card.defaultTitle).trim(),
@@ -548,11 +549,13 @@ export default function Categories() {
       available: false,
       isReference: false,
       status: "pending",
+      location: ownerCity,
       owner: {
         name: user ? user.fullName || user.email : "Verified Lender",
         email: user?.email || "",
         avatar: "https://i.pravatar.cc/100?img=33",
         rating: 5.0,
+        city: ownerCity,
       },
     };
 

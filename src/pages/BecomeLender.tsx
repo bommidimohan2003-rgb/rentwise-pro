@@ -248,6 +248,7 @@ export default function BecomeLender() {
     setIsSubmitting(true);
     const priceNum = Number(price);
 
+    const ownerCity = user?.city || user?.address || "Visakhapatnam, Gajuwaka, AP";
     const newProduct: Product = {
       id: `p-custom-${Date.now()}`,
       title: title.trim(),
@@ -260,6 +261,7 @@ export default function BecomeLender() {
       available: false,
       isReference: false,
       status: "pending",
+      location: ownerCity,
       owner: {
         name: user?.fullName || user?.email || "Verified Lender",
         email: user?.email || "",
@@ -267,6 +269,7 @@ export default function BecomeLender() {
           user?.avatar ||
           "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80",
         rating: 5.0,
+        city: ownerCity,
       },
     };
 

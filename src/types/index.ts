@@ -35,11 +35,14 @@ export interface Product {
   available: boolean;
   isReference?: boolean;
   status?: "approved" | "pending" | "rejected";
+  location?: string;
   owner: {
     name: string;
     avatar: string;
     rating: number;
     email?: string;
+    city?: string;
+    address?: string;
   };
 }
 
