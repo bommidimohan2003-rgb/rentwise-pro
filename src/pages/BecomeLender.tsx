@@ -872,7 +872,7 @@ export default function BecomeLender() {
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
                             <MapPin className="h-3 w-3 text-primary" />
                             <span className="truncate max-w-[110px]">
-                              Jubilee Hills, Hyd
+                              {user?.city || user?.address || "Bengaluru, KA"}
                             </span>
                           </div>
                         </div>

@@ -94,9 +94,14 @@ export function ProductCard({
     user && !product.isReference && (isOwner || isAdmin),
   );
 
+  const userLocation =
+    user?.city || user?.address || "Bengaluru, KA";
+
   const location =
-    (product as Product & { location?: string }).location ||
-    "Jubilee Hills, Hyderabad";
+    (product as Product & { location?: string; city?: string }).location ||
+    (product as Product & { location?: string; city?: string }).city ||
+    (product.owner as { city?: string })?.city ||
+    userLocation;
 
   const handleCardClick = () => {
     if (product.isReference) {

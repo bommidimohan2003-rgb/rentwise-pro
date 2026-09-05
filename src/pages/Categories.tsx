@@ -941,7 +941,7 @@ export default function Categories() {
                     <div className="absolute bottom-2 left-2 flex items-center gap-1 text-[10px] font-semibold text-white/90">
                       <MapPin className="h-3 w-3 text-primary shrink-0" />
                       <span className="truncate max-w-[110px]">
-                        Jubilee Hills, Hyd
+                        {user?.city || user?.address || "Bengaluru, KA"}
                       </span>
                     </div>
                   </div>
