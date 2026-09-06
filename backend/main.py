@@ -2385,13 +2385,8 @@ def admin_stats(current_admin: dict = Depends(check_admin_user)):
             cursor.execute("SELECT COUNT(*) as count FROM users")
             total_users = cursor.fetchone()["count"]
             
-            # Agents (lenders/agents)
-            cursor.execute("""
-                SELECT COUNT(DISTINCT u.email) as count
-                FROM users u
-                LEFT JOIN custom_products cp ON u.email = cp.user_email
-                WHERE u.role = 'agent' OR u.role = 'lender' OR cp.id IS NOT NULL
-            """)
+            # Agents (lenders/agents profile)
+            cursor.execute("SELECT COUNT(*) as count FROM agents")
             total_agents = cursor.fetchone()["count"]
             
             # Products
@@ -2941,80 +2936,109 @@ def admin_activate_user(id: str, current_admin: dict = Depends(check_admin_user)
 @app.get("/api/admin/agents")
 def admin_agents_list(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
+    if not conn:
+        return []
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT DISTINCT u.email, u.full_name, u.status, u.avatar, u.created_at
-                FROM users u
-                LEFT JOIN custom_products cp ON u.email = cp.user_email
-                WHERE (u.role = 'agent' OR u.role = 'lender' OR cp.id IS NOT NULL) AND u.email NOT LIKE '%@payent.com'
+                SELECT a.id AS agent_id, a.user_email, a.status AS agent_status, a.created_at AS agent_created_at,
+                       u.full_name, u.avatar, u.status AS user_status
+                FROM agents a
+                JOIN users u ON LOWER(a.user_email) = LOWER(u.email)
+                WHERE a.user_email NOT LIKE '%@payent.com'
+                ORDER BY a.created_at DESC
             """)
-            rows = cursor.fetchall()
-            
+            agents_rows = cursor.fetchall()
+
+            cursor.execute("""
+                SELECT user_email, COUNT(*) as p_count
+                FROM custom_products
+                WHERE user_email IS NOT NULL AND user_email != ''
+                GROUP BY user_email
+            """)
+            p_counts = {r["user_email"].lower(): r["p_count"] for r in cursor.fetchall()}
+
+            cursor.execute("""
+                SELECT p.user_email, COUNT(o.id) as b_count, IFNULL(SUM(o.total), 0) as revenue
+                FROM orders o
+                JOIN custom_products p ON (o.product_id = p.id OR o.product_id = p.title)
+                GROUP BY p.user_email
+            """)
+            o_stats = {r["user_email"].lower(): {"count": r["b_count"], "revenue": float(r["revenue"])} for r in cursor.fetchall()}
+
+            cursor.execute("""
+                SELECT p.user_email, IFNULL(AVG(r.rating), 4.8) as avg_rating
+                FROM reviews r
+                JOIN custom_products p ON r.product_id = p.id
+                GROUP BY p.user_email
+            """)
+            r_stats = {r["user_email"].lower(): float(r["avg_rating"] or 4.8) for r in cursor.fetchall()}
+
             result = []
-            for r in rows:
-                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE user_email = %s", (r["email"],))
-                p_count = cursor.fetchone()["count"]
-                
-                cursor.execute("""
-                    SELECT COUNT(*) as count, IFNULL(SUM(total), 0) as revenue
-                    FROM orders o
-                    JOIN custom_products p ON o.product_id = p.id
-                    WHERE p.user_email = %s
-                """, (r["email"],))
-                cursor.execute("""
-                    SELECT IFNULL(AVG(r.rating), 4.8) as avg_rating
-                    FROM reviews r
-                    JOIN custom_products p ON r.product_id = p.id
-                    WHERE p.user_email = %s
-                """, (r["email"],))
-                avg_rating = float(cursor.fetchone()["avg_rating"] or 4.8)
+            for a in agents_rows:
+                email_key = a["user_email"].lower()
+                prod_count = p_counts.get(email_key, 0)
+                order_info = o_stats.get(email_key, {"count": 0, "revenue": 0.0})
+                rating_val = r_stats.get(email_key, 4.8)
+                status_val = a["agent_status"] or a["user_status"] or "active"
 
                 result.append({
-                    "id": r["email"],
-                    "fullName": r["full_name"],
-                    "email": r["email"],
-                    "avatar": r["avatar"] or "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-                    "productsCount": p_count,
-                    "bookingsCount": o_data["count"],
-                    "revenue": float(o_data["revenue"]),
-                    "rating": round(avg_rating, 1),
-                    "status": r["status"] or "active",
-                    "createdAt": r["created_at"]
+                    "id": a["user_email"],
+                    "agentId": a["agent_id"],
+                    "fullName": a["full_name"] or email_key.split("@")[0],
+                    "email": a["user_email"],
+                    "avatar": a["avatar"] or "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+                    "productsCount": prod_count,
+                    "bookingsCount": order_info["count"],
+                    "revenue": order_info["revenue"],
+                    "rating": round(rating_val, 1),
+                    "status": status_val,
+                    "createdAt": a["agent_created_at"]
                 })
+            return result
     finally:
-        conn.close()
-    return result
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 @app.post("/api/admin/agents/{id}/suspend")
 def admin_suspend_agent(id: str, current_admin: dict = Depends(check_admin_user)):
-    user = get_user(id)
+    clean_email = id.strip().lower()
+    user = get_user(clean_email)
     if not user:
         raise HTTPException(status_code=404, detail="Agent not found")
         
-    execute_query("UPDATE users SET status = 'suspended' WHERE email = %s", (id,))
+    execute_query("UPDATE users SET status = 'suspended' WHERE LOWER(email) = LOWER(%s)", (clean_email,))
+    execute_query("UPDATE agents SET status = 'suspended', updated_at = %s WHERE LOWER(user_email) = LOWER(%s)", (datetime.datetime.utcnow().isoformat(), clean_email))
     
     # Log action
     now_str = datetime.datetime.utcnow().isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
-    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Suspended agent {id}", "Agents", "127.0.0.1"))
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Suspended agent {clean_email}", "Agents", "127.0.0.1"))
     
     conn = get_db_connection()
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE user_email = %s", (id,))
-            p_count = cursor.fetchone()["count"]
-            cursor.execute("""
-                SELECT COUNT(*) as count, IFNULL(SUM(total), 0) as revenue
-                FROM orders o
-                JOIN custom_products p ON o.product_id = p.id
-                WHERE p.user_email = %s
-            """, (id,))
-            o_data = cursor.fetchone()
-    finally:
-        conn.close()
+    p_count = 0
+    o_data = {"count": 0, "revenue": 0.0}
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE LOWER(user_email) = LOWER(%s)", (clean_email,))
+                row = cursor.fetchone()
+                if row: p_count = row["count"]
+
+                cursor.execute("""
+                    SELECT COUNT(*) as count, IFNULL(SUM(total), 0) as revenue
+                    FROM orders o
+                    JOIN custom_products p ON (o.product_id = p.id OR o.product_id = p.title)
+                    WHERE LOWER(p.user_email) = LOWER(%s)
+                """, (clean_email,))
+                fetched_o = cursor.fetchone()
+                if fetched_o: o_data = fetched_o
+        finally:
+            conn.close()
         
     return {
         "id": user["email"],
@@ -3023,7 +3047,7 @@ def admin_suspend_agent(id: str, current_admin: dict = Depends(check_admin_user)
         "avatar": user["avatar"] or "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
         "productsCount": p_count,
         "bookingsCount": o_data["count"],
-        "revenue": o_data["revenue"],
+        "revenue": float(o_data["revenue"]),
         "rating": 4.8,
         "status": "suspended",
         "createdAt": user["created_at"]
@@ -3031,18 +3055,19 @@ def admin_suspend_agent(id: str, current_admin: dict = Depends(check_admin_user)
 
 @app.delete("/api/admin/agents/{id}")
 def admin_delete_agent(id: str, current_admin: dict = Depends(check_admin_user)):
-    user = get_user(id)
+    clean_email = id.strip().lower()
+    user = get_user(clean_email)
     if not user:
         raise HTTPException(status_code=404, detail="Agent not found")
         
-    execute_query("DELETE FROM users WHERE email = %s", (id,))
+    execute_query("DELETE FROM agents WHERE LOWER(user_email) = LOWER(%s)", (clean_email,))
     
     # Log action
     now_str = datetime.datetime.utcnow().isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
-    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted agent {id}", "Agents", "127.0.0.1"))
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted agent profile for {clean_email}", "Agents", "127.0.0.1"))
     
     return {"success": True}
 

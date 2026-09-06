@@ -315,6 +315,18 @@ def init_db():
     add_column_safely("custom_products", "documents LONGTEXT")
     add_index_safely("custom_products", "idx_custom_products_user_email", "user_email")
 
+    # Create agents table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS agents (
+            id VARCHAR(255) PRIMARY KEY,
+            user_email VARCHAR(255) UNIQUE NOT NULL,
+            status VARCHAR(50) DEFAULT 'active',
+            created_at VARCHAR(100) NOT NULL,
+            updated_at VARCHAR(100)
+        )
+    """)
+    add_index_safely("agents", "idx_agents_user_email", "user_email")
+
     # Create notifications table (user-facing)
     execute_query("""
         CREATE TABLE IF NOT EXISTS notifications (
@@ -539,6 +551,23 @@ def init_db():
         conn.commit()
     finally:
         conn.close()
+
+    # Auto-synchronize all existing product owners to agents table
+    try:
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT DISTINCT user_email FROM custom_products WHERE user_email IS NOT NULL AND user_email != ''")
+                    owners = cursor.fetchall()
+                    for o in owners:
+                        email_val = o.get("user_email")
+                        if email_val:
+                            ensure_agent_profile(email_val)
+            finally:
+                conn.close()
+    except Exception as sync_err:
+        print(f"Notice: Auto sync existing product owners to agents notice: {sync_err}")
 
     print("MySQL database structures initialized.")
 
@@ -986,6 +1015,44 @@ def get_all_custom_products():
         print(f"Notice: Database read error in get_all_custom_products: {e}")
     return list(MOCK_CUSTOM_PRODUCTS.values())
 
+MOCK_AGENTS = {}
+
+def ensure_agent_profile(email: str):
+    clean_email = (email or "").strip().lower()
+    if not clean_email or clean_email.endswith("@payent.com"):
+        return None
+
+    created_at = datetime.utcnow().isoformat()
+    agent_id = f"agent-{clean_email.replace('@', '-at-').replace('.', '-')}"
+
+    if clean_email not in MOCK_AGENTS:
+        MOCK_AGENTS[clean_email] = {
+            "id": agent_id,
+            "user_email": clean_email,
+            "status": "active",
+            "created_at": created_at,
+            "updated_at": created_at
+        }
+
+    try:
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT id FROM agents WHERE user_email = %s", (clean_email,))
+                    row = cursor.fetchone()
+                    if not row:
+                        cursor.execute("""
+                            INSERT INTO agents (id, user_email, status, created_at, updated_at)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """, (agent_id, clean_email, "active", created_at, created_at))
+                        conn.commit()
+                        logger.info(f"Created agent profile for user '{clean_email}'.")
+            finally:
+                conn.close()
+    except Exception as e:
+        logger.warning(f"Notice: ensure_agent_profile for {clean_email} notice: {e}")
+
 def get_all_approved_custom_products():
     try:
         conn = get_db_connection()
@@ -1050,6 +1117,7 @@ def create_custom_product(email: str, product: dict):
         "created_at": created_at
     }
     MOCK_CUSTOM_PRODUCTS[product_entry["id"]] = product_entry
+    ensure_agent_profile(clean_email)
 
     try:
         conn = get_db_connection()

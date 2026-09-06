@@ -24,6 +24,7 @@ import { useNavigate } from "@tanstack/react-router";
 export default function Agents() {
   const [agents, setAgents] = useState<AdminAgent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,11 +40,14 @@ export default function Agents() {
   const fetchAgents = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await usersService.getAgents();
       setAgents(data);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load agents list.");
+      const msg = err instanceof Error ? err.message : "Failed to load agents list.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -303,6 +307,18 @@ export default function Agents() {
       {/* Table grid */}
       {loading ? (
         <Loader message="Gathering agent records..." />
+      ) : error ? (
+        <div className="p-8 rounded-2xl bg-destructive/10 border border-destructive/20 text-center space-y-3">
+          <ShieldAlert className="h-8 w-8 text-destructive mx-auto" />
+          <h3 className="text-sm font-bold text-foreground">Failed to load agents</h3>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">{error}</p>
+          <button
+            onClick={fetchAgents}
+            className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold cursor-pointer inline-flex items-center gap-2"
+          >
+            <span>Retry Connection</span>
+          </button>
+        </div>
       ) : (
         <>
           <Table

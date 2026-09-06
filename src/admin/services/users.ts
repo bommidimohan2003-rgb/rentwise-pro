@@ -72,58 +72,25 @@ export const usersService = {
   },
 
   async getAgents(): Promise<AdminAgent[]> {
-    if (typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem("payent:admin:agents");
-        if (raw) {
-          const list: AdminAgent[] = JSON.parse(raw);
-          const clean = list.filter(
-            (a) =>
-              !a.email?.endsWith("@payent.com") &&
-              !a.fullName?.includes("Gear Hub") &&
-              !a.fullName?.includes("Cine Rental") &&
-              !a.fullName?.includes("Pro Drone"),
-          );
-          localStorage.setItem("payent:admin:agents", JSON.stringify(clean));
-        }
-      } catch (e) {
-        console.warn("[usersService] local agents cleanup notice:", e);
-      }
-    }
-    try {
-      const response = await adminApi.get("/agents");
-      if (response.data && Array.isArray(response.data)) {
-        return response.data.filter(
-          (a: AdminAgent) =>
-            !a.email?.endsWith("@payent.com") &&
-            !a.fullName?.includes("Gear Hub") &&
-            !a.fullName?.includes("Cine Rental") &&
-            !a.fullName?.includes("Pro Drone"),
-        );
-      }
-    } catch (err) {
-      console.warn("[usersService] getAgents fallback:", err);
+    const response = await adminApi.get("/agents");
+    if (response.data && Array.isArray(response.data)) {
+      return response.data.filter(
+        (a: AdminAgent) =>
+          !a.email?.endsWith("@payent.com") &&
+          !a.fullName?.includes("Gear Hub") &&
+          !a.fullName?.includes("Cine Rental") &&
+          !a.fullName?.includes("Pro Drone"),
+      );
     }
     return [];
   },
 
   async suspendAgent(id: string): Promise<AdminAgent> {
-    try {
-      const response = await adminApi.post(`/agents/${id}/suspend`);
-      return response.data;
-    } catch (err) {
-      console.warn("[usersService] suspendAgent fallback:", err);
-      const agent =
-        FALLBACK_AGENTS.find((a) => a.id === id) || FALLBACK_AGENTS[0];
-      return { ...agent, status: "suspended" };
-    }
+    const response = await adminApi.post(`/agents/${encodeURIComponent(id)}/suspend`);
+    return response.data;
   },
 
   async deleteAgent(id: string): Promise<void> {
-    try {
-      await adminApi.delete(`/agents/${id}`);
-    } catch (err) {
-      console.warn("[usersService] deleteAgent fallback:", err);
-    }
+    await adminApi.delete(`/agents/${encodeURIComponent(id)}`);
   },
 };
