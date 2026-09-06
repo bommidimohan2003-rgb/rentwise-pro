@@ -1,14 +1,10 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
-  Calendar,
   Check,
-  Heart,
-  Shield,
   Truck,
   MessageSquare,
   MapPin,
   Star,
-  Clock,
   ArrowRight,
   ShieldCheck,
   Info,
@@ -32,39 +28,7 @@ import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import type { Product } from "@/types";
 
-const generateCurrentRentalDates = () => {
-  const dates = [];
-  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  for (let i = 0; i < 5; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    const dayName = daysOfWeek[d.getDay()];
-    const dayNum = d.getDate();
-    const monthName = months[d.getMonth()];
-    dates.push({
-      day: i === 0 ? "Today" : dayName,
-      date: `${dayNum} ${monthName}`,
-      isoDate: d.toISOString().slice(0, 10),
-    });
-  }
-  return dates;
-};
 
-const mockTimes = ["10:00 AM", "12:00 PM", "02:00 PM", "04:00 PM"];
 
 export default function ProductDetails() {
   const { id } = useParams({ from: "/product/$id" });
@@ -111,11 +75,8 @@ export default function ProductDetails() {
       isMounted = false;
     };
   }, [id]);
-  const [selectedDate, setSelectedDate] = useState(0);
-  const [selectedTime, setSelectedTime] = useState("12:00 PM");
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [frequentlyTogether, setFrequentlyTogether] = useState<Product[]>([]);
-  const rentalDates = generateCurrentRentalDates();
 
   const isOwner = Boolean(
     user &&
@@ -372,56 +333,7 @@ export default function ProductDetails() {
                 </div>
               )}
 
-              {/* Date Selector Pills (Reference App Mockup Style) */}
-              <div className="space-y-3 pt-2">
-                <label className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block">
-                  Select Rental Start Date
-                </label>
-                <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-                  {rentalDates.map((item, idx) => (
-                    <button
-                      key={item.date}
-                      onClick={() => setSelectedDate(idx)}
-                      className={cn(
-                        "p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl text-center border transition-all cursor-pointer min-w-0",
-                        selectedDate === idx
-                          ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-md"
-                          : "bg-card border-border text-foreground hover:border-[#FF5A5F]/50",
-                      )}
-                    >
-                      <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase truncate">
-                        {item.day}
-                      </p>
-                      <p className="text-xs font-extrabold mt-0.5 truncate">
-                        {item.date}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
-              {/* Time Slot Selector Pills (Reference App Mockup Style) */}
-              <div className="space-y-3 pt-2">
-                <label className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block">
-                  Pickup / Delivery Time Slot
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {mockTimes.map((time) => (
-                    <button
-                      key={time}
-                      onClick={() => setSelectedTime(time)}
-                      className={cn(
-                        "py-2 px-1 text-center rounded-xl border text-xs font-extrabold transition-all cursor-pointer",
-                        selectedTime === time
-                          ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-md"
-                          : "bg-card border-border text-foreground hover:border-black/50 dark:hover:border-white/50",
-                      )}
-                    >
-                      {time}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Pricing & Primary Action Button */}
               <div className="pt-4 border-t border-border space-y-4">
@@ -492,9 +404,6 @@ export default function ProductDetails() {
                         to: "/checkout",
                         search: {
                           id: product.id,
-                          start:
-                            rentalDates[selectedDate]?.isoDate ||
-                            new Date().toISOString().slice(0, 10),
                         } as never,
                       });
                     }}
