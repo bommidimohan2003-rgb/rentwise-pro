@@ -71,6 +71,10 @@ export function useAuth() {
 
     initAuth();
 
+    const onStorage = () => {
+      setUser(storage.get<User | null>(STORAGE_KEYS.currentUser, null));
+    };
+
     const onSessionExpired = (e: Event) => {
       const customEv = e as CustomEvent<{ reason?: string; loginPath?: string }>;
       storage.remove(STORAGE_KEYS.token);

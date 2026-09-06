@@ -8,8 +8,8 @@ export interface User {
   state?: string;
   country?: string;
   pincode?: string;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | null;
+  longitude?: number | null;
   locationUpdatedAt?: string;
   password?: string;
   avatar?: string;

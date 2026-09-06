@@ -58,8 +58,8 @@ export default function Payment() {
         if (isMounted && found) setProduct(found);
       })
       .catch(() => {
-        api.getPublicProducts().then((all: Product[]) => {
-          if (!isMounted) return;
+        api.getPublicProducts().then((all: Product[] | null) => {
+          if (!isMounted || !all) return;
           const found = all.find((p: Product) => p.id === productId);
           if (found) setProduct(found);
         });

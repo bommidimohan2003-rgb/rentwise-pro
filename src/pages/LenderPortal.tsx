@@ -59,7 +59,7 @@ export default function LenderPortal() {
         api.getLenderOrders(token),
       ]);
       setListings(fetchedListings);
-      setBookings(fetchedBookings);
+      setBookings(fetchedBookings as unknown as LenderOrder[]);
     } catch (err) {
       console.error("Failed to load lender portal data:", err);
       toast.error("Failed to load listings or bookings.");
