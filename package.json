@@ -6,12 +6,12 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "start": "cd frontend && npm run start",
-    "build": "cd frontend && npm run build",
-    "preview": "cd frontend && npm run preview",
-    "lint": "cd frontend && npm run lint",
-    "format": "cd frontend && npm run format",
+    "dev": "npm run dev --workspace=frontend",
+    "start": "npm run start --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
+    "preview": "npm run preview --workspace=frontend",
+    "lint": "npm run lint --workspace=frontend",
+    "format": "npm run format --workspace=frontend",
     "dev:backend": "cd backend && python -m uvicorn main:app --reload --host 127.0.0.1 --port 8001",
     "dev:all": "start npm run dev:backend && npm run dev",
     "test:backend": "cd backend && pytest"

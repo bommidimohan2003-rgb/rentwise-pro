@@ -42,7 +42,16 @@ if (fs.existsSync(assetsDir)) {
     fs.cpSync(rootPublicDir, distDir, { recursive: true });
   }
 
+  // Ensure output is also present at repo root dist/ for Vercel root deployments
+  const rootDistDir = path.resolve("../dist");
+  if (path.basename(process.cwd()) === "frontend" || fs.existsSync(path.resolve("../package.json"))) {
+    if (!fs.existsSync(rootDistDir)) {
+      fs.mkdirSync(rootDistDir, { recursive: true });
+    }
+    fs.cpSync(distDir, rootDistDir, { recursive: true });
+  }
+
   console.log(
-    `[Postbuild] Injected JS (${jsFile}) and CSS (${cssFile}) into index.html and copied public files to dist/`,
+    `[Postbuild] Injected JS (${jsFile}) and CSS (${cssFile}) into index.html and copied public files to dist/ & ../dist/`,
   );
 }
