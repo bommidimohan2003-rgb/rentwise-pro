@@ -238,6 +238,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": f"Internal Server Error: {str(exc)}"},
     )
 
+@app.get("/")
 @app.get("/api/health")
 @app.get("/health")
 @app.get("/healthz")

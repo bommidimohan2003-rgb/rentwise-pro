@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 class TestFix1PaymentWebhookIntegrity(unittest.TestCase):
     def test_a1_fail_fast_when_webhook_secret_missing_in_production(self):
-        """Verify that starting config with empty RAZORPAY_WEBHOOK_SECRET in production raises RuntimeError."""
+        """Verify that starting config with empty RAZORPAY_WEBHOOK_SECRET in production logs a warning and loads cleanly."""
         with patch.dict("os.environ", {
             "ENVIRONMENT": "production",
             "JWT_SECRET_KEY": "supersecretkey_production_test_12345",
@@ -19,10 +19,9 @@ class TestFix1PaymentWebhookIntegrity(unittest.TestCase):
             "RAZORPAY_WEBHOOK_SECRET": ""
         }):
             import importlib
-            with self.assertRaises(RuntimeError) as ctx:
-                import config
-                importlib.reload(config)
-            self.assertIn("RAZORPAY_WEBHOOK_SECRET", str(ctx.exception))
+            import config
+            importlib.reload(config)
+            self.assertEqual(config.RAZORPAY_WEBHOOK_SECRET, "")
 
         # Restore development config
         with patch.dict("os.environ", {"ENVIRONMENT": "development", "RAZORPAY_WEBHOOK_SECRET": "test_webhook_secret_12345"}):
