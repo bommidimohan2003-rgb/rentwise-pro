@@ -15,5 +15,9 @@
     "dev:backend": "cd backend && python -m uvicorn main:app --reload --host 127.0.0.1 --port 8001",
     "dev:all": "start npm run dev:backend && npm run dev",
     "test:backend": "cd backend && pytest"
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "1.1.5",
+    "@rolldown/binding-linux-x64-musl": "1.1.5"
   }
 }
