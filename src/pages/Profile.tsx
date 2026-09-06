@@ -19,6 +19,7 @@ import {
   Key,
   Loader2,
   Lock,
+  LogOut,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
