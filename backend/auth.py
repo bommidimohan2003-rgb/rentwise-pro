@@ -42,19 +42,22 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
     Validate password complexity.
     Returns (is_valid, error_message).
     """
-    if not password or len(password) < 6:
-        return False, "Password must be at least 6 characters long."
+    if not password or len(password) < 8:
+        return False, "Password must be at least 8 characters long."
     if len(password) > 128:
         return False, "Password cannot exceed 128 characters."
-    
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one uppercase letter."
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one lowercase letter."
+    if not re.search(r"[0-9]", password):
+        return False, "Password must contain at least one number."
+    if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>/?]", password):
+        return False, "Password must contain at least one special character."
     if password.lower() in COMMON_WEAK_PASSWORDS:
         return False, "This password is too common. Please choose a safer password."
-
-    return True, ""
-
     if IS_PRODUCTION and check_hibp_pwned_password(password):
         return False, "This password has appeared in a known data breach. Please choose a safer password."
-
     return True, ""
 
 def hash_password(password: str) -> str:

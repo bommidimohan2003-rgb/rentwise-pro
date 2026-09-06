@@ -1,7 +1,7 @@
 import unittest
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Ensure backend directory is in sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -102,7 +102,7 @@ class TestSecurityFunctions(unittest.TestCase):
                 INSERT INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE user_email = VALUES(user_email)
-            """, (order_id, user_b, "p1", "Test Product", "", "2026-08-01", "2026-08-05", 5000, "active", datetime.utcnow().isoformat()))
+            """, (order_id, user_b, "p1", "Test Product", "", "2026-08-01", "2026-08-05", 5000, "active", datetime.now(timezone.utc).isoformat()))
         except Exception:
             pass
 

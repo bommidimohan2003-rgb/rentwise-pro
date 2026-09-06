@@ -166,6 +166,7 @@ The main technical debt areas are clear:
 - [RESOLVED Persistent Products & Deletion Security] Auto-approved new custom products (status: approved, available: true) across backend and client, removed per-user local storage namespacing for customProducts so products are globally shared across all users, and enforced strict owner/admin-only deletion authorization on backend API and ProductCard UI.
 - [RESOLVED TiDB Cloud MySQL Migration] Migrated all website data operations (products, custom listings, categories, wishlist, orders, notifications, admin management records) exclusively to TiDB Cloud MySQL via live FastAPI backend endpoints, eliminating localStorage data persistence.
 - [RESOLVED Mobile Navigation Redesign] Redesigned mobile navigation layout to floating capsule bottom bar with active pill animations (Home, Browse, Become Lender, Dashboard) active post-login.
+- [RESOLVED Deployment Healthcheck & Python 3.12 UTC Datetime] Resolved 1/1 replicas healthcheck deployment failures caused by bare datetime module AttributeError (`datetime.utcnow` -> `dt.now(timezone.utc)`) across `backend/database.py` and `backend/main.py`, synchronized `dbutils` dependency in `backend/requirements.txt`, and ensured database idempotency.
 
 
 ## Risks and Recommendations

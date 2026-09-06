@@ -21,6 +21,9 @@ class TestRazorpayIntegration(unittest.TestCase):
     def setUp(self):
         try:
             init_db()
+            from database import MOCK_ORDERS, execute_query
+            MOCK_ORDERS.clear()
+            execute_query("DELETE FROM orders WHERE id LIKE 'ord_test_%'")
         except Exception:
             pass
         self.secret = RAZORPAY_KEY_SECRET or "rzp_test_payent_key_secret"

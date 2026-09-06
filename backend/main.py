@@ -4771,7 +4771,7 @@ def get_admin_dashboard_stats():
     GET /api/admin/dashboard/stats
     Returns real metric aggregates from MySQL database tables.
     """
-    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    today_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
 
     total_users_res = fetch_one("SELECT COUNT(*) as cnt FROM users")
     total_users = total_users_res["cnt"] if total_users_res else 0

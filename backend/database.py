@@ -12,7 +12,7 @@ import logging
 import hashlib
 import datetime
 from typing import Optional, List
-from datetime import datetime as dt
+from datetime import datetime as dt, timezone, timedelta
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB, MYSQL_SSL
 
 logger = logging.getLogger("payent.database")
@@ -64,7 +64,7 @@ def get_db_pool():
     if _db_pool is not None:
         return _db_pool
 
-    now = datetime.now().timestamp()
+    now = dt.now(timezone.utc).timestamp()
     if _last_db_failure_timestamp > 0 and (now - _last_db_failure_timestamp) < 5.0:
         return None
 
@@ -106,7 +106,7 @@ def get_db_connection():
         except Exception as e:
             logger.warning(f"Pooled connection acquisition error: {e}")
 
-    now = datetime.now().timestamp()
+    now = dt.now(timezone.utc).timestamp()
     if _last_db_failure_timestamp > 0 and (now - _last_db_failure_timestamp) < 5.0:
         return None
 
@@ -567,7 +567,7 @@ def init_db():
             cursor.execute("SELECT COUNT(*) as count FROM users WHERE LOWER(email) = 'bommidimohan2003@gmail.com'")
             if cursor.fetchone()["count"] == 0:
                 hashed_pwd = "$2b$12$XbPCF4zGTgcZs6Z9afnXVuenqYPwmRIjLRs8PwXT7KZy99U8W2nE2"
-                created_at = datetime.utcnow().isoformat()
+                created_at = dt.now(timezone.utc).isoformat()
                 cursor.execute("""
                     INSERT INTO users (email, phone, password_hash, full_name, role, created_at, last_login_at, status, verified)
                     VALUES ('bommidimohan2003@gmail.com', '+91 8810519885', %s, 'Bommidi Mohan', 'admin', %s, %s, 'active', TRUE)
@@ -610,8 +610,8 @@ MOCK_USERS = {
         "address": "123 Innovation Way",
         "city": "Bangalore",
         "pincode": "560001",
-        "created_at": datetime.utcnow().isoformat(),
-        "last_login_at": datetime.utcnow().isoformat(),
+        "created_at": dt.now(timezone.utc).isoformat(),
+        "last_login_at": dt.now(timezone.utc).isoformat(),
         "status": "active",
         "verified": True
     }
@@ -665,7 +665,7 @@ def get_admin_notifications(limit: int = 20) -> list:
         return []
 
 def create_user(email: str, phone: str, password_hash: str, full_name: str, role: str = "user", address: str = None, city: str = None, pincode: str = None):
-    created_at = datetime.utcnow().isoformat()
+    created_at = dt.now(timezone.utc).isoformat()
     clean_email = email.strip().lower()
     user_data = {
         "email": clean_email,
@@ -712,7 +712,7 @@ def get_user_by_firebase_uid(firebase_uid: str):
     return None
 
 def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: str = "", avatar: str = "", address: str = "", city: str = "", pincode: str = "", role: str = "user", google_email_verified: bool = True):
-    created_at = datetime.utcnow().isoformat()
+    created_at = dt.now(timezone.utc).isoformat()
     clean_email = email.strip().lower()
 
     # Check if user already exists by firebase_uid or email (linking rule)
@@ -728,7 +728,7 @@ def save_google_user(email: str, full_name: str, firebase_uid: str = "", phone: 
             print(f"[SECURITY NOTICE]: Refusing auto-link for unverified email: {clean_email}")
             raise ValueError(f"Cannot auto-link Google identity to unverified account: {clean_email}")
 
-        now_iso = datetime.utcnow().isoformat()
+        now_iso = dt.now(timezone.utc).isoformat()
         clean_email = existing_user["email"]
         existing_user["firebase_uid"] = firebase_uid or existing_user.get("firebase_uid")
         existing_user["verified"] = True
@@ -820,7 +820,7 @@ def update_user_password(email: str, password_hash: str):
         print(f"Notice: Database write error in update_user_password: {e}")
 
 def save_otp(email: str, phone: str, otp: str):
-    created_at = datetime.utcnow().isoformat()
+    created_at = dt.now(timezone.utc).isoformat()
     clean_email = email.strip().lower()
     MOCK_OTPS[clean_email] = {"email": clean_email, "phone": phone, "otp": otp, "created_at": created_at}
     try:
@@ -919,7 +919,7 @@ def create_order(email: str, order: dict):
     img = order.get("productImage") or order.get("product_image") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
     start = order.get("startDate") or order.get("start_date") or "Today"
     end = order.get("endDate") or order.get("end_date") or "Tomorrow"
-    created = order.get("createdAt") or order.get("created_at") or datetime.utcnow().isoformat()
+    created = order.get("createdAt") or order.get("created_at") or dt.now(timezone.utc).isoformat()
     status = order.get("status") or "active"
     total = float(order.get("total", 0))
 
@@ -1048,7 +1048,7 @@ def ensure_agent_profile(email: str):
     if not clean_email or clean_email.endswith("@payent.com"):
         return None
 
-    created_at = datetime.utcnow().isoformat()
+    created_at = dt.now(timezone.utc).isoformat()
     agent_id = f"agent-{clean_email.replace('@', '-at-').replace('.', '-')}"
 
     if clean_email not in MOCK_AGENTS:
@@ -1108,7 +1108,7 @@ def get_all_approved_custom_products():
 
 def create_custom_product(email: str, product: dict):
     clean_email = (email or "").strip().lower()
-    created_at = datetime.utcnow().isoformat()
+    created_at = dt.now(timezone.utc).isoformat()
     
     owner_info = product.get("owner") if isinstance(product.get("owner"), dict) else {}
     owner_name = owner_info.get("name") or product.get("owner_name") or clean_email.split("@")[0]
@@ -1241,7 +1241,7 @@ def create_notification(email: str, n: dict):
         n["message"],
         n["type"],
         n.get("read") or n.get("is_read") or False,
-        n.get("createdAt") or n.get("created_at") or datetime.utcnow().isoformat()
+        n.get("createdAt") or n.get("created_at") or dt.now(timezone.utc).isoformat()
     ))
 
 def mark_notifications_read(email: str):
@@ -1337,7 +1337,7 @@ def revoke_token(jti: str, email: str, expires_at: int):
     if not jti:
         return
     REVOKED_JTIS.add(jti)
-    created_at = datetime.utcnow().isoformat()
+    created_at = dt.now(timezone.utc).isoformat()
     try:
         execute_query(
             "REPLACE INTO token_blocklist (jti, email, expires_at, created_at) VALUES (%s, %s, %s, %s)",
@@ -1372,7 +1372,7 @@ def record_failed_auth_attempt(key: str, max_attempts: int = 5, lock_duration_se
     Record a failed login attempt for a key (IP or email) with DB-backed persistence for serverless scaling.
     Returns (is_locked, seconds_remaining).
     """
-    now = int(datetime.utcnow().timestamp())
+    now = int(dt.now(timezone.utc).timestamp())
     attempts = 0
     last_attempt = now
     locked_until = 0
@@ -1461,7 +1461,7 @@ def create_order_record(
     razorpay_order_id: str = None,
     payment_status: str = "unpaid"
 ):
-    created_at = datetime.utcnow().isoformat()
+    created_at = dt.now(timezone.utc).isoformat()
     order_data = {
         "id": order_id,
         "user_email": user_email,
@@ -1481,7 +1481,11 @@ def create_order_record(
         execute_query(
             """INSERT INTO orders 
                (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at, razorpay_order_id, payment_status) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+               ON DUPLICATE KEY UPDATE 
+               user_email=VALUES(user_email), product_id=VALUES(product_id), product_title=VALUES(product_title),
+               product_image=VALUES(product_image), start_date=VALUES(start_date), end_date=VALUES(end_date),
+               total=VALUES(total), status=VALUES(status), razorpay_order_id=VALUES(razorpay_order_id), payment_status=VALUES(payment_status)""",
             (order_id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at, razorpay_order_id, payment_status)
         )
     except Exception as e:
@@ -1505,11 +1509,16 @@ def is_payment_event_processed(event_id: str) -> bool:
     """Check if a Razorpay webhook event_id has already been processed."""
     if not event_id:
         return False
+    if event_id in MOCK_PROCESSED_EVENTS:
+        return True
     try:
         row = fetch_one("SELECT 1 FROM processed_payment_events WHERE event_id = %s", (event_id,))
-        return bool(row)
+        if row:
+            MOCK_PROCESSED_EVENTS.add(event_id)
+            return True
     except Exception:
-        return event_id in MOCK_PROCESSED_EVENTS
+        pass
+    return False
 
 def record_payment_event(event_id: str, event_type: str = "", payment_id: str = None, order_id: str = None):
     """Record a processed Razorpay webhook event_id for idempotency."""
@@ -1521,7 +1530,7 @@ def record_payment_event(event_id: str, event_type: str = "", payment_id: str = 
             INSERT INTO processed_payment_events (event_id, event_type, payment_id, order_id, created_at)
             VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE created_at = VALUES(created_at)
-        """, (event_id, event_type or "", payment_id or "", order_id or "", datetime.utcnow().isoformat()))
+        """, (event_id, event_type or "", payment_id or "", order_id or "", dt.now(timezone.utc).isoformat()))
     except Exception:
         pass
 
@@ -1613,7 +1622,7 @@ def record_user_event_record(event: dict):
         execute_query(query, params)
     except Exception as e:
         print(f"Notice: Database write error in record_user_event_record: {e}")
-        MOCK_USER_EVENTS.append({**event, "created_at": datetime.utcnow().isoformat()})
+        MOCK_USER_EVENTS.append({**event, "created_at": dt.now(timezone.utc).isoformat()})
 
 def record_user_events_batch(events: list):
     """Batch insert multiple behavioral event records."""
@@ -1644,7 +1653,7 @@ def record_user_events_batch(events: list):
     except Exception as e:
         print(f"Notice: Database batch write error in record_user_events_batch: {e}")
         for ev in events:
-            MOCK_USER_EVENTS.append({**ev, "created_at": datetime.utcnow().isoformat()})
+            MOCK_USER_EVENTS.append({**ev, "created_at": dt.now(timezone.utc).isoformat()})
     finally:
         conn.close()
 
@@ -1980,8 +1989,8 @@ def get_api_key_by_hash_db(key_hash: str):
     return None
 
 def create_api_key_db(data: dict):
-    now_str = datetime.utcnow().isoformat()
-    key_id = data.get("id") or f"ak_{int(datetime.utcnow().timestamp())}_{random.randint(100, 999)}"
+    now_str = dt.now(timezone.utc).isoformat()
+    key_id = data.get("id") or f"ak_{int(dt.now(timezone.utc).timestamp())}_{random.randint(100, 999)}"
     record = {
         "id": key_id,
         "name": data["name"],
@@ -2013,7 +2022,7 @@ def create_api_key_db(data: dict):
     return {k: v for k, v in record.items() if k != "key_hash"}
 
 def update_api_key_db(key_id: str, updates: dict):
-    now_str = datetime.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     fields = ["updated_at = %s"]
     params = [now_str]
 
@@ -2053,7 +2062,7 @@ def delete_api_key_db(key_id: str):
     return True
 
 def touch_api_key_last_used_db(key_id: str):
-    now_str = dt.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     try:
         execute_query("UPDATE api_keys SET last_used_at = %s WHERE id = %s", (now_str, key_id))
     except Exception:
@@ -2069,7 +2078,7 @@ def hash_refresh_token(token: str) -> str:
 def create_db_session(session_id: str, user_email: str, raw_refresh_token: str, device_name: str, ip_address: str, user_agent: str, expires_at_str: str) -> bool:
     clean_email = user_email.strip().lower()
     token_hash = hash_refresh_token(raw_refresh_token)
-    now_str = dt.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     return execute_query("""
         INSERT INTO sessions (id, user_email, refresh_token_hash, device_name, ip_address, user_agent, created_at, last_used_at, expires_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -2077,7 +2086,7 @@ def create_db_session(session_id: str, user_email: str, raw_refresh_token: str, 
 
 def get_valid_db_session(raw_refresh_token: str) -> Optional[dict]:
     token_hash = hash_refresh_token(raw_refresh_token)
-    now_str = dt.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     conn = get_db_connection()
     if not conn:
         return None
@@ -2092,26 +2101,26 @@ def get_valid_db_session(raw_refresh_token: str) -> Optional[dict]:
         conn.close()
 
 def update_session_activity(session_id: str):
-    now_str = dt.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     execute_query("UPDATE sessions SET last_used_at = %s WHERE id = %s", (now_str, session_id))
 
 def revoke_db_session(session_id: str) -> bool:
-    now_str = dt.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     return execute_query("UPDATE sessions SET revoked_at = %s WHERE id = %s AND revoked_at IS NULL", (now_str, session_id))
 
 def revoke_db_session_by_token(raw_refresh_token: str) -> bool:
     token_hash = hash_refresh_token(raw_refresh_token)
-    now_str = dt.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     return execute_query("UPDATE sessions SET revoked_at = %s WHERE refresh_token_hash = %s AND revoked_at IS NULL", (now_str, token_hash))
 
 def revoke_all_user_sessions(user_email: str) -> bool:
     clean_email = user_email.strip().lower()
-    now_str = dt.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     return execute_query("UPDATE sessions SET revoked_at = %s WHERE LOWER(user_email) = LOWER(%s) AND revoked_at IS NULL", (now_str, clean_email))
 
 def get_user_active_sessions(user_email: str) -> List[dict]:
     clean_email = user_email.strip().lower()
-    now_str = dt.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     conn = get_db_connection()
     if not conn:
         return []
@@ -2128,7 +2137,7 @@ def get_user_active_sessions(user_email: str) -> List[dict]:
         conn.close()
 
 def cleanup_expired_sessions() -> bool:
-    now_str = dt.utcnow().isoformat()
+    now_str = dt.now(timezone.utc).isoformat()
     return execute_query("DELETE FROM sessions WHERE expires_at <= %s OR revoked_at IS NOT NULL", (now_str,))
 
 

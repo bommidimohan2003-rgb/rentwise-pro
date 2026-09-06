@@ -48,13 +48,11 @@ RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 
 if IS_PRODUCTION:
     if not JWT_SECRET_KEY or JWT_SECRET_KEY == DEFAULT_SECRET:
-        print("Warning: JWT_SECRET_KEY is using default secret.")
+        raise RuntimeError("FATAL SECURITY ERROR: JWT_SECRET_KEY must be explicitly configured in production mode.")
     if not MYSQL_PASSWORD or MYSQL_PASSWORD == "Bmohan":
-        print("Warning: MYSQL_PASSWORD is using default value.")
-    if not os.getenv("ADMIN_SETUP_CODE"):
-        print("Warning: ADMIN_SETUP_CODE environment variable not explicitly set.")
+        raise RuntimeError("FATAL SECURITY ERROR: MYSQL_PASSWORD must be explicitly configured in production mode.")
     if not RAZORPAY_WEBHOOK_SECRET:
-        print("Warning: RAZORPAY_WEBHOOK_SECRET environment variable not explicitly set.")
+        raise RuntimeError("FATAL SECURITY ERROR: RAZORPAY_WEBHOOK_SECRET must be explicitly configured in production mode.")
 
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 if JWT_ALGORITHM not in ["HS256", "HS384", "HS512"]:
