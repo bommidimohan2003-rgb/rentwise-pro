@@ -14,7 +14,11 @@ import {
   Building,
   Clock,
   Award,
-  LogOut,
+  Navigation,
+  LocateFixed,
+  Key,
+  Loader2,
+  Lock,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
@@ -26,7 +30,7 @@ import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 
 export default function Profile() {
-  const { user, ready, updateUser, logout } = useAuth();
+  const { user, ready, updateUser } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -37,10 +41,24 @@ export default function Profile() {
     bio: "",
     address: "",
     city: "",
+    state: "",
+    country: "India",
     pincode: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
     website: "",
     upiId: "",
   });
+
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<string | null>(null);
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (ready && !user) {
@@ -56,9 +74,13 @@ export default function Profile() {
         bio:
           user.bio ||
           "Passionate filmmaker and aerial photographer. Renting out professional 4K cinema cameras, prime lenses, and workstation gear when off set.",
-        address: user.address || user.city || "Visakhapatnam, Gajuwaka, AP",
-        city: user.city || user.address || "Visakhapatnam, Gajuwaka, AP",
-        pincode: user.pincode || "530026",
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        country: user.country || "India",
+        pincode: user.pincode || "",
+        latitude: user.latitude ?? null,
+        longitude: user.longitude ?? null,
         website: user.website || "https://creators.payent.in/arjun",
         upiId: user.upiId || "arjun@upi",
       });
@@ -75,11 +97,122 @@ export default function Profile() {
         if (updated) {
           updateUser(updated);
         }
-      } catch (err) {
-        console.warn("Notice: Failed to sync profile to TiDB database:", err);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Failed to sync profile.";
+        console.warn("Notice: Profile sync issue:", msg);
       }
     }
-    toast.success("Profile details updated successfully in TiDB database.");
+    setLocationStatus(null);
+    toast.success("Profile details saved successfully.");
+  };
+
+  const detectCurrentLocation = async () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      toast.error("Browser does not support geolocation detection.");
+      return;
+    }
+
+    setDetectingLocation(true);
+    setLocationStatus("Requesting browser location permission...");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setForm((prev) => ({
+          ...prev,
+          latitude,
+          longitude,
+        }));
+
+        toast.info(`Coordinates detected (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Fetching address...`);
+
+        const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+        if (token) {
+          try {
+            const geo = await api.reverseGeocode(token, latitude, longitude);
+            if (geo) {
+              setForm((prev) => ({
+                ...prev,
+                address: geo.address || prev.address,
+                city: geo.city || prev.city,
+                state: geo.state || prev.state,
+                country: geo.country || prev.country || "India",
+                pincode: geo.pincode || prev.pincode,
+                latitude,
+                longitude,
+              }));
+              toast.success(`Location detected: ${geo.city || geo.address}. Review address below and click 'Save Location Details' to apply.`);
+              setLocationStatus(`Location detected: ${geo.city || ""}${geo.state ? ", " + geo.state : ""}. (Not saved until you click Save)`);
+            }
+          } catch (e) {
+            console.warn("Reverse geocode notice:", e);
+            toast.info("GPS coordinates set. Please review and refine your address manually.");
+            setLocationStatus(`GPS coordinates captured (${latitude.toFixed(4)}, ${longitude.toFixed(4)}). Review address and save.`);
+          }
+        } else {
+          toast.info("GPS coordinates retrieved. Review details and click 'Save Details'.");
+        }
+        setDetectingLocation(false);
+      },
+      (error) => {
+        setDetectingLocation(false);
+        setLocationStatus(null);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            toast.error("Location permission was denied. You can enter your address manually.");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            toast.error("Location information is unavailable. You can enter your address manually.");
+            break;
+          case error.TIMEOUT:
+            toast.error("Location detection request timed out. Please enter your address manually.");
+            break;
+          default:
+            toast.error("Unable to obtain location. Please enter your address manually.");
+            break;
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordForm.currentPassword) {
+      toast.error("Please enter your current password.");
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters long.");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("New password and confirm password do not match.");
+      return;
+    }
+
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (!token) {
+      toast.error("You must be logged in to change your password.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await api.changePassword(
+        token,
+        passwordForm.currentPassword,
+        passwordForm.newPassword,
+        passwordForm.confirmPassword
+      );
+      toast.success("Password updated successfully.");
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to change password.";
+      toast.error(msg);
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   return (
@@ -263,7 +396,70 @@ export default function Profile() {
               </div>
 
               <Input
-                label="Full Street Address / Location"
+                label="Portfolio / Showreel URL"
+                icon={<Globe className="h-4 w-4" />}
+                value={form.website}
+                onChange={(e) => setForm({ ...form, website: e.target.value })}
+              />
+
+              <div className="pt-2 flex justify-end">
+                <Button
+                  onClick={saveProfile}
+                  size="sm"
+                  className="font-bold text-xs"
+                >
+                  Save Details
+                </Button>
+              </div>
+            </div>
+
+            {/* Location & Address Section */}
+            <div className="card-premium p-6 border border-border space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-border flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-emerald-500" />
+                  <h3 className="font-bold text-base text-foreground">
+                    Realtime Location & Address
+                  </h3>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={detectingLocation}
+                  onClick={detectCurrentLocation}
+                  className="gap-2 font-bold text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                >
+                  {detectingLocation ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Detecting GPS...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LocateFixed className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>Use Current Location</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {locationStatus && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Navigation className="h-4 w-4 shrink-0" />
+                    <span>{locationStatus}</span>
+                  </div>
+                  {form.latitude !== null && form.longitude !== null && (
+                    <span className="text-[10px] font-mono opacity-80">
+                      GPS: {form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <Input
+                label="Street Address / Location"
                 icon={<MapPin className="h-4 w-4" />}
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -279,22 +475,30 @@ export default function Profile() {
                   placeholder="e.g. Visakhapatnam"
                 />
                 <Input
-                  label="Pincode"
+                  label="State / Region"
                   icon={<MapPin className="h-4 w-4" />}
-                  value={form.pincode}
-                  onChange={(e) =>
-                    setForm({ ...form, pincode: e.target.value })
-                  }
-                  placeholder="e.g. 530026"
+                  value={form.state}
+                  onChange={(e) => setForm({ ...form, state: e.target.value })}
+                  placeholder="e.g. Andhra Pradesh"
                 />
               </div>
 
-              <Input
-                label="Portfolio / Showreel URL"
-                icon={<Globe className="h-4 w-4" />}
-                value={form.website}
-                onChange={(e) => setForm({ ...form, website: e.target.value })}
-              />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Input
+                  label="Country"
+                  icon={<Globe className="h-4 w-4" />}
+                  value={form.country}
+                  onChange={(e) => setForm({ ...form, country: e.target.value })}
+                  placeholder="e.g. India"
+                />
+                <Input
+                  label="Pincode / Postal Code"
+                  icon={<MapPin className="h-4 w-4" />}
+                  value={form.pincode}
+                  onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+                  placeholder="e.g. 530026"
+                />
+              </div>
 
               <div className="pt-2 flex justify-end">
                 <Button
@@ -302,7 +506,7 @@ export default function Profile() {
                   size="sm"
                   className="font-bold text-xs"
                 >
-                  Save Details
+                  Save Location Details
                 </Button>
               </div>
             </div>
@@ -327,6 +531,7 @@ export default function Profile() {
                   icon={<Mail className="h-4 w-4" />}
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  disabled
                 />
                 <Input
                   label="Phone Number"
@@ -352,6 +557,62 @@ export default function Profile() {
                   Update Payout Info
                 </Button>
               </div>
+            </div>
+
+            {/* Security & Password Change */}
+            <div className="card-premium p-6 border border-border space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-foreground" />
+                  <h3 className="font-bold text-base text-foreground">
+                    Security & Password
+                  </h3>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-semibold">
+                  Account Protection
+                </span>
+              </div>
+
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                <Input
+                  type="password"
+                  label="Current Password"
+                  icon={<Key className="h-4 w-4" />}
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  placeholder="Enter current password"
+                />
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Input
+                    type="password"
+                    label="New Password"
+                    icon={<Lock className="h-4 w-4" />}
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    placeholder="At least 6 characters"
+                  />
+                  <Input
+                    type="password"
+                    label="Confirm New Password"
+                    icon={<Lock className="h-4 w-4" />}
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    placeholder="Repeat new password"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    type="submit"
+                    disabled={changingPassword}
+                    size="sm"
+                    className="font-bold text-xs"
+                  >
+                    {changingPassword ? "Updating Password..." : "Update Password"}
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
 

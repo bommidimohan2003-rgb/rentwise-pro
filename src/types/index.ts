@@ -6,7 +6,11 @@ export interface User {
   address?: string;
   city?: string;
   state?: string;
+  country?: string;
   pincode?: string;
+  latitude?: number;
+  longitude?: number;
+  locationUpdatedAt?: string;
   password?: string;
   avatar?: string;
   role?: "user" | "admin";

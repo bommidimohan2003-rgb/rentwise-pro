@@ -220,6 +220,10 @@ def init_db():
     add_column_safely("users", "pincode VARCHAR(20)")
     add_column_safely("users", "occupation VARCHAR(255)")
     add_column_safely("users", "bio TEXT")
+    add_column_safely("users", "country VARCHAR(100) DEFAULT 'India'")
+    add_column_safely("users", "latitude DECIMAL(10, 8) NULL")
+    add_column_safely("users", "longitude DECIMAL(11, 8) NULL")
+    add_column_safely("users", "location_updated_at VARCHAR(100) NULL")
     add_column_safely("users", "firebase_uid VARCHAR(255) NULL")
     add_column_safely("users", "last_login_at VARCHAR(100)")
 

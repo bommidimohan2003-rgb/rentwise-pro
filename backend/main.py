@@ -892,6 +892,7 @@ def create_admin(
     }
 
 @app.get("/api/me")
+@app.get("/api/profile")
 def get_me(current_user_email: str = Depends(get_current_user_email)):
     user = get_user(current_user_email)
     if not user:
@@ -900,6 +901,8 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
             detail="User profile not found."
         )
     display_name = user.get("full_name") or user["email"].split("@")[0]
+    lat_val = float(user["latitude"]) if user.get("latitude") is not None else None
+    lng_val = float(user["longitude"]) if user.get("longitude") is not None else None
     return {
         "id": user["email"],
         "email": user["email"],
@@ -908,7 +911,12 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
         "phone": user.get("phone", ""),
         "address": user.get("address", ""),
         "city": user.get("city", ""),
+        "state": user.get("state", ""),
+        "country": user.get("country", "India"),
         "pincode": user.get("pincode", ""),
+        "latitude": lat_val,
+        "longitude": lng_val,
+        "locationUpdatedAt": user.get("location_updated_at", ""),
         "occupation": user.get("occupation", ""),
         "bio": user.get("bio", ""),
         "avatar": user.get("avatar") or f"https://ui-avatars.com/api/?name={display_name}&background=10b981&color=fff",
@@ -922,17 +930,25 @@ class UserProfileUpdateSchema(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
+    country: Optional[str] = None
     pincode: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     avatar: Optional[str] = None
     occupation: Optional[str] = None
     bio: Optional[str] = None
 
 @app.post("/api/user/profile")
 @app.post("/api/me/profile")
+@app.patch("/api/me/profile")
+@app.put("/api/me/profile")
+@app.patch("/api/profile")
+@app.put("/api/profile")
 def update_user_profile_route(data: UserProfileUpdateSchema, current_user_email: str = Depends(get_current_user_email)):
     clean_email = current_user_email.strip().lower()
     fields = []
     params = []
+    
     if data.fullName is not None:
         fields.append("full_name = %s")
         params.append(data.fullName)
@@ -948,9 +964,29 @@ def update_user_profile_route(data: UserProfileUpdateSchema, current_user_email:
     if data.state is not None:
         fields.append("state = %s")
         params.append(data.state)
+    if data.country is not None:
+        fields.append("country = %s")
+        params.append(data.country)
     if data.pincode is not None:
         fields.append("pincode = %s")
         params.append(data.pincode)
+        
+    if data.latitude is not None:
+        if not (-90.0 <= data.latitude <= 90.0):
+            raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90.")
+        fields.append("latitude = %s")
+        params.append(data.latitude)
+        
+    if data.longitude is not None:
+        if not (-180.0 <= data.longitude <= 180.0):
+            raise HTTPException(status_code=400, detail="Longitude must be between -180 and 180.")
+        fields.append("longitude = %s")
+        params.append(data.longitude)
+
+    if data.latitude is not None or data.longitude is not None:
+        fields.append("location_updated_at = %s")
+        params.append(datetime.datetime.utcnow().isoformat())
+
     if data.avatar is not None:
         fields.append("avatar = %s")
         params.append(data.avatar)
@@ -971,28 +1007,94 @@ def update_user_profile_route(data: UserProfileUpdateSchema, current_user_email:
             if data.address is not None: MOCK_USERS[clean_email]["address"] = data.address
             if data.city is not None: MOCK_USERS[clean_email]["city"] = data.city
             if data.state is not None: MOCK_USERS[clean_email]["state"] = data.state
+            if data.country is not None: MOCK_USERS[clean_email]["country"] = data.country
             if data.pincode is not None: MOCK_USERS[clean_email]["pincode"] = data.pincode
+            if data.latitude is not None: MOCK_USERS[clean_email]["latitude"] = data.latitude
+            if data.longitude is not None: MOCK_USERS[clean_email]["longitude"] = data.longitude
             if data.avatar is not None: MOCK_USERS[clean_email]["avatar"] = data.avatar
             if data.occupation is not None: MOCK_USERS[clean_email]["occupation"] = data.occupation
             if data.bio is not None: MOCK_USERS[clean_email]["bio"] = data.bio
-            
-    updated = get_user(clean_email) or {}
-    display_name = updated.get("full_name") or clean_email.split("@")[0]
-    return {
-        "id": clean_email,
-        "email": clean_email,
-        "fullName": display_name,
-        "role": updated.get("role", "customer"),
-        "phone": updated.get("phone", ""),
-        "address": updated.get("address", ""),
-        "city": updated.get("city", ""),
-        "pincode": updated.get("pincode", ""),
-        "occupation": updated.get("occupation", ""),
-        "bio": updated.get("bio", ""),
-        "avatar": updated.get("avatar") or f"https://ui-avatars.com/api/?name={display_name}&background=10b981&color=fff",
-        "status": updated.get("status", "active"),
-        "verified": True
+
+    # Re-fetch updated profile
+    return get_me(current_user_email=clean_email)
+
+class LocationGeocodeSchema(BaseModel):
+    latitude: float
+    longitude: float
+
+@app.post("/api/location/reverse-geocode")
+def reverse_geocode_location(data: LocationGeocodeSchema, current_user_email: str = Depends(get_current_user_email)):
+    if not (-90.0 <= data.latitude <= 90.0) or not (-180.0 <= data.longitude <= 180.0):
+        raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90, and longitude between -180 and 180.")
+
+    import urllib.request
+    import urllib.parse
+
+    headers = {"User-Agent": "Payent-Rental-App/1.0 (contact@payent.in)"}
+    url = f"https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={data.latitude}&lon={data.longitude}"
+    
+    address_info = {
+        "address": "",
+        "city": "",
+        "state": "",
+        "country": "India",
+        "pincode": "",
+        "displayName": ""
     }
+
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status == 200:
+                res_data = json.loads(resp.read().decode("utf-8"))
+                addr = res_data.get("address", {})
+                city = addr.get("city") or addr.get("town") or addr.get("village") or addr.get("suburb") or addr.get("county") or ""
+                state = addr.get("state") or addr.get("state_district") or ""
+                country = addr.get("country") or "India"
+                pincode = addr.get("postcode") or ""
+                road = addr.get("road") or addr.get("neighbourhood") or addr.get("suburb") or ""
+                
+                parts = [p for p in [road, city, state] if p]
+                street_addr = ", ".join(parts)
+                address_info["address"] = street_addr or res_data.get("display_name", "")
+                address_info["city"] = city
+                address_info["state"] = state
+                address_info["country"] = country
+                address_info["pincode"] = pincode
+                address_info["displayName"] = res_data.get("display_name", "")
+    except Exception as e:
+        logger.warning(f"Reverse geocode lookup notice: {e}")
+
+    return address_info
+
+class ChangePasswordSchema(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+@app.post("/api/auth/change-password")
+@app.post("/api/me/change-password")
+def change_user_password(data: ChangePasswordSchema, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    if not data.new_password or len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters long.")
+    if data.new_password != data.confirm_password:
+        raise HTTPException(status_code=400, detail="New password and confirmation password do not match.")
+
+    user = get_user(clean_email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User profile not found.")
+
+    stored_hash = user.get("password_hash")
+    if stored_hash and not verify_password(data.current_password, stored_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+
+    new_hash = hash_password(data.new_password)
+    execute_query("UPDATE users SET password_hash = %s WHERE LOWER(email) = LOWER(%s)", (new_hash, clean_email))
+    if clean_email in MOCK_USERS:
+        MOCK_USERS[clean_email]["password_hash"] = new_hash
+
+    return {"success": True, "message": "Password updated successfully."}
 
 # Schemas and Routes for database persistence
 class WishlistToggleSchema(BaseModel):

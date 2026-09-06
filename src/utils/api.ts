@@ -310,8 +310,8 @@ export const api = {
   async updateProfile(token: string, profileData: Partial<User>) {
     if (!API_BASE) return null;
     try {
-      const res = await fetch(`${API_BASE}/api/user/profile`, {
-        method: "POST",
+      const res = await fetch(`${API_BASE}/api/me/profile`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -319,13 +319,53 @@ export const api = {
         body: JSON.stringify(profileData),
       });
       if (!res.ok) {
-        throw new Error("Failed to update profile in database");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(parseApiError(data, "Failed to update profile in database"));
       }
       return await res.json();
     } catch (err) {
       console.warn("[API] Profile update notice:", err);
-      return null;
+      throw err;
     }
+  },
+
+  async reverseGeocode(token: string, latitude: number, longitude: number) {
+    if (!API_BASE) return null;
+    const res = await fetch(`${API_BASE}/api/location/reverse-geocode`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ latitude, longitude }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to reverse geocode location"));
+    }
+    return await res.json();
+  },
+
+  async changePassword(
+    token: string,
+    current_password: string,
+    new_password: string,
+    confirm_password: string,
+  ) {
+    if (!API_BASE) return null;
+    const res = await fetch(`${API_BASE}/api/auth/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ current_password, new_password, confirm_password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to update password"));
+    }
+    return await res.json();
   },
 
   async getWishlist(token: string) {
