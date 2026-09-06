@@ -114,7 +114,16 @@ from database import (
     get_popular_search_queries,
     has_admin_user,
     MOCK_CUSTOM_PRODUCTS,
-    fetch_all
+    fetch_all,
+    create_db_session,
+    get_valid_db_session,
+    update_session_activity,
+    revoke_db_session,
+    revoke_db_session_by_token,
+    revoke_all_user_sessions,
+    get_user_active_sessions,
+    cleanup_expired_sessions,
+    hash_refresh_token
 )
 from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
 from search_ml import ml_search_engine
@@ -666,9 +675,18 @@ def login(data: LoginRequestSchema, request: Request, response: Response):
     clear_failed_auth_attempts(ip_key)
     clear_failed_auth_attempts(user_key)
 
-    # Generate short-lived access token and long-lived refresh token
-    access_token = create_access_token({"sub": user["email"], "role": user["role"]})
-    refresh_token = create_refresh_token({"sub": user["email"], "role": user["role"]})
+    # Generate session ID, 30-minute access token and 7-day refresh token
+    session_id = f"sess-{uuid.uuid4()}"
+    access_token = create_access_token({"sub": user["email"], "role": user["role"], "sid": session_id})
+    refresh_token = create_refresh_token({"sub": user["email"], "role": user["role"], "sid": session_id})
+
+    # Detect user-agent & device metadata
+    user_agent = request.headers.get("user-agent", "Unknown Browser")
+    device_name = "Desktop" if ("Windows" in user_agent or "Macintosh" in user_agent or "Linux" in user_agent) and "Mobile" not in user_agent else ("Mobile" if "Mobile" in user_agent or "Android" in user_agent or "iPhone" in user_agent else "Web Browser")
+    expires_at_str = (datetime.datetime.utcnow() + datetime.timedelta(days=7)).isoformat()
+
+    # Store hashed session entry in TiDB Cloud database
+    create_db_session(session_id, user["email"], refresh_token, device_name, client_ip, user_agent, expires_at_str)
 
     # Set refresh token in HttpOnly, Secure cookie
     response.set_cookie(
@@ -695,17 +713,19 @@ def login(data: LoginRequestSchema, request: Request, response: Response):
         "verified": True
     }
 
-    logger.info(f"Successful user login for {clean_email} from IP {client_ip}")
+    logger.info(f"Successful user login for {clean_email} from IP {client_ip} (session {session_id})")
     return {
         "success": True,
         "token": access_token,
         "refreshToken": refresh_token,
+        "expiresIn": 1800,
         "role": user["role"],
         "user": user_record,
         "message": "Login successful."
     }
 
 @app.post("/api/auth/refresh")
+@app.post("/api/refresh")
 def refresh_token(request: Request, response: Response, data: Optional[RefreshTokenSchema] = None):
     # Retrieve refresh token from cookie or request body
     token = request.cookies.get("payent_refresh_token")
@@ -725,26 +745,35 @@ def refresh_token(request: Request, response: Response, data: Optional[RefreshTo
             detail="Invalid or expired refresh token."
         )
 
-    jti = payload.get("jti")
-    if jti and is_token_revoked(jti):
+    # Validate active session hash in TiDB sessions table
+    db_session = get_valid_db_session(token)
+    if not db_session:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token has been revoked."
+            detail="Session expired or revoked. Please sign in again."
         )
 
     user = get_user(payload["sub"])
     if not user or user.get("status") == "suspended":
+        revoke_db_session(db_session["id"])
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user session."
+            detail="User account is suspended or invalid."
         )
 
-    new_access_token = create_access_token({"sub": user["email"], "role": user["role"]})
-    new_refresh_token = create_refresh_token({"sub": user["email"], "role": user["role"]})
+    # Perform Refresh Token Rotation: Revoke old session and issue new session
+    revoke_db_session(db_session["id"])
 
-    # Revoke old refresh token (refresh token rotation)
-    if jti:
-        revoke_token(jti, user["email"], payload.get("exp", 0))
+    new_session_id = f"sess-{uuid.uuid4()}"
+    new_access_token = create_access_token({"sub": user["email"], "role": user["role"], "sid": new_session_id})
+    new_refresh_token = create_refresh_token({"sub": user["email"], "role": user["role"], "sid": new_session_id})
+
+    user_agent = request.headers.get("user-agent", db_session.get("user_agent", "Unknown Browser"))
+    client_ip = request.client.host if request.client else db_session.get("ip_address", "127.0.0.1")
+    device_name = db_session.get("device_name", "Web Browser")
+    expires_at_str = (datetime.datetime.utcnow() + datetime.timedelta(days=7)).isoformat()
+
+    create_db_session(new_session_id, user["email"], new_refresh_token, device_name, client_ip, user_agent, expires_at_str)
 
     response.set_cookie(
         key="payent_refresh_token",
@@ -758,20 +787,64 @@ def refresh_token(request: Request, response: Response, data: Optional[RefreshTo
     return {
         "success": True,
         "token": new_access_token,
-        "refreshToken": new_refresh_token
+        "refreshToken": new_refresh_token,
+        "expiresIn": 1800
     }
 
 @app.post("/api/auth/logout")
+@app.post("/api/logout")
 def logout(request: Request, response: Response, authorization: Optional[str] = Header(None)):
+    token = request.cookies.get("payent_refresh_token")
+    if token:
+        revoke_db_session_by_token(token)
+
     if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
-        payload = decode_access_token(token, expected_type="access")
+        access_tok = authorization.split(" ")[1]
+        payload = decode_access_token(access_tok, expected_type="access")
         if payload and "jti" in payload:
             revoke_token(payload["jti"], payload.get("sub", ""), payload.get("exp", 0))
 
-    # Clear refresh token cookie
     response.delete_cookie("payent_refresh_token")
     return {"success": True, "message": "Logged out successfully."}
+
+@app.post("/api/auth/logout-all")
+def logout_all_sessions(response: Response, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    revoke_all_user_sessions(clean_email)
+    response.delete_cookie("payent_refresh_token")
+    return {"success": True, "message": "Logged out from all active devices."}
+
+@app.get("/api/auth/sessions")
+def list_user_sessions(request: Request, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    sessions = get_user_active_sessions(clean_email)
+    
+    current_token = request.cookies.get("payent_refresh_token")
+    current_hash = hash_refresh_token(current_token) if current_token else None
+
+    result = []
+    for s in sessions:
+        result.append({
+            "id": s["id"],
+            "deviceName": s.get("device_name") or "Browser Device",
+            "ipAddress": s.get("ip_address") or "Unknown",
+            "createdAt": s.get("created_at"),
+            "lastUsedAt": s.get("last_used_at"),
+            "expiresAt": s.get("expires_at"),
+            "isCurrent": (s.get("refresh_token_hash") == current_hash) if current_hash else False
+        })
+    return {"success": True, "sessions": result}
+
+@app.delete("/api/auth/sessions/{session_id}")
+def revoke_specific_session(session_id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    sessions = get_user_active_sessions(clean_email)
+    match = next((s for s in sessions if s["id"] == session_id), None)
+    if not match:
+        raise HTTPException(status_code=404, detail="Session not found or already revoked.")
+    
+    revoke_db_session(session_id)
+    return {"success": True, "message": "Session revoked successfully."}
 
 @app.post("/api/forgot-password/request")
 def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request):
@@ -1094,7 +1167,10 @@ def change_user_password(data: ChangePasswordSchema, current_user_email: str = D
     if clean_email in MOCK_USERS:
         MOCK_USERS[clean_email]["password_hash"] = new_hash
 
-    return {"success": True, "message": "Password updated successfully."}
+    # Invalidate all active sessions across all devices for this user
+    revoke_all_user_sessions(clean_email)
+
+    return {"success": True, "message": "Password updated successfully. All other active sessions have been revoked."}
 
 # Schemas and Routes for database persistence
 class WishlistToggleSchema(BaseModel):

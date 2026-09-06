@@ -20,6 +20,9 @@ import {
   Loader2,
   Lock,
   LogOut,
+  Laptop,
+  Smartphone,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
@@ -31,7 +34,7 @@ import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 
 export default function Profile() {
-  const { user, ready, updateUser } = useAuth();
+  const { user, ready, updateUser, logout, logoutAll, getSessions, revokeSession } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -60,6 +63,24 @@ export default function Profile() {
     confirmPassword: "",
   });
   const [changingPassword, setChangingPassword] = useState(false);
+  const [sessions, setSessions] = useState<{
+    id: string;
+    deviceName: string;
+    ipAddress: string;
+    createdAt: string;
+    lastUsedAt: string;
+    expiresAt: string;
+    isCurrent: boolean;
+  }[]>([]);
+
+  const fetchSessions = async () => {
+    try {
+      const list = await getSessions();
+      setSessions(list || []);
+    } catch (e) {
+      console.warn("Notice: Failed to fetch sessions list:", e);
+    }
+  };
 
   useEffect(() => {
     if (ready && !user) {
@@ -85,8 +106,31 @@ export default function Profile() {
         website: user.website || "https://creators.payent.in/arjun",
         upiId: user.upiId || "arjun@upi",
       });
+      fetchSessions();
     }
   }, [user, ready, navigate]);
+
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      await revokeSession(sessionId);
+      toast.success("Session revoked successfully.");
+      fetchSessions();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to revoke session.";
+      toast.error(msg);
+    }
+  };
+
+  const handleLogoutAllDevices = async () => {
+    try {
+      await logoutAll();
+      toast.success("Logged out from all active devices.");
+      navigate({ to: "/login" });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to log out all devices.";
+      toast.error(msg);
+    }
+  };
 
   const saveProfile = async () => {
     if (!user) return;
@@ -614,6 +658,83 @@ export default function Profile() {
                   </Button>
                 </div>
               </form>
+            </div>
+
+            {/* Active Sessions & Devices */}
+            <div className="card-premium p-6 border border-border space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-border flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Laptop className="h-4 w-4 text-foreground" />
+                  <h3 className="font-bold text-base text-foreground">
+                    Active Devices & Sessions
+                  </h3>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogoutAllDevices}
+                  className="font-bold text-xs text-destructive border-destructive/30 hover:bg-destructive/10 cursor-pointer"
+                >
+                  Log Out All Other Devices
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground font-medium">
+                Manage your active multi-device sessions. Each session uses a 30-minute access token and a 7-day hashed refresh session in TiDB Cloud.
+              </p>
+
+              <div className="space-y-3">
+                {sessions.length > 0 ? (
+                  sessions.map((s) => (
+                    <div
+                      key={s.id}
+                      className="flex items-center justify-between p-3.5 rounded-xl bg-secondary/30 border border-border/60 flex-wrap gap-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        {s.deviceName?.includes("Mobile") ? (
+                          <Smartphone className="h-5 w-5 text-emerald-500 shrink-0" />
+                        ) : (
+                          <Laptop className="h-5 w-5 text-emerald-500 shrink-0" />
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-bold text-foreground">
+                              {s.deviceName || "Web Browser"}
+                            </p>
+                            {s.isCurrent && (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold uppercase">
+                                Current Device
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
+                            IP: {s.ipAddress || "127.0.0.1"} · Last active:{" "}
+                            {s.lastUsedAt ? new Date(s.lastUsedAt).toLocaleString() : "Recently"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {!s.isCurrent && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRevokeSession(s.id)}
+                          className="text-xs font-bold text-destructive hover:bg-destructive/10 cursor-pointer gap-1.5"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Revoke Session</span>
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 rounded-xl bg-secondary/20 border border-border text-center text-xs text-muted-foreground font-medium">
+                    Active device session securely stored in TiDB Cloud (30-min access / 7-day refresh).
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

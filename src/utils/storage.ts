@@ -63,6 +63,7 @@ export const STORAGE_KEYS = {
   users: "payent:users",
   currentUser: "payent:currentUser",
   token: "payent:token",
+  refreshToken: "payent:refreshToken",
   wishlist: "payent:wishlist",
   notifications: "payent:notifications",
   messages: "payent:messages",

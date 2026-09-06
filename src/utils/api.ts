@@ -151,7 +151,11 @@ export const api = {
         const data = await res.json().catch(() => ({}));
         throw new Error(parseApiError(data, "Invalid email or password."));
       }
-      return await res.json();
+      const data = await res.json();
+      if (data && data.refreshToken) {
+        storage.set(STORAGE_KEYS.refreshToken, data.refreshToken);
+      }
+      return data;
     } catch (err) {
       if (isAdmin) {
         return {
@@ -364,6 +368,134 @@ export const api = {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to update password"));
+    }
+    return await res.json();
+  },
+
+  async refreshToken(): Promise<string | null> {
+    const currentRefreshToken = storage.get<string | null>(STORAGE_KEYS.refreshToken, null);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ refresh_token: currentRefreshToken || "" }),
+      });
+
+      if (!res.ok) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("payent-session-expired", {
+              detail: { reason: "Session expired. Please sign in again." },
+            }),
+          );
+        }
+        return null;
+      }
+
+      const data = await res.json();
+      if (data.token) {
+        storage.set(STORAGE_KEYS.token, data.token);
+        if (data.refreshToken) {
+          storage.set(STORAGE_KEYS.refreshToken, data.refreshToken);
+        }
+        return data.token;
+      }
+      return null;
+    } catch (err) {
+      console.warn("[API] Token refresh notice:", err);
+      return null;
+    }
+  },
+
+  async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+    let token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    const headers = new Headers(options.headers || {});
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    options.headers = headers;
+
+    let res = await fetch(url, options);
+
+    if (res.status === 401 && !url.includes("/api/login") && !url.includes("/api/auth/refresh")) {
+      const newToken = await this.refreshToken();
+      if (newToken) {
+        const retryHeaders = new Headers(options.headers || {});
+        retryHeaders.set("Authorization", `Bearer ${newToken}`);
+        options.headers = retryHeaders;
+        res = await fetch(url, options);
+      } else {
+        storage.remove(STORAGE_KEYS.token);
+        storage.remove(STORAGE_KEYS.refreshToken);
+        storage.remove(STORAGE_KEYS.currentUser);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("payent-session-expired", {
+              detail: { reason: "Session expired. Please sign in again." },
+            }),
+          );
+        }
+      }
+    }
+    return res;
+  },
+
+  async logout(token: string) {
+    try {
+      const currentRefreshToken = storage.get<string | null>(STORAGE_KEYS.refreshToken, null);
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({ refresh_token: currentRefreshToken }),
+      }).catch(() => {});
+    } finally {
+      storage.remove(STORAGE_KEYS.token);
+      storage.remove(STORAGE_KEYS.refreshToken);
+      storage.remove(STORAGE_KEYS.currentUser);
+    }
+  },
+
+  async logoutAll(token: string) {
+    try {
+      await fetch(`${API_BASE}/api/auth/logout-all`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
+    } finally {
+      storage.remove(STORAGE_KEYS.token);
+      storage.remove(STORAGE_KEYS.refreshToken);
+      storage.remove(STORAGE_KEYS.currentUser);
+    }
+  },
+
+  async getSessions(token: string) {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/auth/sessions`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (!res.ok) {
+      throw new Error("Failed to fetch active sessions.");
+    }
+    const data = await res.json();
+    return data.sessions || [];
+  },
+
+  async revokeSession(token: string, sessionId: string) {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/auth/sessions/${encodeURIComponent(sessionId)}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to revoke session."));
     }
     return await res.json();
   },

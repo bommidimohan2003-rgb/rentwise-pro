@@ -9,7 +9,10 @@ if backend_dir not in sys.path:
 import pymysql
 import ssl
 import logging
-from datetime import datetime
+import hashlib
+import datetime
+from typing import Optional, List
+from datetime import datetime as dt
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB, MYSQL_SSL
 
 logger = logging.getLogger("payent.database")
@@ -246,6 +249,25 @@ def init_db():
             locked_until INT DEFAULT 0
         )
     """)
+
+    # Create sessions table for multi-device session management
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            id VARCHAR(255) PRIMARY KEY,
+            user_email VARCHAR(255) NOT NULL,
+            refresh_token_hash VARCHAR(255) NOT NULL,
+            device_name VARCHAR(255) NULL,
+            ip_address VARCHAR(100) NULL,
+            user_agent TEXT NULL,
+            created_at VARCHAR(100) NOT NULL,
+            last_used_at VARCHAR(100) NOT NULL,
+            expires_at VARCHAR(100) NOT NULL,
+            revoked_at VARCHAR(100) NULL
+        )
+    """)
+    add_index_safely("sessions", "idx_sessions_user_email", "user_email")
+    add_index_safely("sessions", "idx_sessions_token_hash", "refresh_token_hash")
+    add_index_safely("sessions", "idx_sessions_expires_at", "expires_at")
 
     # Create OTPs table
     execute_query("""
@@ -2031,13 +2053,83 @@ def delete_api_key_db(key_id: str):
     return True
 
 def touch_api_key_last_used_db(key_id: str):
-    now_str = datetime.utcnow().isoformat()
+    now_str = dt.utcnow().isoformat()
     try:
         execute_query("UPDATE api_keys SET last_used_at = %s WHERE id = %s", (now_str, key_id))
     except Exception:
         pass
     if key_id in MOCK_API_KEYS:
         MOCK_API_KEYS[key_id]["last_used_at"] = now_str
+
+# Session Management DB Helpers
+def hash_refresh_token(token: str) -> str:
+    """Compute SHA-256 hash of refresh token for secure database storage."""
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+def create_db_session(session_id: str, user_email: str, raw_refresh_token: str, device_name: str, ip_address: str, user_agent: str, expires_at_str: str) -> bool:
+    clean_email = user_email.strip().lower()
+    token_hash = hash_refresh_token(raw_refresh_token)
+    now_str = dt.utcnow().isoformat()
+    return execute_query("""
+        INSERT INTO sessions (id, user_email, refresh_token_hash, device_name, ip_address, user_agent, created_at, last_used_at, expires_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session_id, clean_email, token_hash, device_name, ip_address, user_agent, now_str, now_str, expires_at_str))
+
+def get_valid_db_session(raw_refresh_token: str) -> Optional[dict]:
+    token_hash = hash_refresh_token(raw_refresh_token)
+    now_str = dt.utcnow().isoformat()
+    conn = get_db_connection()
+    if not conn:
+        return None
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM sessions
+                WHERE refresh_token_hash = %s AND revoked_at IS NULL AND expires_at > %s
+            """, (token_hash, now_str))
+            return cursor.fetchone()
+    finally:
+        conn.close()
+
+def update_session_activity(session_id: str):
+    now_str = dt.utcnow().isoformat()
+    execute_query("UPDATE sessions SET last_used_at = %s WHERE id = %s", (now_str, session_id))
+
+def revoke_db_session(session_id: str) -> bool:
+    now_str = dt.utcnow().isoformat()
+    return execute_query("UPDATE sessions SET revoked_at = %s WHERE id = %s AND revoked_at IS NULL", (now_str, session_id))
+
+def revoke_db_session_by_token(raw_refresh_token: str) -> bool:
+    token_hash = hash_refresh_token(raw_refresh_token)
+    now_str = dt.utcnow().isoformat()
+    return execute_query("UPDATE sessions SET revoked_at = %s WHERE refresh_token_hash = %s AND revoked_at IS NULL", (now_str, token_hash))
+
+def revoke_all_user_sessions(user_email: str) -> bool:
+    clean_email = user_email.strip().lower()
+    now_str = dt.utcnow().isoformat()
+    return execute_query("UPDATE sessions SET revoked_at = %s WHERE LOWER(user_email) = LOWER(%s) AND revoked_at IS NULL", (now_str, clean_email))
+
+def get_user_active_sessions(user_email: str) -> List[dict]:
+    clean_email = user_email.strip().lower()
+    now_str = dt.utcnow().isoformat()
+    conn = get_db_connection()
+    if not conn:
+        return []
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, device_name, ip_address, created_at, last_used_at, expires_at
+                FROM sessions
+                WHERE LOWER(user_email) = LOWER(%s) AND revoked_at IS NULL AND expires_at > %s
+                ORDER BY last_used_at DESC
+            """, (clean_email, now_str))
+            return cursor.fetchall()
+    finally:
+        conn.close()
+
+def cleanup_expired_sessions() -> bool:
+    now_str = dt.utcnow().isoformat()
+    return execute_query("DELETE FROM sessions WHERE expires_at <= %s OR revoked_at IS NOT NULL", (now_str,))
 
 
 

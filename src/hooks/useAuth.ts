@@ -71,14 +71,21 @@ export function useAuth() {
 
     initAuth();
 
-    const onStorage = () => {
-      setUser(storage.get<User | null>(STORAGE_KEYS.currentUser, null));
+    const onSessionExpired = (e: Event) => {
+      const customEv = e as CustomEvent<{ reason?: string; loginPath?: string }>;
+      storage.remove(STORAGE_KEYS.token);
+      storage.remove(STORAGE_KEYS.refreshToken);
+      storage.remove(STORAGE_KEYS.currentUser);
+      setUser(null);
     };
+
     window.addEventListener("storage", onStorage);
     window.addEventListener("payent:storage_change", onStorage);
+    window.addEventListener("payent-session-expired", onSessionExpired);
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("payent:storage_change", onStorage);
+      window.removeEventListener("payent-session-expired", onSessionExpired);
     };
   }, []);
 
@@ -87,6 +94,9 @@ export function useAuth() {
       const res = await api.login(email, password);
       if (res.success && res.token) {
         storage.set(STORAGE_KEYS.token, res.token);
+        if (res.refreshToken) {
+          storage.set(STORAGE_KEYS.refreshToken, res.refreshToken);
+        }
 
         let loggedUser: User;
         if (res.user) {
@@ -165,14 +175,42 @@ export function useAuth() {
     }
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (token) {
+      await api.logout(token).catch(() => {});
+    }
     storage.remove(STORAGE_KEYS.token);
+    storage.remove(STORAGE_KEYS.refreshToken);
     storage.remove(STORAGE_KEYS.currentUser);
     if (typeof window !== "undefined") {
       localStorage.removeItem("payent:admin:token");
       localStorage.removeItem("payent:admin:current_user");
     }
     setUser(null);
+  }, []);
+
+  const logoutAll = useCallback(async () => {
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (token) {
+      await api.logoutAll(token).catch(() => {});
+    }
+    storage.remove(STORAGE_KEYS.token);
+    storage.remove(STORAGE_KEYS.refreshToken);
+    storage.remove(STORAGE_KEYS.currentUser);
+    setUser(null);
+  }, []);
+
+  const getSessions = useCallback(async () => {
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (!token) return [];
+    return await api.getSessions(token);
+  }, []);
+
+  const revokeSession = useCallback(async (sessionId: string) => {
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (!token) return;
+    await api.revokeSession(token, sessionId);
   }, []);
 
   const updateUser = useCallback((patch: Partial<User>) => {
@@ -184,5 +222,5 @@ export function useAuth() {
     });
   }, []);
 
-  return { user, ready, login, register, logout, updateUser };
+  return { user, ready, login, register, logout, logoutAll, getSessions, revokeSession, updateUser };
 }
