@@ -35,7 +35,7 @@ export const apiKeysService = {
         page: number;
         limit: number;
       }>(`/api/admin/api-keys?${query.toString()}`);
-      return res;
+      return res.data;
     } catch {
       return {
         items: [],
@@ -56,7 +56,7 @@ export const apiKeysService = {
       "/api/admin/api-keys",
       data,
     );
-    return res;
+    return res.data;
   },
 
   async updateApiKey(

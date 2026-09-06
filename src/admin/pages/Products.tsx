@@ -100,7 +100,7 @@ export default function Products() {
             `Live WS: Listing "${updated.title || updated.id}" approved and published!`,
           );
         } else if (updated.status === "rejected") {
-          toast.warn(
+          toast.warning(
             `Live WS: Listing "${updated.title || updated.id}" rejected.`,
           );
         }

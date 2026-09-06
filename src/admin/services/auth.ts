@@ -95,6 +95,7 @@ export const authService = {
         id: "admin@payent.com",
         fullName: "Administrator",
         email: "admin@payent.com",
+        phone: "+91 8810519885",
         role: "admin",
         status: "active",
         verified: true,

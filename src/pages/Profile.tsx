@@ -23,6 +23,9 @@ import {
   Laptop,
   Smartphone,
   Trash2,
+  Sparkles,
+  Save,
+  HelpCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
@@ -39,6 +42,7 @@ export default function Profile() {
   const navigate = useNavigate();
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"details" | "location" | "payout" | "security">("details");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -284,566 +288,657 @@ export default function Profile() {
     }
   };
 
+  const hasRealPhoto = Boolean(
+    user?.profilePhotoUrl ||
+      user?.profile_photo_url ||
+      (user?.avatar && !user.avatar.includes("ui-avatars.com")),
+  );
+  const activePhoto =
+    user?.profilePhotoUrl || user?.profile_photo_url || user?.avatar;
+
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-6xl">
-        {/* Page Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground font-display">
-            Account & Profile
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-            Manage your personal details, creator credentials, payout settings,
-            and verification status.
-          </p>
+      <div className="space-y-8 max-w-7xl mx-auto pb-12">
+        {/* Top Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-extrabold text-foreground font-display tracking-tight">
+                Profile & Identity
+              </h1>
+              <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                <span>Verified Account</span>
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1 font-medium">
+              Manage your personal identity, device camera profile picture, payout channels, and security.
+            </p>
+          </div>
+
+          <Button
+            onClick={saveProfile}
+            className="btn-gradient font-bold text-xs px-6 py-2.5 rounded-xl shadow-lg active:scale-95 flex items-center justify-center gap-2 self-start md:self-auto cursor-pointer"
+          >
+            <Save className="h-4 w-4" />
+            <span>Save Profile Changes</span>
+          </Button>
         </div>
 
-        {/* Profile Card Header Banner */}
-        <div className="card-premium overflow-hidden border border-border bg-card/60 relative">
-          {/* Cover Art Banner */}
-          <div className="h-32 sm:h-40 bg-gradient-to-r from-zinc-900 via-zinc-800 to-black relative p-6 flex items-end justify-between border-b border-border/40">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:2rem_2rem] pointer-events-none" />
-            <div className="relative z-10 hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold">
-              <CheckCircle2 className="h-3.5 w-3.5 text-amber-400" />
-              <span>Pro Creator Tier</span>
+        {/* Hero Glass Banner Card */}
+        <div className="relative rounded-3xl overflow-hidden border border-border/80 bg-card/40 backdrop-blur-xl shadow-2xl">
+          {/* Animated Gradient Cover */}
+          <div className="h-44 sm:h-52 bg-gradient-to-r from-zinc-950 via-zinc-900 to-black relative p-6 flex items-start justify-between border-b border-border/50">
+            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:16px_16px] opacity-25 pointer-events-none" />
+            <div className="relative z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-extrabold shadow-md">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              <span>Verified Creator & Lender</span>
+            </div>
+            <div className="relative z-10 text-right hidden sm:block">
+              <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest block">Account Status</span>
+              <span className="text-xs font-black text-emerald-400 uppercase">Active & Protected</span>
             </div>
           </div>
 
-          {/* User Header Details */}
-          <div className="p-6 pt-0 relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 -mt-12 sm:-mt-14">
-            {/* Avatar & Identifiers */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
-              <div className="flex flex-col items-center gap-2">
-                <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl bg-secondary border-4 border-card grid place-items-center text-foreground text-3xl font-extrabold shadow-xl overflow-hidden relative">
-                  {(user?.profilePhotoUrl || user?.profile_photo_url || (user?.avatar && !user.avatar.includes("ui-avatars.com"))) ? (
+          {/* User Details Row */}
+          <div className="p-6 sm:p-8 pt-0 relative flex flex-col md:flex-row md:items-end justify-between gap-6 -mt-16 sm:-mt-20">
+            {/* Avatar & Key Info */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 text-center sm:text-left">
+              {/* Photo Box */}
+              <div className="flex flex-col items-center gap-3 shrink-0">
+                <div className="h-32 w-32 sm:h-36 sm:w-36 rounded-3xl bg-secondary/80 border-4 border-card grid place-items-center text-foreground text-4xl font-extrabold shadow-2xl overflow-hidden relative group">
+                  {hasRealPhoto ? (
                     <img
-                      src={user.profilePhotoUrl || user.profile_photo_url || user.avatar}
-                      alt={user.fullName}
-                      className="w-full h-full object-cover"
+                      src={activePhoto}
+                      alt={user?.fullName || "User Profile Photo"}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-2 text-center text-muted-foreground bg-secondary/80 w-full h-full">
-                      <Camera className="h-8 w-8 text-primary mb-1 animate-pulse" />
-                      <span className="text-[10px] font-bold">No Photo</span>
+                    <div className="flex flex-col items-center justify-center p-3 text-center text-muted-foreground w-full h-full bg-secondary/90">
+                      <Camera className="h-10 w-10 text-primary mb-1 animate-pulse" />
+                      <span className="text-[11px] font-bold">No Photo</span>
                     </div>
                   )}
+                  {/* Status Dot */}
+                  <div className="absolute bottom-2 right-2 h-4 w-4 rounded-full bg-emerald-500 border-2 border-card shadow-md" title="Active Account" />
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setIsCameraOpen(true)}
-                  className="w-full btn-gradient text-[11px] py-1.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-md hover:scale-102 active:scale-98 transition-all cursor-pointer"
+                  className="w-full btn-gradient text-xs py-2 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md hover:scale-102 active:scale-95 transition-all cursor-pointer"
                 >
-                  <Camera className="h-3.5 w-3.5" />
-                  <span>{(user?.profilePhotoUrl || user?.profile_photo_url || (user?.avatar && !user.avatar.includes("ui-avatars.com"))) ? "Change Photo" : "📷 Take Profile Photo"}</span>
+                  <Camera className="h-4 w-4" />
+                  <span>{hasRealPhoto ? "Change Photo" : "📷 Take Profile Photo"}</span>
                 </button>
               </div>
 
-              <div className="space-y-1.5 pt-2 sm:pt-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-foreground font-display">
+              {/* Bio & Identity Chips */}
+              <div className="space-y-2.5 pb-2">
+                <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+                  <h2 className="text-2xl sm:text-3xl font-black text-foreground font-display tracking-tight">
                     {user?.fullName || "Verified User"}
                   </h2>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase">
-                    <ShieldCheck className="h-3 w-3" />
-                    <span>ID Verified</span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-black uppercase tracking-wider">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>Identity Verified</span>
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground font-semibold flex items-center gap-2">
-                  <Briefcase className="h-3.5 w-3.5 text-foreground" />
-                  <span>{form.occupation}</span>
-                  <span>·</span>
-                  <MapPin className="h-3.5 w-3.5 text-foreground" />
-                  <span>{form.address || form.city || "India"}</span>
+
+                <p className="text-xs sm:text-sm text-muted-foreground font-semibold flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <Briefcase className="h-4 w-4 text-primary shrink-0" />
+                    <span>{form.occupation}</span>
+                  </span>
+                  <span className="hidden sm:inline">·</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span>{form.address || form.city || "India"}</span>
+                  </span>
                 </p>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground font-medium pt-1">
-                  <span>Aadhaar: <strong className="text-foreground font-mono">{user?.aadhaarMasked || user?.aadhaar_masked || "XXXX-XXXX-9012"}</strong></span>
-                  <span>·</span>
-                  <span>Email: <strong className="text-foreground">{user?.email || "user@example.com"}</strong></span>
-                  <span>·</span>
-                  <span>Phone: <strong className="text-foreground">{user?.phone || "+91XXXXXXXXXX"}</strong></span>
+
+                {/* Identity Summary Badges */}
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-2">
+                  <div className="px-3 py-1 rounded-xl bg-secondary/80 border border-border text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>Aadhaar: <strong className="font-mono text-foreground font-bold">{user?.aadhaarMasked || user?.aadhaar_masked || "XXXX-XXXX-9012"}</strong></span>
+                  </div>
+                  <div className="px-3 py-1 rounded-xl bg-secondary/80 border border-border text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-foreground font-semibold">{user?.email || "user@example.com"}</span>
+                  </div>
+                  <div className="px-3 py-1 rounded-xl bg-secondary/80 border border-border text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-purple-500" />
+                    <span className="text-foreground font-semibold">{user?.phone || "+91XXXXXXXXXX"}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Quick Action Button */}
-            <div className="self-stretch sm:self-auto flex items-center gap-2">
-              <Button
-                onClick={saveProfile}
-                size="sm"
-                className="w-full sm:w-auto font-bold text-xs"
-              >
-                Save Profile Updates
-              </Button>
             </div>
           </div>
 
           {/* Marketplace Stats Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 mx-6 mb-6 rounded-2xl bg-secondary/40 border border-border/60 text-center">
-            <div className="space-y-0.5">
-              <div className="text-lg font-black text-foreground font-display">
-                14
-              </div>
-              <div className="text-[11px] font-semibold text-muted-foreground">
-                Completed Rentals
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 mx-6 mb-6 rounded-2xl bg-secondary/30 border border-border/60 text-center backdrop-blur-md">
+            <div className="p-2 space-y-0.5">
+              <div className="text-xl font-black text-foreground font-display">14</div>
+              <div className="text-xs font-semibold text-muted-foreground">Completed Rentals</div>
             </div>
-            <div className="space-y-0.5">
-              <div className="text-lg font-black text-foreground font-display flex items-center justify-center gap-1">
-                <Star className="h-4 w-4 fill-foreground text-foreground" />
+            <div className="p-2 space-y-0.5">
+              <div className="text-xl font-black text-foreground font-display flex items-center justify-center gap-1">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                 <span>4.9</span>
               </div>
-              <div className="text-[11px] font-semibold text-muted-foreground">
-                Lender Rating (18)
-              </div>
+              <div className="text-xs font-semibold text-muted-foreground">Lender Rating (18)</div>
             </div>
-            <div className="space-y-0.5">
-              <div className="text-lg font-black text-foreground font-display flex items-center justify-center gap-1">
-                <Award className="h-4 w-4 text-foreground" />
+            <div className="p-2 space-y-0.5">
+              <div className="text-xl font-black text-foreground font-display flex items-center justify-center gap-1">
+                <Award className="h-4 w-4 text-emerald-500" />
                 <span>100%</span>
               </div>
-              <div className="text-[11px] font-semibold text-muted-foreground">
-                On-Time Return Rate
-              </div>
+              <div className="text-xs font-semibold text-muted-foreground">On-Time Return Rate</div>
             </div>
-            <div className="space-y-0.5">
-              <div className="text-lg font-black text-foreground font-display flex items-center justify-center gap-1">
-                <Clock className="h-4 w-4 text-foreground" />
+            <div className="p-2 space-y-0.5">
+              <div className="text-xl font-black text-foreground font-display flex items-center justify-center gap-1">
+                <Clock className="h-4 w-4 text-primary" />
                 <span>&lt; 1 hr</span>
               </div>
-              <div className="text-[11px] font-semibold text-muted-foreground">
-                Avg Response Time
-              </div>
+              <div className="text-xs font-semibold text-muted-foreground">Avg Response Time</div>
             </div>
           </div>
         </div>
 
+        {/* Section Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-border pb-1 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab("details")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "details"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            <UserIcon className="h-4 w-4" />
+            <span>General Creator Details</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("location")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "location"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            <MapPin className="h-4 w-4" />
+            <span>Realtime Location & Address</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("payout")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "payout"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            <CreditCard className="h-4 w-4" />
+            <span>Payout & Contact</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("security")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "security"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            <Lock className="h-4 w-4" />
+            <span>Security & Devices</span>
+          </button>
+        </div>
+
         {/* Content Section Grid */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left 2 Columns: Profile Forms */}
+        <div className="grid lg:grid-cols-3 gap-8 items-start">
+          {/* Left 2 Columns: Active Tab Form Container */}
           <div className="lg:col-span-2 space-y-6">
-            {/* General Creator Information */}
-            <div className="card-premium p-6 border border-border space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <UserIcon className="h-4 w-4 text-foreground" />
-                  <h3 className="font-bold text-base text-foreground">
-                    General Creator Details
-                  </h3>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-semibold">
-                  Public Marketplace Info
-                </span>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Input
-                  label="Full Name"
-                  icon={<UserIcon className="h-4 w-4" />}
-                  value={form.fullName}
-                  onChange={(e) =>
-                    setForm({ ...form, fullName: e.target.value })
-                  }
-                />
-                <Input
-                  label="Role / Occupation"
-                  icon={<Briefcase className="h-4 w-4" />}
-                  value={form.occupation}
-                  onChange={(e) =>
-                    setForm({ ...form, occupation: e.target.value })
-                  }
-                />
-              </div>
-
-              {/* Bio Textarea */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground">
-                  Creator Bio / Inventory Notes
-                </label>
-                <textarea
-                  rows={3}
-                  value={form.bio}
-                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                  placeholder="Tell renters about your experience and gear handling standards..."
-                  className="w-full bg-secondary/50 text-foreground text-xs rounded-xl p-3 border border-border focus:outline-none focus:border-primary transition-all font-medium resize-none"
-                />
-              </div>
-
-              <Input
-                label="Portfolio / Showreel URL"
-                icon={<Globe className="h-4 w-4" />}
-                value={form.website}
-                onChange={(e) => setForm({ ...form, website: e.target.value })}
-              />
-
-              <div className="pt-2 flex justify-end">
-                <Button
-                  onClick={saveProfile}
-                  size="sm"
-                  className="font-bold text-xs"
-                >
-                  Save Details
-                </Button>
-              </div>
-            </div>
-
-            {/* Location & Address Section */}
-            <div className="card-premium p-6 border border-border space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-emerald-500" />
-                  <h3 className="font-bold text-base text-foreground">
-                    Realtime Location & Address
-                  </h3>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={detectingLocation}
-                  onClick={detectCurrentLocation}
-                  className="gap-2 font-bold text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
-                >
-                  {detectingLocation ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>Detecting GPS...</span>
-                    </>
-                  ) : (
-                    <>
-                      <LocateFixed className="h-3.5 w-3.5 text-emerald-500" />
-                      <span>Use Current Location</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {locationStatus && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center justify-between gap-2">
+            {activeTab === "details" && (
+              <div className="card-premium p-6 sm:p-8 border border-border/80 space-y-6 animate-in fade-in duration-300">
+                <div className="flex items-center justify-between pb-4 border-b border-border">
                   <div className="flex items-center gap-2">
-                    <Navigation className="h-4 w-4 shrink-0" />
-                    <span>{locationStatus}</span>
+                    <UserIcon className="h-5 w-5 text-primary" />
+                    <h3 className="font-extrabold text-lg text-foreground">
+                      General Creator Details
+                    </h3>
                   </div>
-                  {form.latitude !== null && form.longitude !== null && (
-                    <span className="text-[10px] font-mono opacity-80">
-                      GPS: {form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}
-                    </span>
-                  )}
+                  <span className="text-xs text-muted-foreground font-semibold">
+                    Public Marketplace Info
+                  </span>
                 </div>
-              )}
 
-              <Input
-                label="Street Address / Location"
-                icon={<MapPin className="h-4 w-4" />}
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="e.g. Visakhapatnam, Gajuwaka, AP"
-              />
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Input
-                  label="Primary City"
-                  icon={<Building className="h-4 w-4" />}
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  placeholder="e.g. Visakhapatnam"
-                />
-                <Input
-                  label="State / Region"
-                  icon={<MapPin className="h-4 w-4" />}
-                  value={form.state}
-                  onChange={(e) => setForm({ ...form, state: e.target.value })}
-                  placeholder="e.g. Andhra Pradesh"
-                />
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Input
-                  label="Country"
-                  icon={<Globe className="h-4 w-4" />}
-                  value={form.country}
-                  onChange={(e) => setForm({ ...form, country: e.target.value })}
-                  placeholder="e.g. India"
-                />
-                <Input
-                  label="Pincode / Postal Code"
-                  icon={<MapPin className="h-4 w-4" />}
-                  value={form.pincode}
-                  onChange={(e) => setForm({ ...form, pincode: e.target.value })}
-                  placeholder="e.g. 530026"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <Button
-                  onClick={saveProfile}
-                  size="sm"
-                  className="font-bold text-xs"
-                >
-                  Save Location Details
-                </Button>
-              </div>
-            </div>
-
-            {/* Contact & Lender Payout Settings */}
-            <div className="card-premium p-6 border border-border space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-foreground" />
-                  <h3 className="font-bold text-base text-foreground">
-                    Contact & Payout Settings
-                  </h3>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-semibold">
-                  Financial & Delivery
-                </span>
-              </div>
-
-              <div className="grid sm:grid-cols-3 gap-4">
-                <Input
-                  label="Aadhaar Number (Masked)"
-                  icon={<ShieldCheck className="h-4 w-4 text-emerald-500" />}
-                  value={user?.aadhaarMasked || user?.aadhaar_masked || "XXXX-XXXX-9012"}
-                  disabled
-                />
-                <Input
-                  label="Email Address"
-                  icon={<Mail className="h-4 w-4" />}
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  disabled
-                />
-                <Input
-                  label="Phone Number"
-                  icon={<Phone className="h-4 w-4" />}
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-              </div>
-
-              <Input
-                label="Lender Payout UPI ID (For Earnings)"
-                icon={<CreditCard className="h-4 w-4" />}
-                value={form.upiId}
-                onChange={(e) => setForm({ ...form, upiId: e.target.value })}
-              />
-
-              <div className="pt-2 flex justify-end">
-                <Button
-                  onClick={saveProfile}
-                  size="sm"
-                  className="font-bold text-xs"
-                >
-                  Update Payout Info
-                </Button>
-              </div>
-            </div>
-
-            {/* Security & Password Change */}
-            <div className="card-premium p-6 border border-border space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-foreground" />
-                  <h3 className="font-bold text-base text-foreground">
-                    Security & Password
-                  </h3>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-semibold">
-                  Account Protection
-                </span>
-              </div>
-
-              <form onSubmit={handlePasswordChange} className="space-y-4">
-                <Input
-                  type="password"
-                  label="Current Password"
-                  icon={<Key className="h-4 w-4" />}
-                  value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                  placeholder="Enter current password"
-                />
-
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-5">
                   <Input
-                    type="password"
-                    label="New Password"
-                    icon={<Lock className="h-4 w-4" />}
-                    value={passwordForm.newPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                    placeholder="At least 6 characters"
+                    label="Full Name"
+                    icon={<UserIcon className="h-4 w-4" />}
+                    value={form.fullName}
+                    onChange={(e) =>
+                      setForm({ ...form, fullName: e.target.value })
+                    }
                   />
                   <Input
-                    type="password"
-                    label="Confirm New Password"
-                    icon={<Lock className="h-4 w-4" />}
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                    placeholder="Repeat new password"
+                    label="Role / Occupation"
+                    icon={<Briefcase className="h-4 w-4" />}
+                    value={form.occupation}
+                    onChange={(e) =>
+                      setForm({ ...form, occupation: e.target.value })
+                    }
+                  />
+                </div>
+
+                {/* Bio Textarea */}
+                <div className="space-y-2">
+                  <label className="text-xs font-extrabold text-foreground flex items-center justify-between">
+                    <span>Creator Bio / Rental Notes</span>
+                    <span className="text-[11px] text-muted-foreground font-normal">
+                      {form.bio.length} characters
+                    </span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={form.bio}
+                    onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                    placeholder="Tell renters about your filmmaking background and equipment care guidelines..."
+                    className="w-full bg-secondary/50 text-foreground text-xs rounded-2xl p-4 border border-border focus:outline-none focus:border-primary transition-all font-medium resize-none"
+                  />
+                </div>
+
+                <Input
+                  label="Portfolio / Showreel URL"
+                  icon={<Globe className="h-4 w-4" />}
+                  value={form.website}
+                  onChange={(e) => setForm({ ...form, website: e.target.value })}
+                  placeholder="https://creators.payent.in/arjun"
+                />
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    onClick={saveProfile}
+                    size="sm"
+                    className="font-bold text-xs px-6 py-2.5"
+                  >
+                    Save Creator Info
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "location" && (
+              <div className="card-premium p-6 sm:p-8 border border-border/80 space-y-6 animate-in fade-in duration-300">
+                <div className="flex items-center justify-between pb-4 border-b border-border flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-emerald-500" />
+                    <h3 className="font-extrabold text-lg text-foreground">
+                      Realtime Location & Address
+                    </h3>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={detectingLocation}
+                    onClick={detectCurrentLocation}
+                    className="gap-2 font-bold text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer py-2 px-4"
+                  >
+                    {detectingLocation ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Detecting GPS...</span>
+                      </>
+                    ) : (
+                      <>
+                        <LocateFixed className="h-4 w-4 text-emerald-500" />
+                        <span>Use Current Location</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {locationStatus && (
+                  <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Navigation className="h-4 w-4 shrink-0" />
+                      <span>{locationStatus}</span>
+                    </div>
+                    {form.latitude !== null && form.longitude !== null && (
+                      <span className="text-[10px] font-mono opacity-80 shrink-0">
+                        GPS: {form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <Input
+                  label="Street Address / Location"
+                  icon={<MapPin className="h-4 w-4" />}
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  placeholder="e.g. 123 Indiranagar, 100ft Road"
+                />
+
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <Input
+                    label="Primary City"
+                    icon={<Building className="h-4 w-4" />}
+                    value={form.city}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    placeholder="e.g. Bengaluru"
+                  />
+                  <Input
+                    label="State / Region"
+                    icon={<MapPin className="h-4 w-4" />}
+                    value={form.state}
+                    onChange={(e) => setForm({ ...form, state: e.target.value })}
+                    placeholder="e.g. Karnataka"
+                  />
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <Input
+                    label="Country"
+                    icon={<Globe className="h-4 w-4" />}
+                    value={form.country}
+                    onChange={(e) => setForm({ ...form, country: e.target.value })}
+                    placeholder="e.g. India"
+                  />
+                  <Input
+                    label="Pincode / Postal Code"
+                    icon={<MapPin className="h-4 w-4" />}
+                    value={form.pincode}
+                    onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+                    placeholder="e.g. 560038"
                   />
                 </div>
 
                 <div className="pt-2 flex justify-end">
                   <Button
-                    type="submit"
-                    disabled={changingPassword}
+                    onClick={saveProfile}
                     size="sm"
-                    className="font-bold text-xs"
+                    className="font-bold text-xs px-6 py-2.5"
                   >
-                    {changingPassword ? "Updating Password..." : "Update Password"}
+                    Save Location Details
                   </Button>
                 </div>
-              </form>
-            </div>
-
-            {/* Active Sessions & Devices */}
-            <div className="card-premium p-6 border border-border space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <Laptop className="h-4 w-4 text-foreground" />
-                  <h3 className="font-bold text-base text-foreground">
-                    Active Devices & Sessions
-                  </h3>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLogoutAllDevices}
-                  className="font-bold text-xs text-destructive border-destructive/30 hover:bg-destructive/10 cursor-pointer"
-                >
-                  Log Out All Other Devices
-                </Button>
               </div>
+            )}
 
-              <p className="text-xs text-muted-foreground font-medium">
-                Manage your active multi-device sessions. Each session uses a 30-minute access token and a 7-day hashed refresh session in TiDB Cloud.
-              </p>
-
-              <div className="space-y-3">
-                {sessions.length > 0 ? (
-                  sessions.map((s) => (
-                    <div
-                      key={s.id}
-                      className="flex items-center justify-between p-3.5 rounded-xl bg-secondary/30 border border-border/60 flex-wrap gap-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        {s.deviceName?.includes("Mobile") ? (
-                          <Smartphone className="h-5 w-5 text-emerald-500 shrink-0" />
-                        ) : (
-                          <Laptop className="h-5 w-5 text-emerald-500 shrink-0" />
-                        )}
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs font-bold text-foreground">
-                              {s.deviceName || "Web Browser"}
-                            </p>
-                            {s.isCurrent && (
-                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold uppercase">
-                                Current Device
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
-                            IP: {s.ipAddress || "127.0.0.1"} · Last active:{" "}
-                            {s.lastUsedAt ? new Date(s.lastUsedAt).toLocaleString() : "Recently"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {!s.isCurrent && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRevokeSession(s.id)}
-                          className="text-xs font-bold text-destructive hover:bg-destructive/10 cursor-pointer gap-1.5"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          <span>Revoke Session</span>
-                        </Button>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 rounded-xl bg-secondary/20 border border-border text-center text-xs text-muted-foreground font-medium">
-                    Active device session securely stored in TiDB Cloud (30-min access / 7-day refresh).
+            {activeTab === "payout" && (
+              <div className="card-premium p-6 sm:p-8 border border-border/80 space-y-6 animate-in fade-in duration-300">
+                <div className="flex items-center justify-between pb-4 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                    <h3 className="font-extrabold text-lg text-foreground">
+                      Contact & Payout Channels
+                    </h3>
                   </div>
-                )}
+                  <span className="text-xs text-muted-foreground font-semibold">
+                    Financial & Settlement
+                  </span>
+                </div>
+
+                <div className="grid sm:grid-cols-3 gap-5">
+                  <Input
+                    label="Aadhaar Number (Masked)"
+                    icon={<ShieldCheck className="h-4 w-4 text-emerald-500" />}
+                    value={user?.aadhaarMasked || user?.aadhaar_masked || "XXXX-XXXX-9012"}
+                    disabled
+                  />
+                  <Input
+                    label="Email Address"
+                    icon={<Mail className="h-4 w-4" />}
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    disabled
+                  />
+                  <Input
+                    label="Phone Number"
+                    icon={<Phone className="h-4 w-4" />}
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
+                </div>
+
+                <Input
+                  label="Lender Payout UPI ID (For Rental Earnings)"
+                  icon={<CreditCard className="h-4 w-4" />}
+                  value={form.upiId}
+                  onChange={(e) => setForm({ ...form, upiId: e.target.value })}
+                  placeholder="arjun@upi"
+                />
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    onClick={saveProfile}
+                    size="sm"
+                    className="font-bold text-xs px-6 py-2.5"
+                  >
+                    Update Payout Info
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
+
+            {activeTab === "security" && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                {/* Security & Password Change */}
+                <div className="card-premium p-6 sm:p-8 border border-border/80 space-y-6">
+                  <div className="flex items-center justify-between pb-4 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-5 w-5 text-primary" />
+                      <h3 className="font-extrabold text-lg text-foreground">
+                        Security & Password
+                      </h3>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-semibold">
+                      Account Protection
+                    </span>
+                  </div>
+
+                  <form onSubmit={handlePasswordChange} className="space-y-5">
+                    <Input
+                      type="password"
+                      label="Current Password"
+                      icon={<Key className="h-4 w-4" />}
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                      placeholder="Enter current password"
+                    />
+
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <Input
+                        type="password"
+                        label="New Password"
+                        icon={<Lock className="h-4 w-4" />}
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                        placeholder="At least 6 characters"
+                      />
+                      <Input
+                        type="password"
+                        label="Confirm New Password"
+                        icon={<Lock className="h-4 w-4" />}
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                        placeholder="Repeat new password"
+                      />
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <Button
+                        type="submit"
+                        disabled={changingPassword}
+                        size="sm"
+                        className="font-bold text-xs px-6 py-2.5"
+                      >
+                        {changingPassword ? "Updating Password..." : "Update Password"}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Active Sessions & Devices */}
+                <div className="card-premium p-6 sm:p-8 border border-border/80 space-y-6">
+                  <div className="flex items-center justify-between pb-4 border-b border-border flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <Laptop className="h-5 w-5 text-primary" />
+                      <h3 className="font-extrabold text-lg text-foreground">
+                        Active Devices & Multi-Sessions
+                      </h3>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLogoutAllDevices}
+                      className="font-bold text-xs text-destructive border-destructive/30 hover:bg-destructive/10 cursor-pointer py-2 px-4"
+                    >
+                      Log Out All Other Devices
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Manage active multi-device logins. Each active session uses a 30-minute access token and a 7-day refresh session.
+                  </p>
+
+                  <div className="space-y-3">
+                    {sessions.length > 0 ? (
+                      sessions.map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex items-center justify-between p-4 rounded-2xl bg-secondary/40 border border-border/60 flex-wrap gap-4"
+                        >
+                          <div className="flex items-center gap-3.5">
+                            {s.deviceName?.includes("Mobile") ? (
+                              <Smartphone className="h-6 w-6 text-emerald-500 shrink-0" />
+                            ) : (
+                              <Laptop className="h-6 w-6 text-emerald-500 shrink-0" />
+                            )}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-bold text-foreground">
+                                  {s.deviceName || "Web Browser"}
+                                </p>
+                                {s.isCurrent && (
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase">
+                                    Current Device
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
+                                IP: {s.ipAddress || "127.0.0.1"} · Last active:{" "}
+                                {s.lastUsedAt ? new Date(s.lastUsedAt).toLocaleString() : "Recently"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {!s.isCurrent && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRevokeSession(s.id)}
+                              className="text-xs font-bold text-destructive hover:bg-destructive/10 cursor-pointer gap-1.5"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span>Revoke Session</span>
+                            </Button>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 rounded-2xl bg-secondary/20 border border-border text-center text-xs text-muted-foreground font-medium">
+                        Active device session securely stored (30-min access / 7-day refresh).
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Verification & Trust Badges */}
           <div className="space-y-6">
             {/* Verification Status Card */}
-            <div className="card-premium p-5 border border-border space-y-4">
-              <h3 className="font-bold text-sm text-foreground flex items-center gap-2 border-b border-border pb-3">
-                <ShieldCheck className="h-4 w-4 text-foreground" />
+            <div className="card-premium p-6 border border-border/80 space-y-5">
+              <h3 className="font-extrabold text-base text-foreground flex items-center gap-2 border-b border-border pb-3">
+                <ShieldCheck className="h-5 w-5 text-emerald-500" />
                 <span>Verification & Trust Status</span>
               </h3>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/60">
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-secondary/40 border border-border/60">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-foreground">
                         Govt ID Verification
                       </p>
                       <p className="text-[10px] text-muted-foreground font-medium">
-                        Aadhaar / Passport verified
+                        Aadhaar verified (`XXXX-XXXX-9012`)
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                  <span className="text-[10px] font-black text-emerald-500 uppercase">
                     Verified
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/60">
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-secondary/40 border border-border/60">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-foreground">
                         Phone & Email Check
                       </p>
                       <p className="text-[10px] text-muted-foreground font-medium">
-                        OTP SMS & Email confirmed
+                        OTP & Security confirmed
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                  <span className="text-[10px] font-black text-emerald-500 uppercase">
                     Verified
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/60">
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-secondary/40 border border-border/60">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-foreground">
-                        Payent Rental Shield
+                        Equipment Protection Shield
                       </p>
                       <p className="text-[10px] text-muted-foreground font-medium">
                         ₹5,00,000 Equipment Coverage
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase">
+                  <span className="text-[10px] font-black text-emerald-500 uppercase">
                     Active
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Preferred Handover & Pickup Info */}
-            <div className="card-premium p-5 border border-border space-y-3">
-              <h3 className="font-bold text-sm text-foreground flex items-center gap-2 border-b border-border pb-3">
-                <MapPin className="h-4 w-4 text-foreground" />
+            {/* Handover & Pickup Info */}
+            <div className="card-premium p-6 border border-border/80 space-y-4">
+              <h3 className="font-extrabold text-base text-foreground flex items-center gap-2 border-b border-border pb-3">
+                <MapPin className="h-5 w-5 text-primary" />
                 <span>Handover Preferences</span>
               </h3>
 
-              <div className="space-y-2 text-xs font-medium">
+              <div className="space-y-3 text-xs font-medium">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Handover Mode:</span>
                   <span className="font-bold text-foreground">
@@ -859,57 +954,55 @@ export default function Profile() {
                 <div className="flex justify-between text-muted-foreground">
                   <span>Deposit Security:</span>
                   <span className="font-bold text-foreground">
-                    Zero-Hold Razorpay Authorization
+                    Zero-Hold Authorization
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Support Callout */}
-            <div className="card-premium p-5 border border-border bg-secondary/30 space-y-2 text-center">
-              <h4 className="text-xs font-bold text-foreground">
+            <div className="card-premium p-6 border border-border/80 bg-secondary/30 space-y-3 text-center">
+              <HelpCircle className="h-8 w-8 text-primary mx-auto opacity-90" />
+              <h4 className="text-xs font-extrabold text-foreground">
                 Need help updating account credentials?
               </h4>
-              <p className="text-[11px] text-muted-foreground">
-                Contact Payent 24/7 Creator Support for GST billing updates or
-                identity re-verification.
+              <p className="text-[11px] text-muted-foreground font-medium">
+                Contact Payent 24/7 Creator Support for GST billing updates or identity re-verification.
               </p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate({ to: "/contact" })}
-                className="w-full font-bold text-xs mt-2"
+                className="w-full font-bold text-xs mt-2 py-2"
               >
                 Contact Support
               </Button>
             </div>
-          </div>
-        </div>
 
-        {/* Account Security & Log Out Section */}
-        <div className="card-premium p-6 border border-destructive/30 bg-destructive/5 space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-bold text-base text-destructive flex items-center gap-2">
+            {/* Account Security & Sign Out Section */}
+            <div className="card-premium p-6 border border-destructive/30 bg-destructive/5 space-y-4">
+              <div>
+                <h3 className="font-extrabold text-sm text-destructive flex items-center gap-2">
+                  <LogOut className="h-4 w-4" />
+                  <span>Account Session</span>
+                </h3>
+                <p className="text-xs text-muted-foreground font-medium mt-1">
+                  Logged in as <span className="font-bold text-foreground">{user?.email}</span>.
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  logout();
+                  toast.success("Logged out successfully.");
+                  navigate({ to: "/login" });
+                }}
+                className="w-full font-bold text-xs flex items-center justify-center gap-2 py-2.5 shadow-md hover:shadow-lg transition-all cursor-pointer"
+              >
                 <LogOut className="h-4 w-4" />
-                <span>Account Security & Session</span>
-              </h3>
-              <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                Logged in as <span className="font-bold text-foreground">{user?.email}</span>. Click below to safely sign out of your Payent account on this device.
-              </p>
+                <span>Log Out of Payent</span>
+              </Button>
             </div>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                logout();
-                toast.success("Logged out successfully.");
-                navigate({ to: "/login" });
-              }}
-              className="w-full sm:w-auto font-bold text-xs flex items-center justify-center gap-2 px-6 py-2.5 shadow-md hover:shadow-lg transition-all cursor-pointer"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Log Out</span>
-            </Button>
           </div>
         </div>
       </div>
