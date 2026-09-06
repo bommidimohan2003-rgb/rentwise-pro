@@ -41,6 +41,11 @@ const schema = z
       .trim()
       .min(7, "Enter a valid phone number (at least 7 digits)")
       .max(20),
+    aadhaarNumber: z
+      .string()
+      .trim()
+      .min(1, "Aadhaar number is required")
+      .regex(/^\d{12}$/, "Aadhaar number must be exactly 12 numeric digits"),
     address: z
       .string()
       .trim()
@@ -135,6 +140,7 @@ export function RegisterForm() {
         data.address,
         data.city,
         data.pincode,
+        data.aadhaarNumber,
       );
       if (res?.success) {
         if (res.token && res.user) {
@@ -158,6 +164,8 @@ export function RegisterForm() {
         setError("email", { type: "server", message: msg });
       } else if (lower.includes("phone")) {
         setError("phone", { type: "server", message: msg });
+      } else if (lower.includes("aadhaar")) {
+        setError("aadhaarNumber", { type: "server", message: msg });
       } else if (
         lower.includes("password") ||
         lower.includes("breach") ||
@@ -181,7 +189,7 @@ export function RegisterForm() {
       <div className="space-y-2">
         <div className="flex items-center gap-1.5 text-[11px] font-black text-primary uppercase tracking-wider">
           <User className="h-3.5 w-3.5" />
-          <span>Account & Contact Info</span>
+          <span>Account & Identity Info</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -201,6 +209,15 @@ export function RegisterForm() {
             {...register("email")}
           />
         </div>
+
+        <Input
+          label="Aadhaar Number (12 Digits Required)"
+          placeholder="123456789012"
+          icon={<ShieldCheck className="h-4 w-4" />}
+          error={errors.aadhaarNumber?.message}
+          maxLength={12}
+          {...register("aadhaarNumber")}
+        />
       </div>
 
       {/* Section 2: Address & Phone */}

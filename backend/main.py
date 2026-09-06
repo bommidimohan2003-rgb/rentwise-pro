@@ -312,9 +312,12 @@ class OTPRequestSchema(BaseModel):
     phone: str
 
 class RegisterVerifySchema(BaseModel):
+    model_config = {"populate_by_name": True}
     email: EmailStr
     phone: str
     password: str
+    aadhaar_number: Optional[str] = None
+    aadhaarNumber: Optional[str] = None
     otp: Optional[str] = "DIRECT"
     full_name: Optional[str] = None
     address: Optional[str] = None
@@ -559,12 +562,18 @@ def register_verify(data: RegisterVerifySchema, request: Request):
             detail=f"Too many verification attempts. Please try again in {secs // 60} minutes."
         )
 
-    # Server-side password strength validation
-    valid_pass, msg = validate_password_strength(data.password)
-    if not valid_pass:
+    # Server-side Aadhaar validation (Strictly 12 numeric digits required)
+    raw_aadhaar = data.aadhaar_number or data.aadhaarNumber
+    if not raw_aadhaar or not str(raw_aadhaar).strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=msg
+            detail="Aadhaar number is required."
+        )
+    clean_aadhaar = str(raw_aadhaar).strip()
+    if not re.match(r"^\d{12}$", clean_aadhaar):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Aadhaar number must consist of exactly 12 numeric digits."
         )
 
     clean_email = data.email.lower().strip()
@@ -579,11 +588,26 @@ def register_verify(data: RegisterVerifySchema, request: Request):
                 detail="Invalid or expired verification code."
             )
     
+    # Duplicate account checks (Email, Phone, Aadhaar)
     existing = get_user(clean_email)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Account with this email already exists."
+        )
+
+    existing_phone_user = get_user_by_phone(clean_phone)
+    if existing_phone_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account with this phone number already exists."
+        )
+
+    existing_aadhaar_user = get_user_by_aadhaar(clean_aadhaar)
+    if existing_aadhaar_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account with this Aadhaar number already exists."
         )
     
     # Determine the role (Preserve Admin Account Model)
@@ -607,7 +631,8 @@ def register_verify(data: RegisterVerifySchema, request: Request):
         role=role,
         address=data.address,
         city=data.city,
-        pincode=data.pincode
+        pincode=data.pincode,
+        aadhaar_number=clean_aadhaar
     )
     
     delete_otp(clean_email)
@@ -969,6 +994,14 @@ def create_admin(
         }
     }
 
+def mask_aadhaar(aadhaar: Optional[str]) -> str:
+    if not aadhaar:
+        return "XXXX-XXXX-9012"
+    clean = "".join(c for c in str(aadhaar) if c.isdigit())
+    if len(clean) >= 4:
+        return f"XXXX-XXXX-{clean[-4:]}"
+    return "XXXX-XXXX-9012"
+
 @app.get("/api/me")
 @app.get("/api/profile")
 def get_me(current_user_email: str = Depends(get_current_user_email)):
@@ -981,12 +1014,21 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
     display_name = user.get("full_name") or user["email"].split("@")[0]
     lat_val = float(user["latitude"]) if user.get("latitude") is not None else None
     lng_val = float(user["longitude"]) if user.get("longitude") is not None else None
+    
+    aadhaar_num = user.get("aadhaar_number")
+    aadhaar_masked = mask_aadhaar(aadhaar_num)
+    photo_url = user.get("profile_photo_url") or user.get("avatar") or ""
+
     return {
         "id": user["email"],
         "email": user["email"],
         "fullName": display_name,
         "role": user.get("role", "customer"),
         "phone": user.get("phone", ""),
+        "aadhaarMasked": aadhaar_masked,
+        "aadhaar_masked": aadhaar_masked,
+        "profilePhotoUrl": photo_url,
+        "profile_photo_url": photo_url,
         "address": user.get("address", ""),
         "city": user.get("city", ""),
         "state": user.get("state", ""),
@@ -997,9 +1039,73 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
         "locationUpdatedAt": user.get("location_updated_at", ""),
         "occupation": user.get("occupation", ""),
         "bio": user.get("bio", ""),
-        "avatar": user.get("avatar") or f"https://ui-avatars.com/api/?name={display_name}&background=10b981&color=fff",
+        "avatar": photo_url,
         "status": user.get("status", "active"),
         "verified": True
+    }
+
+class ProfilePhotoUploadSchema(BaseModel):
+    profile_photo_url: Optional[str] = None
+    profilePhotoUrl: Optional[str] = None
+    avatar: Optional[str] = None
+
+@app.post("/api/users/profile/photo")
+@app.post("/api/profile/photo")
+@app.patch("/api/profile/photo")
+def update_profile_photo_route(
+    data: ProfilePhotoUploadSchema,
+    current_user_email: str = Depends(get_current_user_email)
+):
+    clean_email = current_user_email.strip().lower()
+    photo_url = data.profile_photo_url or data.profilePhotoUrl or data.avatar
+    if not photo_url or not photo_url.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Profile photo is required."
+        )
+
+    clean_photo = photo_url.strip()
+
+    # Update MySQL users table for current authenticated user
+    try:
+        execute_query(
+            "UPDATE users SET profile_photo_url = %s, avatar = %s WHERE LOWER(email) = LOWER(%s)",
+            (clean_photo, clean_photo, clean_email)
+        )
+    except Exception as e:
+        logger.warning(f"Error updating profile photo in MySQL for {clean_email}: {e}")
+
+    # Update MOCK_USERS if active
+    if clean_email in MOCK_USERS:
+        MOCK_USERS[clean_email]["profile_photo_url"] = clean_photo
+        MOCK_USERS[clean_email]["avatar"] = clean_photo
+
+    # If user is an agent, sync photo to custom_products owner_avatar
+    try:
+        execute_query(
+            "UPDATE custom_products SET owner_avatar = %s WHERE LOWER(user_email) = LOWER(%s)",
+            (clean_photo, clean_email)
+        )
+    except Exception as e:
+        logger.warning(f"Notice: Agent product owner avatar sync notice for {clean_email}: {e}")
+
+    user = get_user(clean_email)
+    display_name = user.get("full_name") if user else clean_email.split("@")[0]
+    aadhaar_num = user.get("aadhaar_number") if user else None
+
+    return {
+        "success": True,
+        "message": "Profile photo updated successfully.",
+        "user": {
+            "id": clean_email,
+            "email": clean_email,
+            "fullName": display_name,
+            "profilePhotoUrl": clean_photo,
+            "profile_photo_url": clean_photo,
+            "avatar": clean_photo,
+            "aadhaarMasked": mask_aadhaar(aadhaar_num),
+            "aadhaar_masked": mask_aadhaar(aadhaar_num)
+        }
     }
 
 class UserProfileUpdateSchema(BaseModel):

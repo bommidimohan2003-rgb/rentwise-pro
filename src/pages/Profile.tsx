@@ -32,10 +32,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
+import { CameraPhotoModal } from "@/components/profile/CameraPhotoModal";
 
 export default function Profile() {
   const { user, ready, updateUser, logout, logoutAll, getSessions, revokeSession } = useAuth();
   const navigate = useNavigate();
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -260,6 +263,27 @@ export default function Profile() {
     }
   };
 
+  const handleUploadPhoto = async (photoDataUrl: string) => {
+    if (!user) return;
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    try {
+      if (token) {
+        const res = await api.uploadProfilePhoto(token, photoDataUrl);
+        if (res && res.user) {
+          updateUser(res.user);
+        } else {
+          updateUser({ avatar: photoDataUrl, profilePhotoUrl: photoDataUrl });
+        }
+      } else {
+        updateUser({ avatar: photoDataUrl, profilePhotoUrl: photoDataUrl });
+      }
+      toast.success("Profile photo updated successfully via real-time camera!");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to upload profile photo.";
+      toast.error(msg);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-6xl">
@@ -289,35 +313,36 @@ export default function Profile() {
           <div className="p-6 pt-0 relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 -mt-12 sm:-mt-14">
             {/* Avatar & Identifiers */}
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
-              <div className="relative">
-                <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-2xl bg-secondary border-4 border-card grid place-items-center text-foreground text-3xl font-extrabold shadow-xl overflow-hidden">
-                  {user?.avatar ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl bg-secondary border-4 border-card grid place-items-center text-foreground text-3xl font-extrabold shadow-xl overflow-hidden relative">
+                  {(user?.profilePhotoUrl || user?.profile_photo_url || (user?.avatar && !user.avatar.includes("ui-avatars.com"))) ? (
                     <img
-                      src={user.avatar}
+                      src={user.profilePhotoUrl || user.profile_photo_url || user.avatar}
                       alt={user.fullName}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span>{user?.fullName?.charAt(0) ?? "U"}</span>
+                    <div className="flex flex-col items-center justify-center p-2 text-center text-muted-foreground bg-secondary/80 w-full h-full">
+                      <Camera className="h-8 w-8 text-primary mb-1 animate-pulse" />
+                      <span className="text-[10px] font-bold">No Photo</span>
+                    </div>
                   )}
                 </div>
+
                 <button
-                  onClick={() =>
-                    toast.info(
-                      "Avatar upload trigger: Select an image file to update profile picture.",
-                    )
-                  }
-                  className="absolute bottom-1 right-1 h-8 w-8 rounded-xl bg-primary text-primary-foreground border border-border grid place-items-center shadow-lg hover:scale-105 transition-transform cursor-pointer"
-                  title="Change avatar"
+                  type="button"
+                  onClick={() => setIsCameraOpen(true)}
+                  className="w-full btn-gradient text-[11px] py-1.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-md hover:scale-102 active:scale-98 transition-all cursor-pointer"
                 >
-                  <Camera className="h-4 w-4" />
+                  <Camera className="h-3.5 w-3.5" />
+                  <span>{(user?.profilePhotoUrl || user?.profile_photo_url || (user?.avatar && !user.avatar.includes("ui-avatars.com"))) ? "Change Photo" : "📷 Take Profile Photo"}</span>
                 </button>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5 pt-2 sm:pt-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-xl sm:text-2xl font-extrabold text-foreground font-display">
-                    {user?.fullName || "Arjun Mehta"}
+                    {user?.fullName || "Verified User"}
                   </h2>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase">
                     <ShieldCheck className="h-3 w-3" />
@@ -329,11 +354,15 @@ export default function Profile() {
                   <span>{form.occupation}</span>
                   <span>·</span>
                   <MapPin className="h-3.5 w-3.5 text-foreground" />
-                  <span>{form.address || form.city || "Visakhapatnam, Gajuwaka, AP"}</span>
+                  <span>{form.address || form.city || "India"}</span>
                 </p>
-                <p className="text-[11px] text-muted-foreground font-medium pt-0.5">
-                  Member since October 2024 · Response time &lt; 1 hr
-                </p>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground font-medium pt-1">
+                  <span>Aadhaar: <strong className="text-foreground font-mono">{user?.aadhaarMasked || user?.aadhaar_masked || "XXXX-XXXX-9012"}</strong></span>
+                  <span>·</span>
+                  <span>Email: <strong className="text-foreground">{user?.email || "user@example.com"}</strong></span>
+                  <span>·</span>
+                  <span>Phone: <strong className="text-foreground">{user?.phone || "+91XXXXXXXXXX"}</strong></span>
+                </div>
               </div>
             </div>
 
@@ -570,7 +599,13 @@ export default function Profile() {
                 </span>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-3 gap-4">
+                <Input
+                  label="Aadhaar Number (Masked)"
+                  icon={<ShieldCheck className="h-4 w-4 text-emerald-500" />}
+                  value={user?.aadhaarMasked || user?.aadhaar_masked || "XXXX-XXXX-9012"}
+                  disabled
+                />
                 <Input
                   label="Email Address"
                   icon={<Mail className="h-4 w-4" />}
@@ -878,6 +913,12 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      <CameraPhotoModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleUploadPhoto}
+      />
     </DashboardLayout>
   );
 }

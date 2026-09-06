@@ -1,7 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, ready } = useAuth();
@@ -9,7 +8,6 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (ready && !user) {
-      toast.error("Please log in to access this page.");
       navigate({ to: "/login" });
     }
   }, [ready, user, navigate]);

@@ -88,6 +88,7 @@ export const api = {
     address?: string,
     city?: string,
     pincode?: string,
+    aadhaarNumber?: string,
   ) {
     const res = await fetch(`${API_BASE}/api/register/verify`, {
       method: "POST",
@@ -102,6 +103,8 @@ export const api = {
         address: address || null,
         city: city || null,
         pincode: pincode || null,
+        aadhaar_number: aadhaarNumber || null,
+        aadhaarNumber: aadhaarNumber || null,
       }),
     });
     if (!res.ok) {
@@ -240,7 +243,7 @@ export const api = {
     return await res.json();
   },
 
-  async getMe(token: string) {
+  async getMe(token: string): Promise<any> {
     if (
       !API_BASE ||
       token.startsWith("admin-standalone-token-") ||
@@ -274,12 +277,17 @@ export const api = {
 
       if (!res.ok) {
         if (res.status === 401 && typeof window !== "undefined") {
+          const newToken = await this.refreshToken();
+          if (newToken) {
+            return this.getMe(newToken);
+          }
+          storage.remove(STORAGE_KEYS.token);
+          storage.remove(STORAGE_KEYS.refreshToken);
+          storage.remove(STORAGE_KEYS.currentUser);
+          localStorage.removeItem("payent:admin:token");
+          localStorage.removeItem("payent:admin:current_user");
           if (!token.startsWith("google-offline-")) {
-            window.dispatchEvent(
-              new CustomEvent("payent-session-expired", {
-                detail: { loginPath: "/login" },
-              }),
-            );
+            window.dispatchEvent(new CustomEvent("payent-session-expired"));
           }
         }
         const data = await res.json().catch(() => ({}));
@@ -314,12 +322,9 @@ export const api = {
   async updateProfile(token: string, profileData: Partial<User>) {
     if (!API_BASE) return null;
     try {
-      const res = await fetch(`${API_BASE}/api/me/profile`, {
+      const res = await this.fetchWithAuth(`${API_BASE}/api/me/profile`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(profileData),
       });
       if (!res.ok) {
@@ -333,14 +338,33 @@ export const api = {
     }
   },
 
+  async uploadProfilePhoto(token: string, photoUrl: string) {
+    if (!API_BASE) {
+      const cached = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
+      if (cached) {
+        cached.avatar = photoUrl;
+        cached.profilePhotoUrl = photoUrl;
+        storage.set(STORAGE_KEYS.currentUser, cached);
+      }
+      return { success: true, user: cached };
+    }
+    const res = await this.fetchWithAuth(`${API_BASE}/api/users/profile/photo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile_photo_url: photoUrl }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to upload profile photo."));
+    }
+    return await res.json();
+  },
+
   async reverseGeocode(token: string, latitude: number, longitude: number) {
     if (!API_BASE) return null;
-    const res = await fetch(`${API_BASE}/api/location/reverse-geocode`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/location/reverse-geocode`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ latitude, longitude }),
     });
     if (!res.ok) {
@@ -357,12 +381,9 @@ export const api = {
     confirm_password: string,
   ) {
     if (!API_BASE) return null;
-    const res = await fetch(`${API_BASE}/api/auth/change-password`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/auth/change-password`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ current_password, new_password, confirm_password }),
     });
     if (!res.ok) {
@@ -374,22 +395,16 @@ export const api = {
 
   async refreshToken(): Promise<string | null> {
     const currentRefreshToken = storage.get<string | null>(STORAGE_KEYS.refreshToken, null);
+    if (!currentRefreshToken) return null;
     try {
       const res = await fetch(`${API_BASE}/api/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ refresh_token: currentRefreshToken || "" }),
+        body: JSON.stringify({ refresh_token: currentRefreshToken }),
       });
 
       if (!res.ok) {
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("payent-session-expired", {
-              detail: { reason: "Session expired. Please sign in again." },
-            }),
-          );
-        }
         return null;
       }
 
@@ -430,11 +445,9 @@ export const api = {
         storage.remove(STORAGE_KEYS.refreshToken);
         storage.remove(STORAGE_KEYS.currentUser);
         if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("payent-session-expired", {
-              detail: { reason: "Session expired. Please sign in again." },
-            }),
-          );
+          localStorage.removeItem("payent:admin:token");
+          localStorage.removeItem("payent:admin:current_user");
+          window.dispatchEvent(new CustomEvent("payent-session-expired"));
         }
       }
     }

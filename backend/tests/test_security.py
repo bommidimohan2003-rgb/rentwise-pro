@@ -157,10 +157,28 @@ class TestSecurityFunctions(unittest.TestCase):
         self.assertEqual(ctx.exception.status_code, 401)
         self.assertIn("revoked", ctx.exception.detail.lower())
 
+    def test_06_aadhaar_validation_and_profile_photo(self):
+        """Verify 12-digit numeric Aadhaar validation, masking, and profile photo update."""
+        aadhaar_user = "aadhaar_test_user@payent.com"
+        create_user(
+            email=aadhaar_user,
+            phone="+919111122223",
+            password_hash=hash_password("P@ss12345!"),
+            full_name="Aadhaar User",
+            aadhaar_number="123456789012"
+        )
+        u = get_user(aadhaar_user)
+        self.assertIsNotNone(u)
+        self.assertEqual(u.get("aadhaar_number"), "123456789012")
+
+        from main import mask_aadhaar
+        masked = mask_aadhaar(u.get("aadhaar_number"))
+        self.assertEqual(masked, "XXXX-XXXX-9012")
+
     @classmethod
     def tearDownClass(cls):
         try:
-            execute_query("DELETE FROM users WHERE email IN ('test_regular_user@payent.com', 'test_admin_user@payent.com', 'user_a_idor@payent.com', 'user_b_idor@payent.com', 'revocation_user@payent.com')")
+            execute_query("DELETE FROM users WHERE email IN ('test_regular_user@payent.com', 'test_admin_user@payent.com', 'user_a_idor@payent.com', 'user_b_idor@payent.com', 'revocation_user@payent.com', 'aadhaar_test_user@payent.com')")
             execute_query("DELETE FROM orders WHERE id = 'idor-test-order-100'")
         except Exception:
             pass

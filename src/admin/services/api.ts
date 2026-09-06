@@ -873,13 +873,16 @@ adminApi.interceptors.response.use(
   async (error) => {
     const status = error.response?.status;
 
-    // Handle 401 Unauthorized Session Expiration
+    // Handle 401 Unauthorized Session Expiration silently
     if (status === 401 && typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("payent-session-expired", {
-          detail: { loginPath: "/admin/login" },
-        }),
-      );
+      localStorage.removeItem("payent:admin:token");
+      localStorage.removeItem("payent:admin:current_user");
+      localStorage.removeItem("payent:token");
+      localStorage.removeItem("payent:currentUser");
+
+      if (window.location.pathname !== "/admin/login") {
+        window.location.href = "/admin/login";
+      }
     }
 
     const isNetworkError =

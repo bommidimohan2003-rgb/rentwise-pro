@@ -226,9 +226,12 @@ def init_db():
     add_column_safely("users", "country VARCHAR(100) DEFAULT 'India'")
     add_column_safely("users", "latitude DECIMAL(10, 8) NULL")
     add_column_safely("users", "longitude DECIMAL(11, 8) NULL")
-    add_column_safely("users", "location_updated_at VARCHAR(100) NULL")
     add_column_safely("users", "firebase_uid VARCHAR(255) NULL")
     add_column_safely("users", "last_login_at VARCHAR(100)")
+    add_column_safely("users", "aadhaar_number VARCHAR(20) NULL")
+    add_column_safely("users", "profile_photo_url LONGTEXT NULL")
+    add_index_safely("users", "idx_users_aadhaar_number", "aadhaar_number")
+    add_index_safely("users", "idx_users_phone", "phone")
 
     # Create token_blocklist table for server-side JWT revocation
     execute_query("""
@@ -664,9 +667,42 @@ def get_admin_notifications(limit: int = 20) -> list:
         print(f"Notice: Database query in get_admin_notifications fallback: {e}")
         return []
 
-def create_user(email: str, phone: str, password_hash: str, full_name: str, role: str = "user", address: str = None, city: str = None, pincode: str = None):
+def get_user_by_aadhaar(aadhaar_number: str):
+    if not aadhaar_number:
+        return None
+    clean = "".join(c for c in str(aadhaar_number) if c.isdigit())
+    if not clean:
+        return None
+    try:
+        user = fetch_one("SELECT * FROM users WHERE aadhaar_number = %s", (clean,))
+        if user:
+            return user
+    except Exception as e:
+        logger.warning("DB read error in get_user_by_aadhaar: %s", e)
+    for u in MOCK_USERS.values():
+        if u.get("aadhaar_number") == clean:
+            return u
+    return None
+
+def get_user_by_phone(phone: str):
+    if not phone:
+        return None
+    clean = str(phone).strip()
+    try:
+        user = fetch_one("SELECT * FROM users WHERE phone = %s", (clean,))
+        if user:
+            return user
+    except Exception as e:
+        logger.warning("DB read error in get_user_by_phone: %s", e)
+    for u in MOCK_USERS.values():
+        if u.get("phone") == clean:
+            return u
+    return None
+
+def create_user(email: str, phone: str, password_hash: str, full_name: str, role: str = "user", address: str = None, city: str = None, pincode: str = None, aadhaar_number: str = None):
     created_at = dt.now(timezone.utc).isoformat()
     clean_email = email.strip().lower()
+    clean_aadhaar = "".join(c for c in str(aadhaar_number) if c.isdigit()) if aadhaar_number else None
     user_data = {
         "email": clean_email,
         "phone": phone,
@@ -676,13 +712,14 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
         "address": address,
         "city": city,
         "pincode": pincode,
+        "aadhaar_number": clean_aadhaar,
         "created_at": created_at
     }
     MOCK_USERS[clean_email] = user_data
     try:
         execute_query(
-            "INSERT INTO users (email, phone, password_hash, full_name, role, address, city, pincode, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (clean_email, phone, password_hash, full_name, role, address, city, pincode, created_at)
+            "INSERT INTO users (email, phone, password_hash, full_name, role, address, city, pincode, aadhaar_number, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (clean_email, phone, password_hash, full_name, role, address, city, pincode, clean_aadhaar, created_at)
         )
     except Exception as e:
         print(f"Notice: Database write error in create_user: {e}")
@@ -694,6 +731,7 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
         "address": address,
         "city": city,
         "pincode": pincode,
+        "aadhaar_number": clean_aadhaar,
         "createdAt": created_at
     }
 

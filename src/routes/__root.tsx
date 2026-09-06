@@ -14,7 +14,6 @@ import { storage } from "../utils/storage";
 import type { Product } from "../types";
 import { Toaster } from "@/components/ui/sonner";
 import { NoInternetState } from "@/components/states/NoInternetState";
-import { SessionExpired } from "@/components/states/SessionExpired";
 
 import appCss from "../styles.css?url";
 
@@ -168,10 +167,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const [sessionExpiredInfo, setSessionExpiredInfo] = useState<{
-    show: boolean;
-    loginUrl: "/login" | "/admin/login";
-  }>({ show: false, loginUrl: "/login" });
 
   const [isOffline, setIsOffline] = useState(() => {
     if (typeof window !== "undefined") {
@@ -220,7 +215,7 @@ function RootComponent() {
         console.error("Failed to load public custom products:", err),
       );
 
-    // Global session expiration handler
+    // Global session expiration handler (silent redirect with NO popups/modals)
     const handleSessionExpired = (e: Event) => {
       const customEv = e as CustomEvent<{
         loginPath?: "/login" | "/admin/login";
@@ -230,11 +225,11 @@ function RootComponent() {
       if (typeof window !== "undefined") {
         localStorage.removeItem("payent:admin:token");
         localStorage.removeItem("payent:admin:current_user");
+        const targetLoginUrl = customEv.detail?.loginPath || "/login";
+        if (window.location.pathname !== targetLoginUrl) {
+          window.location.href = targetLoginUrl;
+        }
       }
-      setSessionExpiredInfo({
-        show: true,
-        loginUrl: customEv.detail?.loginPath || "/login",
-      });
     };
 
     // Online/Offline handlers
@@ -284,15 +279,6 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
-
-      {sessionExpiredInfo.show && (
-        <SessionExpired
-          loginUrl={sessionExpiredInfo.loginUrl}
-          onClose={() =>
-            setSessionExpiredInfo((prev) => ({ ...prev, show: false }))
-          }
-        />
-      )}
 
       {showChatbot && <HelpChatbot />}
       <Toaster position="bottom-right" richColors />

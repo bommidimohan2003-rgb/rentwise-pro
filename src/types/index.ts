@@ -13,6 +13,11 @@ export interface User {
   locationUpdatedAt?: string;
   password?: string;
   avatar?: string;
+  profilePhotoUrl?: string;
+  profile_photo_url?: string;
+  aadhaarNumber?: string;
+  aadhaarMasked?: string;
+  aadhaar_masked?: string;
   role?: "user" | "admin";
   createdAt?: string;
   bio?: string;

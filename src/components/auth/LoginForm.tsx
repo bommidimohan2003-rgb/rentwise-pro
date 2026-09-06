@@ -30,7 +30,6 @@ export function LoginForm() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
-  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [error, setErrorState] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,16 +48,6 @@ export function LoginForm() {
     mode: "onBlur",
     defaultValues: { remember: true },
   });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const notice = sessionStorage.getItem("payent_session_expired_notice");
-      if (notice) {
-        setSessionNotice(notice);
-        sessionStorage.removeItem("payent_session_expired_notice");
-      }
-    }
-  }, []);
 
   const onSubmit = async (data: FormValues) => {
     setErrorState(null);
@@ -119,13 +108,6 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {sessionNotice && (
-        <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{sessionNotice}</span>
-        </div>
-      )}
-
       <Input
         label="Email address"
         type="email"
