@@ -216,6 +216,7 @@ def init_db():
     add_column_safely("users", "avatar VARCHAR(1000) DEFAULT 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'")
     add_column_safely("users", "address VARCHAR(500)")
     add_column_safely("users", "city VARCHAR(100)")
+    add_column_safely("users", "state VARCHAR(100)")
     add_column_safely("users", "pincode VARCHAR(20)")
     add_column_safely("users", "occupation VARCHAR(255)")
     add_column_safely("users", "bio TEXT")
@@ -312,6 +313,7 @@ def init_db():
     add_column_safely("custom_products", "hidden BOOLEAN DEFAULT FALSE")
     add_column_safely("custom_products", "images LONGTEXT")
     add_column_safely("custom_products", "documents LONGTEXT")
+    add_index_safely("custom_products", "idx_custom_products_user_email", "user_email")
 
     # Create notifications table (user-facing)
     execute_query("""
@@ -939,7 +941,17 @@ def get_custom_products(email: str):
         if conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM custom_products WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
+                    cursor.execute("""
+                        SELECT cp.*, 
+                               u.address AS owner_address, 
+                               u.city AS owner_city, 
+                               u.state AS owner_state, 
+                               u.pincode AS owner_pincode
+                        FROM custom_products cp
+                        LEFT JOIN users u ON cp.user_email = u.email
+                        WHERE cp.user_email = %s 
+                        ORDER BY cp.created_at DESC
+                    """, (clean_email,))
                     rows = cursor.fetchall()
                     if rows:
                         return rows
@@ -955,7 +967,16 @@ def get_all_custom_products():
         if conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM custom_products ORDER BY created_at DESC")
+                    cursor.execute("""
+                        SELECT cp.*, 
+                               u.address AS owner_address, 
+                               u.city AS owner_city, 
+                               u.state AS owner_state, 
+                               u.pincode AS owner_pincode
+                        FROM custom_products cp
+                        LEFT JOIN users u ON cp.user_email = u.email
+                        ORDER BY cp.created_at DESC
+                    """)
                     rows = cursor.fetchall()
                     if rows:
                         return rows
@@ -971,7 +992,18 @@ def get_all_approved_custom_products():
         if conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM custom_products WHERE (status = 'approved' OR status IS NULL) AND (hidden = 0 OR hidden IS NULL) ORDER BY created_at DESC")
+                    cursor.execute("""
+                        SELECT cp.*, 
+                               u.address AS owner_address, 
+                               u.city AS owner_city, 
+                               u.state AS owner_state, 
+                               u.pincode AS owner_pincode
+                        FROM custom_products cp
+                        LEFT JOIN users u ON cp.user_email = u.email
+                        WHERE (cp.status = 'approved' OR cp.status IS NULL) 
+                          AND (cp.hidden = 0 OR cp.hidden IS NULL) 
+                        ORDER BY cp.created_at DESC
+                    """)
                     rows = cursor.fetchall()
                     if rows:
                         return rows

@@ -26,6 +26,7 @@ import { RecommendationSection } from "@/components/recommendations/Recommendati
 import { tracker } from "@/utils/eventTracker";
 import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
+import { formatOwnerAddress } from "@/utils/formatters";
 import type { Product } from "@/types";
 
 
@@ -296,7 +297,7 @@ export default function ProductDetails() {
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5 font-medium flex items-center gap-1 flex-wrap">
                       <MapPin className="h-3 w-3 text-primary inline shrink-0" />
-                      <span>{product.location || product.owner?.city || product.owner?.address || "Visakhapatnam, Gajuwaka, AP"}</span>
+                      <span>{formatOwnerAddress(product)}</span>
                       <span>·</span>
                       <span>Verified Lender</span>
                       <span>·</span>

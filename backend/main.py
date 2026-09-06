@@ -921,6 +921,7 @@ class UserProfileUpdateSchema(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
+    state: Optional[str] = None
     pincode: Optional[str] = None
     avatar: Optional[str] = None
     occupation: Optional[str] = None
@@ -944,6 +945,9 @@ def update_user_profile_route(data: UserProfileUpdateSchema, current_user_email:
     if data.city is not None:
         fields.append("city = %s")
         params.append(data.city)
+    if data.state is not None:
+        fields.append("state = %s")
+        params.append(data.state)
     if data.pincode is not None:
         fields.append("pincode = %s")
         params.append(data.pincode)
@@ -966,6 +970,7 @@ def update_user_profile_route(data: UserProfileUpdateSchema, current_user_email:
             if data.phone is not None: MOCK_USERS[clean_email]["phone"] = data.phone
             if data.address is not None: MOCK_USERS[clean_email]["address"] = data.address
             if data.city is not None: MOCK_USERS[clean_email]["city"] = data.city
+            if data.state is not None: MOCK_USERS[clean_email]["state"] = data.state
             if data.pincode is not None: MOCK_USERS[clean_email]["pincode"] = data.pincode
             if data.avatar is not None: MOCK_USERS[clean_email]["avatar"] = data.avatar
             if data.occupation is not None: MOCK_USERS[clean_email]["occupation"] = data.occupation
@@ -1251,7 +1256,21 @@ def format_product_dict(p: dict) -> dict:
     owner_name = p.get("owner_name") or owner_info.get("name") or "Lender"
     owner_avatar = p.get("owner_avatar") or owner_info.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
     owner_rating = float(p.get("owner_rating") or owner_info.get("rating") or 5.0)
-    owner_city = p.get("location") or owner_info.get("city") or p.get("owner_city") or "Visakhapatnam, Gajuwaka, AP"
+
+    city = str(p.get("owner_city") or owner_info.get("city") or p.get("city") or "").strip()
+    state = str(p.get("owner_state") or owner_info.get("state") or p.get("state") or "").strip()
+    address = str(p.get("owner_address") or owner_info.get("address") or p.get("address") or "").strip()
+    pincode = str(p.get("owner_pincode") or owner_info.get("pincode") or p.get("pincode") or "").strip()
+
+    loc_parts = [part for part in [city, state] if part]
+    if loc_parts:
+        location_str = ", ".join(loc_parts)
+    elif address:
+        location_str = address
+    elif p.get("location"):
+        location_str = str(p["location"]).strip()
+    else:
+        location_str = "Location unavailable"
 
     return {
         "id": str(p.get("id", "")),
@@ -1263,12 +1282,16 @@ def format_product_dict(p: dict) -> dict:
         "rating": float(p.get("rating", 5.0)),
         "reviews": int(p.get("reviews", 0)),
         "available": bool(p.get("available", True)),
-        "location": owner_city,
+        "location": location_str,
         "owner": {
             "name": owner_name,
             "avatar": owner_avatar,
             "rating": owner_rating,
-            "city": owner_city
+            "city": city or None,
+            "state": state or None,
+            "address": address or None,
+            "pincode": pincode or None,
+            "location": location_str
         }
     }
 
@@ -1462,7 +1485,16 @@ def fetch_one_product(product_id: str):
         return None
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+            cursor.execute("""
+                SELECT cp.*, 
+                       u.address AS owner_address, 
+                       u.city AS owner_city, 
+                       u.state AS owner_state, 
+                       u.pincode AS owner_pincode
+                FROM custom_products cp
+                LEFT JOIN users u ON cp.user_email = u.email
+                WHERE cp.id = %s
+            """, (product_id,))
             return cursor.fetchone()
     except Exception:
         return None

@@ -5,6 +5,7 @@ export interface User {
   phone?: string;
   address?: string;
   city?: string;
+  state?: string;
   pincode?: string;
   password?: string;
   avatar?: string;
@@ -42,7 +43,10 @@ export interface Product {
     rating: number;
     email?: string;
     city?: string;
+    state?: string;
     address?: string;
+    pincode?: string;
+    location?: string;
   };
 }
 

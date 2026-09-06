@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { api } from "@/utils/api";
+import { formatOwnerAddress } from "@/utils/formatters";
 import { CSSTiltCard } from "./CSSTiltCard";
 
 import cameraImg from "@/assets/images/camera.png";
@@ -94,18 +95,7 @@ export function ProductCard({
     user && !product.isReference && (isOwner || isAdmin),
   );
 
-  const ownerLocation =
-    (product as Product & { location?: string; city?: string; address?: string }).location ||
-    (product as Product & { location?: string; city?: string; address?: string }).city ||
-    (product as Product & { location?: string; city?: string; address?: string }).address ||
-    (product.owner as { city?: string; address?: string; location?: string })?.city ||
-    (product.owner as { city?: string; address?: string; location?: string })?.address ||
-    (product.owner as { city?: string; address?: string; location?: string })?.location ||
-    (product as Product & { owner_city?: string; owner_address?: string }).owner_city ||
-    (product as Product & { owner_city?: string; owner_address?: string }).owner_address ||
-    "Visakhapatnam, Gajuwaka, AP";
-
-  const location = ownerLocation;
+  const location = formatOwnerAddress(product);
 
   const handleCardClick = () => {
     if (product.isReference) {
