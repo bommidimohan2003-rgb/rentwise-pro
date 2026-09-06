@@ -160,9 +160,7 @@ if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
         razorpay_client = None
 from contextlib import asynccontextmanager
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup Handler
+def _async_startup_tasks():
     try:
         init_db()
         logger.info("MySQL database initialized successfully.")
@@ -170,11 +168,17 @@ async def lifespan(app: FastAPI):
         logger.error(f"Could not initialize MySQL database at startup: {e}")
 
     try:
-        catalog = get_recommendation_catalog()
-        ml_search_engine.build_index(catalog)
-        logger.info(f"ML Search Engine index initialized with {len(catalog)} products.")
+        if "get_recommendation_catalog" in globals():
+            catalog = get_recommendation_catalog()
+            ml_search_engine.build_index(catalog)
+            logger.info(f"ML Search Engine index initialized with {len(catalog)} products.")
     except Exception as se_err:
         logger.error(f"Error initializing ML Search Engine index: {se_err}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Run startup DB initialization in a background thread to prevent healthcheck timeout
+    asyncio.create_task(asyncio.to_thread(_async_startup_tasks))
     yield
 
 app = FastAPI(
