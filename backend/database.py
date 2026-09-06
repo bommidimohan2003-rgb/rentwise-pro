@@ -213,10 +213,18 @@ def init_db():
         execute_query("ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NULL")
     except Exception:
         pass
+    try:
+        execute_query("ALTER TABLE users MODIFY COLUMN avatar LONGTEXT NULL")
+    except Exception:
+        pass
+    try:
+        execute_query("ALTER TABLE users MODIFY COLUMN profile_photo_url LONGTEXT NULL")
+    except Exception:
+        pass
 
     add_column_safely("users", "status VARCHAR(50) DEFAULT 'active'")
     add_column_safely("users", "verified BOOLEAN DEFAULT TRUE")
-    add_column_safely("users", "avatar VARCHAR(1000) DEFAULT 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'")
+    add_column_safely("users", "avatar LONGTEXT NULL")
     add_column_safely("users", "address VARCHAR(500)")
     add_column_safely("users", "city VARCHAR(100)")
     add_column_safely("users", "state VARCHAR(100)")

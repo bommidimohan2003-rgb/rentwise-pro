@@ -1066,6 +1066,16 @@ def update_profile_photo_route(
 
     clean_photo = photo_url.strip()
 
+    # Ensure table columns support LONGTEXT for base64 photo storage
+    try:
+        execute_query("ALTER TABLE users MODIFY COLUMN avatar LONGTEXT NULL")
+    except Exception:
+        pass
+    try:
+        execute_query("ALTER TABLE users MODIFY COLUMN profile_photo_url LONGTEXT NULL")
+    except Exception:
+        pass
+
     # Update MySQL users table for current authenticated user
     try:
         execute_query(
@@ -1073,7 +1083,21 @@ def update_profile_photo_route(
             (clean_photo, clean_photo, clean_email)
         )
     except Exception as e:
-        logger.warning(f"Error updating profile photo in MySQL for {clean_email}: {e}")
+        logger.warning(f"Error in combined profile photo update for {clean_email}: {e}")
+        try:
+            execute_query(
+                "UPDATE users SET profile_photo_url = %s WHERE LOWER(email) = LOWER(%s)",
+                (clean_photo, clean_email)
+            )
+        except Exception as ex1:
+            logger.warning(f"Error updating profile_photo_url in MySQL for {clean_email}: {ex1}")
+        try:
+            execute_query(
+                "UPDATE users SET avatar = %s WHERE LOWER(email) = LOWER(%s)",
+                (clean_photo, clean_email)
+            )
+        except Exception as ex2:
+            logger.warning(f"Error updating avatar in MySQL for {clean_email}: {ex2}")
 
     # Update MOCK_USERS if active
     if clean_email in MOCK_USERS:
@@ -1173,6 +1197,8 @@ def update_user_profile_route(data: UserProfileUpdateSchema, current_user_email:
 
     if data.avatar is not None:
         fields.append("avatar = %s")
+        params.append(data.avatar)
+        fields.append("profile_photo_url = %s")
         params.append(data.avatar)
     if data.occupation is not None:
         fields.append("occupation = %s")
