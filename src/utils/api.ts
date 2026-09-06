@@ -31,7 +31,19 @@ function parseApiError(data: unknown, fallback: string): string {
   return fallback;
 }
 
+const _productCache = new Map<string, Product>();
+
 export const api = {
+  cacheProduct(product: Product) {
+    if (product && product.id) {
+      _productCache.set(product.id, product);
+    }
+  },
+
+  getCachedProduct(id: string): Product | null {
+    if (!id) return null;
+    return _productCache.get(id) || null;
+  },
   async registerRequest(email: string, phone: string) {
     try {
       const res = await fetch(`${API_BASE}/api/register/request`, {
@@ -527,20 +539,29 @@ export const api = {
   },
 
   async getPublicCustomProducts() {
+    let items: Product[] = [];
     if (!API_BASE) {
-      return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-    }
-    try {
-      const res = await fetch(`${API_BASE}/api/products/custom/public`, {
-        method: "GET",
-      });
-      if (!res.ok) {
-        return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+      items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+    } else {
+      try {
+        const res = await fetch(`${API_BASE}/api/products/custom/public`, {
+          method: "GET",
+        });
+        if (!res.ok) {
+          items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+        } else {
+          items = await res.json();
+        }
+      } catch {
+        items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
       }
-      return await res.json();
-    } catch {
-      return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
     }
+    if (Array.isArray(items)) {
+      items.forEach((p) => {
+        if (p && p.id) _productCache.set(p.id, p);
+      });
+    }
+    return items;
   },
 
   async getPublicProducts() {
@@ -882,12 +903,17 @@ export const api = {
   },
 
   async getProductById(id: string): Promise<Product | null> {
+    const cached = _productCache.get(id);
     try {
       const res = await fetch(`${API_BASE}/api/products/${id}`);
-      if (!res.ok) return null;
-      return await res.json();
+      if (!res.ok) return cached || null;
+      const data: Product = await res.json();
+      if (data && data.id) {
+        _productCache.set(data.id, data);
+      }
+      return data;
     } catch {
-      return null;
+      return cached || null;
     }
   },
 

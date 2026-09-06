@@ -97,7 +97,18 @@ export function ProductCard({
 
   const location = formatOwnerAddress(product);
 
+  const handlePreload = () => {
+    if (product) {
+      api.cacheProduct(product);
+      if (imgSrc && typeof window !== "undefined") {
+        const img = new Image();
+        img.src = imgSrc;
+      }
+    }
+  };
+
   const handleCardClick = () => {
+    handlePreload();
     if (product.isReference) {
       if (!user) {
         toast.error("Please log in to list your gear.");
@@ -126,6 +137,8 @@ export function ProductCard({
         whileHover={{ y: -4 }}
         transition={{ duration: 0.2 }}
         onClick={handleCardClick}
+        onMouseEnter={handlePreload}
+        onPointerDown={handlePreload}
         className="w-full flex flex-col justify-between overflow-hidden rounded-[22px] bg-card border border-border/60 hover:border-primary/40 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer h-full"
       >
         {/* Card Header & Media (Enlarged Full-Cover Image Presentation) */}

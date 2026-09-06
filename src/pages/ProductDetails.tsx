@@ -36,24 +36,32 @@ export default function ProductDetails() {
   const navigate = useNavigate();
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [productLoading, setProductLoading] = useState(true);
+  
+  // Instant cache lookup for zero-latency initial render
+  const initialCachedProduct = api.getCachedProduct(id);
+  const [product, setProduct] = useState<Product | null>(initialCachedProduct);
+  const [productLoading, setProductLoading] = useState<boolean>(!initialCachedProduct);
 
-  // Load product from local custom items, MOCK_PRODUCTS, and live API catalog
+  // Stale-While-Revalidate: load latest product details in background
   useEffect(() => {
     let isMounted = true;
-    setProductLoading(true);
+    const cached = api.getCachedProduct(id);
+    if (cached && isMounted) {
+      setProduct(cached);
+      setProductLoading(false);
+    } else {
+      setProductLoading(true);
+    }
 
     async function loadTargetProduct() {
-      // 1. Fetch live product from TiDB Cloud backend API by ID
-      let found: Product | null = null;
+      let found: Product | null = cached || null;
       try {
-        found = await api.getProductById(id);
+        const live = await api.getProductById(id);
+        if (live) found = live;
       } catch {
         /* ignore */
       }
 
-      // 2. Check public products API catalog
       if (!found) {
         try {
           const items = await api.getPublicProducts();
@@ -66,7 +74,10 @@ export default function ProductDetails() {
       }
 
       if (isMounted) {
-        setProduct(found || null);
+        if (found) {
+          setProduct(found);
+          api.cacheProduct(found);
+        }
         setProductLoading(false);
       }
     }
