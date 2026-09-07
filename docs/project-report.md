@@ -131,6 +131,7 @@ The project has a mixed integration state. Some customer-facing features are bac
 | Wishlist items                  | Backend wishlist routes (`/api/wishlist`) & optimistic local cache           | Real   |
 | Catalog                         | `GET /api/products/custom/public` live database catalog                      | Real   |
 | Categories                      | `GET /api/categories/public` live categories & counts                        | Real   |
+| Reviews & Testimonials          | `GET /api/reviews`, `GET /api/reviews/stats`, `/reviews` route with verified rental eligibility | Real   |
 | Testimonials and stats          | `GET /api/stats/public` live aggregate platform metrics                      | Real   |
 | Payment checkout pricing        | Live product pricing query against `custom_products` table                   | Real   |
 | Messages                        | Customer support / help chatbot wired to live API surface                    | Real   |
@@ -167,6 +168,7 @@ The main technical debt areas are clear:
 - [RESOLVED TiDB Cloud MySQL Migration] Migrated all website data operations (products, custom listings, categories, wishlist, orders, notifications, admin management records) exclusively to TiDB Cloud MySQL via live FastAPI backend endpoints, eliminating localStorage data persistence.
 - [RESOLVED Mobile Navigation Redesign] Redesigned mobile navigation layout to floating capsule bottom bar with active pill animations (Home, Browse, Become Lender, Dashboard) active post-login.
 - [RESOLVED Deployment Healthcheck & Python 3.12 UTC Datetime] Resolved 1/1 replicas healthcheck deployment failures caused by bare datetime module AttributeError (`datetime.utcnow` -> `dt.now(timezone.utc)`) across `backend/database.py` and `backend/main.py`, synchronized `dbutils` dependency in `backend/requirements.txt`, and ensured database idempotency.
+- [RESOLVED Production Reviews Migration] Replaced fake demo reviews (Rahul Mehta, Sneha Iyer, Aditya Varma) and mock testimonials with a secure production review system. Enhanced MySQL `reviews` table with `user_email`, `booking_id`, `is_verified`, `product_image`, `updated_at`, and indexing. Implemented FastAPI review endpoints (`GET /api/reviews`, `GET /api/reviews/stats`, `GET /api/reviews/eligible-bookings`, `POST`, `PUT`, `DELETE`), strictly validated rental booking eligibility and duplicate review prevention, wired homepage "What Creators Say" to live endpoints with skeleton loaders and empty states, updated "View All Reviews" link to dedicated `/reviews` route, and created `/reviews` page with live statistical aggregations and verified authoring modal.
 
 
 ## Risks and Recommendations

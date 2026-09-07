@@ -403,6 +403,20 @@ def init_db():
         )
     """)
 
+    # Safely alter reviews table for real customer review fields
+    add_column_safely("reviews", "user_email VARCHAR(255)")
+    add_column_safely("reviews", "user_location VARCHAR(255)")
+    add_column_safely("reviews", "user_role VARCHAR(255)")
+    add_column_safely("reviews", "booking_id VARCHAR(255)")
+    add_column_safely("reviews", "product_image LONGTEXT")
+    add_column_safely("reviews", "is_verified BOOLEAN DEFAULT TRUE")
+    add_column_safely("reviews", "updated_at VARCHAR(100)")
+    add_index_safely("reviews", "idx_reviews_product_id", "product_id")
+    add_index_safely("reviews", "idx_reviews_user_email", "user_email")
+    add_index_safely("reviews", "idx_reviews_booking_id", "booking_id")
+    add_index_safely("reviews", "idx_reviews_rating", "rating")
+    add_index_safely("reviews", "idx_reviews_created_at", "created_at")
+
     # Create reports table
     execute_query("""
         CREATE TABLE IF NOT EXISTS reports (
@@ -634,6 +648,7 @@ MOCK_NOTIFICATIONS = {}
 MOCK_PROCESSED_EVENTS = set()
 MOCK_USER_EVENTS = []
 MOCK_CUSTOM_PRODUCTS = {}
+MOCK_REVIEWS = {}
 
 def get_user(email: str):
     if not email:
@@ -2185,6 +2200,340 @@ def get_user_active_sessions(user_email: str) -> List[dict]:
 def cleanup_expired_sessions() -> bool:
     now_str = dt.now(timezone.utc).isoformat()
     return execute_query("DELETE FROM sessions WHERE expires_at <= %s OR revoked_at IS NOT NULL", (now_str,))
+
+# ----------------------------------------------------------------------
+# Real Customer Reviews DB Helpers
+# ----------------------------------------------------------------------
+
+def get_reviews_from_db(
+    page: int = 1,
+    limit: int = 20,
+    sort: str = "newest",
+    rating_filter: Optional[int] = None,
+    product_id: Optional[str] = None,
+    verified_only: bool = False
+) -> dict:
+    page = max(1, page)
+    limit = max(1, min(100, limit))
+    offset = (page - 1) * limit
+
+    conditions = ["hidden = FALSE"]
+    params: list = []
+
+    if rating_filter is not None and 1 <= rating_filter <= 5:
+        conditions.append("rating = %s")
+        params.append(rating_filter)
+
+    if product_id:
+        conditions.append("product_id = %s")
+        params.append(product_id)
+
+    if verified_only:
+        conditions.append("is_verified = TRUE")
+
+    where_clause = " WHERE " + " AND ".join(conditions)
+
+    order_clause = "ORDER BY created_at DESC"
+    if sort == "highest":
+        order_clause = "ORDER BY rating DESC, created_at DESC"
+    elif sort == "lowest":
+        order_clause = "ORDER BY rating ASC, created_at DESC"
+    elif sort == "oldest":
+        order_clause = "ORDER BY created_at ASC"
+
+    conn = get_db_connection()
+    if not conn:
+        filtered = [
+            r for r in MOCK_REVIEWS.values()
+            if not r.get("hidden")
+            and (rating_filter is None or r.get("rating") == rating_filter)
+            and (not product_id or r.get("product_id") == product_id)
+            and (not verified_only or r.get("is_verified", True))
+        ]
+        if sort == "highest":
+            filtered.sort(key=lambda x: (x.get("rating", 0), x.get("created_at", "")), reverse=True)
+        elif sort == "lowest":
+            filtered.sort(key=lambda x: (x.get("rating", 0), -len(x.get("created_at", ""))))
+        elif sort == "oldest":
+            filtered.sort(key=lambda x: x.get("created_at", ""))
+        else:
+            filtered.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        total = len(filtered)
+        paginated = filtered[offset:offset+limit]
+        return {
+            "reviews": paginated,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "totalPages": (total + limit - 1) // limit if total > 0 else 1
+            }
+        }
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(f"SELECT COUNT(*) as total FROM reviews {where_clause}", tuple(params))
+            count_row = cursor.fetchone()
+            total = count_row["total"] if count_row else 0
+
+            query = f"""
+                SELECT r.*, 
+                       u.full_name AS db_user_name, 
+                       u.avatar AS db_user_avatar, 
+                       u.city AS db_user_city, 
+                       u.occupation AS db_user_role
+                FROM reviews r
+                LEFT JOIN users u ON LOWER(r.user_email) = LOWER(u.email)
+                {where_clause}
+                {order_clause}
+                LIMIT %s OFFSET %s
+            """
+            cursor.execute(query, tuple(params + [limit, offset]))
+            rows = cursor.fetchall()
+            
+            reviews = []
+            for r in rows:
+                user_display = r.get("db_user_name") or r.get("user_name") or "Creator"
+                avatar_url = r.get("db_user_avatar") or r.get("user_avatar") or f"https://ui-avatars.com/api/?name={user_display}&background=0D151D&color=fff"
+                reviews.append({
+                    "id": r["id"],
+                    "productId": r.get("product_id"),
+                    "productTitle": r.get("product_title"),
+                    "productImage": r.get("product_image"),
+                    "bookingId": r.get("booking_id"),
+                    "userId": r.get("user_email"),
+                    "userName": user_display,
+                    "userAvatar": avatar_url,
+                    "userLocation": r.get("db_user_city") or r.get("user_location") or "",
+                    "userRole": r.get("db_user_role") or r.get("user_role") or "",
+                    "rating": int(r.get("rating", 5)),
+                    "comment": r.get("comment", ""),
+                    "isVerified": bool(r.get("is_verified", True)),
+                    "createdAt": r.get("created_at"),
+                    "updatedAt": r.get("updated_at")
+                })
+                
+            return {
+                "reviews": reviews,
+                "pagination": {
+                    "page": page,
+                    "limit": limit,
+                    "total": total,
+                    "totalPages": (total + limit - 1) // limit if total > 0 else 1
+                }
+            }
+    finally:
+        conn.close()
+
+def get_review_stats_from_db(product_id: Optional[str] = None) -> dict:
+    conditions = ["hidden = FALSE"]
+    params: list = []
+    if product_id:
+        conditions.append("product_id = %s")
+        params.append(product_id)
+
+    where_clause = " WHERE " + " AND ".join(conditions)
+
+    conn = get_db_connection()
+    if not conn:
+        revs = [r for r in MOCK_REVIEWS.values() if not r.get("hidden") and (not product_id or r.get("product_id") == product_id)]
+        total = len(revs)
+        if total == 0:
+            return {"averageRating": 0.0, "totalReviews": 0, "ratingDistribution": {"5": 0, "4": 0, "3": 0, "2": 0, "1": 0}}
+        avg = round(sum(r.get("rating", 5) for r in revs) / total, 1)
+        dist = {"5": 0, "4": 0, "3": 0, "2": 0, "1": 0}
+        for r in revs:
+            k = str(int(r.get("rating", 5)))
+            if k in dist: dist[k] += 1
+        return {"averageRating": avg, "totalReviews": total, "ratingDistribution": dist}
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(f"""
+                SELECT COUNT(*) as total, IFNULL(AVG(rating), 0) as avg_rating
+                FROM reviews
+                {where_clause}
+            """, tuple(params))
+            stats_row = cursor.fetchone()
+            total = stats_row["total"] if stats_row else 0
+            avg_rating = round(float(stats_row["avg_rating"]), 1) if stats_row and stats_row["avg_rating"] else 0.0
+
+            cursor.execute(f"""
+                SELECT rating, COUNT(*) as cnt
+                FROM reviews
+                {where_clause}
+                GROUP BY rating
+            """, tuple(params))
+            dist_rows = cursor.fetchall()
+            distribution = {"5": 0, "4": 0, "3": 0, "2": 0, "1": 0}
+            for row in dist_rows:
+                r_key = str(int(row["rating"]))
+                if r_key in distribution:
+                    distribution[r_key] = int(row["cnt"])
+
+            return {
+                "averageRating": avg_rating,
+                "totalReviews": total,
+                "ratingDistribution": distribution
+            }
+    finally:
+        conn.close()
+
+def get_review_by_id(review_id: str) -> Optional[dict]:
+    conn = get_db_connection()
+    if not conn:
+        return MOCK_REVIEWS.get(review_id)
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM reviews WHERE id = %s", (review_id,))
+            return cursor.fetchone()
+    finally:
+        conn.close()
+
+def create_review_record(review_data: dict) -> bool:
+    rev_id = review_data["id"]
+    conn = get_db_connection()
+    if not conn:
+        MOCK_REVIEWS[rev_id] = review_data
+        return True
+    try:
+        execute_query("""
+            INSERT INTO reviews (
+                id, product_id, product_title, product_image, user_email, user_name,
+                user_avatar, user_location, user_role, booking_id, rating, comment,
+                is_verified, hidden, created_at, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            rev_id,
+            review_data.get("product_id"),
+            review_data.get("product_title"),
+            review_data.get("product_image"),
+            review_data.get("user_email"),
+            review_data.get("user_name"),
+            review_data.get("user_avatar"),
+            review_data.get("user_location"),
+            review_data.get("user_role"),
+            review_data.get("booking_id"),
+            review_data.get("rating"),
+            review_data.get("comment"),
+            review_data.get("is_verified", True),
+            False,
+            review_data.get("created_at"),
+            review_data.get("updated_at")
+        ))
+        return True
+    except Exception as e:
+        logger.error(f"Error creating review record: {e}")
+        return False
+
+def update_review_record(review_id: str, rating: int, comment: str, updated_at: str) -> bool:
+    conn = get_db_connection()
+    if not conn:
+        if review_id in MOCK_REVIEWS:
+            MOCK_REVIEWS[review_id]["rating"] = rating
+            MOCK_REVIEWS[review_id]["comment"] = comment
+            MOCK_REVIEWS[review_id]["updated_at"] = updated_at
+            return True
+        return False
+    try:
+        execute_query("""
+            UPDATE reviews
+            SET rating = %s, comment = %s, updated_at = %s
+            WHERE id = %s
+        """, (rating, comment, updated_at, review_id))
+        return True
+    except Exception as e:
+        logger.error(f"Error updating review record: {e}")
+        return False
+
+def delete_review_record(review_id: str) -> bool:
+    conn = get_db_connection()
+    if not conn:
+        MOCK_REVIEWS.pop(review_id, None)
+        return True
+    try:
+        execute_query("DELETE FROM reviews WHERE id = %s", (review_id,))
+        return True
+    except Exception as e:
+        logger.error(f"Error deleting review record: {e}")
+        return False
+
+def recalculate_product_ratings(product_id: str):
+    if not product_id:
+        return
+    conn = get_db_connection()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT COUNT(*) as cnt, IFNULL(AVG(rating), 0) as avg_rating
+                FROM reviews
+                WHERE product_id = %s AND hidden = FALSE
+            """, (product_id,))
+            row = cursor.fetchone()
+            if row:
+                cnt = int(row["cnt"])
+                avg_r = round(float(row["avg_rating"]), 1)
+                execute_query("""
+                    UPDATE custom_products
+                    SET rating = %s, reviews = %s
+                    WHERE id = %s
+                """, (avg_r, cnt, product_id))
+    except Exception as e:
+        logger.warning(f"Failed to recalculate rating for product {product_id}: {e}")
+    finally:
+        conn.close()
+
+def get_user_eligible_bookings(user_email: str) -> List[dict]:
+    clean_email = user_email.strip().lower()
+    conn = get_db_connection()
+    if not conn:
+        user_orders = get_orders(clean_email)
+        reviewed_bookings = {r.get("booking_id") for r in MOCK_REVIEWS.values() if r.get("booking_id")}
+        eligible = []
+        for o in user_orders:
+            b_id = o.get("id")
+            if b_id and b_id not in reviewed_bookings and o.get("status") not in ("cancelled", "refunded"):
+                eligible.append({
+                    "bookingId": b_id,
+                    "productId": o.get("productId") or o.get("product_id"),
+                    "productTitle": o.get("productTitle") or o.get("product_title"),
+                    "productImage": o.get("productImage") or o.get("product_image"),
+                    "startDate": o.get("startDate") or o.get("start_date"),
+                    "endDate": o.get("endDate") or o.get("end_date"),
+                    "status": o.get("status", "completed")
+                })
+        return eligible
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT o.id as booking_id, o.product_id, o.product_title, o.product_image,
+                       o.start_date, o.end_date, o.status, o.created_at
+                FROM orders o
+                LEFT JOIN reviews r ON o.id = r.booking_id
+                WHERE LOWER(o.user_email) = LOWER(%s)
+                  AND o.status NOT IN ('cancelled', 'refunded')
+                  AND r.id IS NULL
+                ORDER BY o.created_at DESC
+            """, (clean_email,))
+            rows = cursor.fetchall()
+            return [
+                {
+                    "bookingId": r["booking_id"],
+                    "productId": r["product_id"],
+                    "productTitle": r["product_title"],
+                    "productImage": r["product_image"],
+                    "startDate": r["start_date"],
+                    "endDate": r["end_date"],
+                    "status": r["status"]
+                }
+                for r in rows
+            ]
+    finally:
+        conn.close()
+
 
 
 

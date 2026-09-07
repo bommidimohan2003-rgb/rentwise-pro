@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ReviewsRouteImport } from './routes/reviews'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -59,6 +60,11 @@ const WishlistRoute = WishlistRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewsRoute = ReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -277,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
   '/wishlist': typeof WishlistRoute
   '/admin/activity-logs': typeof AdminActivityLogsRoute
@@ -319,6 +326,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
   '/wishlist': typeof WishlistRoute
   '/admin/activity-logs': typeof AdminActivityLogsRoute
@@ -363,6 +371,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/reviews': typeof ReviewsRoute
   '/settings': typeof SettingsRoute
   '/wishlist': typeof WishlistRoute
   '/admin/activity-logs': typeof AdminActivityLogsRoute
@@ -408,6 +417,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/register'
+    | '/reviews'
     | '/settings'
     | '/wishlist'
     | '/admin/activity-logs'
@@ -450,6 +460,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/register'
+    | '/reviews'
     | '/settings'
     | '/wishlist'
     | '/admin/activity-logs'
@@ -493,6 +504,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/register'
+    | '/reviews'
     | '/settings'
     | '/wishlist'
     | '/admin/activity-logs'
@@ -537,6 +549,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
+  ReviewsRoute: typeof ReviewsRoute
   SettingsRoute: typeof SettingsRoute
   WishlistRoute: typeof WishlistRoute
   ProductIdRoute: typeof ProductIdRoute
@@ -556,6 +569,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reviews': {
+      id: '/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof ReviewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -910,6 +930,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
+  ReviewsRoute: ReviewsRoute,
   SettingsRoute: SettingsRoute,
   WishlistRoute: WishlistRoute,
   ProductIdRoute: ProductIdRoute,

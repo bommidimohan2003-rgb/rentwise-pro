@@ -16,6 +16,7 @@ import secrets
 import logging
 import json
 import asyncio
+import traceback
 from typing import Optional, List
 from dotenv import load_dotenv
 
@@ -24,7 +25,7 @@ load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Header, Depends, Query, status, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 
 # Setup Structured Logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -114,6 +115,7 @@ from database import (
     get_popular_search_queries,
     has_admin_user,
     MOCK_CUSTOM_PRODUCTS,
+    fetch_one,
     fetch_all,
     create_db_session,
     get_valid_db_session,
@@ -123,7 +125,15 @@ from database import (
     revoke_all_user_sessions,
     get_user_active_sessions,
     cleanup_expired_sessions,
-    hash_refresh_token
+    hash_refresh_token,
+    get_reviews_from_db,
+    get_review_stats_from_db,
+    get_review_by_id,
+    create_review_record,
+    update_review_record,
+    delete_review_record,
+    recalculate_product_ratings,
+    get_user_eligible_bookings
 )
 from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
 from search_ml import ml_search_engine
@@ -4009,7 +4019,308 @@ def admin_refund_payment(id: str, current_admin: dict = Depends(check_admin_user
     broadcast_admin_event("payment.refunded", res_p)
     return res_p
 
-# Reviews
+# ----------------------------------------------------------------------
+# Real Customer Reviews API Endpoints & Schemas
+# ----------------------------------------------------------------------
+
+class ReviewCreateSchema(BaseModel):
+    productId: Optional[str] = None
+    product_id: Optional[str] = None
+    bookingId: Optional[str] = None
+    booking_id: Optional[str] = None
+    rating: int
+    comment: str
+
+    @validator("rating")
+    def validate_rating(cls, v):
+        if v is None or v < 1 or v > 5:
+            raise ValueError("Rating must be an integer between 1 and 5.")
+        return int(v)
+
+    @validator("comment")
+    def validate_comment(cls, v):
+        clean = (v or "").strip()
+        if len(clean) < 5:
+            raise ValueError("Review comment must be at least 5 characters long.")
+        if len(clean) > 2000:
+            raise ValueError("Review comment cannot exceed 2000 characters.")
+        return clean
+
+class ReviewUpdateSchema(BaseModel):
+    rating: Optional[int] = None
+    comment: Optional[str] = None
+
+    @validator("rating")
+    def validate_rating(cls, v):
+        if v is not None and (v < 1 or v > 5):
+            raise ValueError("Rating must be an integer between 1 and 5.")
+        return int(v) if v is not None else None
+
+    @validator("comment")
+    def validate_comment(cls, v):
+        if v is not None:
+            clean = v.strip()
+            if len(clean) < 5:
+                raise ValueError("Review comment must be at least 5 characters long.")
+            if len(clean) > 2000:
+                raise ValueError("Review comment cannot exceed 2000 characters.")
+            return clean
+        return v
+
+@app.get("/api/reviews")
+def list_public_reviews(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    sort: str = Query("newest"),
+    rating: Optional[int] = Query(None, ge=1, le=5),
+    product_id: Optional[str] = Query(None),
+    verified_only: bool = Query(False)
+):
+    """Retrieve verified production customer reviews with server-side pagination, sorting, and filtering."""
+    return get_reviews_from_db(
+        page=page,
+        limit=limit,
+        sort=sort,
+        rating_filter=rating,
+        product_id=product_id,
+        verified_only=verified_only
+    )
+
+@app.get("/api/reviews/stats")
+def get_review_statistics(product_id: Optional[str] = Query(None)):
+    """Retrieve dynamic aggregated review statistics (average rating, count, and 1-5 star distribution)."""
+    return get_review_stats_from_db(product_id=product_id)
+
+@app.get("/api/reviews/eligible-bookings")
+def get_eligible_rental_bookings(current_user: dict = Depends(require_authenticated_user)):
+    """Retrieve completed/active rental bookings for current authenticated user that are eligible for review."""
+    return get_user_eligible_bookings(current_user["email"])
+
+@app.post("/api/reviews", status_code=status.HTTP_201_CREATED)
+def create_customer_review(
+    data: ReviewCreateSchema,
+    current_user: dict = Depends(require_authenticated_user)
+):
+    """
+    Create a genuine customer review.
+    Enforces authentication, rental booking eligibility, and prevents duplicate reviews.
+    """
+    user_email = current_user["email"].strip().lower()
+    pid = data.product_id or data.productId
+    bid = data.booking_id or data.bookingId
+
+    # 1. Eligibility & Duplicate Prevention Check
+    booking_record = None
+    if bid:
+        booking_record = fetch_one("SELECT * FROM orders WHERE id = %s", (bid,))
+        if not booking_record:
+            user_orders = get_orders(user_email)
+            for o in user_orders:
+                if o.get("id") == bid:
+                    booking_record = o
+                    break
+        if not booking_record:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Specified booking was not found."
+            )
+        order_email = (booking_record.get("user_email") or booking_record.get("userEmail") or "").strip().lower()
+        if order_email != user_email:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only submit reviews for bookings associated with your own account."
+            )
+        if booking_record.get("status") in ("cancelled", "refunded"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cancelled or refunded bookings are not eligible for review."
+            )
+        existing_booking_rev = fetch_one("SELECT id FROM reviews WHERE booking_id = %s", (bid,))
+        if existing_booking_rev:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A review has already been submitted for this booking."
+            )
+        if not pid:
+            pid = booking_record.get("product_id") or booking_record.get("productId")
+    else:
+        if not pid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Either a valid booking ID or product ID must be provided."
+            )
+        eligible_list = get_user_eligible_bookings(user_email)
+        matching = [b for b in eligible_list if b.get("productId") == pid]
+        if not matching and current_user.get("role") != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Review eligibility requires a completed rental booking for this gear on Payent."
+            )
+        if matching:
+            bid = matching[0].get("bookingId")
+            booking_record = fetch_one("SELECT * FROM orders WHERE id = %s", (bid,))
+
+    # 2. Resolve Product metadata
+    prod_title = "Tech Gear Rental"
+    prod_image = ""
+    if pid:
+        product_row = fetch_one_product(pid)
+        if product_row:
+            prod_title = product_row.get("title") or prod_title
+            prod_image = product_row.get("image") or ""
+    if not prod_image and booking_record:
+        prod_image = booking_record.get("product_image") or booking_record.get("productImage") or ""
+        if not prod_title or prod_title == "Tech Gear Rental":
+            prod_title = booking_record.get("product_title") or booking_record.get("productTitle") or prod_title
+
+    # 3. Create review record
+    now_str = datetime.datetime.utcnow().isoformat()
+    rev_id = f"rev-{uuid.uuid4()}"
+    user_name = current_user.get("full_name") or current_user["email"].split("@")[0]
+    user_avatar = current_user.get("avatar") or current_user.get("profile_photo_url") or f"https://ui-avatars.com/api/?name={user_name}&background=0D151D&color=fff"
+    user_location = current_user.get("city") or ""
+    user_role = current_user.get("occupation") or "Creator"
+
+    review_entry = {
+        "id": rev_id,
+        "product_id": pid,
+        "product_title": prod_title,
+        "product_image": prod_image,
+        "user_email": user_email,
+        "user_name": user_name,
+        "user_avatar": user_avatar,
+        "user_location": user_location,
+        "user_role": user_role,
+        "booking_id": bid,
+        "rating": data.rating,
+        "comment": data.comment,
+        "is_verified": True if bid else False,
+        "created_at": now_str,
+        "updated_at": None
+    }
+
+    success = create_review_record(review_entry)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save review to database."
+        )
+
+    # 4. Synchronize product rating & count
+    if pid:
+        recalculate_product_ratings(pid)
+
+    # 5. Broadcast real-time admin event
+    broadcast_admin_event("review.created", {
+        "id": rev_id,
+        "productId": pid,
+        "productTitle": prod_title,
+        "userName": user_name,
+        "userAvatar": user_avatar,
+        "rating": data.rating,
+        "comment": data.comment,
+        "createdAt": now_str
+    })
+
+    return {
+        "id": rev_id,
+        "productId": pid,
+        "productTitle": prod_title,
+        "productImage": prod_image,
+        "bookingId": bid,
+        "userId": user_email,
+        "userName": user_name,
+        "userAvatar": user_avatar,
+        "userLocation": user_location,
+        "userRole": user_role,
+        "rating": data.rating,
+        "comment": data.comment,
+        "isVerified": bool(review_entry["is_verified"]),
+        "createdAt": now_str,
+        "updatedAt": None
+    }
+
+@app.put("/api/reviews/{id}")
+def update_customer_review(
+    id: str,
+    data: ReviewUpdateSchema,
+    current_user: dict = Depends(require_authenticated_user)
+):
+    """Update a review written by current authenticated user (or admin)."""
+    existing = get_review_by_id(id)
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found.")
+
+    rev_owner = (existing.get("user_email") or "").strip().lower()
+    user_email = current_user["email"].strip().lower()
+    is_admin = current_user.get("role") == "admin"
+    if rev_owner != user_email and not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. You do not have permission to edit this review."
+        )
+
+    new_rating = data.rating if data.rating is not None else existing.get("rating", 5)
+    new_comment = data.comment if data.comment is not None else existing.get("comment", "")
+    now_str = datetime.datetime.utcnow().isoformat()
+
+    update_review_record(id, new_rating, new_comment, now_str)
+
+    pid = existing.get("product_id")
+    if pid:
+        recalculate_product_ratings(pid)
+
+    broadcast_admin_event("review.updated", {"id": id, "rating": new_rating})
+
+    updated = get_review_by_id(id)
+    user_display = updated.get("user_name") or current_user.get("full_name") or user_email.split("@")[0]
+    return {
+        "id": id,
+        "productId": updated.get("product_id"),
+        "productTitle": updated.get("product_title"),
+        "productImage": updated.get("product_image"),
+        "bookingId": updated.get("booking_id"),
+        "userId": updated.get("user_email"),
+        "userName": user_display,
+        "userAvatar": updated.get("user_avatar") or "",
+        "userLocation": updated.get("user_location") or "",
+        "userRole": updated.get("user_role") or "",
+        "rating": updated.get("rating"),
+        "comment": updated.get("comment"),
+        "isVerified": bool(updated.get("is_verified", True)),
+        "createdAt": updated.get("created_at"),
+        "updatedAt": updated.get("updated_at")
+    }
+
+@app.delete("/api/reviews/{id}")
+def delete_customer_review(
+    id: str,
+    current_user: dict = Depends(require_authenticated_user)
+):
+    """Delete a review written by current authenticated user (or admin)."""
+    existing = get_review_by_id(id)
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found.")
+
+    rev_owner = (existing.get("user_email") or "").strip().lower()
+    user_email = current_user["email"].strip().lower()
+    is_admin = current_user.get("role") == "admin"
+    if rev_owner != user_email and not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. You do not have permission to delete this review."
+        )
+
+    pid = existing.get("product_id")
+    delete_review_record(id)
+
+    if pid:
+        recalculate_product_ratings(pid)
+
+    broadcast_admin_event("review.deleted", {"id": id})
+    return {"success": True, "message": "Review deleted successfully."}
+
+# Admin Reviews
 @app.get("/api/admin/reviews")
 def admin_reviews_list(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
