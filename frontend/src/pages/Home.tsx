@@ -1,12 +1,10 @@
 import { Hero } from "@/components/home/Hero";
-import { Stats } from "@/components/home/Stats";
-import { Features } from "@/components/home/Features";
 import { Categories } from "@/components/home/Categories";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
+import { TrustStrip } from "@/components/home/TrustStrip";
 import { HowItWorks } from "@/components/home/HowItWorks";
-import { WhyChoose } from "@/components/home/WhyChoose";
-import { CallToAction } from "@/components/home/CallToAction";
-import { Newsletter } from "@/components/home/Newsletter";
+import { CreatorCommunity } from "@/components/home/CreatorCommunity";
+import { Testimonials } from "@/components/home/Testimonials";
 import { MainLayout } from "@/layouts/MainLayout";
 import { JsonLd } from "@/components/common/JsonLd";
 
@@ -43,20 +41,27 @@ export default function Home() {
     <MainLayout>
       <JsonLd schema={orgSchema} />
       <JsonLd schema={websiteSchema} />
-      {/* Hero section */}
+
+      {/* 1. Cinematic Hero with Creator Imagery, Why PAYENT Card & Search */}
       <Hero />
-      {/* Curated Reserve Collections */}
+
+      {/* 2. Explore Gear By Category */}
       <Categories />
-      {/* Featured Reserve Catalog */}
+
+      {/* 3. Featured Rentals with 4 Product Cards + Promotional Card */}
       <FeaturedProducts />
-      {/* How it works */}
+
+      {/* 4. Trust / Benefit Strip */}
+      <TrustStrip />
+
+      {/* 5. How It Works (3 Steps) */}
       <HowItWorks />
-      {/* Trust & Heritage Standards */}
-      <WhyChoose />
-      {/* Exclusive Membership Call To Action */}
-      <CallToAction />
-      {/* Newsletter */}
-      <Newsletter />
+
+      {/* 6. Creator Community Section */}
+      <CreatorCommunity />
+
+      {/* 7. What Creators Say (Testimonials) */}
+      <Testimonials />
     </MainLayout>
   );
 }

@@ -54,6 +54,7 @@ const categoryIconMap: Record<
   laptops: Laptop,
   drones: Plane,
   bikes: Bike,
+  cycles: Bike,
   tools: Hammer,
   powerbanks: Zap,
 };
@@ -66,10 +67,12 @@ const matchCategory = (productCat: string, targetId: string) => {
   const tId = targetId.toLowerCase().trim();
   if (pCat === tId) return true;
   if (
-    tId === "bikes" &&
+    (tId === "bikes" || tId === "cycles") &&
     (pCat.includes("bike") ||
       pCat.includes("ride") ||
-      pCat.includes("motorcycle"))
+      pCat.includes("motorcycle") ||
+      pCat.includes("classic") ||
+      pCat.includes("cycle"))
   )
     return true;
   if (
@@ -101,6 +104,7 @@ export default function Categories() {
   const search = useSearch({ from: "/categories" }) as {
     q?: string;
     cat?: string;
+    city?: string;
   };
   const navigate = useNavigate();
 
@@ -304,6 +308,17 @@ export default function Categories() {
       return isApproved || isOwner;
     });
 
+    if (search.city && search.city !== "All Cities") {
+      const targetCity = search.city.toLowerCase();
+      const cityMatches = list.filter((p) => {
+        const loc = (p.location || p.owner_address || "").toLowerCase();
+        return loc.includes(targetCity);
+      });
+      if (cityMatches.length > 0) {
+        list = cityMatches;
+      }
+    }
+
     switch (sort) {
       case "price_asc":
         list = [...list].sort((a, b) => a.price - b.price);
@@ -316,7 +331,7 @@ export default function Categories() {
         break;
     }
     return list;
-  }, [cat, q, sort, mlResults, allProductsList, user]);
+  }, [cat, q, sort, mlResults, allProductsList, user, search.city]);
 
   // Instant Suggestions for Search Autocomplete
   const liveSuggestions = useMemo(() => {

@@ -1,172 +1,78 @@
 import { Link } from "@tanstack/react-router";
 import {
-  Github,
   Instagram,
+  Linkedin,
   Twitter,
   Youtube,
-  Mail,
-  MapPin,
-  Phone,
 } from "lucide-react";
 import { LogoIcon } from "@/components/common/LogoIcon";
 
-const quickLinks = [
-  { label: "Browse Rentals", to: "/categories" },
+const navLinks = [
+  { label: "Home", to: "/" },
+  { label: "Browse", to: "/categories" },
   { label: "Become a Lender", to: "/become-lender" },
-  { label: "About Us", to: "/about" },
+  { label: "About", to: "/about" },
   { label: "Contact", to: "/contact" },
 ];
 
-const accountLinks = [
-  { label: "Login", to: "/login" },
-  { label: "Sign Up", to: "/register" },
-  { label: "Dashboard", to: "/dashboard" },
-  { label: "Wishlist", to: "/wishlist" },
-];
-
-const legalLinks = [
-  { label: "Privacy Policy", to: "/privacy" },
-  { label: "Terms of Service", href: "#" },
-  { label: "Cookie Policy", href: "#" },
-];
-
 const socials = [
-  { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Youtube, href: "#", label: "YouTube" },
-  { icon: Github, href: "#", label: "GitHub" },
+  { icon: Instagram, href: "https://instagram.com", label: "Instagram" },
+  { icon: Youtube, href: "https://youtube.com", label: "YouTube" },
+  { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
+  { icon: Twitter, href: "https://x.com", label: "X" },
 ];
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-background text-foreground border-t border-border">
-      {/* Top divider glow */}
-      <div
-        className="absolute top-0 inset-x-0 h-px"
-        style={{
-          background:
-            "linear-gradient(to right, transparent, rgba(255,90,95,0.6), transparent)",
-        }}
-      />
+    <footer className="bg-white dark:bg-[#05090D] border-t border-black/10 dark:border-white/10 text-neutral-900 dark:text-white py-8 sm:py-10 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+          {/* Left: Brand Monogram & Tagline */}
+          <Link to="/" className="flex items-center gap-2.5 group shrink-0">
+            <LogoIcon />
+          </Link>
 
-      <div className="relative max-w-7xl mx-auto px-4 md:px-6 pt-10 pb-6">
-        {/* Main grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-8 mb-8">
-          {/* Brand column */}
-          <div className="lg:col-span-2 space-y-5">
-            <Link to="/" className="flex items-center gap-2.5 group w-fit">
-              <LogoIcon className="h-10 w-auto rounded-lg shadow-sm" />
-            </Link>
-            <p className="text-xs text-muted-foreground leading-relaxed max-w-sm font-normal">
-              India's premier peer-to-peer tech gear rental platform. Access
-              flagship cameras, drones, laptops, audio gear, and tools insured
-              up to ₹5 Lakhs.
-            </p>
+          {/* Center: Clean Nav Links matching reference */}
+          <nav className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-xs sm:text-sm text-neutral-600 dark:text-[#A8B1BA]">
+            {navLinks.map((link) => (
+              <Link
+                key={link.label}
+                to={link.to}
+                className="hover:text-black dark:hover:text-white transition-colors duration-200"
+                activeProps={{
+                  className: "text-[#FF1744] font-semibold",
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
 
-            <div className="space-y-2 pt-2 text-xs text-muted-foreground font-medium">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-[#FF5A5F]" />
-                <span>Vizag, Andhra Pradesh</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="h-3.5 w-3.5 text-[#FF5A5F]" />
-                <span>payent_support@gmail.com</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5 text-[#FF5A5F]" />
-                <span>+91 7989002612</span>
-              </div>
+          {/* Right: Social Icons & Copyright */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 shrink-0">
+            {/* Social Icons */}
+            <div className="flex items-center gap-2.5">
+              {socials.map((s) => {
+                const Icon = s.icon;
+                return (
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.label}
+                    className="h-7 w-7 rounded-full bg-neutral-100 dark:bg-[#0D151D] border border-black/10 dark:border-white/15 text-neutral-600 dark:text-[#A8B1BA] hover:text-[#FF1744] dark:hover:text-[#FF1744] hover:border-[#FF1744]/40 flex items-center justify-center transition-colors"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </a>
+                );
+              })}
             </div>
-          </div>
 
-          {/* Quick Links */}
-          <div className="space-y-4 text-left">
-            <h4 className="text-xs font-extrabold uppercase tracking-widest text-[#FF5A5F]">
-              Marketplace
-            </h4>
-            <ul className="space-y-2.5 text-xs font-medium">
-              {quickLinks.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.to}
-                    className="text-muted-foreground hover:text-foreground transition-colors duration-200"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Account Links */}
-          <div className="space-y-4 text-left">
-            <h4 className="text-xs font-extrabold uppercase tracking-widest text-[#FF5A5F]">
-              Account
-            </h4>
-            <ul className="space-y-2.5 text-xs font-medium">
-              {accountLinks.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.to}
-                    className="text-muted-foreground hover:text-foreground transition-colors duration-200"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Legal Links */}
-          <div className="space-y-4 text-left">
-            <h4 className="text-xs font-extrabold uppercase tracking-widest text-[#FF5A5F]">
-              Legal
-            </h4>
-            <ul className="space-y-2.5 text-xs font-medium">
-              {legalLinks.map((link) => (
-                <li key={link.label}>
-                  {link.to ? (
-                    <Link
-                      to={link.to}
-                      className="text-muted-foreground hover:text-foreground transition-colors duration-200"
-                    >
-                      {link.label}
-                    </Link>
-                  ) : (
-                    <a
-                      href={link.href}
-                      className="text-muted-foreground hover:text-foreground transition-colors duration-200"
-                    >
-                      {link.label}
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-medium">
-          <p>
-            © {new Date().getFullYear()} Payent Technologies Inc. All rights
-            reserved.
-          </p>
-
-          <div className="flex items-center gap-4">
-            {socials.map((s) => {
-              const Icon = s.icon;
-              return (
-                <a
-                  key={s.label}
-                  href={s.href}
-                  aria-label={s.label}
-                  className="h-8 w-8 rounded-full bg-secondary border border-border text-muted-foreground hover:text-[#FF5A5F] hover:border-[#FF5A5F]/40 flex items-center justify-center transition-all duration-200"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              );
-            })}
+            {/* Copyright */}
+            <p className="text-[11px] text-neutral-500 dark:text-[#697681]">
+              &copy; {new Date().getFullYear()} PAYENT. All rights reserved.
+            </p>
           </div>
         </div>
       </div>

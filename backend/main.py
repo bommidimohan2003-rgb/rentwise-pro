@@ -491,6 +491,14 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
 
     return payload["sub"]
 
+def get_optional_current_user_email(authorization: Optional[str] = Header(None)) -> Optional[str]:
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    try:
+        return get_current_user_email(authorization)
+    except Exception:
+        return None
+
 def require_authenticated_user(authorization: Optional[str] = Header(None)) -> dict:
     email = get_current_user_email(authorization)
     user = get_user(email)
@@ -1233,7 +1241,7 @@ class LocationGeocodeSchema(BaseModel):
     longitude: float
 
 @app.post("/api/location/reverse-geocode")
-def reverse_geocode_location(data: LocationGeocodeSchema, current_user_email: str = Depends(get_current_user_email)):
+def reverse_geocode_location(data: LocationGeocodeSchema, current_user_email: Optional[str] = Depends(get_optional_current_user_email)):
     if not (-90.0 <= data.latitude <= 90.0) or not (-180.0 <= data.longitude <= 180.0):
         raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90, and longitude between -180 and 180.")
 

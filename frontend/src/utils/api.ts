@@ -360,11 +360,15 @@ export const api = {
     return await res.json();
   },
 
-  async reverseGeocode(token: string, latitude: number, longitude: number) {
+  async reverseGeocode(token?: string | null, latitude: number = 0, longitude: number = 0) {
     if (!API_BASE) return null;
-    const res = await this.fetchWithAuth(`${API_BASE}/api/location/reverse-geocode`, {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${API_BASE}/api/location/reverse-geocode`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ latitude, longitude }),
     });
     if (!res.ok) {

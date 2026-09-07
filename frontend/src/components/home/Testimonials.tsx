@@ -1,320 +1,152 @@
-import { motion, useInView } from "framer-motion";
-import { useRef, useState } from "react";
-import {
-  Quote,
-  Star,
-  Tag,
-  RotateCw,
-  RotateCcw,
-  ShieldCheck,
-  Check,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useRef } from "react";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight, ChevronLeft, ChevronRight, Star } from "lucide-react";
 
-const testimonials = [
+interface TestimonialItem {
+  id: string;
+  name: string;
+  role: string;
+  location: string;
+  avatar: string;
+  rating: number;
+  content: string;
+}
+
+const testimonialsList: TestimonialItem[] = [
   {
-    name: "Priya Sharma",
-    role: "Freelance Photographer",
-    initials: "PS",
-    quote:
-      "Payent saved me thousands on camera gear. I rented a 4K cinema camera for a weekend wedding shoot at a fraction of buying cost. Smooth process and verified lender!",
-    rating: 5,
-    product: "Camera Kit",
-    city: "Mumbai, MH",
-    rentalsCompleted: 14,
-    memberSince: "2024",
+    id: "1",
+    name: "Rahul Mehta",
+    role: "Filmmaker",
+    location: "Mumbai",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    rating: 5.0,
+    content: "PAYENT made it so easy to get a Sony FX3 for my shoot. Smooth process, great support!",
   },
   {
-    name: "Rohan Mehta",
+    id: "2",
+    name: "Sneha Iyer",
     role: "Content Creator",
-    initials: "RM",
-    quote:
-      "Rented a drone for my travel series. Booking was instant, security flow gave me peace of mind, and the drone arrived in perfect working condition.",
-    rating: 5,
-    product: "Aerial Cine Drone",
-    city: "Bengaluru, KA",
-    rentalsCompleted: 22,
-    memberSince: "2023",
+    location: "Bengaluru",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    rating: 4.8,
+    content: "Found the perfect lighting setup at a great price. Highly recommended for creators!",
   },
   {
-    name: "Anjali Nair",
-    role: "Event Producer",
-    initials: "AN",
-    quote:
-      "Used Payent to rent a 4K projector and audio setup for a client showcase. Everything worked flawlessly on site. Highly recommended for creative teams.",
-    rating: 5,
-    product: "4K Laser Projector",
-    city: "Hyderabad, TS",
-    rentalsCompleted: 9,
-    memberSince: "2024",
-  },
-  {
-    name: "Vikram Patel",
-    role: "Game Developer",
-    initials: "VP",
-    quote:
-      "Rented a high-end workstation laptop for two weeks while testing hardware builds. Extremely straightforward, transparent pricing, and zero hassle.",
-    rating: 5,
-    product: "Pro Workstation Laptop",
-    city: "Pune, MH",
-    rentalsCompleted: 18,
-    memberSince: "2023",
-  },
-  {
-    name: "Sana Khan",
-    role: "Architecture Designer",
-    initials: "SK",
-    quote:
-      "Needed a specialized CAD machine for a project deadline. Way cheaper than buying, and the owner was super responsive with handover coordination.",
-    rating: 5,
-    product: "CAD Workstation",
-    city: "Delhi NCR",
-    rentalsCompleted: 11,
-    memberSince: "2024",
-  },
-  {
-    name: "Arjun Singh",
-    role: "Studio Producer",
-    initials: "AS",
-    quote:
-      "We rent secondary podcast mics and lighting rigs when scaling up production. Payent has made gear access predictable and efficient.",
-    rating: 5,
-    product: "Podcast Recording Kit",
-    city: "Chennai, TN",
-    rentalsCompleted: 31,
-    memberSince: "2023",
+    id: "3",
+    name: "Aditya Varma",
+    role: "Photographer",
+    location: "Hyderabad",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+    rating: 4.9,
+    content: "Reliable, affordable and professional. PAYENT is a game-changer for indie creators.",
   },
 ];
 
-const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, ease: "easeOut" as const },
-  },
-};
-
-function FlippableTestimonialCard({ t }: { t: (typeof testimonials)[0] }) {
-  const [isFlipped, setIsFlipped] = useState(false);
-
-  return (
-    <div
-      className="w-full min-h-[260px] cursor-pointer select-none group"
-      style={{ perspective: "1000px" }}
-      onClick={() => setIsFlipped((prev) => !prev)}
-      title="Click card to flip for reviewer verification"
-    >
-      <div
-        className="relative w-full h-full rounded-2xl transition-transform duration-500"
-        style={{
-          transformStyle: "preserve-3d",
-          transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
-          transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      >
-        {/* FRONT FACE */}
-        <div
-          className={cn(
-            "spatial-card rounded-2xl p-6 flex flex-col justify-between bg-card border border-border transition-all duration-300 h-full w-full shadow-sm hover:border-primary/40 relative overflow-hidden",
-            isFlipped ? "pointer-events-none opacity-0" : "opacity-100",
-          )}
-          style={{
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-          }}
-        >
-          <div>
-            {/* Top Row: Quote & Rating */}
-            <div className="flex items-center justify-between gap-2 mb-4">
-              <Quote className="h-5 w-5 text-muted-foreground opacity-60" />
-              <div className="flex items-center gap-1">
-                <div className="flex items-center gap-0.5">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-3.5 w-3.5 fill-foreground text-foreground"
-                    />
-                  ))}
-                </div>
-                <span className="text-[10px] font-bold text-muted-foreground/70 ml-2 flex items-center gap-1 group-hover:text-primary transition-colors">
-                  <RotateCw className="h-3 w-3 group-hover:rotate-180 transition-transform duration-500" />
-                </span>
-              </div>
-            </div>
-
-            {/* Quote Text */}
-            <p className="text-sm text-muted-foreground leading-relaxed flex-1 font-normal">
-              "{t.quote}"
-            </p>
-
-            {/* Product Badge */}
-            <div className="mt-4 inline-flex items-center gap-1.5 self-start rounded-md px-2.5 py-1 text-xs font-medium bg-secondary text-foreground border border-border">
-              <Tag className="h-3 w-3 text-muted-foreground" />
-              <span>{t.product}</span>
-            </div>
-          </div>
-
-          {/* User Avatar & Info */}
-          <div className="mt-5 pt-4 border-t border-border/60 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-secondary border border-border flex items-center justify-center text-xs font-bold text-foreground shrink-0">
-                {t.initials}
-              </div>
-              <div className="text-left">
-                <div className="text-sm font-bold text-foreground">
-                  {t.name}
-                </div>
-                <div className="text-xs text-muted-foreground font-medium">
-                  {t.role}
-                </div>
-              </div>
-            </div>
-            <span className="text-[10px] text-muted-foreground/60 font-semibold group-hover:text-primary transition-colors">
-              Click to flip
-            </span>
-          </div>
-        </div>
-
-        {/* BACK FACE */}
-        <div
-          className={cn(
-            "spatial-card absolute inset-0 rounded-2xl p-6 flex flex-col justify-between bg-card/95 backdrop-blur-xl border border-primary/40 shadow-2xl h-full w-full overflow-hidden",
-            !isFlipped ? "pointer-events-none opacity-0" : "opacity-100",
-          )}
-          style={{
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-          }}
-        >
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-border/40 pb-2">
-              <span className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1">
-                <ShieldCheck className="h-4 w-4 text-emerald-500" /> Verified
-                Renter Profile
-              </span>
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                <RotateCcw className="h-2.5 w-2.5" /> Flip back
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3 pt-1">
-              <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-extrabold text-primary">
-                {t.initials}
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground">{t.name}</h4>
-                <p className="text-xs text-muted-foreground">
-                  {t.role} &bull; {t.city}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <div className="p-2 rounded-xl bg-secondary/80 border border-border/50">
-                <span className="text-[9px] font-bold text-muted-foreground uppercase block">
-                  Identity KYC
-                </span>
-                <span className="text-xs font-extrabold text-emerald-500 font-display flex items-center gap-1">
-                  <Check className="h-3 w-3" /> Govt Verified
-                </span>
-              </div>
-              <div className="p-2 rounded-xl bg-secondary/80 border border-border/50">
-                <span className="text-[9px] font-bold text-muted-foreground uppercase block">
-                  Leases Completed
-                </span>
-                <span className="text-xs font-extrabold text-foreground font-display">
-                  {t.rentalsCompleted} Rentals
-                </span>
-              </div>
-              <div className="p-2 rounded-xl bg-secondary/80 border border-border/50">
-                <span className="text-[9px] font-bold text-muted-foreground uppercase block">
-                  Member Status
-                </span>
-                <span className="text-xs font-extrabold text-primary font-display">
-                  Active Since {t.memberSince}
-                </span>
-              </div>
-              <div className="p-2 rounded-xl bg-secondary/80 border border-border/50">
-                <span className="text-[9px] font-bold text-muted-foreground uppercase block">
-                  Escrow Rating
-                </span>
-                <span className="text-xs font-extrabold text-amber-500 font-display">
-                  5.0 ★ Star Rating
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-[10px] text-muted-foreground text-center pt-2 border-t border-border/40">
-            Click anywhere to return to review
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function Testimonials() {
-  const ref = useRef<HTMLElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-60px" });
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (scrollRef.current) {
+      const offset = direction === "left" ? -320 : 320;
+      scrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
+    }
+  };
 
   return (
-    <section
-      id="testimonials"
-      ref={ref}
-      className="relative py-24 px-4 sm:px-6 overflow-hidden bg-[#070A10] text-white border-t border-white/10"
-    >
-      {/* Background Liquid Ambient Lighting */}
-      <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[140px] pointer-events-none" />
-
-      <div className="relative max-w-7xl mx-auto">
+    <section className="bg-white dark:bg-[#05090D] py-14 sm:py-18 text-neutral-900 dark:text-white border-b border-black/10 dark:border-white/10 transition-colors duration-300">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-14 space-y-3"
-        >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/15 text-xs font-bold text-amber-400 tracking-wider uppercase">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Verified Member Feedback</span>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
+                What Creators Say
+              </h2>
+              <span className="inline-block w-8 h-[3px] bg-[#FF1744] rounded-full" />
+            </div>
+            <p className="mt-1.5 text-xs sm:text-sm text-neutral-500 dark:text-[#A8B1BA]">
+              Real experiences from our community.
+            </p>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white font-display">
-            Trusted by India's Top{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-400 to-cyan-400">
-              Creators & Producers.
-            </span>
-          </h2>
-          <p className="text-neutral-400 text-sm sm:text-base max-w-lg mx-auto font-medium">
-            Real feedback from verified filmmakers, drone operators, and
-            lenders. Click any card to inspect biometric verification.
-          </p>
-        </motion.div>
 
-        {/* Cards Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {testimonials.map((t) => (
-            <motion.div
-              key={t.name}
-              variants={cardVariants}
-              whileHover={{ y: -6 }}
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              to="/about"
+              className="text-xs sm:text-sm font-semibold text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white flex items-center gap-1.5 transition-colors group"
             >
-              <FlippableTestimonialCard t={t} />
-            </motion.div>
+              <span>View All Reviews</span>
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+            </Link>
+
+            <div className="hidden sm:flex items-center gap-1.5 ml-2">
+              <button
+                type="button"
+                onClick={() => scroll("left")}
+                className="h-8 w-8 rounded-full border border-black/10 dark:border-white/15 bg-neutral-100 hover:bg-neutral-200 dark:bg-[#0D151D] dark:hover:bg-[#111B24] flex items-center justify-center text-neutral-800 dark:text-white transition-colors cursor-pointer"
+                aria-label="Previous reviews"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scroll("right")}
+                className="h-8 w-8 rounded-full border border-black/10 dark:border-white/15 bg-neutral-100 hover:bg-neutral-200 dark:bg-[#0D151D] dark:hover:bg-[#111B24] flex items-center justify-center text-neutral-800 dark:text-white transition-colors cursor-pointer"
+                aria-label="Next reviews"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 3 Review Cards */}
+        <div
+          ref={scrollRef}
+          className="grid grid-cols-1 md:grid-cols-3 gap-5"
+        >
+          {testimonialsList.map((t) => (
+            <div
+              key={t.id}
+              className="rounded-2xl bg-neutral-50 dark:bg-[#0D151D] border border-black/10 dark:border-white/10 p-5 sm:p-6 flex flex-col justify-between space-y-4 shadow-md hover:border-black/20 dark:hover:border-white/20 transition-all text-left"
+            >
+              {/* User Header with Rating */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={t.avatar}
+                    alt={t.name}
+                    className="h-10 w-10 rounded-xl object-cover border border-black/10 dark:border-white/10"
+                  />
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-900 dark:text-white leading-tight">
+                      {t.name}
+                    </h3>
+                    <p className="text-[11px] text-neutral-500 dark:text-[#A8B1BA] mt-0.5">
+                      {t.role}, {t.location}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Stars */}
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 text-amber-400">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <span className="text-xs font-bold text-neutral-900 dark:text-white ml-1">
+                    {t.rating.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Review Quote */}
+              <p className="text-xs sm:text-sm text-neutral-600 dark:text-[#A8B1BA] leading-relaxed font-normal">
+                "{t.content}"
+              </p>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

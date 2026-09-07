@@ -63,26 +63,45 @@
   --rim-highlight:
     inset 0 1px 0 0 rgba(255, 255, 255, 0.8),
     inset 0 -1px 0 0 rgba(0, 0, 0, 0.05);
+
+  /* PAYENT Palette Tokens - Light Mode */
+  --payent-bg: #ffffff;
+  --payent-surface: #f8fafc;
+  --payent-surface-elevated: #ffffff;
+  --payent-accent: #FF1744;
+  --payent-accent-hover: #FF2355;
+  --payent-border: rgba(0, 0, 0, 0.08);
+  --payent-text-secondary: #64748b;
+  --payent-text-muted: #94a3b8;
 }
 
 .dark {
-  /* Dark Mode: Pure Obsidian Black #000000 background + White buttons #FFFFFF with #000000 text */
-  --background: #000000;
+  /* Dark Mode: Obsidian / Dark Blue-Black Background with PAYENT Red */
+  --background: #05090D;
   --foreground: #ffffff;
-  --card: #000000;
+  --card: #0D151D;
   --card-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #000000;
-  --secondary: #18181b;
+  --primary: #FF1744;
+  --primary-foreground: #ffffff;
+  --secondary: #111B24;
   --secondary-foreground: #ffffff;
-  --muted: #18181b;
-  --muted-foreground: #a1a1aa;
-  --accent: #ffffff;
-  --accent-foreground: #000000;
+  --muted: #141E27;
+  --muted-foreground: #A8B1BA;
+  --accent: #FF1744;
+  --accent-foreground: #ffffff;
   --destructive: #ff4d4d;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #ffffff;
+  --border: rgba(255, 255, 255, 0.10);
+  --input: rgba(255, 255, 255, 0.10);
+  --ring: #FF1744;
+
+  --payent-bg: #05090D;
+  --payent-surface: #0D151D;
+  --payent-surface-elevated: #111B24;
+  --payent-accent: #FF1744;
+  --payent-accent-hover: #FF2355;
+  --payent-border: rgba(255, 255, 255, 0.10);
+  --payent-text-secondary: #A8B1BA;
+  --payent-text-muted: #697681;
 
   /* Dark Mode Spatial Elevation Tokens */
   --elevation-1-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.8);
@@ -115,6 +134,46 @@
     font-family: var(--font-display);
     letter-spacing: -0.025em;
   }
+}
+
+.bg-payent-bg {
+  background-color: var(--payent-bg);
+}
+
+.bg-payent-surface {
+  background-color: var(--payent-surface);
+}
+
+.bg-payent-surface-elevated {
+  background-color: var(--payent-surface-elevated);
+}
+
+.text-payent-accent {
+  color: var(--payent-accent);
+}
+
+.text-payent-secondary {
+  color: var(--payent-text-secondary);
+}
+
+.text-payent-muted {
+  color: var(--payent-text-muted);
+}
+
+.border-payent {
+  border-color: var(--payent-border);
+}
+
+.btn-payent-red {
+  background-color: #FF1744;
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.btn-payent-red:hover {
+  background-color: #FF2355;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px 0 rgba(255, 23, 68, 0.35);
 }
 
 /* Spatial UI Elevation Utilities */

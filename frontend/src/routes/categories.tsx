@@ -5,6 +5,7 @@ import { getSeoMetadata } from "@/utils/seo";
 type SearchParams = {
   q?: string;
   cat?: string;
+  city?: string;
 };
 
 export const Route = createFileRoute("/categories")({
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/categories")({
     return {
       q: (search.q as string) || undefined,
       cat: (search.cat as string) || undefined,
+      city: (search.city as string) || undefined,
     };
   },
   head: () =>

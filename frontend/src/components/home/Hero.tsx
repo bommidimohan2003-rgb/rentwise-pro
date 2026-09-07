@@ -1,294 +1,315 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
-  ShieldCheck,
-  Camera,
-  Laptop,
-  Plane,
-  Plus,
-  SlidersHorizontal,
-  ChevronRight,
-  Star,
-  Zap,
-  Sparkles,
-  Award,
-  Lock,
+  Check,
+  ChevronDown,
+  Crosshair,
+  Loader2,
+  MapPin,
+  Search,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
-import reClassic350Img from "@/assets/images/re_classic350.png";
+import { AnimatePresence, motion } from "framer-motion";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useUserLocation } from "@/hooks/useUserLocation";
 
-const featuredGear = [
+import cameraImg from "@/assets/images/camera.png";
+import laptopImg from "@/assets/images/laptop.png";
+import bikeImg from "@/assets/images/re_classic350.png";
+import droneImg from "@/assets/images/drone.png";
+import toolImg from "@/assets/images/tool.png";
+import powerbankImg from "@/assets/images/powerbank.png";
+
+const gearItems = [
   {
-    id: "camera-1",
-    title: "Sony FX3 Full-Frame Cinema Camera",
-    category: "Cinema Camera",
-    price: 2500,
-    specs: ["4K 120fps HDR", "XLR Handle Unit", "CFexpress Type A"],
-    icon: Camera,
-    image:
-      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1000&q=80",
-    owner: "Arjun Mehta (Mumbai)",
-    ownerRating: 4.9,
-    badge: "Most Reserved",
+    id: "bike",
+    title: "Classic 350",
+    name: "Royal Enfield Classic 350",
+    image: bikeImg,
   },
   {
-    id: "drone-1",
-    title: "DJI Mavic 3 Cine Premium Combo",
-    category: "Aerial Cinema Drone",
-    price: 4200,
-    specs: ["Apple ProRes 422", "43 Min Flight", "RC Pro Controller"],
-    icon: Plane,
-    image:
-      "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1000&q=80",
-    owner: "Ananya Roy (Bengaluru)",
-    ownerRating: 5.0,
-    badge: "Flagship Cine",
+    id: "camera",
+    title: "Camera",
+    name: "Sony Alpha Cinema Camera",
+    image: cameraImg,
   },
   {
-    id: "laptop-1",
-    title: 'MacBook Pro 16" M3 Max Workstation',
-    category: "Edit Workstation",
-    price: 1800,
-    specs: ["128GB Unified RAM", "4TB NVMe SSD", "Liquid Retina XDR"],
-    icon: Laptop,
-    image:
-      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1000&q=80",
-    owner: "Vikram Patel (Hyderabad)",
-    ownerRating: 4.8,
-    badge: "Ultra-Performance",
+    id: "drone",
+    title: "Drone",
+    name: "DJI Mavic 3 Pro Drone",
+    image: droneImg,
   },
   {
-    id: "bike-1",
-    title: "Royal Enfield Classic 350 Stealth",
-    category: "Luxury Rides",
-    price: 1200,
-    specs: ["349cc J-Series", "Dual-Channel ABS", "Helmet Included"],
-    icon: Sparkles,
-    image: reClassic350Img,
-    owner: "Payent Reserve Catalog",
-    ownerRating: 4.9,
-    badge: "Exclusive Ride",
+    id: "laptop",
+    title: "Laptop",
+    name: "Apple MacBook Pro M3 Max",
+    image: laptopImg,
+  },
+  {
+    id: "powerbank",
+    title: "Powerbank",
+    name: "Fast-Charging Power Station",
+    image: powerbankImg,
+  },
+  {
+    id: "tool",
+    title: "Drilling Machine",
+    name: "Heavy-Duty Cordless Drill",
+    image: toolImg,
   },
 ];
 
-export function Hero() {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+const popularTags = [
+  "Sony FX3",
+  "Canon R5",
+  "DJI Mavic 3",
+  "MacBook Pro",
+  "Lighting Kit",
+  "Audio Gear",
+];
 
+const popularCities = [
+  "All Cities",
+  "Bengaluru",
+  "Mumbai",
+  "Delhi NCR",
+  "Hyderabad",
+  "Chennai",
+  "Pune",
+  "Kolkata",
+  "Ahmedabad",
+  "Jaipur",
+  "Goa",
+  "Kochi",
+  "Chandigarh",
+];
+
+export function Hero() {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeGearIndex, setActiveGearIndex] = useState(0);
+
+  // Auto-advance gear showcase every 4 seconds
   useEffect(() => {
     const timer = setInterval(() => {
-      setSelectedIndex((prev) => (prev + 1) % featuredGear.length);
-    }, 5000);
+      setActiveGearIndex((prev) => (prev + 1) % gearItems.length);
+    }, 4000);
     return () => clearInterval(timer);
   }, []);
 
-  const activeGear = featuredGear[selectedIndex];
-  const ActiveIcon = activeGear.icon;
+  const activeGear = gearItems[activeGearIndex];
+
+  const {
+    city: selectedCity,
+    setCity: setSelectedCity,
+    isDetecting,
+    isAutoDetected,
+    detectLocation,
+  } = useUserLocation();
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    navigate({
+      to: "/categories",
+      search: {
+        q: searchTerm.trim() || undefined,
+        city: selectedCity !== "All Cities" ? selectedCity : undefined,
+      },
+    });
+  };
+
+  const handleTagClick = (tag: string) => {
+    setSearchTerm(tag);
+    navigate({
+      to: "/categories",
+      search: { q: tag },
+    });
+  };
 
   return (
-    <section className="relative overflow-hidden bg-white dark:bg-[#070A10] text-foreground dark:text-white pt-12 pb-16 lg:pt-20 lg:pb-28 border-b border-border dark:border-white/10">
-      {/* Full-Bleed Dynamic Gear Background Photo */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-70 dark:opacity-65">
+    <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-8 sm:pt-12 pb-12 lg:pb-16 border-b border-black/10 dark:border-white/10 transition-colors duration-300">
+      {/* Ambient background glow matching dark cinematic reference */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] bg-gradient-to-b from-neutral-200/40 via-neutral-100/10 to-transparent dark:from-[#0B1522] dark:via-[#071017] dark:to-transparent rounded-full blur-[160px] pointer-events-none opacity-60" />
+      <div className="absolute top-28 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-[#FF1744]/8 rounded-full blur-[120px] pointer-events-none" />
+
+      {/* Full-Bleed Transparent Gear Image Cycling One After Another (Top to Bottom & Left to Right) */}
+      <div className="absolute inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden">
         <AnimatePresence mode="wait">
-          <motion.img
+          <motion.div
             key={activeGear.id}
-            src={activeGear.image}
-            alt={activeGear.title}
-            initial={{ opacity: 0, scale: 1.05 }}
+            initial={{ opacity: 0, scale: 1.03 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.7 }}
-            className="w-full h-full object-cover object-center filter contrast-115 saturate-125 brightness-100"
-          />
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="absolute inset-0 w-full h-full flex items-center justify-center"
+          >
+            <img
+              src={activeGear.image}
+              alt={activeGear.name}
+              className="w-full h-full object-cover sm:object-contain lg:object-cover opacity-85 sm:opacity-90 dark:opacity-60 filter contrast-125 saturate-135 brightness-[0.95] dark:brightness-95 drop-shadow-[0_15px_35px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition-all pointer-events-none"
+            />
+          </motion.div>
         </AnimatePresence>
-        {/* Soft Radial & Linear Luxury Fog Vignette */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-[#070A10] dark:via-[#070A10]/85 dark:to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-white/50 dark:from-[#070A10] dark:via-transparent dark:to-[#070A10]/60" />
+
+        {/* Soft center ambient backlight glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-[#FF1744]/15 dark:bg-[#FF1744]/20 rounded-full blur-[160px] pointer-events-none" />
+
+        {/* Subtle radial and vertical scrims ensuring text readability while keeping the image clearly visible in both light & dark */}
+        <div className="absolute inset-0 bg-radial from-white/40 via-white/10 to-transparent dark:from-[#05090D]/75 dark:via-[#05090D]/40 dark:to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-neutral-50/90 dark:from-[#05090D] via-neutral-50/40 dark:via-[#05090D]/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-neutral-50/40 dark:from-[#05090D]/70 to-transparent pointer-events-none" />
       </div>
 
-      {/* Vibrant Ambient Lighting Accents */}
-      <div className="absolute top-0 left-1/4 -mt-20 w-[500px] h-[500px] bg-gradient-to-tr from-purple-500/20 via-primary/20 to-cyan-400/20 rounded-full blur-[100px] pointer-events-none z-0" />
-      <div className="absolute top-1/3 right-10 w-[450px] h-[450px] bg-gradient-to-bl from-amber-400/20 via-purple-500/15 to-blue-500/20 rounded-full blur-[110px] pointer-events-none z-0" />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+        {/* Main Text Section in Foreground */}
+        <div className="text-center max-w-4xl mx-auto space-y-8">
+          {/* Headline */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[68px] font-black tracking-tight text-neutral-950 dark:text-white leading-[1.05]">
+            Rent Professional Tech. <br />
+            <span className="text-[#FF1744]">Create Without Limits.</span>
+          </h1>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
-          {/* Left Column: Luxury Editorial Storytelling */}
-          <div className="lg:col-span-7 space-y-6 text-left">
-            {/* Top Editorial Category Tag */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="inline-flex items-center gap-2"
+          {/* Primary CTA: Explore Gear → */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              to="/categories"
+              className="inline-flex items-center justify-center gap-2.5 h-[52px] sm:h-[56px] px-9 rounded-full bg-[#FF1744] hover:bg-[#E91E4D] text-white text-base font-bold transition-colors duration-200 cursor-pointer"
             >
-              <div className="h-0.5 w-6 sm:w-8 bg-primary" />
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.16em] sm:tracking-[0.25em] text-foreground/80 dark:text-neutral-300 font-mono">
-                PAYENT RESERVE &bull; FLAGSHIP TECH 2026
-              </span>
-            </motion.div>
-
-            {/* Headline */}
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="text-3xl xs:text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight leading-tight sm:leading-[1.08] font-display text-foreground dark:text-white"
-            >
-              Rent Professional Tech <br className="hidden sm:inline" />
-              Gear On Demand. Earn <br className="hidden sm:inline" />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-purple-400 to-cyan-400">
-                When Your Kit Is Idle.
-              </span>
-            </motion.h1>
-
-            {/* Subheadline */}
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="text-sm sm:text-lg text-muted-foreground dark:text-neutral-300 max-w-xl leading-relaxed font-medium"
-            >
-              Discover our curated collection of flagship cinema cameras, aerial
-              drones, studio audio, and workstation laptops — crafted with
-              uncompromising attention to detail and backed by Razorpay Escrow.
-            </motion.p>
-
-            {/* Editorial Dual CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 sm:gap-4 pt-2"
-            >
-              <Link
-                to="/categories"
-                className="w-full xs:w-auto justify-center bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-sm flex items-center gap-2.5 group cursor-pointer shadow-xl transition-all"
-              >
-                <Zap className="h-4 w-4 fill-current text-white dark:text-black" />
-                <span>Explore Flagship Collection</span>
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-
-              <Link
-                to="/become-lender"
-                className="w-full xs:w-auto justify-center px-6 sm:px-7 py-3.5 sm:py-4 rounded-2xl font-bold text-sm border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground dark:text-white transition-all flex items-center gap-2 cursor-pointer backdrop-blur-2xl"
-              >
-                <Plus className="h-4 w-4 text-primary" />
-                <span>List Gear & Earn Yield</span>
-              </Link>
-            </motion.div>
+              <span>Explore Gear</span>
+              <ArrowRight className="h-5 w-5" />
+            </Link>
           </div>
+        </div>
 
-          {/* Right Column: 3D Editorial Showcase Card */}
-          <div className="lg:col-span-5">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="relative p-3.5 sm:p-5 overflow-hidden rounded-2xl sm:rounded-3xl border border-border dark:border-white/15 bg-card dark:bg-[#0B0F17] backdrop-blur-2xl shadow-xl dark:shadow-2xl dark:shadow-black max-w-md lg:max-w-none mx-auto"
-            >
-              {/* Top Selector bar */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pb-3 border-b border-border dark:border-white/10 mb-3 sm:mb-4">
-                <div className="flex items-center gap-1.5">
-                  <SlidersHorizontal className="h-4 w-4 text-primary" />
-                  <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-foreground dark:text-white font-mono">
-                    Reserve Showcase
-                  </span>
+        {/* Bottom Integrated Search Bar Module */}
+        <div className="mt-8 sm:mt-10 max-w-2xl mx-auto">
+          <form
+            onSubmit={handleSearch}
+            className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white dark:bg-[#081018] border border-black/10 dark:border-white/15 shadow-xl flex items-center gap-1.5 sm:gap-2 backdrop-blur-md"
+          >
+            {/* Keyword Search Input */}
+            <div className="flex-1 min-w-0 flex items-center gap-2 pl-2 sm:pl-3 py-1 bg-transparent">
+              <Search className="h-4 w-4 text-neutral-400 dark:text-[#AAB3BC] shrink-0" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search gear (camera, drone...)"
+                className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none truncate"
+              />
+            </div>
+
+            {/* Divider */}
+            <div className="h-6 w-px bg-black/10 dark:bg-white/15 shrink-0" />
+
+            {/* Location Selector (Directly Inside Search Bar) */}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-left text-xs text-neutral-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl sm:rounded-full transition-colors cursor-pointer max-w-[125px] sm:max-w-[180px]"
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  {isDetecting ? (
+                    <Loader2 className="h-3.5 w-3.5 text-[#FF1744] animate-spin shrink-0" />
+                  ) : (
+                    <MapPin className="h-3.5 w-3.5 text-[#FF1744] shrink-0" />
+                  )}
+                  <div className="truncate">
+                    <div className="hidden sm:flex items-center gap-1 leading-none">
+                      <span className="text-[9px] text-neutral-400 dark:text-[#697680] uppercase">Location</span>
+                      {isAutoDetected && !isDetecting && (
+                        <span className="text-[8px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15 px-1 py-0.2 rounded">
+                          Auto
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-medium text-neutral-900 dark:text-white truncate block text-[11px] sm:text-xs sm:mt-0.5">
+                      {isDetecting ? "Detecting..." : selectedCity}
+                    </span>
+                  </div>
                 </div>
+                <ChevronDown className="h-3 w-3 text-neutral-400 dark:text-[#AAB3BC] shrink-0" />
+              </button>
 
-                {/* Tabs */}
-                <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-1 bg-secondary/80 dark:bg-black/60 p-1 rounded-xl border border-border dark:border-white/10 overflow-x-auto no-scrollbar">
-                  {featuredGear.map((gear, idx) => (
+              {cityDropdownOpen && (
+                <div className="absolute top-full mt-2 sm:bottom-full sm:mb-2 sm:top-auto right-0 sm:left-0 z-30 rounded-xl bg-white dark:bg-[#111B24] border border-black/10 dark:border-white/15 p-1.5 shadow-2xl space-y-1 w-[220px] max-h-60 overflow-y-auto">
+                  {/* Quick Action: Auto-Detect Location */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await detectLocation(true);
+                      setCityDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-semibold text-[#FF1744] hover:bg-[#FF1744]/10 rounded-lg transition-colors cursor-pointer border border-[#FF1744]/20"
+                  >
+                    <Crosshair className="h-3.5 w-3.5 animate-pulse shrink-0" />
+                    <span>Auto-Detect Current Location</span>
+                  </button>
+
+                  <div className="h-px bg-black/10 dark:bg-white/10 my-1" />
+
+                  {/* Show detected city at top if not in popular list */}
+                  {selectedCity && !popularCities.includes(selectedCity) && (
                     <button
-                      key={gear.id}
-                      onClick={() => setSelectedIndex(idx)}
-                      className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                        selectedIndex === idx
-                          ? "bg-black dark:bg-white text-white dark:text-black shadow-md"
-                          : "text-muted-foreground dark:text-neutral-300 hover:text-foreground dark:hover:text-white hover:bg-secondary dark:hover:bg-white/10"
-                      }`}
+                      type="button"
+                      onClick={() => setCityDropdownOpen(false)}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
                     >
-                      {gear.category.split(" ")[0]}
+                      <span className="truncate">📍 {selectedCity}</span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Current</span>
+                    </button>
+                  )}
+
+                  {/* Popular Cities */}
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-[#697680] px-2 py-0.5">
+                    Select City
+                  </div>
+                  {popularCities.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCity(c);
+                        setCityDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${selectedCity === c
+                          ? "bg-[#FF1744]/10 text-[#FF1744] font-semibold"
+                          : "text-neutral-700 dark:text-[#AAB3BC] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+                        }`}
+                    >
+                      <span>{c}</span>
+                      {selectedCity === c && <Check className="h-3.5 w-3.5 text-[#FF1744]" />}
                     </button>
                   ))}
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* Display Image Card */}
-              <div className="relative aspect-[16/10] rounded-2xl overflow-hidden bg-secondary dark:bg-black/80 border border-border dark:border-white/10 mb-4 group shadow-inner">
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={activeGear.id}
-                    src={activeGear.image}
-                    alt={activeGear.title}
-                    fetchPriority="high"
-                    loading="eager"
-                    initial={{ opacity: 0, scale: 1.08 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.35 }}
-                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
-                  />
-                </AnimatePresence>
+            {/* Search Submit Button */}
+            <button
+              type="submit"
+              aria-label="Search"
+              className="h-8 sm:h-auto px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-full bg-[#FF1744] hover:bg-[#E91E4D] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#FF1744]/25 transition-all cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+            >
+              <Search className="h-3.5 w-3.5 sm:hidden" />
+              <span className="hidden sm:inline">Search</span>
+            </button>
+          </form>
 
-                {/* Floating Badge */}
-                <div className="absolute top-3 left-3 bg-black/80 text-white backdrop-blur-md px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-sm">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                  <span className="text-[11px] font-extrabold uppercase tracking-wide">
-                    {activeGear.badge}
-                  </span>
-                </div>
-
-                {/* Price Pill */}
-                <div className="absolute bottom-3 right-3 bg-black/90 dark:bg-white/95 text-white dark:text-black backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 font-display font-extrabold text-xs shadow-lg">
-                  ₹{activeGear.price}{" "}
-                  <span className="text-[10px] font-medium opacity-80">
-                    / day
-                  </span>
-                </div>
-              </div>
-
-              {/* Specs & Owner Footer */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <ActiveIcon className="h-4 w-4 text-primary" />
-                      <h3 className="text-sm font-extrabold text-foreground dark:text-white truncate font-display">
-                        {activeGear.title}
-                      </h3>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground dark:text-neutral-400 mt-0.5">
-                      Lender:{" "}
-                      <span className="text-foreground dark:text-white font-bold">
-                        {activeGear.owner}
-                      </span>{" "}
-                      &bull; ★ {activeGear.ownerRating}
-                    </p>
-                  </div>
-
-                  <Link
-                    to="/categories"
-                    className="shrink-0 p-2.5 rounded-xl bg-secondary dark:bg-white/15 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-foreground dark:text-white border border-border dark:border-white/20 transition-all shadow-md cursor-pointer"
-                    aria-label={`View ${activeGear.title}`}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Link>
-                </div>
-
-                {/* Specs Chips */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border dark:border-white/10">
-                  {activeGear.specs.map((spec, i) => (
-                    <span
-                      key={i}
-                      className="px-2.5 py-1 rounded-lg bg-secondary/80 dark:bg-white/10 text-[11px] font-extrabold text-foreground dark:text-white border border-border dark:border-white/15"
-                    >
-                      {spec}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
+          {/* Popular Searches Chips */}
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 sm:gap-2 mt-3 px-1">
+            <span className="text-xs font-semibold text-neutral-500 dark:text-[#AAB3BC]">Popular:</span>
+            {popularTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => handleTagClick(tag)}
+                className="px-3 py-1 rounded-full text-xs font-medium text-neutral-700 dark:text-[#AAB3BC] bg-neutral-100 dark:bg-[#0D151D] hover:text-neutral-900 dark:hover:text-white hover:border-[#FF1744]/50 border border-black/10 dark:border-white/10 transition-colors cursor-pointer"
+              >
+                {tag}
+              </button>
+            ))}
           </div>
         </div>
       </div>
