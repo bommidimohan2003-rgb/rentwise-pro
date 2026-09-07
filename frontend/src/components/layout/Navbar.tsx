@@ -4,7 +4,6 @@ import {
   Heart,
   LogOut,
   Moon,
-  Search,
   Sun,
   User,
 } from "lucide-react";
@@ -84,17 +83,6 @@ export function Navbar() {
 
           {/* Right Side Icons & Actions */}
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Search Button */}
-            <button
-              type="button"
-              onClick={() => navigate({ to: "/categories" })}
-              aria-label="Search gear"
-              id="nav-search-button"
-              className="h-9 w-9 flex items-center justify-center rounded-full text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            >
-              <Search className="h-4 w-4 stroke-[2]" />
-            </button>
-
             {/* Theme Toggle Button (Light/Dark Mode) */}
             <button
               type="button"
