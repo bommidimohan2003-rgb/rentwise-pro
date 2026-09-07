@@ -1,5 +1,6 @@
 import { Hero } from "@/components/home/Hero";
 import { Categories } from "@/components/home/Categories";
+import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { TrustStrip } from "@/components/home/TrustStrip";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { CreatorCommunity } from "@/components/home/CreatorCommunity";
@@ -47,7 +48,10 @@ export default function Home() {
       {/* 2. Explore Gear By Category */}
       <Categories />
 
-      {/* 3. Trust / Benefit Strip */}
+      {/* 3. Featured Rentals (Real Listings Only) */}
+      <FeaturedProducts />
+
+      {/* 4. Trust / Benefit Strip */}
       <TrustStrip />
 
       {/* 5. How It Works (3 Steps) */}
