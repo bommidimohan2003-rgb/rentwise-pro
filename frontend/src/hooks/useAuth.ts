@@ -42,8 +42,13 @@ export function useAuth() {
             locationUpdatedAt: profile.locationUpdatedAt || cachedUser?.locationUpdatedAt || "",
             occupation: profile.occupation || cachedUser?.occupation || "",
             bio: profile.bio || cachedUser?.bio || "",
-            avatar: profile.avatar || cachedUser?.avatar,
+            avatar: profile.avatar || profile.profilePhotoUrl || profile.profile_photo_url || cachedUser?.avatar,
+            profilePhotoUrl: profile.profilePhotoUrl || profile.profile_photo_url || cachedUser?.profilePhotoUrl || "",
             role: profile.role || cachedUser?.role || "customer",
+            status: profile.status || cachedUser?.status || "active",
+            aadhaarMasked: profile.aadhaarMasked || profile.aadhaar_masked || cachedUser?.aadhaarMasked || "",
+            website: profile.website || cachedUser?.website || "",
+            upiId: profile.upiId || cachedUser?.upiId || "",
           };
           storage.set(STORAGE_KEYS.currentUser, loggedUser);
           setUser(loggedUser);
@@ -114,9 +119,16 @@ export function useAuth() {
             phone: res.user.phone || "",
             address: res.user.address || "",
             city: res.user.city || "",
+            state: res.user.state || "",
+            country: res.user.country || "India",
             pincode: res.user.pincode || "",
-            avatar: res.user.avatar,
+            avatar: res.user.avatar || res.user.profilePhotoUrl || res.user.profile_photo_url,
+            profilePhotoUrl: res.user.profilePhotoUrl || res.user.profile_photo_url || "",
             role: res.user.role || res.role || "customer",
+            status: res.user.status || "active",
+            aadhaarMasked: res.user.aadhaarMasked || res.user.aadhaar_masked || "",
+            website: res.user.website || "",
+            upiId: res.user.upiId || "",
           };
         } else {
           try {
@@ -131,9 +143,16 @@ export function useAuth() {
               phone: profile.phone || "",
               address: profile.address || "",
               city: profile.city || "",
+              state: profile.state || "",
+              country: profile.country || "India",
               pincode: profile.pincode || "",
-              avatar: profile.avatar,
+              avatar: profile.avatar || profile.profilePhotoUrl || profile.profile_photo_url,
+              profilePhotoUrl: profile.profilePhotoUrl || profile.profile_photo_url || "",
               role: profile.role || res.role || "customer",
+              status: profile.status || "active",
+              aadhaarMasked: profile.aadhaarMasked || profile.aadhaar_masked || "",
+              website: profile.website || "",
+              upiId: profile.upiId || "",
             };
           } catch {
             loggedUser = {
@@ -141,6 +160,7 @@ export function useAuth() {
               fullName: email.split("@")[0],
               email: email,
               role: res.role || "customer",
+              status: "active",
             };
           }
         }

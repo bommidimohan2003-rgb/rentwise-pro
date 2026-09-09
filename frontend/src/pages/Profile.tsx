@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { CameraPhotoModal } from "@/components/profile/CameraPhotoModal";
+import { cn } from "@/lib/utils";
 
 export default function Profile() {
   const { user, ready, updateUser, logout, logoutAll, getSessions, revokeSession } = useAuth();
@@ -678,12 +679,12 @@ export default function Profile() {
                   <label className="text-xs font-extrabold text-foreground flex items-center justify-between">
                     <span>Creator Bio / Rental Notes</span>
                     <span className="text-[11px] text-muted-foreground font-normal">
-                      {form.bio.length} characters
+                      {(form.bio || "").length} characters
                     </span>
                   </label>
                   <textarea
                     rows={4}
-                    value={form.bio}
+                    value={form.bio || ""}
                     onChange={(e) => setForm({ ...form, bio: e.target.value })}
                     placeholder="Tell renters about your filmmaking background and equipment care guidelines..."
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-2xl p-4 border border-border focus:outline-none focus:border-primary transition-all font-medium resize-none"
