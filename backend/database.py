@@ -1461,6 +1461,11 @@ def record_failed_auth_attempt(key: str, max_attempts: int = 5, lock_duration_se
             attempts = int(row.get("attempts") or 0)
             last_attempt = int(row.get("last_attempt") or now)
             locked_until = int(row.get("locked_until") or 0)
+        else:
+            mem_rec = RATE_LIMIT_STORE.get(key, {})
+            attempts = mem_rec.get("attempts", 0)
+            last_attempt = mem_rec.get("last_attempt", now)
+            locked_until = mem_rec.get("locked_until", 0)
     except Exception:
         mem_rec = RATE_LIMIT_STORE.get(key, {})
         attempts = mem_rec.get("attempts", 0)

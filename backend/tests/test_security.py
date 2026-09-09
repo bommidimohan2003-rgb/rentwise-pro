@@ -22,6 +22,8 @@ from database import (
     get_user,
     execute_query,
     fetch_one,
+    create_order,
+    get_order_by_id,
     revoke_token,
     is_token_revoked,
     record_failed_auth_attempt,
@@ -97,20 +99,22 @@ class TestSecurityFunctions(unittest.TestCase):
         create_user(email=user_b, phone="+919000000002", password_hash=hash_password("P@ss12345!"), full_name="User B")
 
         order_id = "idor-test-order-100"
-        try:
-            execute_query("""
-                INSERT INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE user_email = VALUES(user_email)
-            """, (order_id, user_b, "p1", "Test Product", "", "2026-08-01", "2026-08-05", 5000, "active", datetime.now(timezone.utc).isoformat()))
-        except Exception:
-            pass
+        create_order(user_b, {
+            "id": order_id,
+            "product_id": "p1",
+            "product_title": "Test Product",
+            "product_image": "",
+            "start_date": "2026-08-01",
+            "end_date": "2026-08-05",
+            "total": 5000,
+            "status": "active"
+        })
 
         # Fetch order as user B -> Should succeed
-        order = fetch_one("SELECT * FROM orders WHERE id = %s", (order_id,))
+        order = get_order_by_id(order_id)
         self.assertIsNotNone(order)
-        self.assertEqual(order["user_email"], user_b)
-        self.assertNotEqual(order["user_email"], user_a)
+        self.assertEqual(order.get("user_email") or order.get("userEmail"), user_b)
+        self.assertNotEqual(order.get("user_email") or order.get("userEmail"), user_a)
 
     def test_04_brute_force_rate_limiting(self):
         """Verify failed login attempt counter locks account after threshold."""
