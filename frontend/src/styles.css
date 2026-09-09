@@ -32,23 +32,40 @@
 
 :root {
   --radius: 0.9rem;
-  /* Light Mode: Background pure white #FFFFFF, buttons pure black #000000 with #FFFFFF text */
+  /* Light Mode: Background pure white #FFFFFF, buttons charcoal #161616 with #FFFFFF text */
   --background: #ffffff;
   --foreground: #000000;
   --card: #ffffff;
   --card-foreground: #000000;
-  --primary: #000000;
+  --primary: #161616;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f5;
-  --secondary-foreground: #000000;
+  --secondary-foreground: #171717;
   --muted: #f4f4f5;
   --muted-foreground: #71717a;
-  --accent: #000000;
+  --accent: #161616;
   --accent-foreground: #ffffff;
-  --destructive: #e63946;
+  --destructive: #FF1744;
   --border: #e4e4e7;
   --input: #e4e4e7;
-  --ring: #000000;
+  --ring: #161616;
+
+  /* Button Tokens - Light Mode */
+  --btn-primary-bg: #161616;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-hover: #292929;
+  --btn-primary-pressed: #0B0B0B;
+  --btn-secondary-bg: #FFFFFF;
+  --btn-secondary-text: #171717;
+  --btn-secondary-border: #D6D6D6;
+  --btn-secondary-hover: #F3F3F3;
+  --btn-secondary-pressed: #EAEAEA;
+  --btn-tertiary-bg: transparent;
+  --btn-tertiary-text: #333333;
+  --btn-tertiary-hover: #F4F4F4;
+  --btn-danger-bg: #FF1744;
+  --btn-danger-text: #FFFFFF;
+  --btn-danger-hover: #D50000;
 
   /* Spatial UI Elevation System Tokens */
   --elevation-0-shadow: none;
@@ -69,30 +86,47 @@
   --payent-surface: #f8fafc;
   --payent-surface-elevated: #ffffff;
   --payent-accent: #FF1744;
-  --payent-accent-hover: #FF2355;
+  --payent-accent-hover: #D50000;
   --payent-border: rgba(0, 0, 0, 0.08);
   --payent-text-secondary: #64748b;
   --payent-text-muted: #94a3b8;
 }
 
 .dark {
-  /* Dark Mode: Obsidian / Dark Blue-Black Background with PAYENT Red */
+  /* Dark Mode: Obsidian / Dark Blue-Black Background with Warm Ivory Primary */
   --background: #05090D;
   --foreground: #ffffff;
   --card: #0D151D;
   --card-foreground: #ffffff;
-  --primary: #FF1744;
-  --primary-foreground: #ffffff;
+  --primary: #F2F0EA;
+  --primary-foreground: #0A0A0A;
   --secondary: #111B24;
-  --secondary-foreground: #ffffff;
+  --secondary-foreground: #F3F3F3;
   --muted: #141E27;
   --muted-foreground: #A8B1BA;
-  --accent: #FF1744;
-  --accent-foreground: #ffffff;
-  --destructive: #ff4d4d;
+  --accent: #F2F0EA;
+  --accent-foreground: #0A0A0A;
+  --destructive: #FF1744;
   --border: rgba(255, 255, 255, 0.10);
   --input: rgba(255, 255, 255, 0.10);
-  --ring: #FF1744;
+  --ring: #F2F0EA;
+
+  /* Button Tokens - Dark Mode */
+  --btn-primary-bg: #F2F0EA;
+  --btn-primary-text: #0A0A0A;
+  --btn-primary-hover: #FFFFFF;
+  --btn-primary-pressed: #DCD9D1;
+  --btn-secondary-bg: transparent;
+  --btn-secondary-text: #F3F3F3;
+  --btn-secondary-border: rgba(255, 255, 255, 0.22);
+  --btn-secondary-hover: rgba(255, 255, 255, 0.08);
+  --btn-secondary-pressed: rgba(255, 255, 255, 0.14);
+  --btn-tertiary-bg: transparent;
+  --btn-tertiary-text: #BFC3C7;
+  --btn-tertiary-hover: rgba(255, 255, 255, 0.06);
+  --btn-danger-bg: #FF1744;
+  --btn-danger-text: #FFFFFF;
+  --btn-danger-hover: #D50000;
 
   --payent-bg: #05090D;
   --payent-surface: #0D151D;
@@ -301,27 +335,30 @@
 }
 
 @utility btn-gradient {
-  background-color: #000000;
-  background-image: linear-gradient(135deg, #18181b 0%, #000000 100%);
+  background-color: #161616;
+  background-image: linear-gradient(135deg, #1f1f23 0%, #161616 100%);
   color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    0 4px 14px -2px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
   transition:
-    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    background 0.3s ease,
-    color 0.3s ease;
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.2s ease,
+    color 0.2s ease;
   &:hover {
-    transform: translateY(-2px) scale(1.02);
-    background-image: linear-gradient(135deg, #27272a 0%, #09090b 100%);
+    transform: translateY(-1px);
+    background-color: #292929;
+    background-image: linear-gradient(135deg, #2e2e33 0%, #222226 100%);
     box-shadow:
-      0 18px 40px -10px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+      0 8px 20px -4px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
   }
   &:active {
-    transform: translateY(0px) scale(0.98);
-    box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.3);
+    transform: translateY(0px) scale(0.99);
+    background-color: #0b0b0b;
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.3);
   }
   @media (prefers-reduced-motion: reduce) {
     &:hover,
@@ -333,28 +370,41 @@
 
 .dark .btn-gradient,
 :where(.dark) .btn-gradient {
-  background-color: #ffffff !important;
+  background-color: #F2F0EA !important;
   background-image: linear-gradient(
     135deg,
-    #ffffff 0%,
-    #f4f4f5 100%
+    #FAF8F3 0%,
+    #F2F0EA 100%
   ) !important;
-  color: #000000 !important;
+  color: #0A0A0A !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
   box-shadow:
-    0 10px 25px -5px rgba(255, 255, 255, 0.2),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.8) !important;
+    0 4px 14px -2px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .dark .btn-gradient:hover,
 :where(.dark) .btn-gradient:hover {
+  background-color: #FFFFFF !important;
   background-image: linear-gradient(
     135deg,
-    #f4f4f5 0%,
-    #e4e4e7 100%
+    #FFFFFF 0%,
+    #F5F3ED 100%
   ) !important;
+  color: #0A0A0A !important;
   box-shadow:
-    0 18px 40px -10px rgba(255, 255, 255, 0.3),
+    0 8px 22px -4px rgba(255, 255, 255, 0.15),
     inset 0 1px 0 0 rgba(255, 255, 255, 1) !important;
+}
+
+.dark .btn-gradient:active,
+:where(.dark) .btn-gradient:active {
+  background-color: #DCD9D1 !important;
+  background-image: linear-gradient(
+    135deg,
+    #E4E1D9 0%,
+    #DCD9D1 100%
+  ) !important;
 }
 
 @utility card-premium {

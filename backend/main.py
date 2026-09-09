@@ -125,6 +125,7 @@ from database import (
     revoke_all_user_sessions,
     get_user_active_sessions,
     cleanup_expired_sessions,
+    is_session_revoked,
     hash_refresh_token,
     get_reviews_from_db,
     get_review_stats_from_db,
@@ -402,7 +403,7 @@ def check_verification(phone: str, code: str, email: str) -> bool:
         if created_at_str:
             try:
                 created_dt = datetime.datetime.fromisoformat(created_at_str)
-                if (datetime.datetime.utcnow() - created_dt).total_seconds() > 300:
+                if (datetime.datetime.now(datetime.timezone.utc) - created_dt).total_seconds() > 300:
                     delete_otp(email)
                     logger.warning(f"OTP for {email} has expired.")
                     return False
@@ -482,12 +483,19 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
             detail="Could not validate credentials or Token expired"
         )
 
-    # Check server-side token revocation
+    # Check server-side token & session revocation
     jti = payload.get("jti")
     if jti and is_token_revoked(jti):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been revoked or logged out."
+        )
+
+    sid = payload.get("sid")
+    if sid and is_session_revoked(sid):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session has been revoked or expired."
         )
 
     user = get_user(payload["sub"])
@@ -641,6 +649,7 @@ def register_verify(data: RegisterVerifySchema, request: Request):
 
     hashed = hash_password(data.password)
     display_name = data.full_name or clean_email.split("@")[0]
+    user_status = "approved" if role == "admin" else "pending"
     create_user(
         email=clean_email,
         phone=clean_phone,
@@ -650,12 +659,13 @@ def register_verify(data: RegisterVerifySchema, request: Request):
         address=data.address,
         city=data.city,
         pincode=data.pincode,
-        aadhaar_number=clean_aadhaar
+        aadhaar_number=clean_aadhaar,
+        status=user_status
     )
     
     delete_otp(clean_email)
     clear_failed_auth_attempts(key)
-    logger.info(f"User registration successful for {clean_email} with role={role}")
+    logger.info(f"User registration successful for {clean_email} with role={role}, status={user_status}")
     
     token = create_access_token({"sub": clean_email, "role": role})
     
@@ -668,9 +678,9 @@ def register_verify(data: RegisterVerifySchema, request: Request):
         "address": data.address,
         "city": data.city,
         "pincode": data.pincode,
-        "status": "active",
-        "verified": True,
-        "createdAt": datetime.datetime.utcnow().isoformat()
+        "status": user_status,
+        "verified": bool(role == "admin"),
+        "createdAt": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
     
     broadcast_admin_event("user.registered", user_record)
@@ -678,7 +688,7 @@ def register_verify(data: RegisterVerifySchema, request: Request):
     return {
         "success": True, 
         "token": token,
-        "message": "Account created successfully.",
+        "message": "Account created successfully. Awaiting administrative approval." if user_status == "pending" else "Account created successfully.",
         "user": user_record
     }
 
@@ -731,7 +741,7 @@ def login(data: LoginRequestSchema, request: Request, response: Response):
     # Detect user-agent & device metadata
     user_agent = request.headers.get("user-agent", "Unknown Browser")
     device_name = "Desktop" if ("Windows" in user_agent or "Macintosh" in user_agent or "Linux" in user_agent) and "Mobile" not in user_agent else ("Mobile" if "Mobile" in user_agent or "Android" in user_agent or "iPhone" in user_agent else "Web Browser")
-    expires_at_str = (datetime.datetime.utcnow() + datetime.timedelta(days=7)).isoformat()
+    expires_at_str = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)).isoformat()
 
     # Store hashed session entry in TiDB Cloud database
     create_db_session(session_id, user["email"], refresh_token, device_name, client_ip, user_agent, expires_at_str)
@@ -819,7 +829,7 @@ def refresh_token(request: Request, response: Response, data: Optional[RefreshTo
     user_agent = request.headers.get("user-agent", db_session.get("user_agent", "Unknown Browser"))
     client_ip = request.client.host if request.client else db_session.get("ip_address", "127.0.0.1")
     device_name = db_session.get("device_name", "Web Browser")
-    expires_at_str = (datetime.datetime.utcnow() + datetime.timedelta(days=7)).isoformat()
+    expires_at_str = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)).isoformat()
 
     create_db_session(new_session_id, user["email"], new_refresh_token, device_name, client_ip, user_agent, expires_at_str)
 
@@ -1211,7 +1221,7 @@ def update_user_profile_route(data: UserProfileUpdateSchema, current_user_email:
 
     if data.latitude is not None or data.longitude is not None:
         fields.append("location_updated_at = %s")
-        params.append(datetime.datetime.utcnow().isoformat())
+        params.append(datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     if data.avatar is not None:
         fields.append("avatar = %s")
@@ -1397,7 +1407,7 @@ def fetch_orders(email: str = Depends(get_current_user_email)):
                 "endDate": "Mar 18",
                 "total": 12000,
                 "status": "active",
-                "created_at": datetime.datetime.utcnow().isoformat()
+                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
             },
             {
                 "id": f"o-{int(time.time() * 1000)}-2",
@@ -1408,7 +1418,7 @@ def fetch_orders(email: str = Depends(get_current_user_email)):
                 "endDate": "Mar 18",
                 "total": 15000,
                 "status": "pending",
-                "created_at": datetime.datetime.utcnow().isoformat()
+                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
             }
         ]
         for o in demo_orders:
@@ -1472,7 +1482,7 @@ def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
         "end_date": end,
         "total": data.total,
         "status": data.status or "active",
-        "createdAt": datetime.datetime.utcnow().isoformat()
+        "createdAt": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
     
     create_order(clean_email, normalized_order)
@@ -1490,7 +1500,7 @@ def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
         "endDate": end,
         "amount": data.total,
         "status": "pending",
-        "createdAt": datetime.datetime.utcnow().isoformat()
+        "createdAt": datetime.datetime.now(datetime.timezone.utc).isoformat()
     })
     
     broadcast_admin_event("payment.created", {
@@ -1501,7 +1511,7 @@ def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
         "amount": data.total,
         "status": "successful",
         "method": "Credit Card",
-        "createdAt": datetime.datetime.utcnow().isoformat()
+        "createdAt": datetime.datetime.now(datetime.timezone.utc).isoformat()
     })
     return {"success": True}
 
@@ -1673,7 +1683,7 @@ def create_user_support_ticket(data: CreateSupportTicketSchema, email: str = Dep
     clean_email = email.strip().lower()
     user_rec = get_user(clean_email) or {}
     ticket_id = f"TICK-{int(time.time() * 1000)}"
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     init_messages = [{
         "id": f"msg-{int(time.time() * 1000)}",
         "sender": user_rec.get("full_name") or clean_email.split("@")[0],
@@ -2448,7 +2458,7 @@ def broadcast_admin_event(event_type: str, data: dict):
     payload = {
         "type": event_type,
         "data": sanitized,
-        "timestamp": datetime.datetime.utcnow().isoformat()
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
     try:
         try:
@@ -2499,13 +2509,13 @@ async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):
             "data": {
                 "email": user["email"],
                 "role": user["role"],
-                "serverTime": datetime.datetime.utcnow().isoformat()
+                "serverTime": datetime.datetime.now(datetime.timezone.utc).isoformat()
             }
         })
         while True:
             data = await websocket.receive_text()
             if data == "ping":
-                await websocket.send_json({"type": "pong", "timestamp": datetime.datetime.utcnow().isoformat()})
+                await websocket.send_json({"type": "pong", "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()})
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
         logger.info(f"WebSocket admin disconnected: {user['email']}")
@@ -2520,7 +2530,7 @@ def poll_admin_events(since: Optional[str] = None, current_admin: dict = Depends
     return {
         "success": True,
         "events": notifications,
-        "timestamp": datetime.datetime.utcnow().isoformat()
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
 
 class AdminRegisterSchema(BaseModel):
@@ -2594,8 +2604,15 @@ def admin_login(data: LoginRequestSchema, request: Request, response: Response):
     clear_failed_auth_attempts(ip_key)
     clear_failed_auth_attempts(user_key)
 
-    access_token = create_access_token({"sub": user["email"], "role": user["role"]})
-    refresh_token = create_refresh_token({"sub": user["email"], "role": user["role"]})
+    session_id = f"sess-{uuid.uuid4()}"
+    access_token = create_access_token({"sub": user["email"], "role": user["role"], "sid": session_id})
+    refresh_token = create_refresh_token({"sub": user["email"], "role": user["role"], "sid": session_id})
+
+    user_agent = request.headers.get("user-agent", "Unknown Browser")
+    device_name = "Desktop" if ("Windows" in user_agent or "Macintosh" in user_agent or "Linux" in user_agent) and "Mobile" not in user_agent else ("Mobile" if "Mobile" in user_agent or "Android" in user_agent or "iPhone" in user_agent else "Web Browser")
+    expires_at_str = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)).isoformat()
+
+    create_db_session(session_id, user["email"], refresh_token, device_name, client_ip, user_agent, expires_at_str)
 
     response.set_cookie(
         key="payent_refresh_token",
@@ -2668,7 +2685,7 @@ def admin_update_profile(data: ProfileUpdateSchema, current_admin: dict = Depend
         execute_query(f"UPDATE users SET {', '.join(fields)} WHERE email = %s", tuple(params))
         
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -2700,7 +2717,7 @@ def admin_update_password(data: PasswordUpdateSchema, current_admin: dict = Depe
     update_user_password(current_admin["email"], hashed)
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -2843,7 +2860,7 @@ def require_api_key(required_scopes: Optional[list[str]] = None):
         if expires_at:
             try:
                 exp_dt = datetime.datetime.fromisoformat(expires_at)
-                if datetime.datetime.utcnow() > exp_dt:
+                if datetime.datetime.now(datetime.timezone.utc) > exp_dt:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Unauthorized. API key has expired."
@@ -3166,7 +3183,7 @@ def admin_update_user(id: str, data: UserUpdateSchema, current_admin: dict = Dep
         execute_query(f"UPDATE users SET {', '.join(fields)} WHERE email = %s", tuple(params))
         
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3196,7 +3213,7 @@ def admin_delete_user(id: str, current_admin: dict = Depends(check_admin_user)):
     execute_query("DELETE FROM users WHERE email = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3214,7 +3231,7 @@ def admin_suspend_user(id: str, current_admin: dict = Depends(check_admin_user))
     execute_query("UPDATE users SET status = 'suspended' WHERE email = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3244,7 +3261,7 @@ def admin_activate_user(id: str, current_admin: dict = Depends(check_admin_user)
     execute_query("UPDATE users SET status = 'active' WHERE email = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3259,11 +3276,118 @@ def admin_activate_user(id: str, current_admin: dict = Depends(check_admin_user)
         "role": updated["role"],
         "status": "active",
         "verified": bool(updated["verified"]),
-        "avatar": updated["avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        "avatar": updated["avatar"] or updated.get("profile_photo_url") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
         "createdAt": updated["created_at"]
     }
     broadcast_admin_event("user.updated", res_user)
     return res_user
+
+@app.get("/api/admin/users/{id}")
+def admin_get_user_details(id: str, current_admin: dict = Depends(check_admin_user)):
+    user = get_user(id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if user has active listings / bookings
+    return {
+        "id": user["email"],
+        "fullName": user["full_name"],
+        "email": user["email"],
+        "phone": user.get("phone"),
+        "role": user.get("role", "user"),
+        "status": user.get("status", "pending"),
+        "verified": bool(user.get("verified")),
+        "address": user.get("address"),
+        "city": user.get("city"),
+        "state": user.get("state"),
+        "pincode": user.get("pincode"),
+        "country": user.get("country", "India"),
+        "occupation": user.get("occupation"),
+        "bio": user.get("bio"),
+        "website": user.get("website"),
+        "upiId": user.get("upiId"),
+        "avatar": user.get("avatar") or user.get("profile_photo_url") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        "profilePhotoUrl": user.get("profile_photo_url") or user.get("avatar"),
+        "aadhaarMasked": mask_aadhaar(user.get("aadhaar_number")),
+        "createdAt": user.get("created_at")
+    }
+
+@app.patch("/api/admin/users/{id}/approve")
+@app.post("/api/admin/users/{id}/approve")
+@app.put("/api/admin/users/{id}/approve")
+def admin_approve_user(id: str, current_admin: dict = Depends(check_admin_user)):
+    user = get_user(id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    execute_query("UPDATE users SET status = 'approved', verified = 1 WHERE email = %s", (id,))
+    
+    # Audit log
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Approved user account {id}", "Users", "127.0.0.1"))
+    
+    updated = get_user(id)
+    res_user = {
+        "id": updated["email"],
+        "fullName": updated["full_name"],
+        "email": updated["email"],
+        "phone": updated["phone"],
+        "role": updated["role"],
+        "status": "approved",
+        "verified": True,
+        "avatar": updated["avatar"] or updated.get("profile_photo_url") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        "profilePhotoUrl": updated.get("profile_photo_url") or updated.get("avatar"),
+        "createdAt": updated["created_at"]
+    }
+    broadcast_admin_event("user.updated", res_user)
+    return {
+        "success": True,
+        "message": f"User {id} approved successfully.",
+        "user": res_user
+    }
+
+class RejectUserSchema(BaseModel):
+    reason: Optional[str] = None
+
+@app.patch("/api/admin/users/{id}/reject")
+@app.post("/api/admin/users/{id}/reject")
+@app.put("/api/admin/users/{id}/reject")
+def admin_reject_user(id: str, data: Optional[RejectUserSchema] = None, current_admin: dict = Depends(check_admin_user)):
+    user = get_user(id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    execute_query("UPDATE users SET status = 'rejected' WHERE email = %s", (id,))
+    
+    reason_txt = f" (Reason: {data.reason})" if data and data.reason else ""
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    execute_query("""
+        INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Rejected user account {id}{reason_txt}", "Users", "127.0.0.1"))
+    
+    updated = get_user(id)
+    res_user = {
+        "id": updated["email"],
+        "fullName": updated["full_name"],
+        "email": updated["email"],
+        "phone": updated["phone"],
+        "role": updated["role"],
+        "status": "rejected",
+        "verified": bool(updated.get("verified", False)),
+        "avatar": updated["avatar"] or updated.get("profile_photo_url") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        "profilePhotoUrl": updated.get("profile_photo_url") or updated.get("avatar"),
+        "createdAt": updated["created_at"]
+    }
+    broadcast_admin_event("user.updated", res_user)
+    return {
+        "success": True,
+        "message": f"User {id} rejected.",
+        "user": res_user
+    }
 
 # Agents
 @app.get("/api/admin/agents")
@@ -3343,10 +3467,10 @@ def admin_suspend_agent(id: str, current_admin: dict = Depends(check_admin_user)
         raise HTTPException(status_code=404, detail="Agent not found")
         
     execute_query("UPDATE users SET status = 'suspended' WHERE LOWER(email) = LOWER(%s)", (clean_email,))
-    execute_query("UPDATE agents SET status = 'suspended', updated_at = %s WHERE LOWER(user_email) = LOWER(%s)", (datetime.datetime.utcnow().isoformat(), clean_email))
+    execute_query("UPDATE agents SET status = 'suspended', updated_at = %s WHERE LOWER(user_email) = LOWER(%s)", (datetime.datetime.now(datetime.timezone.utc).isoformat(), clean_email))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3396,7 +3520,7 @@ def admin_delete_agent(id: str, current_admin: dict = Depends(check_admin_user))
     execute_query("DELETE FROM agents WHERE LOWER(user_email) = LOWER(%s)", (clean_email,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3559,7 +3683,7 @@ def admin_update_product(id: str, data: ProductUpdateSchema, current_admin: dict
         execute_query(f"UPDATE custom_products SET {', '.join(fields)} WHERE id = %s", tuple(params))
         
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3583,7 +3707,7 @@ def admin_delete_product(id: str, current_admin: dict = Depends(check_admin_user
     execute_query("DELETE FROM custom_products WHERE id = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3600,7 +3724,7 @@ def admin_approve_product(id: str, current_admin: dict = Depends(check_admin_use
         MOCK_CUSTOM_PRODUCTS[id]["available"] = True
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3618,7 +3742,7 @@ def admin_reject_product(id: str, current_admin: dict = Depends(check_admin_user
         MOCK_CUSTOM_PRODUCTS[id]["available"] = False
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3645,7 +3769,7 @@ def admin_toggle_feature_product(id: str, current_admin: dict = Depends(check_ad
     execute_query("UPDATE custom_products SET featured = %s WHERE id = %s", (new_val, id))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     action_str = "Featured" if new_val else "Unfeatured"
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
@@ -3671,7 +3795,7 @@ def admin_toggle_hide_product(id: str, current_admin: dict = Depends(check_admin
     execute_query("UPDATE custom_products SET hidden = %s WHERE id = %s", (new_val, id))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     action_str = "Hid" if new_val else "Unhid"
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
@@ -3714,7 +3838,7 @@ def admin_create_category(data: CategorySchema, current_admin: dict = Depends(ch
     """, (cat_id, data.name, data.icon or "Laptop", data.color or "bg-gray-500/10 text-gray-500", 1 if data.enabled else 0))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3753,7 +3877,7 @@ def admin_update_category(id: str, data: CategorySchema, current_admin: dict = D
         execute_query(f"UPDATE categories SET {', '.join(fields)} WHERE id = %s", tuple(params))
         
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3783,7 +3907,7 @@ def admin_delete_category(id: str, current_admin: dict = Depends(check_admin_use
     execute_query("DELETE FROM categories WHERE id = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3833,7 +3957,7 @@ def admin_cancel_booking(id: str, current_admin: dict = Depends(check_admin_user
     execute_query("UPDATE orders SET status = 'cancelled' WHERE id = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3877,7 +4001,7 @@ def admin_complete_booking(id: str, current_admin: dict = Depends(check_admin_us
     execute_query("UPDATE orders SET status = 'completed' WHERE id = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3921,7 +4045,7 @@ def admin_refund_booking(id: str, current_admin: dict = Depends(check_admin_user
     execute_query("UPDATE payments SET status = 'refunded' WHERE booking_id = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -3999,7 +4123,7 @@ def admin_refund_payment(id: str, current_admin: dict = Depends(check_admin_user
         conn.close()
         
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -4174,7 +4298,7 @@ def create_customer_review(
             prod_title = booking_record.get("product_title") or booking_record.get("productTitle") or prod_title
 
     # 3. Create review record
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     rev_id = f"rev-{uuid.uuid4()}"
     user_name = current_user.get("full_name") or current_user["email"].split("@")[0]
     user_avatar = current_user.get("avatar") or current_user.get("profile_photo_url") or f"https://ui-avatars.com/api/?name={user_name}&background=0D151D&color=fff"
@@ -4262,7 +4386,7 @@ def update_customer_review(
 
     new_rating = data.rating if data.rating is not None else existing.get("rating", 5)
     new_comment = data.comment if data.comment is not None else existing.get("comment", "")
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     update_review_record(id, new_rating, new_comment, now_str)
 
@@ -4351,7 +4475,7 @@ def admin_delete_review(id: str, current_admin: dict = Depends(check_admin_user)
     execute_query("DELETE FROM reviews WHERE id = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -4376,7 +4500,7 @@ def admin_toggle_hide_review(id: str, current_admin: dict = Depends(check_admin_
     execute_query("UPDATE reviews SET hidden = %s WHERE id = %s", (new_val, id))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     action_str = "Hid" if new_val else "Unhid"
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
@@ -4436,7 +4560,7 @@ def admin_resolve_report(id: str, current_admin: dict = Depends(check_admin_user
     execute_query("UPDATE reports SET status = 'resolved' WHERE id = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -4468,7 +4592,7 @@ def admin_dismiss_report(id: str, current_admin: dict = Depends(check_admin_user
     execute_query("UPDATE reports SET status = 'dismissed' WHERE id = %s", (id,))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -4509,7 +4633,7 @@ def admin_suspend_product_report(id: str, current_admin: dict = Depends(check_ad
         conn.close()
         
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -4542,7 +4666,7 @@ def admin_ban_user_report(id: str, current_admin: dict = Depends(check_admin_use
         conn.close()
         
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -4644,7 +4768,7 @@ def admin_reply_support_ticket(id: str, data: SupportReplySchema, current_admin:
                 "id": f"tm-{random.randint(100000, 999999)}",
                 "sender": "admin",
                 "message": data.message,
-                "createdAt": datetime.datetime.utcnow().isoformat()
+                "createdAt": datetime.datetime.now(datetime.timezone.utc).isoformat()
             }
             msg_list.append(new_msg)
             
@@ -4654,7 +4778,7 @@ def admin_reply_support_ticket(id: str, data: SupportReplySchema, current_admin:
         conn.close()
         
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -4677,7 +4801,7 @@ def admin_status_support_ticket(id: str, data: SupportStatusSchema, current_admi
     execute_query("UPDATE support_tickets SET status = %s WHERE id = %s", (data.status, id))
     
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -4782,7 +4906,7 @@ def admin_settings_save(data: SettingsUpdateSchema, current_admin: dict = Depend
         execute_query(query, tuple(params))
         
     # Log action
-    now_str = datetime.datetime.utcnow().isoformat()
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     execute_query("""
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)

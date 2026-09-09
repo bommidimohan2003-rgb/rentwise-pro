@@ -341,7 +341,7 @@ export default function BecomeLender() {
 
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-foreground leading-[1.08] font-display">
                 Monetize your gear. <br />
-                <span className="bg-gradient-to-r from-primary via-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary via-amber-400 to-emerald-400 bg-clip-text text-transparent">
                   Snap & list in 2 mins.
                 </span>
               </h1>

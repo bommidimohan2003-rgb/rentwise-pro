@@ -397,40 +397,53 @@ export const api = {
     return await res.json();
   },
 
+  _refreshPromise: null as Promise<string | null> | null,
+
   async refreshToken(): Promise<string | null> {
+    if (this._refreshPromise) {
+      return this._refreshPromise;
+    }
+
     const currentRefreshToken = storage.get<string | null>(STORAGE_KEYS.refreshToken, null);
     if (!currentRefreshToken) return null;
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ refresh_token: currentRefreshToken }),
-      });
 
-      if (!res.ok) {
-        return null;
-      }
+    this._refreshPromise = (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ refresh_token: currentRefreshToken }),
+        });
 
-      const data = await res.json();
-      if (data.token) {
-        storage.set(STORAGE_KEYS.token, data.token);
-        if (data.refreshToken) {
-          storage.set(STORAGE_KEYS.refreshToken, data.refreshToken);
+        if (!res.ok) {
+          return null;
         }
-        return data.token;
+
+        const data = await res.json();
+        if (data.token) {
+          storage.set(STORAGE_KEYS.token, data.token);
+          if (data.refreshToken) {
+            storage.set(STORAGE_KEYS.refreshToken, data.refreshToken);
+          }
+          return data.token as string;
+        }
+        return null;
+      } catch (err) {
+        console.warn("[API] Token refresh notice:", err);
+        return null;
+      } finally {
+        this._refreshPromise = null;
       }
-      return null;
-    } catch (err) {
-      console.warn("[API] Token refresh notice:", err);
-      return null;
-    }
+    })();
+
+    return this._refreshPromise;
   },
 
   async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
     let token = storage.get<string | null>(STORAGE_KEYS.token, null);
     const headers = new Headers(options.headers || {});
-    if (token) {
+    if (token && !headers.has("Authorization")) {
       headers.set("Authorization", `Bearer ${token}`);
     }
     options.headers = headers;
@@ -518,22 +531,18 @@ export const api = {
   },
 
   async getWishlist(token: string) {
-    const res = await fetch(`${API_BASE}/api/wishlist`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/wishlist`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     if (!res.ok) throw new Error("Failed to fetch wishlist");
     return res.json() as Promise<string[]>;
   },
 
   async toggleWishlist(token: string, productId: string) {
-    const res = await fetch(`${API_BASE}/api/wishlist/toggle`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/wishlist/toggle`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ product_id: productId }),
     });
@@ -542,20 +551,10 @@ export const api = {
   },
 
   async getOrders(token: string) {
-    const res = await fetch(`${API_BASE}/api/orders`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/orders`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     if (!res.ok) {
-      if (res.status === 401 && typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("payent-session-expired", {
-            detail: { loginPath: "/login" },
-          }),
-        );
-      }
       const data = await res.json().catch(() => ({}));
       throw new Error(
         parseApiError(data, "Failed to retrieve order history from database."),
@@ -599,11 +598,8 @@ export const api = {
   },
 
   async getOrderDetails(token: string, orderId: string) {
-    const res = await fetch(`${API_BASE}/api/orders/${orderId}`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/orders/${orderId}`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -676,11 +672,10 @@ export const api = {
       storage.set(STORAGE_KEYS.orders, [payload as Order, ...currentOrders]);
     }
 
-    const res = await fetch(`${API_BASE}/api/orders`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -691,11 +686,8 @@ export const api = {
   async cancelOrder(token: string, orderId: string) {
     let res: Response | null = null;
     try {
-      res = await fetch(`${API_BASE}/api/orders/${orderId}/cancel`, {
+      res = await this.fetchWithAuth(`${API_BASE}/api/orders/${orderId}/cancel`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
     } catch {
       /* fetch network error / backend offline */
@@ -717,11 +709,8 @@ export const api = {
   },
 
   async getCustomProducts(token: string) {
-    const res = await fetch(`${API_BASE}/api/products/custom`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/products/custom`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     if (!res.ok) throw new Error("Failed to fetch custom products");
     return res.json();
@@ -769,11 +758,10 @@ export const api = {
   },
 
   async createCustomProduct(token: string, productData: Product) {
-    const res = await fetch(`${API_BASE}/api/products/custom`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/products/custom`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(productData),
     });
@@ -782,10 +770,9 @@ export const api = {
   },
 
   async deleteCustomProduct(token: string, id: string) {
-    const res = await fetch(`${API_BASE}/api/products/custom/${id}`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/products/custom/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -801,33 +788,24 @@ export const api = {
   },
 
   async getNotifications(token: string) {
-    const res = await fetch(`${API_BASE}/api/notifications`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/notifications`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     if (!res.ok) throw new Error("Failed to fetch notifications");
     return res.json();
   },
 
   async markNotificationsRead(token: string) {
-    const res = await fetch(`${API_BASE}/api/notifications/read`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/notifications/read`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     if (!res.ok) throw new Error("Failed to mark notifications as read");
     return res.json();
   },
 
   async getLenderOrders(token: string) {
-    const res = await fetch(`${API_BASE}/api/lender/orders`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/lender/orders`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     if (!res.ok) throw new Error("Failed to fetch lender orders");
     const data = await res.json();
@@ -895,13 +873,10 @@ export const api = {
   },
 
   async toggleCustomProductAvailability(token: string, productId: string) {
-    const res = await fetch(
+    const res = await this.fetchWithAuth(
       `${API_BASE}/api/products/custom/${productId}/toggle-availability`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       },
     );
     if (!res.ok)
@@ -916,11 +891,10 @@ export const api = {
     endDate: string,
     couponCode?: string,
   ) {
-    const res = await fetch(`${API_BASE}/api/payments/create-order`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/payments/create-order`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         product_id: productId,
@@ -942,11 +916,10 @@ export const api = {
     razorpayPaymentId: string,
     razorpaySignature: string,
   ) {
-    const res = await fetch(`${API_BASE}/api/payments/verify`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/payments/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         razorpay_order_id: razorpayOrderId,
@@ -967,11 +940,10 @@ export const api = {
     amount?: number,
     reason?: string,
   ) {
-    const res = await fetch(`${API_BASE}/api/payments/refund`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/payments/refund`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         order_id: orderId,
@@ -1108,9 +1080,7 @@ export const api = {
 
   async getSupportTickets(token: string) {
     try {
-      const res = await fetch(`${API_BASE}/api/support`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await this.fetchWithAuth(`${API_BASE}/api/support`);
       if (!res.ok) return [];
       return await res.json();
     } catch {
@@ -1122,11 +1092,10 @@ export const api = {
     token: string,
     ticket: { subject: string; message: string; priority?: string },
   ) {
-    const res = await fetch(`${API_BASE}/api/support`, {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/support`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(ticket),
     });

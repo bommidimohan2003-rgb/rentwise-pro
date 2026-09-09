@@ -19,56 +19,45 @@ const FALLBACK_AGENTS: AdminAgent[] = [];
 
 export const usersService = {
   async getUsers(): Promise<AdminUser[]> {
-    try {
-      const response = await adminApi.get("/users");
-      if (response.data && Array.isArray(response.data)) {
-        return response.data;
-      }
-    } catch (err) {
-      console.warn("[usersService] getUsers fallback:", err);
+    const response = await adminApi.get("/users");
+    if (response.data && Array.isArray(response.data)) {
+      return response.data;
     }
-    return FALLBACK_USERS;
+    return [];
+  },
+
+  async getUserDetails(id: string): Promise<AdminUser> {
+    const response = await adminApi.get(`/users/${encodeURIComponent(id)}`);
+    return response.data;
   },
 
   async updateUser(id: string, data: Partial<AdminUser>): Promise<AdminUser> {
-    try {
-      const response = await adminApi.put(`/users/${id}`, data);
-      return response.data;
-    } catch (err) {
-      console.warn("[usersService] updateUser fallback:", err);
-      const user = FALLBACK_USERS.find((u) => u.id === id) || FALLBACK_USERS[0];
-      return { ...user, ...data };
-    }
+    const response = await adminApi.put(`/users/${encodeURIComponent(id)}`, data);
+    return response.data;
+  },
+
+  async approveUser(id: string): Promise<AdminUser> {
+    const response = await adminApi.patch(`/users/${encodeURIComponent(id)}/approve`);
+    return response.data?.user || response.data;
+  },
+
+  async rejectUser(id: string, reason?: string): Promise<AdminUser> {
+    const response = await adminApi.patch(`/users/${encodeURIComponent(id)}/reject`, { reason });
+    return response.data?.user || response.data;
   },
 
   async deleteUser(id: string): Promise<void> {
-    try {
-      await adminApi.delete(`/users/${id}`);
-    } catch (err) {
-      console.warn("[usersService] deleteUser fallback:", err);
-    }
+    await adminApi.delete(`/users/${encodeURIComponent(id)}`);
   },
 
   async suspendUser(id: string): Promise<AdminUser> {
-    try {
-      const response = await adminApi.post(`/users/${id}/suspend`);
-      return response.data;
-    } catch (err) {
-      console.warn("[usersService] suspendUser fallback:", err);
-      const user = FALLBACK_USERS.find((u) => u.id === id) || FALLBACK_USERS[0];
-      return { ...user, status: "suspended" };
-    }
+    const response = await adminApi.post(`/users/${encodeURIComponent(id)}/suspend`);
+    return response.data?.user || response.data;
   },
 
   async activateUser(id: string): Promise<AdminUser> {
-    try {
-      const response = await adminApi.post(`/users/${id}/activate`);
-      return response.data;
-    } catch (err) {
-      console.warn("[usersService] activateUser fallback:", err);
-      const user = FALLBACK_USERS.find((u) => u.id === id) || FALLBACK_USERS[0];
-      return { ...user, status: "active" };
-    }
+    const response = await adminApi.post(`/users/${encodeURIComponent(id)}/activate`);
+    return response.data?.user || response.data;
   },
 
   async getAgents(): Promise<AdminAgent[]> {

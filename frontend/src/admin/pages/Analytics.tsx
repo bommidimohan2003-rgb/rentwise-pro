@@ -153,18 +153,19 @@ export default function Analytics() {
     <div className="space-y-8 pb-12">
       {/* Analytics SaaS Hero Header */}
       <div className="glass-hero relative overflow-hidden p-6 md:p-8 rounded-3xl border border-primary/20 bg-gradient-to-br from-card/90 via-card/70 to-primary/5 shadow-2xl">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-badge text-xs font-bold text-primary">
-              <Activity className="h-3.5 w-3.5" /> Platform Commercial
-              Intelligence
+          <div className="space-y-3 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-badge border border-primary/30 text-xs font-bold text-primary">
+              <Zap className="h-3.5 w-3.5 text-amber-500" />
+              <span>Real-Time Intelligence Hub</span>
             </div>
-            <h1 className="text-2xl md:text-4xl font-extrabold text-foreground tracking-tight font-display">
-              Analytics &amp;{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-cyan-500">
-                Unit Economics
+
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight font-display">
+              Marketplace Analytics &{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-amber-500">
+                Revenue Intelligence
               </span>
             </h1>
             <p className="text-xs md:text-sm text-muted-foreground font-medium leading-relaxed">

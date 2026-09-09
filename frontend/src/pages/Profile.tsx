@@ -26,8 +26,12 @@ import {
   Sparkles,
   Save,
   HelpCircle,
+  Upload,
+  X,
+  AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
@@ -41,7 +45,9 @@ export default function Profile() {
   const { user, ready, updateUser, logout, logoutAll, getSessions, revokeSession } = useAuth();
   const navigate = useNavigate();
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "location" | "payout" | "security">("details");
 
   const [form, setForm] = useState({
@@ -281,9 +287,52 @@ export default function Profile() {
       } else {
         updateUser({ avatar: photoDataUrl, profilePhotoUrl: photoDataUrl });
       }
-      toast.success("Profile photo updated successfully via real-time camera!");
+      toast.success("Profile photo updated successfully!");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to upload profile photo.";
+      toast.error(msg);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (JPEG, PNG, WebP).");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size exceeds 5MB limit. Please select a smaller photo.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      handleUploadPhoto(dataUrl);
+      setIsPhotoMenuOpen(false);
+    };
+    reader.onerror = () => {
+      toast.error("Failed to read the selected image file.");
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!user) return;
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.email || "User")}&background=161616&color=ffffff`;
+    try {
+      if (token) {
+        await api.updateProfile(token, { avatar: defaultAvatar, profilePhotoUrl: "" });
+      }
+      updateUser({ avatar: defaultAvatar, profilePhotoUrl: "", profile_photo_url: "" });
+      setIsPhotoMenuOpen(false);
+      toast.success("Profile photo removed.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to remove photo.";
       toast.error(msg);
     }
   };
@@ -296,9 +345,35 @@ export default function Profile() {
   const activePhoto =
     user?.profilePhotoUrl || user?.profile_photo_url || user?.avatar;
 
+  const isPendingApproval = user?.status === "pending";
+
   return (
     <DashboardLayout>
       <div className="space-y-8 max-w-7xl mx-auto pb-12">
+        {/* Hidden File Input for Upload Photo */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+
+        {/* Pending Approval Notice Banner */}
+        {isPendingApproval && (
+          <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 sm:p-5 flex items-start gap-3.5 text-amber-900 dark:text-amber-200">
+            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                Account Awaiting Administrative Approval
+              </h4>
+              <p className="text-xs text-amber-700/80 dark:text-amber-300/80 leading-relaxed">
+                Your account registration has been submitted and is currently being verified by the Payent team. You can update your profile, take your identity photo, and browse equipment. Full rental and listing privileges will unlock once an admin approves your profile.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -308,7 +383,7 @@ export default function Profile() {
               </h1>
               <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
-                <span>Verified Account</span>
+                <span>{isPendingApproval ? "Pending Verification" : "Verified Account"}</span>
               </span>
             </div>
             <p className="text-sm text-muted-foreground mt-1 font-medium">
@@ -332,11 +407,16 @@ export default function Profile() {
             <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:16px_16px] opacity-25 pointer-events-none" />
             <div className="relative z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-extrabold shadow-md">
               <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              <span>Verified Creator & Lender</span>
+              <span>{isPendingApproval ? "Pending Approval" : "Verified Creator & Lender"}</span>
             </div>
             <div className="relative z-10 text-right hidden sm:block">
               <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest block">Account Status</span>
-              <span className="text-xs font-black text-emerald-400 uppercase">Active & Protected</span>
+              <span className={cn(
+                "text-xs font-black uppercase",
+                isPendingApproval ? "text-amber-400" : "text-emerald-400"
+              )}>
+                {isPendingApproval ? "Pending Review" : "Active & Protected"}
+              </span>
             </div>
           </div>
 
@@ -345,7 +425,7 @@ export default function Profile() {
             {/* Avatar & Key Info */}
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 text-center sm:text-left">
               {/* Photo Box */}
-              <div className="flex flex-col items-center gap-3 shrink-0">
+              <div className="flex flex-col items-center gap-3 shrink-0 relative">
                 <div className="h-32 w-32 sm:h-36 sm:w-36 rounded-3xl bg-secondary/80 border-4 border-card grid place-items-center text-foreground text-4xl font-extrabold shadow-2xl overflow-hidden relative group">
                   {hasRealPhoto ? (
                     <img
@@ -360,17 +440,67 @@ export default function Profile() {
                     </div>
                   )}
                   {/* Status Dot */}
-                  <div className="absolute bottom-2 right-2 h-4 w-4 rounded-full bg-emerald-500 border-2 border-card shadow-md" title="Active Account" />
+                  <div
+                    className={cn(
+                      "absolute bottom-2 right-2 h-4 w-4 rounded-full border-2 border-card shadow-md",
+                      isPendingApproval ? "bg-amber-500" : "bg-emerald-500"
+                    )}
+                    title={isPendingApproval ? "Pending Admin Approval" : "Active Account"}
+                  />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsCameraOpen(true)}
-                  className="w-full btn-gradient text-xs py-2 px-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md hover:scale-102 active:scale-95 transition-all cursor-pointer"
-                >
-                  <Camera className="h-4 w-4" />
-                  <span>{hasRealPhoto ? "Change Photo" : "📷 Take Profile Photo"}</span>
-                </button>
+                {/* Change Photo Trigger with Dropdown Options */}
+                <div className="relative w-full">
+                  <button
+                    type="button"
+                    onClick={() => setIsPhotoMenuOpen(!isPhotoMenuOpen)}
+                    className="w-full btn-gradient text-xs py-2 px-3.5 rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-md hover:scale-102 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                    <span>Change Profile Photo</span>
+                    <ChevronDown className="h-3 w-3 opacity-70" />
+                  </button>
+
+                  {/* Photo Options Menu */}
+                  {isPhotoMenuOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-2 z-30 bg-card border border-border rounded-2xl p-1.5 shadow-2xl space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPhotoMenuOpen(false);
+                          setIsCameraOpen(true);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-bold rounded-xl text-foreground hover:bg-secondary flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Camera className="h-3.5 w-3.5 text-primary" />
+                        <span>Take Photo</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPhotoMenuOpen(false);
+                          fileInputRef.current?.click();
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-bold rounded-xl text-foreground hover:bg-secondary flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Upload className="h-3.5 w-3.5 text-primary" />
+                        <span>Upload Photo</span>
+                      </button>
+
+                      {hasRealPhoto && (
+                        <button
+                          type="button"
+                          onClick={handleRemovePhoto}
+                          className="w-full text-left px-3 py-2 text-xs font-bold rounded-xl text-destructive hover:bg-destructive/10 flex items-center gap-2 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          <span>Remove Photo</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Bio & Identity Chips */}
@@ -379,9 +509,14 @@ export default function Profile() {
                   <h2 className="text-2xl sm:text-3xl font-black text-foreground font-display tracking-tight">
                     {user?.fullName || "Verified User"}
                   </h2>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-black uppercase tracking-wider">
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border",
+                    isPendingApproval
+                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  )}>
                     <ShieldCheck className="h-3.5 w-3.5" />
-                    <span>Identity Verified</span>
+                    <span>{isPendingApproval ? "Pending Verification" : "Identity Verified"}</span>
                   </span>
                 </div>
 

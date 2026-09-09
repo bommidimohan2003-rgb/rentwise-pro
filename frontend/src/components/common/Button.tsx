@@ -13,12 +13,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: "btn-gradient",
-  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-  ghost: "hover:bg-secondary text-foreground",
+  primary:
+    "bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] dark:active:bg-[#DCD9D1] border border-transparent shadow-sm",
+  secondary:
+    "bg-[#FFFFFF] text-[#171717] border border-[#D6D6D6] hover:bg-[#F3F3F3] active:bg-[#EAEAEA] dark:bg-transparent dark:text-[#F3F3F3] dark:border-white/25 dark:hover:bg-white/[0.08] dark:active:bg-white/[0.14]",
+  ghost:
+    "bg-transparent text-[#333333] hover:bg-[#F4F4F4] active:bg-[#EAEAEA] dark:text-[#BFC3C7] dark:hover:bg-white/[0.06] dark:hover:text-white",
   outline:
-    "border border-border bg-transparent hover:bg-secondary text-foreground",
-  destructive: "bg-destructive text-white hover:opacity-90",
+    "bg-transparent text-[#171717] border border-[#D6D6D6] hover:bg-[#F3F3F3] active:bg-[#EAEAEA] dark:text-[#F3F3F3] dark:border-white/25 dark:hover:bg-white/[0.08] dark:active:bg-white/[0.14]",
+  destructive:
+    "bg-[#FF1744] text-[#FFFFFF] hover:bg-[#D50000] active:bg-[#B71C1C] border border-transparent shadow-sm",
 };
 
 const sizes: Record<Size, string> = {

@@ -220,14 +220,35 @@ function RootComponent() {
       const customEv = e as CustomEvent<{
         loginPath?: "/login" | "/admin/login";
       }>;
-      storage.remove("payent:token");
-      storage.remove("payent:currentUser");
+      storage.remove(STORAGE_KEYS.token);
+      storage.remove(STORAGE_KEYS.refreshToken);
+      storage.remove(STORAGE_KEYS.currentUser);
       if (typeof window !== "undefined") {
         localStorage.removeItem("payent:admin:token");
         localStorage.removeItem("payent:admin:current_user");
-        const targetLoginUrl = customEv.detail?.loginPath || "/login";
-        if (window.location.pathname !== targetLoginUrl) {
-          window.location.href = targetLoginUrl;
+        const currentPath = window.location.pathname;
+        const targetLoginBase = customEv.detail?.loginPath || (currentPath.startsWith("/admin") ? "/admin/login" : "/login");
+
+        if (currentPath === "/login" || currentPath === "/admin/login") {
+          return;
+        }
+
+        const isProtectedRoute =
+          currentPath.startsWith("/dashboard") ||
+          currentPath.startsWith("/orders") ||
+          currentPath.startsWith("/wishlist") ||
+          currentPath.startsWith("/profile") ||
+          currentPath.startsWith("/settings") ||
+          currentPath.startsWith("/messages") ||
+          currentPath.startsWith("/notifications") ||
+          currentPath.startsWith("/checkout") ||
+          currentPath.startsWith("/payment") ||
+          currentPath.startsWith("/become-lender") ||
+          currentPath.startsWith("/admin");
+
+        if (isProtectedRoute) {
+          const redirectParam = currentPath !== "/" ? `?redirect=${encodeURIComponent(currentPath + window.location.search)}` : "";
+          window.location.href = `${targetLoginBase}${redirectParam}`;
         }
       }
     };

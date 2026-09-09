@@ -34,7 +34,20 @@ export function LoginForm() {
 
   useEffect(() => {
     if (user) {
-      navigate({ to: "/categories" });
+      const searchParams =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search)
+          : null;
+      const redirectUrl =
+        searchParams?.get("redirect") || searchParams?.get("returnUrl");
+
+      if (redirectUrl && redirectUrl.startsWith("/")) {
+        navigate({ to: redirectUrl as "/dashboard" });
+      } else if (user.role === "admin") {
+        navigate({ to: "/admin/dashboard" });
+      } else {
+        navigate({ to: "/categories" });
+      }
     }
   }, [user, navigate]);
 

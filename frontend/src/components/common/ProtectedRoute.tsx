@@ -8,7 +8,13 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (ready && !user) {
-      navigate({ to: "/login" });
+      const currentPath =
+        typeof window !== "undefined" ? window.location.pathname : "";
+      if (currentPath && currentPath !== "/login" && currentPath !== "/") {
+        window.location.href = `/login?redirect=${encodeURIComponent(currentPath + (window.location.search || ""))}`;
+      } else {
+        navigate({ to: "/login" });
+      }
     }
   }, [ready, user, navigate]);
 

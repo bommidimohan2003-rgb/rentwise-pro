@@ -722,10 +722,22 @@ def get_user_by_phone(phone: str):
             return u
     return None
 
-def create_user(email: str, phone: str, password_hash: str, full_name: str, role: str = "user", address: str = None, city: str = None, pincode: str = None, aadhaar_number: str = None):
+def create_user(
+    email: str,
+    phone: str,
+    password_hash: str,
+    full_name: str,
+    role: str = "user",
+    address: str = None,
+    city: str = None,
+    pincode: str = None,
+    aadhaar_number: str = None,
+    status: str = None
+):
     created_at = dt.now(timezone.utc).isoformat()
     clean_email = email.strip().lower()
     clean_aadhaar = "".join(c for c in str(aadhaar_number) if c.isdigit()) if aadhaar_number else None
+    user_status = status if status else ("approved" if role == "admin" else "pending")
     user_data = {
         "email": clean_email,
         "phone": phone,
@@ -736,13 +748,15 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
         "city": city,
         "pincode": pincode,
         "aadhaar_number": clean_aadhaar,
+        "status": user_status,
+        "verified": bool(role == "admin"),
         "created_at": created_at
     }
     MOCK_USERS[clean_email] = user_data
     try:
         execute_query(
-            "INSERT INTO users (email, phone, password_hash, full_name, role, address, city, pincode, aadhaar_number, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (clean_email, phone, password_hash, full_name, role, address, city, pincode, clean_aadhaar, created_at)
+            "INSERT INTO users (email, phone, password_hash, full_name, role, address, city, pincode, aadhaar_number, status, verified, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (clean_email, phone, password_hash, full_name, role, address, city, pincode, clean_aadhaar, user_status, 1 if role == "admin" else 0, created_at)
         )
     except Exception as e:
         print(f"Notice: Database write error in create_user: {e}")
@@ -755,6 +769,8 @@ def create_user(email: str, phone: str, password_hash: str, full_name: str, role
         "city": city,
         "pincode": pincode,
         "aadhaar_number": clean_aadhaar,
+        "status": user_status,
+        "verified": bool(role == "admin"),
         "createdAt": created_at
     }
 
@@ -2200,6 +2216,32 @@ def get_user_active_sessions(user_email: str) -> List[dict]:
 def cleanup_expired_sessions() -> bool:
     now_str = dt.now(timezone.utc).isoformat()
     return execute_query("DELETE FROM sessions WHERE expires_at <= %s OR revoked_at IS NOT NULL", (now_str,))
+
+def is_session_revoked(session_id: str) -> bool:
+    if not session_id:
+        return False
+    conn = get_db_connection()
+    if not conn:
+        return False
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT revoked_at, expires_at FROM sessions WHERE id = %s
+            """, (session_id,))
+            row = cursor.fetchone()
+            if not row:
+                return False
+            now_str = dt.now(timezone.utc).isoformat()
+            if row.get("revoked_at") is not None:
+                return True
+            exp = row.get("expires_at")
+            if exp and exp <= now_str:
+                return True
+            return False
+    except Exception:
+        return False
+    finally:
+        conn.close()
 
 # ----------------------------------------------------------------------
 # Real Customer Reviews DB Helpers

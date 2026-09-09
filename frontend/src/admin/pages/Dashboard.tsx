@@ -383,7 +383,7 @@ export default function Dashboard() {
       <div className="glass-hero relative overflow-hidden p-6 md:p-8 rounded-3xl border border-primary/20 bg-gradient-to-br from-card/90 via-card/70 to-primary/5 shadow-2xl">
         {/* Glow ambient background effects */}
         <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div className="space-y-4 max-w-2xl">
@@ -397,7 +397,7 @@ export default function Dashboard() {
 
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight leading-tight font-display">
               Payent{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-cyan-500">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-amber-500">
                 SaaS Intelligence
               </span>{" "}
               & Platform Analytics
@@ -530,7 +530,7 @@ export default function Dashboard() {
             <Zap className="h-3 w-3 text-amber-500" /> Twilio 2FA Verified
           </span>
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/80 border border-border/60">
-            <Server className="h-3 w-3 text-cyan-500" /> 99.99% SLA Uptime
+            <Server className="h-3 w-3 text-primary" /> 99.99% SLA Uptime
           </span>
         </div>
       </div>
@@ -881,7 +881,7 @@ export default function Dashboard() {
             title="Dynamic Yield Engine"
             description="Algorithmically adjusts gear rental pricing based on location demand, weekend surges, and equipment rarity."
             badgeText="Yield Optimization On"
-            colorClass="bg-cyan-500/10 text-cyan-500 border-cyan-500/20"
+            colorClass="bg-blue-500/10 text-blue-500 border-blue-500/20"
             specs={[
               { label: "Pricing Model", value: "Algorithmic Surge" },
               { label: "Demand Monitor", value: "City-wide Geo" },
@@ -1009,7 +1009,7 @@ export default function Dashboard() {
                 to="/admin/settings"
                 className="flex flex-col items-center justify-center p-4 rounded-2xl bg-secondary/50 border border-border/50 hover:bg-primary/10 hover:border-primary/40 transition-all text-center group"
               >
-                <Settings className="h-5 w-5 text-cyan-500 mb-2 group-hover:scale-110 transition-transform" />
+                <Settings className="h-5 w-5 text-primary mb-2 group-hover:scale-110 transition-transform" />
                 <span className="text-xs font-bold text-foreground">
                   SaaS Config
                 </span>

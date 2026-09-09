@@ -389,7 +389,7 @@ export default function Categories() {
         name: "Power Banks",
         icon: "Zap",
         count: 0,
-        color: "bg-cyan-500/10 text-cyan-500",
+        color: "bg-blue-500/10 text-blue-500",
         enabled: true,
       },
     ],

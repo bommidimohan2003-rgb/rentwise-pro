@@ -14,7 +14,7 @@ export function CallToAction() {
       className="relative py-24 px-4 sm:px-6 overflow-hidden bg-white dark:bg-[#070A10] text-foreground dark:text-white border-t border-border dark:border-white/10"
     >
       {/* Background Ambient Lighting */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-r from-primary/10 via-purple-500/10 to-cyan-500/10 dark:from-primary/20 dark:via-purple-500/20 dark:to-cyan-500/20 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-r from-primary/10 via-purple-500/10 to-amber-500/10 dark:from-primary/20 dark:via-purple-500/20 dark:to-amber-500/20 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="relative max-w-5xl mx-auto">
         <motion.div
@@ -26,7 +26,7 @@ export function CallToAction() {
           {/* Headline */}
           <h2 className="text-2xl xs:text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground dark:text-white font-display leading-tight max-w-3xl mx-auto">
             Experience Unrivaled Tech Access{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-primary to-cyan-600 dark:from-amber-200 dark:via-primary dark:to-cyan-400">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-primary to-purple-600 dark:from-amber-200 dark:via-primary dark:to-purple-400">
               Without Compromise.
             </span>
           </h2>

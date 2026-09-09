@@ -45,6 +45,69 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let _axiosRefreshPromise: Promise<string | null> | null = null;
+
+async function refreshAxiosToken(): Promise<string | null> {
+  if (_axiosRefreshPromise) return _axiosRefreshPromise;
+  if (typeof window === "undefined") return null;
+
+  const currentRefreshToken = window.localStorage.getItem("payent:refreshToken");
+  if (!currentRefreshToken) return null;
+
+  _axiosRefreshPromise = (async () => {
+    try {
+      const res = await axios.post(`${API_BASE}/api/auth/refresh`, {
+        refresh_token: currentRefreshToken,
+      });
+      if (res.data?.token) {
+        window.localStorage.setItem("payent:token", res.data.token);
+        if (res.data.refreshToken) {
+          window.localStorage.setItem("payent:refreshToken", res.data.refreshToken);
+        }
+        return res.data.token as string;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      _axiosRefreshPromise = null;
+    }
+  })();
+
+  return _axiosRefreshPromise;
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/refresh") &&
+      !originalRequest.url?.includes("/login")
+    ) {
+      originalRequest._retry = true;
+      const newToken = await refreshAxiosToken();
+      if (newToken) {
+        originalRequest.headers.set("Authorization", `Bearer ${newToken}`);
+        return api(originalRequest);
+      } else {
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem("payent:token");
+          window.localStorage.removeItem("payent:refreshToken");
+          window.localStorage.removeItem("payent:currentUser");
+          window.localStorage.removeItem("payent:admin:token");
+          window.localStorage.removeItem("payent:admin:current_user");
+          window.dispatchEvent(new CustomEvent("payent-session-expired"));
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface ReviewItem {
   id: string;
   productId?: string;

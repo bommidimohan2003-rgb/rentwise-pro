@@ -44,20 +44,17 @@ export function WhyChoose() {
     <section className="relative overflow-hidden bg-white dark:bg-[#0A0E17] py-16 md:py-24 border-t border-b border-border dark:border-white/10 text-foreground dark:text-white">
       {/* Ambient Radial Spotlights */}
       <div className="absolute top-1/2 left-0 -translate-y-1/2 w-80 h-80 bg-primary/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/2 right-0 -translate-y-1/2 w-80 h-80 bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none" />
-
-      <div className="relative mx-auto max-w-7xl px-4 md:px-6">
-        <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-secondary/80 dark:bg-white/5 border border-border dark:border-white/15 text-xs font-bold text-amber-600 dark:text-amber-400 tracking-wider uppercase">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>The Payent Standard</span>
-          </div>
-          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight font-display text-foreground dark:text-white">
-            Built for High-End Creators &{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-600 dark:via-purple-400 to-cyan-600 dark:to-cyan-400">
-              Luxury Film Productions.
-            </span>
-          </h2>
+      <div className="absolute top-1/2 right-0 -translate-y-1/2 w-80 h-80 bg-amber-500/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+          <div className="max-w-2xl space-y-4">
+            <span className="text-xs font-black uppercase tracking-[0.25em] text-primary">Precision & Trust</span>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground font-display">
+              Engineered for Creators. <br />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-600 dark:via-purple-400 to-amber-600 dark:to-amber-400">
+                Protected for Owners.
+              </span>
+            </h2>
           <p className="text-sm md:text-base text-muted-foreground dark:text-neutral-400 font-medium">
             Standard rental houses charge exorbitant deposits and rigid 24-hour
             penalties. Payent gives you liquid access to certified, insured tech

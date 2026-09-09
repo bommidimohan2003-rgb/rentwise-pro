@@ -28,7 +28,7 @@ const stats = [
     suffix: "/7",
     label: "Customer Support",
     icon: "💬",
-    gradient: "from-emerald-400 to-teal-400",
+    gradient: "from-emerald-400 to-amber-400",
   },
 ];
 

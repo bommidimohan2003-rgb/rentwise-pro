@@ -19,6 +19,7 @@ export interface User {
   aadhaarMasked?: string;
   aadhaar_masked?: string;
   role?: "user" | "admin";
+  status?: "pending" | "approved" | "rejected" | "suspended" | "active";
   createdAt?: string;
   bio?: string;
   occupation?: string;
