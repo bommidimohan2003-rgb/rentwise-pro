@@ -15,6 +15,7 @@ interface PendingUser {
   address?: string;
   city?: string;
   pincode?: string;
+  aadhaarNumber?: string;
   adminCode?: string;
 }
 
@@ -85,7 +86,7 @@ export function OTPVerification() {
         storage.remove(STORAGE_KEYS.otpEmail);
         toast.success("Password reset successful! Please log in.");
       } else if (pendingUser) {
-        await api.registerVerify(
+        const res = await api.registerVerify(
           pendingUser.email,
           pendingUser.phone,
           code,
@@ -95,11 +96,19 @@ export function OTPVerification() {
           pendingUser.address,
           pendingUser.city,
           pendingUser.pincode,
+          pendingUser.aadhaarNumber,
         );
+        if (res?.token && res?.user) {
+          storage.set(STORAGE_KEYS.token, res.token);
+          storage.set(STORAGE_KEYS.currentUser, res.user);
+          if (res.refreshToken) {
+            storage.set(STORAGE_KEYS.refreshToken, res.refreshToken);
+          }
+        }
         storage.remove(STORAGE_KEYS.otp);
         storage.remove(STORAGE_KEYS.pendingUser);
         storage.remove(STORAGE_KEYS.otpEmail);
-        toast.success("Registration successful! Please log in.");
+        toast.success(res?.message || "Registration successful! Please log in.");
       }
       navigate({ to: "/login" });
     } catch (err) {

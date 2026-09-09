@@ -54,7 +54,7 @@ const schema = z
     pincode: z.string().trim().min(6, "Enter valid 6-digit PIN code").max(10),
     password: z
       .string()
-      .min(6, "Password must be at least 6 characters")
+      .min(8, "Password must be at least 8 characters")
       .max(128),
     confirm: z.string().min(1, "Please confirm your password"),
     terms: z.literal(true, {
@@ -76,7 +76,7 @@ type FormValues = z.infer<typeof schema>;
 
 function strength(pw: string) {
   let s = 0;
-  if (pw.length >= 6) s++;
+  if (pw.length >= 8) s++;
   if (/[A-Z]/.test(pw)) s++;
   if (/[0-9]/.test(pw)) s++;
   if (/[^A-Za-z0-9]/.test(pw)) s++;
@@ -84,14 +84,18 @@ function strength(pw: string) {
 }
 
 export function RegisterForm() {
-  const { user, register: registerUser, login } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      navigate({ to: "/categories" });
+      if (user.role === "admin") {
+        navigate({ to: "/admin/dashboard" });
+      } else {
+        navigate({ to: "/categories" });
+      }
     }
   }, [user, navigate]);
 
@@ -146,14 +150,19 @@ export function RegisterForm() {
         if (res.token && res.user) {
           storage.set(STORAGE_KEYS.token, res.token);
           storage.set(STORAGE_KEYS.currentUser, res.user);
+          if (res.refreshToken) {
+            storage.set(STORAGE_KEYS.refreshToken, res.refreshToken);
+          }
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("payent:storage_change"));
+          }
         }
-        await registerUser(data.email, data.phone);
-        const loginRes = await login(data.email, data.password);
-        if (!loginRes.ok && res.user) {
-          storage.set(STORAGE_KEYS.currentUser, res.user);
+        toast.success(res.message || "Account created successfully!");
+        if (res.user?.role === "admin") {
+          navigate({ to: "/admin/dashboard" });
+        } else {
+          navigate({ to: "/categories" });
         }
-        toast.success("Account created successfully!");
-        navigate({ to: "/categories" });
         return;
       }
     } catch (err) {

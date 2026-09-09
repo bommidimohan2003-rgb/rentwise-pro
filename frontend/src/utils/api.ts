@@ -90,28 +90,41 @@ export const api = {
     pincode?: string,
     aadhaarNumber?: string,
   ) {
-    const res = await fetch(`${API_BASE}/api/register/verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        phone,
-        otp: otp || "DIRECT",
-        password,
-        full_name: fullName || null,
-        admin_code: adminCode || null,
-        address: address || null,
-        city: city || null,
-        pincode: pincode || null,
-        aadhaar_number: aadhaarNumber || null,
-        aadhaarNumber: aadhaarNumber || null,
-      }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(data, "Failed to verify registration."));
+    try {
+      const res = await fetch(`${API_BASE}/api/register/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          phone,
+          otp: otp || "DIRECT",
+          password,
+          full_name: fullName || null,
+          admin_code: adminCode || null,
+          address: address || null,
+          city: city || null,
+          pincode: pincode || null,
+          aadhaar_number: aadhaarNumber || null,
+          aadhaarNumber: aadhaarNumber || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(parseApiError(data, "Failed to verify registration."));
+      }
+      return await res.json();
+    } catch (err: unknown) {
+      const errorObj = err as { name?: string; message?: string };
+      if (
+        errorObj.name === "TypeError" ||
+        errorObj.message?.includes("Failed to fetch")
+      ) {
+        throw new Error(
+          "Unable to connect to registration server. Please check if the backend service is running.",
+        );
+      }
+      throw err;
     }
-    return await res.json();
   },
 
   async login(email: string, password: string) {
