@@ -17,6 +17,7 @@ import logging
 import json
 import asyncio
 import traceback
+import re
 from typing import Optional, List
 from dotenv import load_dotenv
 
@@ -24,6 +25,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Header, Depends, Query, status, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, validator
 
@@ -70,6 +72,8 @@ import razorpay
 from database import (
     init_db,
     get_user,
+    get_user_by_phone,
+    get_user_by_aadhaar,
     create_user,
     save_google_user,
     update_user_password,
