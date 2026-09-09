@@ -85,8 +85,8 @@
   --payent-bg: #ffffff;
   --payent-surface: #f8fafc;
   --payent-surface-elevated: #ffffff;
-  --payent-accent: #FF1744;
-  --payent-accent-hover: #D50000;
+  --payent-accent: #161616;
+  --payent-accent-hover: #292929;
   --payent-border: rgba(0, 0, 0, 0.08);
   --payent-text-secondary: #64748b;
   --payent-text-muted: #94a3b8;
@@ -131,8 +131,8 @@
   --payent-bg: #05090D;
   --payent-surface: #0D151D;
   --payent-surface-elevated: #111B24;
-  --payent-accent: #FF1744;
-  --payent-accent-hover: #FF2355;
+  --payent-accent: #F2F0EA;
+  --payent-accent-hover: #FFFFFF;
   --payent-border: rgba(255, 255, 255, 0.10);
   --payent-text-secondary: #A8B1BA;
   --payent-text-muted: #697681;
@@ -199,15 +199,15 @@
 }
 
 .btn-payent-red {
-  background-color: #FF1744;
-  color: #ffffff;
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   transition: all 0.2s ease;
 }
 
 .btn-payent-red:hover {
-  background-color: #FF2355;
+  background-color: var(--btn-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px 0 rgba(255, 23, 68, 0.35);
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.15);
 }
 
 /* Spatial UI Elevation Utilities */

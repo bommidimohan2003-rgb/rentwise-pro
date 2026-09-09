@@ -33,7 +33,7 @@ export function HowItWorks() {
               <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
                 How It Works
               </h2>
-              <span className="inline-block w-6 h-[3px] bg-[#FF1744] rounded-full" />
+              <span className="inline-block w-6 h-[3px] bg-primary rounded-full" />
             </div>
             <p className="mt-1 text-xs text-neutral-500 dark:text-[#A8B1BA]">
               Get the gear you need in just 3 simple steps.
@@ -42,10 +42,10 @@ export function HowItWorks() {
 
           <Link
             to="/about"
-            className="text-xs font-semibold text-neutral-600 dark:text-[#A8B1BA] hover:text-[#FF1744] dark:hover:text-white flex items-center gap-1.5 transition-colors group shrink-0"
+            className="text-xs font-semibold text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white flex items-center gap-1.5 transition-colors group shrink-0"
           >
             <span>Learn More</span>
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-[#FF1744]" />
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-neutral-700 dark:text-neutral-300" />
           </Link>
         </div>
 
@@ -57,19 +57,19 @@ export function HowItWorks() {
             return (
               <div
                 key={step.number}
-                className="group relative rounded-xl bg-neutral-50/90 dark:bg-[#0A1017] hover:bg-neutral-100/90 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-[#FF1744]/40 dark:hover:border-[#FF1744]/50 p-3.5 sm:p-4 flex items-center gap-3.5 text-left transition-all duration-300 hover:-translate-y-0.5 shadow-xs"
+                className="group relative rounded-xl bg-neutral-50/90 dark:bg-[#0A1017] hover:bg-neutral-100/90 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 p-3.5 sm:p-4 flex items-center gap-3.5 text-left transition-all duration-300 hover:-translate-y-0.5 shadow-xs"
               >
                 {/* Number Badge + Icon */}
-                <div className="relative shrink-0 flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-white dark:bg-[#121C26] border border-black/8 dark:border-white/10 group-hover:border-[#FF1744]/30 shadow-xs">
-                  <Icon className="h-5 w-5 text-[#FF1744]" />
-                  <span className="absolute -top-1.5 -left-1.5 px-1.5 py-0.5 rounded-md text-[9px] font-mono font-bold bg-[#FF1744] text-white leading-none shadow-xs">
+                <div className="relative shrink-0 flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-white dark:bg-[#121C26] border border-black/8 dark:border-white/10 group-hover:border-black/20 dark:group-hover:border-white/20 shadow-xs">
+                  <Icon className="h-5 w-5 text-primary dark:text-white" />
+                  <span className="absolute -top-1.5 -left-1.5 px-1.5 py-0.5 rounded-md text-[9px] font-mono font-bold bg-[#161616] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] leading-none shadow-xs">
                     {step.number}
                   </span>
                 </div>
 
                 {/* Step Details */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white group-hover:text-[#FF1744] transition-colors leading-tight truncate">
+                  <h3 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white group-hover:text-primary dark:group-hover:text-neutral-200 transition-colors leading-tight truncate">
                     {step.title}
                   </h3>
                   <p className="text-xs text-neutral-500 dark:text-[#8B98A5] mt-1 leading-snug">

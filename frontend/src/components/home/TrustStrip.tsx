@@ -37,8 +37,8 @@ export function TrustStrip() {
                 className="flex items-center gap-3 text-left p-1.5 sm:p-2 rounded-xl"
               >
                 {/* Compact Icon Container */}
-                <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-[#FF1744]/10 dark:bg-[#FF1744]/15 border border-[#FF1744]/25 flex items-center justify-center shrink-0">
-                  <Icon className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-[#FF1744]" />
+                <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-primary/10 dark:bg-white/10 border border-primary/20 dark:border-white/15 flex items-center justify-center shrink-0">
+                  <Icon className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary dark:text-white" />
                 </div>
 
                 <div className="min-w-0">

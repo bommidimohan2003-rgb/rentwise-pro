@@ -195,7 +195,7 @@ export function ProductCard({
           {/* Bottom Overlay Location & Rating Bar */}
           <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[11px] font-semibold text-white/90 bg-black/60 backdrop-blur-md rounded-xl px-2.5 py-1 border border-white/10 shadow-sm z-10">
             <span className="inline-flex items-center gap-1 truncate max-w-[70%]">
-              <MapPin className="h-3 w-3 text-[#FF5A5F] shrink-0" />
+              <MapPin className="h-3 w-3 text-emerald-400 shrink-0" />
               <span className="truncate">{location}</span>
             </span>
             <span className="inline-flex items-center gap-0.5 text-amber-400 font-black shrink-0">

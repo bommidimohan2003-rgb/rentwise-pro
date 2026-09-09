@@ -130,7 +130,7 @@ export function FeaturedProducts() {
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
                 Featured Rentals
               </h2>
-              <span className="inline-block w-8 h-[3px] bg-[#FF1744] rounded-full" />
+              <span className="inline-block w-8 h-[3px] bg-primary rounded-full" />
             </div>
             <p className="mt-1.5 text-xs sm:text-sm text-neutral-500 dark:text-[#A8B1BA]">
               Real verified equipment listed by trusted creators across India.
@@ -160,10 +160,10 @@ export function FeaturedProducts() {
 
             <Link
               to="/categories"
-              className="text-xs sm:text-sm font-semibold text-neutral-600 dark:text-[#A8B1BA] hover:text-[#FF1744] dark:hover:text-white flex items-center gap-1.5 transition-colors group ml-2"
+              className="text-xs sm:text-sm font-semibold text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white flex items-center gap-1.5 transition-colors group ml-2"
             >
               <span>Browse All Gear</span>
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-[#FF1744]" />
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-neutral-700 dark:text-neutral-300" />
             </Link>
           </div>
         </div>
@@ -183,7 +183,7 @@ export function FeaturedProducts() {
         {/* Empty State (Only Real Items Allowed - Zero Fake Mock Data) */}
         {!isLoading && displayedProducts.length === 0 && (
           <div className="rounded-2xl p-8 sm:p-12 border border-dashed border-black/15 dark:border-white/15 bg-neutral-50/50 dark:bg-[#070D13] text-center max-w-xl mx-auto flex flex-col items-center justify-center">
-            <div className="h-12 w-12 rounded-full bg-[#FF1744]/10 text-[#FF1744] flex items-center justify-center mb-3">
+            <div className="h-12 w-12 rounded-full bg-primary/10 text-primary dark:bg-white/10 dark:text-white flex items-center justify-center mb-3">
               <Sparkles className="h-6 w-6" />
             </div>
             <h3 className="text-lg font-bold text-neutral-950 dark:text-white">
@@ -194,7 +194,7 @@ export function FeaturedProducts() {
             </p>
             <Link
               to="/become-lender"
-              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FF1744] hover:bg-[#FF2355] text-white text-xs sm:text-sm font-semibold shadow-md shadow-[#FF1744]/25 transition-all cursor-pointer"
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs sm:text-sm font-bold shadow-md transition-all cursor-pointer"
             >
               <span>List Your Gear Now</span>
               <ArrowRight className="h-4 w-4" />
@@ -212,7 +212,7 @@ export function FeaturedProducts() {
                 <div
                   key={p.id}
                   onClick={() => handleDetails(p.id)}
-                  className="group relative rounded-2xl overflow-hidden bg-white dark:bg-[#0A1017] hover:bg-neutral-50/80 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-[#FF1744]/40 dark:hover:border-[#FF1744]/50 shadow-sm hover:shadow-xl dark:shadow-none dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer p-3.5"
+                  className="group relative rounded-2xl overflow-hidden bg-white dark:bg-[#0A1017] hover:bg-neutral-50/80 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 shadow-sm hover:shadow-xl dark:shadow-none dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer p-3.5"
                 >
                   {/* Top Image Stage */}
                   <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-neutral-100/90 dark:bg-[#05090D] flex items-center justify-center p-3">
@@ -228,12 +228,12 @@ export function FeaturedProducts() {
                       type="button"
                       onClick={(e) => handleWishlist(e, p.id)}
                       aria-label="Save to wishlist"
-                      className="absolute top-2.5 right-2.5 z-10 h-7 w-7 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md flex items-center justify-center text-neutral-600 dark:text-white hover:text-[#FF1744] hover:bg-white dark:hover:bg-black transition-all cursor-pointer shadow-sm"
+                      className="absolute top-2.5 right-2.5 z-10 h-7 w-7 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md flex items-center justify-center text-neutral-600 dark:text-white hover:text-rose-500 hover:bg-white dark:hover:bg-black transition-all cursor-pointer shadow-sm"
                     >
                       <Heart
                         className={`h-3.5 w-3.5 transition-colors ${
                           isLiked
-                            ? "fill-[#FF1744] text-[#FF1744]"
+                            ? "fill-rose-500 text-rose-500"
                             : "stroke-[2]"
                         }`}
                       />
@@ -253,7 +253,7 @@ export function FeaturedProducts() {
                     <div>
                       {/* Meta Row: Category + Location */}
                       <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-[#8B98A5] mb-1">
-                        <span className="font-semibold uppercase tracking-wider text-[#FF1744]">
+                        <span className="font-semibold uppercase tracking-wider text-primary dark:text-neutral-300">
                           {p.category}
                         </span>
                         <div className="flex items-center gap-1 truncate max-w-[120px]">
@@ -263,7 +263,7 @@ export function FeaturedProducts() {
                       </div>
 
                       {/* Product Title */}
-                      <h3 className="font-bold text-sm sm:text-[15px] text-neutral-900 dark:text-white group-hover:text-[#FF1744] transition-colors line-clamp-1 leading-snug">
+                      <h3 className="font-bold text-sm sm:text-[15px] text-neutral-900 dark:text-white group-hover:text-primary dark:group-hover:text-neutral-200 transition-colors line-clamp-1 leading-snug">
                         {p.title}
                       </h3>
 
@@ -301,7 +301,7 @@ export function FeaturedProducts() {
                           e.stopPropagation();
                           handleDetails(p.id);
                         }}
-                        className="px-3 py-1.5 rounded-lg bg-[#FF1744] hover:bg-[#FF2355] text-white text-xs font-semibold shadow-xs hover:shadow-sm hover:shadow-[#FF1744]/30 transition-all cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-lg bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer"
                       >
                         Rent Now
                       </button>

@@ -50,13 +50,13 @@ export function RecommendationSection({
   const getIcon = () => {
     switch (type) {
       case "personalized":
-        return <Flame className="h-4 w-4 text-[#FF5A5F]" />;
+        return <Flame className="h-4 w-4 text-amber-500" />;
       case "trending":
-        return <TrendingUp className="h-4 w-4 text-[#FF5A5F]" />;
+        return <TrendingUp className="h-4 w-4 text-emerald-500" />;
       case "frequently_together":
-        return <Layers className="h-4 w-4 text-[#FF5A5F]" />;
+        return <Layers className="h-4 w-4 text-primary" />;
       default:
-        return <Compass className="h-4 w-4 text-[#FF5A5F]" />;
+        return <Compass className="h-4 w-4 text-primary" />;
     }
   };
 
@@ -104,16 +104,10 @@ export function RecommendationSection({
                 </h4>
                 <p className="text-[11px] font-extrabold text-foreground mt-0.5">
                   ₹{product.price.toLocaleString("en-IN")}
-                  <span className="text-[10px] text-slate-400 font-normal">
+                  <span className="text-[10px] text-muted-foreground font-normal">
                     /day
                   </span>
                 </p>
-                <div className="flex items-center gap-1 mt-1">
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
-                  <span className="text-[11px] font-bold text-foreground">
-                    {product.rating}
-                  </span>
-                </div>
               </div>
             </Link>
           ))}
@@ -123,47 +117,54 @@ export function RecommendationSection({
   }
 
   return (
-    <section className={cn("py-8 space-y-6", className)}>
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-border/60 pb-4">
+    <section className={cn("space-y-6 py-6", className)}>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-2">
+          <div className="flex items-center gap-2">
             {getIcon()}
-            <span>
-              {badge ||
-                (type === "personalized"
-                  ? "Personalized For You"
-                  : type === "trending"
-                    ? "Trending Now"
-                    : "Recommended")}
+            <span className="text-xs font-extrabold uppercase tracking-wider text-primary">
+              Curated Selection
             </span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight text-foreground font-display">
+          <h3 className="text-2xl font-extrabold text-foreground font-display mt-1">
             {title}
-          </h2>
-          {subtitle && (
-            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-1">
-              {subtitle}
-            </p>
-          )}
+          </h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            {subtitle}
+          </p>
         </div>
+
+        <Link
+          to="/categories"
+          className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 group transition-colors self-start sm:self-auto"
+        >
+          <span>View all in category</span>
+          <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
 
-      {/* Grid of Product Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {products.map((product) => {
           const isWishlisted = has(product.id);
+
           return (
             <div
               key={product.id}
-              className="group relative rounded-3xl bg-card border border-border/80 overflow-hidden shadow-md hover:shadow-xl hover:border-primary/40 transition-all duration-300 flex flex-col"
+              onClick={() =>
+                navigate({
+                  to: "/product/$id",
+                  params: { id: product.id },
+                })
+              }
+              className="group rounded-3xl p-3.5 bg-card border border-border hover:border-primary/40 transition-all duration-300 shadow-md hover:shadow-xl hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
             >
-              {/* Image & Wishlist Button */}
-              <div className="relative aspect-4/3 overflow-hidden bg-secondary">
+              <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-secondary/30 mb-3">
                 <img
                   src={product.image}
                   alt={product.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
+
                 <button
                   type="button"
                   onClick={(e) => {
@@ -174,7 +175,7 @@ export function RecommendationSection({
                   className={cn(
                     "absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md",
                     isWishlisted
-                      ? "bg-[#FF5A5F] text-white"
+                      ? "bg-rose-500 text-white"
                       : "bg-black/40 text-white hover:bg-black/60",
                   )}
                 >

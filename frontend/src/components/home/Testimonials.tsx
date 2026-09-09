@@ -33,7 +33,7 @@ export function Testimonials() {
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
                 What Creators Say
               </h2>
-              <span className="inline-block w-8 h-[3px] bg-[#FF1744] rounded-full" />
+              <span className="inline-block w-8 h-[3px] bg-primary rounded-full" />
             </div>
             <p className="mt-1.5 text-xs sm:text-sm text-neutral-500 dark:text-[#A8B1BA]">
               Real experiences from our community.
@@ -117,7 +117,7 @@ export function Testimonials() {
         {/* Empty State */}
         {!isLoading && !isError && reviews.length === 0 && (
           <div className="rounded-2xl bg-neutral-50/50 dark:bg-[#0D151D]/60 border border-dashed border-black/15 dark:border-white/15 p-8 sm:p-12 text-center flex flex-col items-center justify-center">
-            <div className="h-12 w-12 rounded-2xl bg-[#FF1744]/10 text-[#FF1744] flex items-center justify-center mb-4">
+            <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary dark:bg-white/10 dark:text-white flex items-center justify-center mb-4">
               <MessageSquareQuote className="h-6 w-6" />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
@@ -128,7 +128,7 @@ export function Testimonials() {
             </p>
             <Link
               to="/reviews"
-              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl btn-gradient text-xs font-bold shadow-md cursor-pointer"
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs font-bold shadow-md cursor-pointer"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>Write a Review</span>

@@ -74,7 +74,7 @@ export function Navbar() {
                 >
                   {l.label}
                   {isActive && (
-                    <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-[2.5px] bg-[#FF1744] rounded-full" />
+                    <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-[2.5px] bg-primary rounded-full" />
                   )}
                 </Link>
               );
@@ -104,11 +104,11 @@ export function Navbar() {
               aria-label="Wishlist (Saved)"
               title="Saved Gear"
               id="nav-wishlist-top"
-              className="relative h-9 w-9 flex items-center justify-center rounded-full text-neutral-600 dark:text-[#A8B1BA] hover:text-[#FF1744] dark:hover:text-[#FF1744] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              className="relative h-9 w-9 flex items-center justify-center rounded-full text-neutral-600 dark:text-[#A8B1BA] hover:text-rose-500 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
               <Heart className="h-4 w-4 sm:h-[18px] sm:w-[18px] stroke-[2]" />
               {wishlistIds.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 px-1 min-w-[15px] h-[15px] rounded-full bg-[#FF1744] text-white text-[9px] font-bold flex items-center justify-center leading-none shadow-sm">
+                <span className="absolute -top-0.5 -right-0.5 px-1 min-w-[15px] h-[15px] rounded-full bg-[#161616] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] text-[9px] font-bold flex items-center justify-center leading-none shadow-sm">
                   {wishlistIds.length}
                 </span>
               )}
@@ -118,82 +118,45 @@ export function Navbar() {
             {user ? (
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
+                  type="button"
                   onClick={() => navigate({ to: "/notifications" })}
                   aria-label="Notifications"
-                  id="nav-notifications"
-                  className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                  id="nav-notifications-btn"
+                  className="relative h-9 w-9 flex items-center justify-center rounded-full text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
                 >
-                  <Bell className="h-4 w-4 stroke-[2]" />
+                  <Bell className="h-4 w-4 sm:h-[18px] sm:w-[18px] stroke-[2]" />
                 </button>
 
-                {user.role === "admin" && (
-                  <Link
-                    to="/admin/dashboard"
-                    className="hidden sm:inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 transition-all"
-                  >
-                    Admin
-                  </Link>
-                )}
-
-                {/* Mobile User Profile Avatar in Top Right */}
+                {/* Profile Avatar Trigger */}
                 <Link
                   to="/profile"
-                  aria-label="User Profile"
-                  title={user.fullName || user.email || "Profile"}
-                  id="nav-user-profile-mobile"
-                  className="md:hidden h-8 w-8 rounded-full overflow-hidden border border-black/15 dark:border-white/20 shrink-0"
+                  id="nav-profile-avatar"
+                  className="flex items-center gap-2 p-1 pl-1.5 pr-2 rounded-full border border-black/10 dark:border-white/15 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                 >
                   <img
                     src={
+                      user.profilePhotoUrl ||
                       user.avatar ||
-                      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || "User")}&background=161616&color=ffffff`
                     }
-                    alt={user.fullName || user.email || "User"}
-                    className="h-full w-full object-cover"
+                    alt={user.fullName || "User"}
+                    className="h-7 w-7 rounded-full object-cover border border-black/10 dark:border-white/20"
                   />
-                </Link>
-
-                {/* Desktop User Profile Pill */}
-                <Link
-                  to="/profile"
-                  className="hidden md:flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-[#111B24] dark:hover:bg-[#141E27] border border-black/10 dark:border-white/10 transition-all"
-                >
-                  <img
-                    src={
-                      user.avatar ||
-                      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
-                    }
-                    alt={user.fullName || user.email || "User"}
-                    className="h-6 w-6 rounded-full object-cover border border-black/10 dark:border-white/20"
-                  />
-                  <span className="text-xs font-medium text-neutral-900 dark:text-white max-w-[90px] truncate">
-                    {(user.fullName || user.email || "User").split(" ")[0]}
+                  <span className="hidden lg:inline text-xs font-semibold text-neutral-800 dark:text-neutral-200 max-w-[100px] truncate">
+                    {user.fullName?.split(" ")[0] || "Profile"}
                   </span>
                 </Link>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    logout();
-                    toast.success("Logged out successfully");
-                    navigate({ to: "/" });
-                  }}
-                  aria-label="Logout"
-                  className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 dark:text-[#697681] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
               </div>
             ) : (
-              /* If Logged Out: User Profile Icon on Mobile, Login/Signup on Desktop */
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              /* Guest Actions */
+              <div className="flex items-center gap-2">
                 {/* Mobile User Profile Button in Top Right */}
                 <Link
                   to="/login"
                   aria-label="User Profile"
                   title="Sign In / Profile"
                   id="nav-user-profile-guest"
-                  className="md:hidden h-8 w-8 rounded-full border border-black/15 dark:border-white/20 flex items-center justify-center text-neutral-700 dark:text-[#A8B1BA] hover:text-[#FF1744] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                  className="md:hidden h-8 w-8 rounded-full border border-black/15 dark:border-white/20 flex items-center justify-center text-neutral-700 dark:text-[#A8B1BA] hover:text-primary hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <User className="h-4 w-4 stroke-[2]" />
                 </Link>
@@ -210,7 +173,7 @@ export function Navbar() {
                   <Link
                     to="/register"
                     id="nav-signup-btn"
-                    className="items-center justify-center px-5 py-2 text-xs font-semibold text-white rounded-full bg-[#FF1744] hover:bg-[#E91E4D] shadow-sm hover:shadow-md hover:shadow-[#FF1744]/25 transition-all duration-200"
+                    className="items-center justify-center px-5 py-2 text-xs font-bold rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     Sign Up
                   </Link>

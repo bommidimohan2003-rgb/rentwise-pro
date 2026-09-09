@@ -83,7 +83,7 @@ export function Features() {
       className="relative py-12 px-4 sm:px-6 overflow-hidden bg-background text-foreground border-t border-border"
     >
       {/* Subtle Dot Grid */}
-      <div className="absolute inset-0 bg-[radial-gradient(#FF5A5F_1px,transparent_1px)] [background-size:32px_32px] opacity-5 pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(currentColor_1px,transparent_1px)] [background-size:32px_32px] opacity-5 pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto">
         {/* Section heading */}
@@ -93,12 +93,12 @@ export function Features() {
           transition={{ duration: 0.7 }}
           className="text-center mb-8 space-y-2"
         >
-          <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 bg-[#FF5A5F]/10 border border-[#FF5A5F]/30 text-[#FF5A5F] text-[11px] font-extrabold tracking-widest uppercase">
+          <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-[11px] font-extrabold tracking-widest uppercase">
             WHY PAYENT
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-display">
             Everything you need to{" "}
-            <span className="text-[#FF5A5F]">rent smarter</span>
+            <span className="text-primary font-bold">rent smarter</span>
           </h2>
           <p className="mt-2 text-muted-foreground text-xs md:text-sm max-w-xl mx-auto font-normal">
             We've built every feature to make renting tech gear effortless,
@@ -119,7 +119,7 @@ export function Features() {
               variants={cardVariants}
               whileHover={{ y: -6, scale: 1.01 }}
               transition={{ type: "spring", stiffness: 300, damping: 24 }}
-              className="group relative rounded-2xl p-7 cursor-default overflow-hidden bg-card border border-border hover:border-[#FF5A5F]/40 transition-all duration-300 shadow-xl"
+              className="group relative rounded-2xl p-7 cursor-default overflow-hidden bg-card border border-border hover:border-primary/40 transition-all duration-300 shadow-xl"
             >
               {/* Hover glow border */}
               <div
@@ -130,11 +130,11 @@ export function Features() {
               />
 
               {/* Icon */}
-              <div className="relative flex-shrink-0 h-12 w-12 rounded-xl flex items-center justify-center mb-5 bg-[#FF5A5F]/10 border border-[#FF5A5F]/20 text-[#FF5A5F] transition-transform duration-300 group-hover:scale-110">
+              <div className="relative flex-shrink-0 h-12 w-12 rounded-xl flex items-center justify-center mb-5 bg-primary/10 border border-primary/20 text-primary transition-transform duration-300 group-hover:scale-110">
                 <f.icon className="h-6 w-6" />
               </div>
 
-              <h3 className="text-base font-bold text-foreground mb-2 group-hover:text-[#FF5A5F] transition-colors duration-300">
+              <h3 className="text-base font-bold text-foreground mb-2 group-hover:text-primary transition-colors duration-300">
                 {f.title}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed transition-colors duration-300 font-normal">

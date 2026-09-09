@@ -130,7 +130,7 @@ export function Hero() {
     <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-8 sm:pt-12 pb-12 lg:pb-16 border-b border-black/10 dark:border-white/10 transition-colors duration-300">
       {/* Ambient background glow matching dark cinematic reference */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] bg-gradient-to-b from-neutral-200/40 via-neutral-100/10 to-transparent dark:from-[#0B1522] dark:via-[#071017] dark:to-transparent rounded-full blur-[160px] pointer-events-none opacity-60" />
-      <div className="absolute top-28 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-[#FF1744]/8 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-28 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-primary/5 dark:bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Full-Bleed Transparent Gear Image Cycling One After Another (Top to Bottom & Left to Right) */}
       <div className="absolute inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden">
@@ -152,7 +152,7 @@ export function Hero() {
         </AnimatePresence>
 
         {/* Soft center ambient backlight glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-[#FF1744]/15 dark:bg-[#FF1744]/20 rounded-full blur-[160px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-primary/5 dark:bg-white/10 rounded-full blur-[160px] pointer-events-none" />
 
         {/* Subtle radial and vertical scrims ensuring text readability while keeping the image clearly visible in both light & dark */}
         <div className="absolute inset-0 bg-radial from-white/40 via-white/10 to-transparent dark:from-[#05090D]/75 dark:via-[#05090D]/40 dark:to-transparent pointer-events-none" />
@@ -166,14 +166,14 @@ export function Hero() {
           {/* Headline */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[68px] font-black tracking-tight text-neutral-950 dark:text-white leading-[1.05]">
             Rent Professional Tech. <br />
-            <span className="text-[#FF1744]">Create Without Limits.</span>
+            <span className="text-neutral-950 dark:text-white font-extrabold underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">Create Without Limits.</span>
           </h1>
 
           {/* Primary CTA: Explore Gear → */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
             <Link
               to="/categories"
-              className="inline-flex items-center justify-center gap-2.5 h-[52px] sm:h-[56px] px-9 rounded-full bg-[#FF1744] hover:bg-[#E91E4D] text-white text-base font-bold transition-colors duration-200 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2.5 h-[52px] sm:h-[56px] px-9 rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-base font-bold transition-all duration-200 shadow-xl hover:scale-102 active:scale-98 cursor-pointer"
             >
               <span>Explore Gear</span>
               <ArrowRight className="h-5 w-5" />
@@ -211,9 +211,9 @@ export function Hero() {
               >
                 <div className="flex items-center gap-1.5 truncate">
                   {isDetecting ? (
-                    <Loader2 className="h-3.5 w-3.5 text-[#FF1744] animate-spin shrink-0" />
+                    <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
                   ) : (
-                    <MapPin className="h-3.5 w-3.5 text-[#FF1744] shrink-0" />
+                    <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
                   )}
                   <div className="truncate">
                     <div className="hidden sm:flex items-center gap-1 leading-none">
@@ -241,9 +241,9 @@ export function Hero() {
                       await detectLocation(true);
                       setCityDropdownOpen(false);
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-semibold text-[#FF1744] hover:bg-[#FF1744]/10 rounded-lg transition-colors cursor-pointer border border-[#FF1744]/20"
+                    className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-semibold text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer border border-black/10 dark:border-white/15"
                   >
-                    <Crosshair className="h-3.5 w-3.5 animate-pulse shrink-0" />
+                    <Crosshair className="h-3.5 w-3.5 animate-pulse shrink-0 text-primary" />
                     <span>Auto-Detect Current Location</span>
                   </button>
 
@@ -274,12 +274,12 @@ export function Hero() {
                         setCityDropdownOpen(false);
                       }}
                       className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${selectedCity === c
-                          ? "bg-[#FF1744]/10 text-[#FF1744] font-semibold"
+                          ? "bg-black/5 dark:bg-white/10 text-neutral-950 dark:text-white font-bold"
                           : "text-neutral-700 dark:text-[#AAB3BC] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
                         }`}
                     >
                       <span>{c}</span>
-                      {selectedCity === c && <Check className="h-3.5 w-3.5 text-[#FF1744]" />}
+                      {selectedCity === c && <Check className="h-3.5 w-3.5 text-primary" />}
                     </button>
                   ))}
                 </div>
@@ -290,7 +290,7 @@ export function Hero() {
             <button
               type="submit"
               aria-label="Search"
-              className="h-8 sm:h-auto px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-full bg-[#FF1744] hover:bg-[#E91E4D] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#FF1744]/25 transition-all cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+              className="h-8 sm:h-auto px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs sm:text-sm font-bold shadow-md transition-all cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
             >
               <Search className="h-3.5 w-3.5 sm:hidden" />
               <span className="hidden sm:inline">Search</span>
@@ -305,7 +305,7 @@ export function Hero() {
                 key={tag}
                 type="button"
                 onClick={() => handleTagClick(tag)}
-                className="px-3 py-1 rounded-full text-xs font-medium text-neutral-700 dark:text-[#AAB3BC] bg-neutral-100 dark:bg-[#0D151D] hover:text-neutral-900 dark:hover:text-white hover:border-[#FF1744]/50 border border-black/10 dark:border-white/10 transition-colors cursor-pointer"
+                className="px-3 py-1 rounded-full text-xs font-medium text-neutral-700 dark:text-[#AAB3BC] bg-neutral-100 dark:bg-[#0D151D] hover:text-neutral-900 dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 border border-black/10 dark:border-white/10 transition-colors cursor-pointer"
               >
                 {tag}
               </button>

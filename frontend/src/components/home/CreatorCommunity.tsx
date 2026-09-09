@@ -36,7 +36,7 @@ export function CreatorCommunity() {
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link
                   to="/become-lender"
-                  className="btn-payent-red px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg shadow-[#FF1744]/25 cursor-pointer"
+                  className="bg-[#F2F0EA] hover:bg-white text-[#161616] px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 shadow-xl hover:scale-102 active:scale-98 transition-all cursor-pointer"
                 >
                   <span>Become a Lender</span>
                   <ArrowRight className="h-4 w-4" />
@@ -54,8 +54,8 @@ export function CreatorCommunity() {
             {/* Middle Stats Badges */}
             <div className="lg:col-span-3 space-y-4 text-left border-l border-white/10 lg:pl-8">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-[#FF1744]/15 border border-[#FF1744]/30 flex items-center justify-center shrink-0">
-                  <Wallet className="h-4 w-4 text-[#FF1744]" />
+                <div className="h-9 w-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                  <Wallet className="h-4 w-4 text-emerald-400" />
                 </div>
                 <div>
                   <div className="text-xl font-extrabold text-white">₹50K+</div>
@@ -64,8 +64,8 @@ export function CreatorCommunity() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-[#FF1744]/15 border border-[#FF1744]/30 flex items-center justify-center shrink-0">
-                  <Lock className="h-4 w-4 text-[#FF1744]" />
+                <div className="h-9 w-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                  <Lock className="h-4 w-4 text-amber-400" />
                 </div>
                 <div>
                   <div className="text-xl font-extrabold text-white">2K+</div>
@@ -74,8 +74,8 @@ export function CreatorCommunity() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-[#FF1744]/15 border border-[#FF1744]/30 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="h-4 w-4 text-[#FF1744]" />
+                <div className="h-9 w-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
                 </div>
                 <div>
                   <div className="text-xl font-extrabold text-white">100%</div>
@@ -89,7 +89,7 @@ export function CreatorCommunity() {
               <div className="font-serif italic text-2xl text-white/80 transform rotate-6 tracking-wide leading-tight text-right">
                 Good <br />
                 Gear <br />
-                <span className="text-[#FF1744]">Brighter</span> <br />
+                <span className="text-white font-black underline decoration-white/40">Brighter</span> <br />
                 Futures
               </div>
             </div>

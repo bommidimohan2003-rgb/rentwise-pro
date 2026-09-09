@@ -72,7 +72,7 @@ export function Categories() {
               <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
                 Explore Gear By Category
               </h2>
-              <span className="inline-block w-8 h-[3px] bg-[#FF1744] rounded-full" />
+              <span className="inline-block w-8 h-[3px] bg-primary rounded-full" />
             </div>
             <p className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-[#A8B1BA]">
               Professional equipment for every creative vision and project.
@@ -81,10 +81,10 @@ export function Categories() {
 
           <Link
             to="/categories"
-            className="text-xs sm:text-sm font-semibold text-neutral-600 dark:text-[#A8B1BA] hover:text-[#FF1744] dark:hover:text-white flex items-center gap-1.5 transition-colors group"
+            className="text-xs sm:text-sm font-semibold text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white flex items-center gap-1.5 transition-colors group"
           >
             <span>View All Categories</span>
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-[#FF1744]" />
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-neutral-700 dark:text-neutral-300" />
           </Link>
         </div>
 
@@ -95,12 +95,12 @@ export function Categories() {
               key={cat.id}
               to="/categories"
               search={{ cat: cat.id }}
-              className="group relative rounded-2xl p-2.5 flex flex-col justify-between overflow-hidden bg-neutral-50/90 dark:bg-[#0A1017] hover:bg-neutral-100/90 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-[#FF1744]/40 dark:hover:border-[#FF1744]/50 shadow-xs hover:shadow-md dark:shadow-none transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+              className="group relative rounded-2xl p-2.5 flex flex-col justify-between overflow-hidden bg-neutral-50/90 dark:bg-[#0A1017] hover:bg-neutral-100/90 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 shadow-xs hover:shadow-md dark:shadow-none transition-all duration-300 hover:-translate-y-1 cursor-pointer"
             >
               {/* Product Media Showcase Box — Enlarged & Prominently Fitted */}
               <div className="relative w-full h-34 sm:h-36 md:h-40 rounded-xl overflow-hidden bg-gradient-to-b from-neutral-100/90 via-neutral-100/40 to-transparent dark:from-white/[0.05] dark:via-white/[0.02] dark:to-transparent p-1 sm:p-1.5 flex items-center justify-center">
                 {/* Subtle radial glow on hover */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,23,68,0.14)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.06)_0%,transparent_70%)] dark:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                 {/* Soft floor shadow under gear */}
                 <div className="absolute bottom-1 w-24 sm:w-28 h-2.5 bg-black/10 dark:bg-black/50 rounded-[100%] blur-xs group-hover:w-32 transition-all duration-300" />
@@ -116,7 +116,7 @@ export function Categories() {
 
               {/* Card Footer: Category Name & Subtitle */}
               <div className="pt-2.5 pb-0.5 px-0.5 text-left">
-                <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white group-hover:text-[#FF1744] transition-colors leading-tight">
+                <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white group-hover:text-primary dark:group-hover:text-neutral-200 transition-colors leading-tight">
                   {cat.name}
                 </h3>
                 <p className="text-[10px] sm:text-[11px] text-neutral-500 dark:text-[#7A8794] mt-0.5 line-clamp-1">

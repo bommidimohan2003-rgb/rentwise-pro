@@ -40,7 +40,7 @@ export function Footer() {
                 to={link.to}
                 className="hover:text-black dark:hover:text-white transition-colors duration-200"
                 activeProps={{
-                  className: "text-[#FF1744] font-semibold",
+                  className: "text-neutral-950 dark:text-white font-semibold underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-4",
                 }}
               >
                 {link.label}
@@ -61,7 +61,7 @@ export function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={s.label}
-                    className="h-7 w-7 rounded-full bg-neutral-100 dark:bg-[#0D151D] border border-black/10 dark:border-white/15 text-neutral-600 dark:text-[#A8B1BA] hover:text-[#FF1744] dark:hover:text-[#FF1744] hover:border-[#FF1744]/40 flex items-center justify-center transition-colors"
+                    className="h-7 w-7 rounded-full bg-neutral-100 dark:bg-[#0D151D] border border-black/10 dark:border-white/15 text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 flex items-center justify-center transition-colors"
                   >
                     <Icon className="h-3.5 w-3.5" />
                   </a>
