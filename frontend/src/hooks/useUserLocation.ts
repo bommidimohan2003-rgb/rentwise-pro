@@ -20,13 +20,13 @@ function cleanCityName(raw: string): string {
 export function useUserLocation() {
   const { user } = useAuth();
   const [city, setCityState] = useState<string>(() => {
-    if (typeof window === "undefined") return "All Cities";
-    // 1. Check cached user choice or previously detected city
-    const cached = localStorage.getItem(STORAGE_KEY);
-    if (cached) return cached;
-    // 2. Check logged-in user profile
+    if (typeof window === "undefined") return "Location unavailable";
+    // 1. Check logged-in user profile
     if (user?.city) return cleanCityName(user.city);
-    return "All Cities";
+    // 2. Check cached previously detected city
+    const cached = localStorage.getItem(STORAGE_KEY);
+    if (cached && cached !== "All Cities" && cached !== "Hyderabad") return cached;
+    return "Location unavailable";
   });
 
   const [isDetecting, setIsDetecting] = useState<boolean>(false);
@@ -201,26 +201,23 @@ export function useUserLocation() {
         console.warn("IP Geolocation notice:", ipErr);
       }
 
-      // If all fails
+      // If all fails or permission denied -> graceful fallback
       setIsDetecting(false);
+      const fallbackLocation = user?.city ? cleanCityName(user.city) : "Location unavailable";
+      setCityState(fallbackLocation);
       if (showToast) {
-        toast.info("Could not detect exact location. Please select your city from the list.");
+        toast.info("Location permission denied or unavailable.");
       }
       return null;
     },
     [user?.city, reverseGeocodeCoords, detectViaIP],
   );
 
-  // Automatically attempt location detection once on initial mount if not explicitly set
+  // Automatically attempt location detection once on initial mount
   useEffect(() => {
     if (typeof window === "undefined" || hasAutoAttempted.current) return;
     hasAutoAttempted.current = true;
-
-    const cached = localStorage.getItem(STORAGE_KEY);
-    // If no cached city or currently set to "All Cities" or "Hyderabad", run auto-detection
-    if (!cached || cached === "All Cities" || cached === "Hyderabad") {
-      detectLocation(false);
-    }
+    detectLocation(false);
   }, [detectLocation]);
 
   return {

@@ -51,6 +51,7 @@ export interface ProductCardProps {
   availabilityReason?: string | null;
   selectedStartDate?: string;
   selectedEndDate?: string;
+  isNearby?: boolean;
 }
 
 export function ProductCard({
@@ -60,6 +61,7 @@ export function ProductCard({
   availabilityReason,
   selectedStartDate,
   selectedEndDate,
+  isNearby = false,
 }: ProductCardProps) {
   const { has, toggle } = useWishlist();
   const liked = has(product.id);
@@ -149,6 +151,11 @@ export function ProductCard({
     navigate({ to: "/product/$id", params: { id: product.id } });
   };
 
+  const isAvailable =
+    product.availability_status !== undefined
+      ? product.availability_status === "available"
+      : isDateAvailable ?? product.available !== false;
+
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -164,8 +171,8 @@ export function ProductCard({
       return;
     }
 
-    if (!isDateAvailable) {
-      toast.error("This gear is not available for the selected rental dates.");
+    if (!isAvailable) {
+      toast.error("This product is currently not available.");
       return;
     }
 
@@ -218,15 +225,15 @@ export function ProductCard({
                 <Tag className="h-3 w-3" />
                 Category Guide
               </span>
-            ) : isDateAvailable ? (
+            ) : isAvailable ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-black/70 dark:bg-white/10 text-white backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold border border-white/20 shadow-md">
                 <ShieldCheck className="h-3 w-3 text-neutral-300" />
                 Verified Gear
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 text-red-400 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold border border-red-500/30 shadow-md">
-                <Clock className="h-3 w-3 text-red-400" />
-                Booked for Dates
+              <span className="inline-flex items-center gap-1 rounded-full bg-black/60 dark:bg-black/80 text-neutral-300 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold border border-white/10 shadow-md">
+                <Clock className="h-3 w-3 text-neutral-400" />
+                Not Available
               </span>
             )}
           </div>
@@ -257,9 +264,14 @@ export function ProductCard({
 
           {/* Bottom Overlay Location & Rating Bar */}
           <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[11px] font-semibold text-white/90 bg-black/60 backdrop-blur-md rounded-xl px-2.5 py-1 border border-white/10 shadow-sm z-10">
-            <span className="inline-flex items-center gap-1 truncate max-w-[70%]">
-              <MapPin className="h-3 w-3 text-neutral-300 shrink-0" />
+            <span className="inline-flex items-center gap-1.5 truncate max-w-[70%]">
+              <MapPin className={cn("h-3 w-3 shrink-0", isNearby ? "text-emerald-400" : "text-neutral-300")} />
               <span className="truncate">{location}</span>
+              {isNearby && (
+                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 shrink-0">
+                  Nearby
+                </span>
+              )}
             </span>
             <span className="inline-flex items-center gap-0.5 text-amber-400 font-black shrink-0">
               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
@@ -275,23 +287,25 @@ export function ProductCard({
               <span className="text-[10px] font-bold tracking-wider uppercase text-neutral-500 dark:text-neutral-400">
                 {product.category}
               </span>
-              {/* Date Availability Indicator */}
+              {/* Availability Indicator */}
               {!product.isReference && (
                 <span
                   className={cn(
-                    "text-[10px] font-semibold flex items-center gap-1",
-                    isDateAvailable
+                    "text-[10px] font-semibold flex items-center gap-1.5",
+                    isAvailable
                       ? "text-neutral-700 dark:text-neutral-300"
-                      : "text-red-500 dark:text-red-400",
+                      : "text-neutral-400 dark:text-neutral-500",
                   )}
                 >
                   <span
                     className={cn(
                       "h-1.5 w-1.5 rounded-full",
-                      isDateAvailable ? "bg-neutral-600 dark:bg-neutral-300" : "bg-red-500",
+                      isAvailable
+                        ? "bg-neutral-800 dark:bg-neutral-200"
+                        : "bg-neutral-400 dark:bg-neutral-600",
                     )}
                   />
-                  {isDateAvailable ? "Available" : "Unavailable"}
+                  <span>{isAvailable ? "Available" : "Not Available"}</span>
                 </span>
               )}
             </div>
@@ -392,19 +406,19 @@ export function ProductCard({
                     Details
                   </button>
 
-                  {/* Primary: Add to Cart */}
+                  {/* Primary: Add to Cart (or disabled Not Available) */}
                   <button
                     type="button"
-                    disabled={!isDateAvailable || isAdding}
+                    disabled={!isAvailable || isAdding}
                     onClick={handleAddToCart}
                     id={`add-to-cart-${product.id}`}
                     className={cn(
-                      "flex-[1.4] rounded-xl py-2 px-3 text-xs font-bold inline-flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all text-center cursor-pointer",
-                      !isDateAvailable
-                        ? "bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/40 dark:border-white/5"
+                      "flex-[1.4] rounded-xl py-2 px-3 text-xs font-bold inline-flex items-center justify-center gap-1 shadow-sm transition-all text-center",
+                      !isAvailable
+                        ? "bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/40 dark:border-white/5 opacity-75"
                         : justAdded
-                          ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
-                          : "bg-[#161616] text-[#F2F0EA] hover:bg-[#262626] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white",
+                          ? "bg-neutral-900 text-white dark:bg-white dark:text-black cursor-pointer active:scale-95"
+                          : "bg-[#161616] text-[#F2F0EA] hover:bg-[#262626] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white cursor-pointer active:scale-95",
                     )}
                   >
                     {isAdding ? (
@@ -414,8 +428,8 @@ export function ProductCard({
                         <Check className="h-3.5 w-3.5" />
                         <span>Added</span>
                       </>
-                    ) : !isDateAvailable ? (
-                      <span>Unavailable</span>
+                    ) : !isAvailable ? (
+                      <span>Not Available</span>
                     ) : (
                       <>
                         <ShoppingBag className="h-3.5 w-3.5" />

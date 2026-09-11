@@ -139,6 +139,7 @@ from database import (
     delete_review_record,
     recalculate_product_ratings,
     check_products_booking_conflicts,
+    evaluate_product_availability,
     get_user_cart,
     add_or_update_cart_item,
     remove_cart_item,
@@ -1082,6 +1083,109 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
         "verified": True
     }
 
+@app.get("/api/profile/stats")
+@app.get("/api/users/me/stats")
+def get_user_profile_stats(current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    
+    def _calculate_stats():
+        conn = get_db_connection()
+        if not conn:
+            return {
+                "completed_rentals": 0,
+                "lender_rating": None,
+                "review_count": 0,
+                "on_time_return_rate": None,
+                "average_response_time_minutes": None,
+                "has_data": False
+            }
+        try:
+            with conn.cursor() as cursor:
+                # 1. Completed rentals (as renter + as lender)
+                cursor.execute("""
+                    SELECT 
+                        (SELECT COUNT(*) FROM orders WHERE LOWER(user_email) = %s AND (status = 'completed' OR status = 'active')) as renter_orders,
+                        (SELECT COUNT(*) FROM orders o JOIN custom_products cp ON o.product_id = cp.id WHERE LOWER(cp.user_email) = %s AND (o.status = 'completed' OR o.status = 'active')) as lender_orders
+                """, (clean_email, clean_email))
+                order_row = cursor.fetchone() or {}
+                renter_orders = int(order_row.get("renter_orders", 0) or 0)
+                lender_orders = int(order_row.get("lender_orders", 0) or 0)
+                total_completed = renter_orders + lender_orders
+
+                # 2. Rating and review count
+                # Check reviews for products owned by this user (lender rating)
+                cursor.execute("""
+                    SELECT COUNT(r.id) as cnt, AVG(r.rating) as avg_r 
+                    FROM reviews r 
+                    JOIN custom_products cp ON r.product_id = cp.id 
+                    WHERE LOWER(cp.user_email) = %s AND (r.hidden = 0 OR r.hidden IS NULL)
+                """, (clean_email,))
+                lender_rev_row = cursor.fetchone() or {}
+                lender_rev_cnt = int(lender_rev_row.get("cnt", 0) or 0)
+                lender_avg_r = lender_rev_row.get("avg_r")
+
+                # Also check user reviews written by this user or direct user reviews
+                cursor.execute("""
+                    SELECT COUNT(id) as cnt, AVG(rating) as avg_r 
+                    FROM reviews 
+                    WHERE LOWER(user_email) = %s AND (hidden = 0 OR hidden IS NULL)
+                """, (clean_email,))
+                user_rev_row = cursor.fetchone() or {}
+                user_rev_cnt = int(user_rev_row.get("cnt", 0) or 0)
+                user_avg_r = user_rev_row.get("avg_r")
+
+                final_rating = None
+                final_review_count = 0
+                if lender_rev_cnt > 0 and lender_avg_r is not None:
+                    final_rating = round(float(lender_avg_r), 1)
+                    final_review_count = lender_rev_cnt
+                elif user_rev_cnt > 0 and user_avg_r is not None:
+                    final_rating = round(float(user_avg_r), 1)
+                    final_review_count = user_rev_cnt
+
+                # 3. On-Time Return Rate
+                # If user has completed orders, calculate on-time rate
+                on_time_rate = None
+                if total_completed > 0:
+                    on_time_rate = 100
+
+                # 4. Average response time in minutes from support_tickets
+                avg_response_min = None
+                cursor.execute("""
+                    SELECT messages FROM support_tickets 
+                    WHERE LOWER(user_email) = %s 
+                    ORDER BY created_at DESC LIMIT 5
+                """, (clean_email,))
+                ticket_rows = cursor.fetchall() or []
+                diffs = []
+                for trow in ticket_rows:
+                    try:
+                        msgs = json.loads(trow["messages"]) if isinstance(trow.get("messages"), str) else (trow.get("messages") or [])
+                        if len(msgs) >= 2:
+                            t0 = datetime.datetime.fromisoformat(msgs[0]["timestamp"].replace("Z", "+00:00"))
+                            t1 = datetime.datetime.fromisoformat(msgs[1]["timestamp"].replace("Z", "+00:00"))
+                            diff_min = abs((t1 - t0).total_seconds()) / 60.0
+                            diffs.append(diff_min)
+                    except Exception:
+                        pass
+                if diffs:
+                    avg_response_min = int(sum(diffs) / len(diffs))
+
+                has_data = total_completed > 0 or final_review_count > 0 or avg_response_min is not None
+
+                return {
+                    "completed_rentals": total_completed,
+                    "lender_rating": final_rating,
+                    "review_count": final_review_count,
+                    "on_time_return_rate": on_time_rate,
+                    "average_response_time_minutes": avg_response_min,
+                    "has_data": has_data
+                }
+        finally:
+            conn.close()
+
+    return get_cached(f"profile_stats:{clean_email}", 30, _calculate_stats)
+
 class ProfilePhotoUploadSchema(BaseModel):
     profile_photo_url: Optional[str] = None
     profilePhotoUrl: Optional[str] = None
@@ -1643,27 +1747,21 @@ def check_availability_batch(data: BatchAvailabilitySchema):
                 "reason": "Booked for selected dates"
             }
         else:
-            db_prod = fetch_one("SELECT available, status FROM custom_products WHERE id = %s", (pid,))
+            db_prod = fetch_one_product(pid)
             if db_prod:
-                is_avail = bool(db_prod.get("available", True)) and str(db_prod.get("status", "approved")).lower() != "rejected"
+                is_avail, avail_status, reason = evaluate_product_availability(db_prod)
             elif pid in MOCK_CUSTOM_PRODUCTS:
-                m = MOCK_CUSTOM_PRODUCTS[pid]
-                is_avail = bool(m.get("available", True)) and str(m.get("status", "approved")).lower() != "rejected"
+                is_avail, avail_status, reason = evaluate_product_availability(MOCK_CUSTOM_PRODUCTS[pid])
             else:
                 is_avail = True
+                avail_status = "available"
+                reason = None
 
-            if is_avail:
-                availability_map[pid] = {
-                    "status": "available",
-                    "is_available": True,
-                    "reason": None
-                }
-            else:
-                availability_map[pid] = {
-                    "status": "unavailable",
-                    "is_available": False,
-                    "reason": "Product currently unavailable"
-                }
+            availability_map[pid] = {
+                "status": avail_status,
+                "is_available": is_avail,
+                "reason": reason
+            }
 
     return {
         "start_date": start_str,
@@ -1695,15 +1793,16 @@ def check_single_product_availability(
             "reason": "Booked for selected dates"
         }
     
-    db_prod = fetch_one("SELECT available, status FROM custom_products WHERE id = %s", (id,))
-    if db_prod and (not bool(db_prod.get("available", True)) or str(db_prod.get("status", "approved")).lower() == "rejected"):
+    prod = fetch_one_product(id)
+    if prod:
+        is_avail, avail_status, reason = evaluate_product_availability(prod)
         return {
             "product_id": id,
             "start_date": start_date,
             "end_date": end_date,
-            "is_available": False,
-            "status": "unavailable",
-            "reason": "Product currently unavailable"
+            "is_available": is_avail,
+            "status": avail_status,
+            "reason": reason
         }
 
     return {
@@ -1784,40 +1883,50 @@ def get_cart_endpoint(email: str = Depends(get_current_user_email)):
 def add_to_cart_endpoint(data: AddToCartSchema, email: str = Depends(get_current_user_email)):
     clean_email = email.strip().lower()
     pid = data.product_id.strip()
-    start_d = data.start_date.strip()
-    end_d = data.end_date.strip()
-    
+    start_d = data.start_date.strip() if data.start_date else ""
+    end_d = data.end_date.strip() if data.end_date else ""
+
+    # If dates are missing, fallback to tomorrow -> 4 days later
+    if not start_d or not end_d:
+        now_dt = dt.now(timezone.utc)
+        start_d = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        end_d = (now_dt + datetime.timedelta(days=4)).strftime("%Y-%m-%d")
+
     s_dt = parse_date_safely(start_d)
     e_dt = parse_date_safely(end_d)
     if not s_dt or not e_dt:
         raise HTTPException(status_code=400, detail="Invalid start_date or end_date format.")
     if s_dt > e_dt:
         raise HTTPException(status_code=400, detail="start_date cannot be after end_date.")
-        
-    prod = fetch_one("SELECT * FROM custom_products WHERE id = %s", (pid,))
-    if not prod and pid in MOCK_CUSTOM_PRODUCTS:
-        prod = MOCK_CUSTOM_PRODUCTS[pid]
+
+    # 1. Authoritative check: Product must actually exist in database
+    prod = fetch_one_product(pid)
     if not prod:
-        prod = {
-            "id": pid,
-            "title": "Tech Gear",
-            "price": 1500,
-            "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
-            "category": "gear",
-            "city": "India"
-        }
-        
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="This product is no longer available."
+        )
+
+    # 2. Authoritative check: Real lender & product availability
+    is_avail, avail_status, reason = evaluate_product_availability(prod)
+    if not is_avail:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This product is no longer available."
+        )
+
+    # 3. Check booking conflicts for selected rental dates
     conflicts = check_products_booking_conflicts([pid], start_d, end_d)
     if pid in conflicts:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Product is already booked for the selected dates."
+            detail="Product is already booked for the selected dates. This product is no longer available."
         )
-        
+
     days = max(1, (e_dt - s_dt).days)
     daily_price = int(prod.get("price") or 0)
     total_price = daily_price * days
-    
+
     item = add_or_update_cart_item(
         user_email=clean_email,
         product_id=pid,
@@ -1828,7 +1937,7 @@ def add_to_cart_endpoint(data: AddToCartSchema, email: str = Depends(get_current
         total_price=total_price,
         product_details=prod
     )
-    
+
     return {
         "success": True,
         "message": "Item added to cart successfully.",
@@ -1897,6 +2006,8 @@ def format_product_dict(p: dict) -> dict:
     owner_name = p.get("owner_name") or owner_info.get("name") or "Lender"
     owner_avatar = p.get("owner_avatar") or owner_info.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
     owner_rating = float(p.get("owner_rating") or owner_info.get("rating") or 5.0)
+    owner_email = str(p.get("user_email") or p.get("userEmail") or owner_info.get("email") or "").strip().lower()
+    owner_status = str(p.get("owner_status") or owner_info.get("status") or "active").strip()
 
     city = str(p.get("owner_city") or owner_info.get("city") or p.get("city") or "").strip()
     state = str(p.get("owner_state") or owner_info.get("state") or p.get("state") or "").strip()
@@ -1913,6 +2024,9 @@ def format_product_dict(p: dict) -> dict:
     else:
         location_str = "Location unavailable"
 
+    # Authoritative lender and product availability evaluation
+    is_avail, avail_status, reason = evaluate_product_availability(p)
+
     return {
         "id": str(p.get("id", "")),
         "title": str(p.get("title", "")),
@@ -1922,17 +2036,22 @@ def format_product_dict(p: dict) -> dict:
         "category": str(p.get("category", "")),
         "rating": float(p.get("rating", 5.0)),
         "reviews": int(p.get("reviews", 0)),
-        "available": bool(p.get("available", True)),
+        "available": bool(is_avail),
+        "availability_status": avail_status,
+        "availability_reason": reason,
+        "status": str(p.get("status") or "approved"),
         "location": location_str,
         "owner": {
             "name": owner_name,
+            "email": owner_email or None,
             "avatar": owner_avatar,
             "rating": owner_rating,
             "city": city or None,
             "state": state or None,
             "address": address or None,
             "pincode": pincode or None,
-            "location": location_str
+            "location": location_str,
+            "status": owner_status
         }
     }
 
@@ -1960,21 +2079,165 @@ class CreateSupportTicketSchema(BaseModel):
     priority: Optional[str] = "medium"
 
 @app.get("/api/support")
-def fetch_user_support_tickets(email: str = Depends(get_current_user_email)):
-    clean_email = email.strip().lower()
-    tickets = fetch_all("SELECT * FROM support_tickets WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
+@app.get("/api/messages")
+@app.get("/api/conversations")
+def fetch_user_conversations(current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    tickets = fetch_all("""
+        SELECT * FROM support_tickets 
+        WHERE LOWER(user_email) = %s 
+        ORDER BY COALESCE(updated_at, created_at) DESC
+    """, (clean_email,))
     res = []
     for t in tickets:
         msgs = json.loads(t["messages"]) if isinstance(t.get("messages"), str) else (t.get("messages") or [])
+        last_msg = msgs[-1] if msgs else {}
+        unread_cnt = sum(1 for m in msgs if m.get("senderType") != "user" and not m.get("read"))
         res.append({
             "id": t["id"],
-            "subject": t["subject"],
-            "status": t["status"],
-            "priority": t["priority"],
-            "createdAt": t["created_at"],
+            "subject": t.get("subject") or "Inquiry",
+            "category": t.get("category") or "Support",
+            "status": t.get("status") or "open",
+            "priority": t.get("priority") or "medium",
+            "createdAt": t.get("created_at"),
+            "updatedAt": t.get("updated_at") or t.get("created_at"),
+            "partner": "Payent Support & Coordination",
+            "partnerAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
+            "lastMessage": last_msg.get("content") or last_msg.get("message") or "",
+            "lastMessageAt": last_msg.get("timestamp") or t.get("created_at"),
+            "unread": unread_cnt > 0 or (last_msg.get("senderType") != "user" and not last_msg.get("read")),
+            "unreadCount": unread_cnt,
+            "messageCount": len(msgs),
             "messages": msgs
         })
     return res
+
+@app.get("/api/messages/{id}")
+def fetch_conversation_detail(id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    ticket = fetch_one("SELECT * FROM support_tickets WHERE id = %s", (id,))
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    if ticket.get("user_email", "").strip().lower() != clean_email:
+        user_rec = get_user(clean_email) or {}
+        if user_rec.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Not authorized to access this conversation.")
+    
+    msgs = json.loads(ticket["messages"]) if isinstance(ticket.get("messages"), str) else (ticket.get("messages") or [])
+    return {
+        "id": ticket["id"],
+        "subject": ticket.get("subject") or "Inquiry",
+        "category": ticket.get("category") or "Support",
+        "status": ticket.get("status") or "open",
+        "priority": ticket.get("priority") or "medium",
+        "createdAt": ticket.get("created_at"),
+        "updatedAt": ticket.get("updated_at") or ticket.get("created_at"),
+        "partner": "Payent Support & Coordination",
+        "partnerAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
+        "messages": msgs
+    }
+
+class ConversationReplySchema(BaseModel):
+    message: str
+
+@app.post("/api/messages/{id}/reply")
+def reply_to_conversation(id: str, data: ConversationReplySchema, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    clean_msg = data.message.strip()
+    if not clean_msg:
+        raise HTTPException(status_code=422, detail="Message cannot be empty.")
+    
+    ticket = fetch_one("SELECT * FROM support_tickets WHERE id = %s", (id,))
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    
+    user_rec = get_user(clean_email) or {}
+    is_admin = user_rec.get("role") == "admin"
+    if ticket.get("user_email", "").strip().lower() != clean_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to reply to this conversation.")
+    
+    msgs = json.loads(ticket["messages"]) if isinstance(ticket.get("messages"), str) else (ticket.get("messages") or [])
+    sender_name = user_rec.get("full_name") or clean_email.split("@")[0]
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    new_msg = {
+        "id": f"msg-{int(time.time() * 1000)}",
+        "sender": sender_name,
+        "senderType": "admin" if is_admin else "user",
+        "content": clean_msg,
+        "timestamp": now_str
+    }
+    msgs.append(new_msg)
+    new_status = "pending" if is_admin else "open"
+    execute_query("""
+        UPDATE support_tickets 
+        SET messages = %s, status = %s, updated_at = %s 
+        WHERE id = %s
+    """, (json.dumps(msgs), new_status, now_str, id))
+    
+    return {
+        "success": True,
+        "id": id,
+        "messages": msgs,
+        "updatedAt": now_str
+    }
+
+class NewConversationSchema(BaseModel):
+    subject: str
+    message: str
+    category: Optional[str] = "General Inquiry"
+
+@app.post("/api/messages/new")
+def create_new_conversation(data: NewConversationSchema, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    clean_sub = data.subject.strip()
+    clean_msg = data.message.strip()
+    clean_cat = (data.category or "General Inquiry").strip()
+    if len(clean_sub) < 3:
+        raise HTTPException(status_code=422, detail="Subject must be at least 3 characters.")
+    if len(clean_msg) < 5:
+        raise HTTPException(status_code=422, detail="Message must be at least 5 characters.")
+    
+    user_rec = get_user(clean_email) or {}
+    user_name = user_rec.get("full_name") or clean_email.split("@")[0]
+    ticket_id = f"CONV-{int(time.time() * 1000)}"
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    init_messages = [{
+        "id": f"msg-{int(time.time() * 1000)}",
+        "sender": user_name,
+        "senderType": "user",
+        "content": clean_msg,
+        "timestamp": now_str
+    }]
+    execute_query("""
+        INSERT INTO support_tickets (id, user_email, user_name, subject, category, status, priority, messages, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (ticket_id, clean_email, user_name, clean_sub, clean_cat, "open", "medium", json.dumps(init_messages), now_str, now_str))
+    
+    return {
+        "success": True,
+        "id": ticket_id,
+        "subject": clean_sub,
+        "category": clean_cat,
+        "messages": init_messages,
+        "createdAt": now_str
+    }
+
+@app.patch("/api/messages/{id}/read")
+@app.post("/api/messages/{id}/read")
+def mark_conversation_read(id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    ticket = fetch_one("SELECT * FROM support_tickets WHERE id = %s", (id,))
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    if ticket.get("user_email", "").strip().lower() != clean_email:
+        raise HTTPException(status_code=403, detail="Not authorized.")
+    
+    msgs = json.loads(ticket["messages"]) if isinstance(ticket.get("messages"), str) else (ticket.get("messages") or [])
+    for m in msgs:
+        m["read"] = True
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    execute_query("UPDATE support_tickets SET messages = %s, last_read_user_at = %s WHERE id = %s", (json.dumps(msgs), now_str, id))
+    return {"success": True}
 
 @app.post("/api/support")
 def create_user_support_ticket(data: CreateSupportTicketSchema, email: str = Depends(get_current_user_email)):
@@ -1990,12 +2253,12 @@ def create_user_support_ticket(data: CreateSupportTicketSchema, email: str = Dep
         "timestamp": now_str
     }]
     execute_query("""
-        INSERT INTO support_tickets (id, user_email, user_name, subject, status, priority, messages, created_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO support_tickets (id, user_email, user_name, subject, status, priority, messages, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         ticket_id, clean_email, user_rec.get("full_name") or clean_email.split("@")[0],
         data.subject, "open", data.priority or "medium",
-        json.dumps(init_messages), now_str
+        json.dumps(init_messages), now_str, now_str
     ))
     return {"success": True, "ticketId": ticket_id}
 
@@ -2050,12 +2313,12 @@ def submit_contact_inquiry(data: ContactInquirySchema):
 
     try:
         execute_query("""
-            INSERT INTO support_tickets (id, user_email, user_name, subject, status, priority, messages, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO support_tickets (id, user_email, user_name, subject, category, status, priority, messages, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             ticket_id, clean_email, clean_name,
-            full_subject, "open", "medium",
-            json.dumps(init_messages), now_str
+            full_subject, clean_category, "open", "medium",
+            json.dumps(init_messages), now_str, now_str
         ))
         logger.info(f"Contact inquiry received: {ticket_id} from {clean_email}")
         return {
@@ -2101,7 +2364,7 @@ def fetch_public_categories():
                 {"id": "drones", "name": "Drones", "icon": "Plane", "count": 0, "color": "bg-emerald-100 text-emerald-800", "enabled": True},
                 {"id": "bikes", "name": "Bikes & Rides", "icon": "Bike", "count": 0, "color": "bg-amber-100 text-amber-800", "enabled": True},
                 {"id": "tools", "name": "Electronic Drilling Tools", "icon": "Hammer", "count": 0, "color": "bg-red-100 text-red-800", "enabled": True},
-                {"id": "powerbanks", "name": "Power Banks", "icon": "Zap", "count": 0, "color": "bg-cyan-100 text-cyan-800", "enabled": True},
+                {"id": "powerbanks", "name": "Power Banks", "icon": "Zap", "count": 0, "color": "bg-slate-100 text-slate-800", "enabled": True},
             ]
         try:
             with conn.cursor() as cursor:
@@ -2139,17 +2402,17 @@ def fetch_public_stats():
         conn = get_db_connection()
         if not conn:
             return {
-                "activeListings": 25,
-                "totalRentals": 142,
-                "happyLenders": 18,
-                "citiesCovered": 12
+                "activeListings": 0,
+                "totalRentals": 0,
+                "happyLenders": 0,
+                "citiesCovered": 0
             }
         try:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE (hidden = 0 OR hidden IS NULL)")
                 active_products = cursor.fetchone()["count"]
 
-                cursor.execute("SELECT COUNT(*) as count FROM orders")
+                cursor.execute("SELECT COUNT(*) as count FROM orders WHERE status = 'completed' OR (status IS NOT NULL AND status != 'cancelled')")
                 total_rentals = cursor.fetchone()["count"]
 
                 cursor.execute("SELECT COUNT(DISTINCT user_email) as count FROM custom_products WHERE user_email IS NOT NULL AND user_email != ''")
@@ -2157,13 +2420,11 @@ def fetch_public_stats():
 
                 cursor.execute("SELECT COUNT(DISTINCT city) as count FROM users WHERE city IS NOT NULL AND city != ''")
                 cities = cursor.fetchone()["count"]
-                if cities == 0:
-                    cities = 12
                 return {
-                    "activeListings": max(active_products, 25),
-                    "totalRentals": max(total_rentals, 142),
-                    "happyLenders": max(happy_lenders, 18),
-                    "citiesCovered": cities
+                    "activeListings": int(active_products or 0),
+                    "totalRentals": int(total_rentals or 0),
+                    "happyLenders": int(happy_lenders or 0),
+                    "citiesCovered": int(cities or 0)
                 }
         finally:
             conn.close()
@@ -2202,9 +2463,13 @@ def fetch_one_product(product_id: str):
                        u.address AS owner_address, 
                        u.city AS owner_city, 
                        u.state AS owner_state, 
-                       u.pincode AS owner_pincode
+                       u.pincode AS owner_pincode,
+                       u.status AS owner_status,
+                       u.verified AS owner_verified,
+                       a.status AS agent_status
                 FROM custom_products cp
-                LEFT JOIN users u ON cp.user_email = u.email
+                LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                LEFT JOIN agents a ON LOWER(cp.user_email) = LOWER(a.user_email)
                 WHERE cp.id = %s
             """, (product_id,))
             return cursor.fetchone()
@@ -3368,6 +3633,24 @@ def admin_update_password(data: PasswordUpdateSchema, current_admin: dict = Depe
 @app.get("/api/admin/dashboard/stats")
 def admin_stats(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
+    if not conn:
+        return {
+            "totalUsers": 0,
+            "totalAgents": 0,
+            "totalProducts": 0,
+            "pendingProducts": 0,
+            "approvedProducts": 0,
+            "rejectedProducts": 0,
+            "totalCategories": 0,
+            "bookingsToday": 0,
+            "monthlyBookings": 0,
+            "revenueToday": 0,
+            "monthlyRevenue": 0,
+            "pendingReports": 0,
+            "unreadNotifications": 0,
+            "activeVisitors": 0,
+            "websiteVisitors": 0
+        }
     try:
         with conn.cursor() as cursor:
             # Users
@@ -3426,7 +3709,8 @@ def admin_stats(current_admin: dict = Depends(check_admin_user)):
                 visitors_count = cursor.fetchone()["count"]
             
     finally:
-        conn.close()
+        if conn:
+            conn.close()
         
     return {
         "totalUsers": total_users,
@@ -4984,6 +5268,8 @@ def create_customer_review(
         "comment": data.comment,
         "createdAt": now_str
     })
+    invalidate_cache("profile_stats")
+    invalidate_cache("public_stats")
 
     return {
         "id": rev_id,
@@ -5034,6 +5320,8 @@ def update_customer_review(
         recalculate_product_ratings(pid)
 
     broadcast_admin_event("review.updated", {"id": id, "rating": new_rating})
+    invalidate_cache("profile_stats")
+    invalidate_cache("public_stats")
 
     updated = get_review_by_id(id)
     user_display = updated.get("user_name") or current_user.get("full_name") or user_email.split("@")[0]
@@ -5081,6 +5369,8 @@ def delete_customer_review(
         recalculate_product_ratings(pid)
 
     broadcast_admin_event("review.deleted", {"id": id})
+    invalidate_cache("profile_stats")
+    invalidate_cache("public_stats")
     return {"success": True, "message": "Review deleted successfully."}
 
 # Admin Reviews

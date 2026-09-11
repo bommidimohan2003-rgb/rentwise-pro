@@ -6,8 +6,6 @@ type SearchParams = {
   q?: string;
   cat?: string;
   city?: string;
-  start?: string;
-  end?: string;
 };
 
 export const Route = createFileRoute("/browse")({
@@ -16,8 +14,6 @@ export const Route = createFileRoute("/browse")({
       q: (search.q as string) || undefined,
       cat: (search.cat as string) || undefined,
       city: (search.city as string) || undefined,
-      start: (search.start as string) || undefined,
-      end: (search.end as string) || undefined,
     };
   },
   head: () =>

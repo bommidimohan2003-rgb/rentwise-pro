@@ -14,12 +14,14 @@ from database import (
     init_db,
     parse_date_safely,
     check_products_booking_conflicts,
+    evaluate_product_availability,
     add_or_update_cart_item,
     get_user_cart,
     remove_cart_item,
     clear_user_cart,
     MOCK_CARTS,
     MOCK_ORDERS,
+    MOCK_CUSTOM_PRODUCTS,
     execute_query
 )
 from auth import create_access_token
@@ -110,8 +112,20 @@ class TestCartAndAvailability(unittest.TestCase):
             del MOCK_ORDERS[order_id]
 
     def test_cart_crud_and_pricing(self):
+        pid = "test_cam_1"
+        MOCK_CUSTOM_PRODUCTS[pid] = {
+            "id": pid,
+            "title": "Sony Cinema Rig",
+            "price": 1500,
+            "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32",
+            "category": "cameras",
+            "available": True,
+            "status": "approved",
+            "owner_status": "active"
+        }
+
         payload = {
-            "product_id": "test_cam_1",
+            "product_id": pid,
             "start_date": "2026-12-01",
             "end_date": "2026-12-04"
         }
@@ -120,7 +134,7 @@ class TestCartAndAvailability(unittest.TestCase):
         res_data = res.json()
         self.assertTrue(res_data["success"])
         item = res_data["item"]
-        self.assertEqual(item["product_id"], "test_cam_1")
+        self.assertEqual(item["product_id"], pid)
         self.assertEqual(item["days"], 3)
 
         get_res = self.client.get("/api/cart", headers=self.auth_headers)
@@ -139,9 +153,22 @@ class TestCartAndAvailability(unittest.TestCase):
         get_res2 = self.client.get("/api/cart", headers=self.auth_headers)
         self.assertEqual(get_res2.json()["count"], 0)
 
+        if pid in MOCK_CUSTOM_PRODUCTS:
+            del MOCK_CUSTOM_PRODUCTS[pid]
+
     def test_cart_rejection_on_conflict(self):
         test_pid = f"prod_conf_{uuid.uuid4().hex[:6]}"
         order_id = f"ord_conf_{uuid.uuid4().hex[:8]}"
+
+        MOCK_CUSTOM_PRODUCTS[test_pid] = {
+            "id": test_pid,
+            "title": "Conflict Gear",
+            "price": 2000,
+            "category": "cameras",
+            "available": True,
+            "status": "approved",
+            "owner_status": "active"
+        }
         
         MOCK_ORDERS[order_id] = {
             "id": order_id,
@@ -162,6 +189,53 @@ class TestCartAndAvailability(unittest.TestCase):
 
         if order_id in MOCK_ORDERS:
             del MOCK_ORDERS[order_id]
+        if test_pid in MOCK_CUSTOM_PRODUCTS:
+            del MOCK_CUSTOM_PRODUCTS[test_pid]
+
+    def test_cart_rejection_when_product_unavailable_or_lender_pending(self):
+        # 1. Product marked unavailable by lender
+        unavail_pid = f"prod_unavail_{uuid.uuid4().hex[:6]}"
+        MOCK_CUSTOM_PRODUCTS[unavail_pid] = {
+            "id": unavail_pid,
+            "title": "Unavailable Gear",
+            "price": 1000,
+            "category": "laptops",
+            "available": False,
+            "status": "approved",
+            "owner_status": "active"
+        }
+        res1 = self.client.post("/api/cart", json={
+            "product_id": unavail_pid,
+            "start_date": "2026-12-01",
+            "end_date": "2026-12-03"
+        }, headers=self.auth_headers)
+        self.assertEqual(res1.status_code, 400)
+        self.assertIn("no longer available", res1.json()["detail"])
+
+        # 2. Product whose lender is pending approval
+        pending_lender_pid = f"prod_pending_{uuid.uuid4().hex[:6]}"
+        MOCK_CUSTOM_PRODUCTS[pending_lender_pid] = {
+            "id": pending_lender_pid,
+            "title": "Pending Lender Gear",
+            "price": 1000,
+            "category": "drones",
+            "available": True,
+            "status": "approved",
+            "owner_status": "pending"
+        }
+        res2 = self.client.post("/api/cart", json={
+            "product_id": pending_lender_pid,
+            "start_date": "2026-12-01",
+            "end_date": "2026-12-03"
+        }, headers=self.auth_headers)
+        self.assertEqual(res2.status_code, 400)
+        self.assertIn("no longer available", res2.json()["detail"])
+
+        # Cleanup
+        if unavail_pid in MOCK_CUSTOM_PRODUCTS:
+            del MOCK_CUSTOM_PRODUCTS[unavail_pid]
+        if pending_lender_pid in MOCK_CUSTOM_PRODUCTS:
+            del MOCK_CUSTOM_PRODUCTS[pending_lender_pid]
 
 if __name__ == "__main__":
     unittest.main()

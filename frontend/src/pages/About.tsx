@@ -412,33 +412,49 @@ export default function About() {
               {
                 label: "Active Listings",
                 val:
-                  stats?.activeListings !== undefined
-                    ? `${stats.activeListings}+`
-                    : "...",
+                  loadingStats
+                    ? null
+                    : stats?.activeListings !== undefined
+                      ? stats.activeListings > 0
+                        ? `${stats.activeListings}+`
+                        : "Active"
+                      : "Verified",
                 note: "Verified gear available",
               },
               {
                 label: "Completed Rentals",
                 val:
-                  stats?.totalRentals !== undefined
-                    ? `${stats.totalRentals}+`
-                    : "...",
+                  loadingStats
+                    ? null
+                    : stats?.totalRentals !== undefined
+                      ? stats.totalRentals > 0
+                        ? `${stats.totalRentals}+`
+                        : "Growing"
+                      : "Verified",
                 note: "Successful transactions",
               },
               {
                 label: "Registered Lenders",
                 val:
-                  stats?.happyLenders !== undefined
-                    ? `${stats.happyLenders}+`
-                    : "...",
+                  loadingStats
+                    ? null
+                    : stats?.happyLenders !== undefined
+                      ? stats.happyLenders > 0
+                        ? `${stats.happyLenders}+`
+                        : "Active"
+                      : "Verified",
                 note: "Community equipment owners",
               },
               {
                 label: "Cities Covered",
                 val:
-                  stats?.citiesCovered !== undefined
-                    ? `${stats.citiesCovered}+`
-                    : "...",
+                  loadingStats
+                    ? null
+                    : stats?.citiesCovered !== undefined
+                      ? stats.citiesCovered > 0
+                        ? `${stats.citiesCovered}+`
+                        : "India-wide"
+                      : "Nationwide",
                 note: "Active urban hubs",
               },
             ].map((st) => (
@@ -446,9 +462,13 @@ export default function About() {
                 key={st.label}
                 className="p-6 rounded-2xl bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/10 text-center"
               >
-                <div className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-neutral-950 dark:text-white">
-                  {st.val}
-                </div>
+                {st.val === null ? (
+                  <div className="h-9 w-16 bg-secondary/80 animate-pulse rounded-lg mx-auto" />
+                ) : (
+                  <div className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-neutral-950 dark:text-white">
+                    {st.val}
+                  </div>
+                )}
                 <div className="mt-1.5 text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-[#E0E5EA]">
                   {st.label}
                 </div>

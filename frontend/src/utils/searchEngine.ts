@@ -195,6 +195,18 @@ export function advancedSearch(
     const descLower = product.description.toLowerCase();
     const catLower = product.category.toLowerCase();
     const ownerLower = product.owner?.name?.toLowerCase() || "";
+    const locLower = [
+      product.location,
+      product.owner?.city,
+      product.owner?.state,
+      product.owner?.address,
+      (product as Product & { owner_city?: string }).owner_city,
+      (product as Product & { owner_address?: string }).owner_address,
+      (product as Product & { owner_state?: string }).owner_state,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
 
     let totalScore = 0;
     let matchedAllTokens = true;
@@ -220,19 +232,25 @@ export function advancedSearch(
         tokenMatched = true;
       }
 
-      // 4. Owner match (+5)
+      // 4. Location match (+7)
+      if (locLower.includes(token)) {
+        tokenScore += 7;
+        tokenMatched = true;
+      }
+
+      // 5. Owner match (+5)
       if (ownerLower.includes(token)) {
         tokenScore += 5;
         tokenMatched = true;
       }
 
-      // 5. Description / Specs match (+3)
+      // 6. Description / Specs match (+3)
       if (descLower.includes(token)) {
         tokenScore += 3;
         tokenMatched = true;
       }
 
-      // 6. Synonym expansion check (+4)
+      // 7. Synonym expansion check (+4)
       if (!tokenMatched) {
         const synonyms = SYNONYM_MAP[token] || [];
         for (const syn of synonyms) {
@@ -278,3 +296,212 @@ export function advancedSearch(
 
   return scoredResults.map((r) => r.product);
 }
+
+export const METRO_CLUSTERS: Record<string, string[]> = {
+  visakhapatnam: [
+    "visakhapatnam",
+    "vizag",
+    "gajuwaka",
+    "old gajuwaka",
+    "chinnamushidiwada",
+    "pendurthi",
+    "rushikonda",
+    "waltair",
+    "mvp colony",
+    "madhurawada",
+    "anakapalle",
+  ],
+  vizag: [
+    "visakhapatnam",
+    "vizag",
+    "gajuwaka",
+    "old gajuwaka",
+    "chinnamushidiwada",
+    "pendurthi",
+    "rushikonda",
+    "waltair",
+    "mvp colony",
+    "madhurawada",
+    "anakapalle",
+  ],
+  gajuwaka: [
+    "visakhapatnam",
+    "vizag",
+    "gajuwaka",
+    "old gajuwaka",
+    "chinnamushidiwada",
+    "pendurthi",
+    "rushikonda",
+    "waltair",
+    "mvp colony",
+    "madhurawada",
+    "anakapalle",
+  ],
+  "old gajuwaka": [
+    "visakhapatnam",
+    "vizag",
+    "gajuwaka",
+    "old gajuwaka",
+    "chinnamushidiwada",
+    "pendurthi",
+    "rushikonda",
+    "waltair",
+    "mvp colony",
+    "madhurawada",
+    "anakapalle",
+  ],
+  hyderabad: [
+    "hyderabad",
+    "secunderabad",
+    "cyberabad",
+    "madhapur",
+    "gachibowli",
+    "hitec city",
+    "kondapur",
+    "jubilee hills",
+    "banjara hills",
+    "kukatpally",
+    "begumpet",
+  ],
+  secunderabad: [
+    "hyderabad",
+    "secunderabad",
+    "cyberabad",
+    "madhapur",
+    "gachibowli",
+    "hitec city",
+    "kondapur",
+  ],
+  bengaluru: [
+    "bengaluru",
+    "bangalore",
+    "koramangala",
+    "indiranagar",
+    "whitefield",
+    "hsr layout",
+    "electronic city",
+    "bellandur",
+    "marathahalli",
+    "jayanagar",
+  ],
+  bangalore: [
+    "bengaluru",
+    "bangalore",
+    "koramangala",
+    "indiranagar",
+    "whitefield",
+    "hsr layout",
+    "electronic city",
+    "bellandur",
+    "marathahalli",
+    "jayanagar",
+  ],
+  mumbai: [
+    "mumbai",
+    "bombay",
+    "bandra",
+    "andheri",
+    "thane",
+    "navi mumbai",
+    "juhu",
+    "powai",
+    "worli",
+    "dadar",
+    "borivali",
+  ],
+  delhi: [
+    "delhi",
+    "new delhi",
+    "delhi ncr",
+    "noida",
+    "gurgaon",
+    "gurugram",
+    "faridabad",
+    "ghaziabad",
+  ],
+  "delhi ncr": [
+    "delhi",
+    "new delhi",
+    "delhi ncr",
+    "noida",
+    "gurgaon",
+    "gurugram",
+    "faridabad",
+    "ghaziabad",
+  ],
+  chennai: [
+    "chennai",
+    "madras",
+    "guindy",
+    "velachery",
+    "adyar",
+    "anna nagar",
+    "omr",
+    "t nagar",
+  ],
+  pune: [
+    "pune",
+    "pimpri",
+    "chinchwad",
+    "hinjewadi",
+    "wakad",
+    "kothrud",
+    "baner",
+    "viman nagar",
+  ],
+  kolkata: ["kolkata", "calcutta", "salt lake", "new town", "howrah"],
+};
+
+export function getProductLocationString(p: Product): string {
+  const parts = [
+    p.location,
+    p.owner?.city,
+    p.owner?.state,
+    p.owner?.address,
+    p.owner?.location,
+    (p as Product & { owner_city?: string }).owner_city,
+    (p as Product & { owner_address?: string }).owner_address,
+    (p as Product & { owner_state?: string }).owner_state,
+  ].filter(Boolean);
+  return parts.join(" ").toLowerCase();
+}
+
+export function isProductInLocation(p: Product, targetCity: string): boolean {
+  if (!targetCity) return true;
+  const target = targetCity.toLowerCase().trim();
+  const prodLoc = getProductLocationString(p);
+  if (!prodLoc) return false;
+
+  // 1. Direct inclusion either way
+  if (prodLoc.includes(target) || target.includes(prodLoc)) return true;
+
+  // 2. Token match (e.g. "old gajuwaka" -> "gajuwaka")
+  const tokens = target
+    .split(/\s+/)
+    .filter(
+      (t) =>
+        t.length > 2 &&
+        !["old", "new", "city", "north", "south", "east", "west"].includes(t),
+    );
+  for (const token of tokens) {
+    if (prodLoc.includes(token)) return true;
+  }
+
+  // 3. Metro cluster aliases
+  const cluster = METRO_CLUSTERS[target] || [];
+  for (const alias of cluster) {
+    if (prodLoc.includes(alias)) return true;
+  }
+
+  for (const [key, clusterAliases] of Object.entries(METRO_CLUSTERS)) {
+    if (clusterAliases.includes(target)) {
+      if (prodLoc.includes(key)) return true;
+      for (const alias of clusterAliases) {
+        if (prodLoc.includes(alias)) return true;
+      }
+    }
+  }
+
+  return false;
+}
+

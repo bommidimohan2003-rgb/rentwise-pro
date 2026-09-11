@@ -7,6 +7,9 @@ import type {
   CartResponse,
   ProductAvailabilityItem,
   BatchAvailabilityResponse,
+  UserProfileStats,
+  Conversation,
+  ConversationMessage,
 } from "@/types";
 
 const getApiBase = () => {
@@ -959,6 +962,96 @@ export const api = {
       );
     }
     return result;
+  },
+
+  async getUserStats(token: string): Promise<UserProfileStats> {
+    if (!token) {
+      return {
+        completed_rentals: 0,
+        lender_rating: null,
+        review_count: 0,
+        on_time_return_rate: null,
+        average_response_time_minutes: null,
+        has_data: false,
+      };
+    }
+    const res = await this.fetchWithAuth(`${API_BASE}/api/profile/stats`, {
+      method: "GET",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to fetch profile stats"));
+    }
+    return await res.json();
+  },
+
+  async getMessages(token: string): Promise<Conversation[]> {
+    if (!token) return [];
+    const res = await this.fetchWithAuth(`${API_BASE}/api/messages`, {
+      method: "GET",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to fetch messages"));
+    }
+    return await res.json();
+  },
+
+  async getConversation(token: string, id: string): Promise<Conversation> {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/messages/${id}`, {
+      method: "GET",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to fetch conversation"));
+    }
+    return await res.json();
+  },
+
+  async sendMessage(
+    token: string,
+    conversationId: string,
+    message: string,
+  ): Promise<{ success: boolean; id: string; messages: ConversationMessage[]; updatedAt: string }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/messages/${conversationId}/reply`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to send message"));
+    }
+    return await res.json();
+  },
+
+  async createConversation(
+    token: string,
+    payload: { subject: string; message: string; category?: string },
+  ): Promise<{ success: boolean; id: string; subject: string; category: string; messages: ConversationMessage[]; createdAt: string }> {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/messages/new`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to create conversation"));
+    }
+    return await res.json();
+  },
+
+  async markConversationRead(token: string, id: string): Promise<{ success: boolean }> {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/messages/${id}/read`, {
+      method: "PATCH",
+    });
+    if (!res.ok) {
+      return { success: false };
+    }
+    return await res.json();
   },
 
   async toggleCustomProductAvailability(token: string, productId: string) {

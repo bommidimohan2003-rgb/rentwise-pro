@@ -44,6 +44,8 @@ export interface Product {
   rating: number;
   reviews: number;
   available: boolean;
+  availability_status?: "available" | "unavailable";
+  availability_reason?: string | null;
   isReference?: boolean;
   status?: "approved" | "pending" | "rejected";
   location?: string;
@@ -57,6 +59,7 @@ export interface Product {
     address?: string;
     pincode?: string;
     location?: string;
+    status?: string;
   };
 }
 
@@ -96,6 +99,42 @@ export interface Notification {
   type: "info" | "success" | "warning";
   read: boolean;
   createdAt: string;
+}
+
+export interface UserProfileStats {
+  completed_rentals: number;
+  lender_rating: number | null;
+  review_count: number;
+  on_time_return_rate: number | null;
+  average_response_time_minutes: number | null;
+  has_data: boolean;
+}
+
+export interface ConversationMessage {
+  id: string;
+  sender: string;
+  senderType: "user" | "admin" | "support";
+  content: string;
+  timestamp: string;
+  read?: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  subject: string;
+  category?: string;
+  status: "open" | "pending" | "resolved" | "closed";
+  priority?: string;
+  createdAt: string;
+  updatedAt?: string;
+  partner?: string;
+  partnerAvatar?: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+  unread?: boolean;
+  unreadCount?: number;
+  messageCount?: number;
+  messages: ConversationMessage[];
 }
 
 export interface Message {

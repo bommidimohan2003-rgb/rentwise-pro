@@ -23,12 +23,10 @@ import {
   Sparkles,
   ShieldCheck,
   RotateCcw,
-  Calendar,
-  Clock,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
-import { advancedSearch } from "@/utils/searchEngine";
+import { advancedSearch, isProductInLocation } from "@/utils/searchEngine";
 import { searchWithML } from "@/utils/smartSearch";
 import type { Product, Category, ProductAvailabilityItem } from "@/types";
 import { cn } from "@/lib/utils";
@@ -50,19 +48,6 @@ const popularTags = [
   "MacBook Pro",
   "Cinema Camera",
   "Audio Gear",
-];
-
-const popularCities = [
-  "All Cities",
-  "Bengaluru",
-  "Mumbai",
-  "Delhi NCR",
-  "Hyderabad",
-  "Chennai",
-  "Pune",
-  "Kolkata",
-  "Visakhapatnam",
-  "Goa",
 ];
 
 const categoryIconMap: Record<
@@ -141,26 +126,12 @@ const matchCategory = (productCat: string, targetId: string) => {
 
 const ITEMS_PER_PAGE = 12;
 
-const getTomorrowDateString = () => {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split("T")[0];
-};
-
-const getThreeDaysLaterDateString = () => {
-  const d = new Date();
-  d.setDate(d.getDate() + 4);
-  return d.toISOString().split("T")[0];
-};
-
 export default function Categories() {
   const { user } = useAuth();
   const search = useSearch({ strict: false }) as {
     q?: string;
     cat?: string;
     city?: string;
-    start?: string;
-    end?: string;
   };
   const navigate = useNavigate();
 
@@ -168,17 +139,8 @@ export default function Categories() {
   const [q, setLocalQ] = useState(search.q || "");
   const [sort, setSort] = useState<SortOption>("featured");
   const [isSortOpen, setIsSortOpen] = useState(false);
-  const [isCityOpen, setIsCityOpen] = useState(false);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Date selection states
-  const [startDate, setStartDate] = useState<string>(
-    () => search.start || getTomorrowDateString(),
-  );
-  const [endDate, setEndDate] = useState<string>(
-    () => search.end || getThreeDaysLaterDateString(),
-  );
 
   // Additional filter states
   const [maxPriceFilter, setMaxPriceFilter] = useState<number | null>(null);
@@ -200,31 +162,35 @@ export default function Categories() {
   const [didYouMean, setDidYouMean] = useState<string | null>(null);
   const [popularQueries] = useState<string[]>(popularTags);
 
-  // Batch availability mapping from MySQL
-  const [availabilityMap, setAvailabilityMap] = useState<
-    Record<string, ProductAvailabilityItem>
-  >({});
-  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
-
   const sortRef = useRef<HTMLDivElement>(null);
-  const cityRef = useRef<HTMLDivElement>(null);
 
-  // User location detection
+  // User location detection (Auto-detected only)
   const {
     city: detectedCity,
     isDetecting,
     detectLocation,
   } = useUserLocation();
 
-  const selectedCity = search.city || "All Cities";
+  const [isNationwide, setIsNationwide] = useState<boolean>(false);
 
-  // Sync search keyword & dates from URL
+  const isLocationActive = Boolean(
+    detectedCity &&
+      detectedCity !== "Location unavailable" &&
+      detectedCity !== "All Cities",
+  );
+
+  // Effective city filter: URL param if provided, else detected city unless user toggled nationwide
+  const effectiveCity = search.city
+    ? search.city
+    : !isNationwide && isLocationActive
+      ? detectedCity
+      : null;
+
+  // Sync search keyword from URL
   useEffect(() => {
     setLocalQ(search.q || "");
-    if (search.start) setStartDate(search.start);
-    if (search.end) setEndDate(search.end);
     setCurrentPage(1);
-  }, [search.q, search.start, search.end]);
+  }, [search.q]);
 
   // Track category
   useEffect(() => {
@@ -292,27 +258,7 @@ export default function Categories() {
       );
   }, []);
 
-  // Check Batch Availability against MySQL booking conflicts
-  useEffect(() => {
-    if (!allProductsList.length || !startDate || !endDate) return;
 
-    const pids = allProductsList.map((p) => p.id);
-    setIsCheckingAvailability(true);
-
-    api
-      .checkAvailabilityBatch(startDate, endDate, pids)
-      .then((res) => {
-        if (res && res.availability) {
-          setAvailabilityMap(res.availability);
-        }
-      })
-      .catch((err) => {
-        console.warn("[Browse] Batch availability check notice:", err);
-      })
-      .finally(() => {
-        setIsCheckingAvailability(false);
-      });
-  }, [allProductsList, startDate, endDate]);
 
   // ML-powered Search
   useEffect(() => {
@@ -338,9 +284,6 @@ export default function Categories() {
     const handleClickOutside = (event: MouseEvent) => {
       if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
         setIsSortOpen(false);
-      }
-      if (cityRef.current && !cityRef.current.contains(event.target as Node)) {
-        setIsCityOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -369,9 +312,7 @@ export default function Categories() {
       search: (prev: Record<string, unknown>) => ({
         ...prev,
         q: q.trim() || undefined,
-        city: selectedCity !== "All Cities" ? selectedCity : undefined,
-        start: startDate,
-        end: endDate,
+        city: search.city || undefined,
       }),
     });
     setCurrentPage(1);
@@ -383,22 +324,6 @@ export default function Categories() {
       search: (prev: Record<string, unknown>) => ({
         ...prev,
         cat: catId === "all" ? undefined : catId,
-        start: startDate,
-        end: endDate,
-      }),
-    });
-    setCurrentPage(1);
-  };
-
-  const handleCitySelect = (city: string) => {
-    setIsCityOpen(false);
-    navigate({
-      to: "/browse",
-      search: (prev: Record<string, unknown>) => ({
-        ...prev,
-        city: city === "All Cities" ? undefined : city,
-        start: startDate,
-        end: endDate,
       }),
     });
     setCurrentPage(1);
@@ -410,10 +335,7 @@ export default function Categories() {
     setMinRatingFilter(0);
     setAvailableOnlyFilter(false);
     setSort("featured");
-    const defStart = getTomorrowDateString();
-    const defEnd = getThreeDaysLaterDateString();
-    setStartDate(defStart);
-    setEndDate(defEnd);
+    setIsNationwide(false);
     navigate({
       to: "/browse",
       search: {},
@@ -451,17 +373,27 @@ export default function Categories() {
       return isApproved || isOwner;
     });
 
-    // City Filter
-    if (selectedCity && selectedCity !== "All Cities") {
-      const targetCity = selectedCity.toLowerCase();
-      list = list.filter((p) => {
-        const loc = (
-          p.location ||
-          (p as Product & { owner_address?: string }).owner_address ||
-          p.owner?.city ||
-          ""
-        ).toLowerCase();
-        return loc.includes(targetCity);
+    // Location Filter & Prioritization (Smart Metro Cluster Matching)
+    if (effectiveCity) {
+      const nearbyMatches = list.filter((p) =>
+        isProductInLocation(p, effectiveCity),
+      );
+      if (nearbyMatches.length > 0) {
+        list = nearbyMatches;
+      } else {
+        // If no products in this exact city, sort any partial matches first
+        list = [...list].sort((a, b) => {
+          const aIn = isProductInLocation(a, effectiveCity) ? 1 : 0;
+          const bIn = isProductInLocation(b, effectiveCity) ? 1 : 0;
+          return bIn - aIn;
+        });
+      }
+    } else if (isLocationActive) {
+      // In Nationwide mode, prioritize gear near the user's location at the top
+      list = [...list].sort((a, b) => {
+        const aIn = isProductInLocation(a, detectedCity) ? 1 : 0;
+        const bIn = isProductInLocation(b, detectedCity) ? 1 : 0;
+        return bIn - aIn;
       });
     }
 
@@ -475,12 +407,11 @@ export default function Categories() {
       list = list.filter((p) => (p.rating || 5.0) >= minRatingFilter);
     }
 
-    // Date Availability Filter
+    // Real Authoritative Inventory Availability Filter
     if (availableOnlyFilter) {
       list = list.filter((p) => {
-        const itemAvail = availabilityMap[p.id];
-        if (itemAvail !== undefined) {
-          return itemAvail.is_available;
+        if (p.availability_status !== undefined) {
+          return p.availability_status === "available";
         }
         return p.available !== false;
       });
@@ -520,11 +451,10 @@ export default function Categories() {
     sort,
     mlResults,
     allProductsList,
-    selectedCity,
+    effectiveCity,
     maxPriceFilter,
     minRatingFilter,
     availableOnlyFilter,
-    availabilityMap,
     user,
   ]);
 
@@ -539,7 +469,7 @@ export default function Categories() {
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (activeCategory !== "all") count++;
-    if (selectedCity !== "All Cities") count++;
+    if (effectiveCity) count++;
     if (maxPriceFilter !== null && maxPriceFilter < highestPriceInCatalog)
       count++;
     if (minRatingFilter > 0) count++;
@@ -548,7 +478,7 @@ export default function Categories() {
     return count;
   }, [
     activeCategory,
-    selectedCity,
+    effectiveCity,
     maxPriceFilter,
     highestPriceInCatalog,
     minRatingFilter,
@@ -622,17 +552,17 @@ export default function Categories() {
             {/* Supporting Text */}
             <p className="mt-4 text-sm sm:text-base text-neutral-600 dark:text-[#AAB3BC] leading-relaxed max-w-2xl">
               Discover professional cameras, drones, laptops, audio gear,
-              lighting and more with real-time date availability.
+              lighting and more with verified real-time gear availability.
             </p>
           </div>
 
-          {/* 2. UPGRADED BROWSE SEARCH BAR WITH DATES */}
+          {/* 2. REBALANCED BROWSE SEARCH BAR (KEYWORD + AUTO-LOCATION ONLY) */}
           <div className="mt-8 max-w-4xl">
             <form
               onSubmit={handleSearchSubmit}
               className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/15 shadow-xl flex flex-col md:flex-row items-center gap-2 backdrop-blur-md"
             >
-              {/* Keyword Input */}
+              {/* Keyword Input (flex-1 takes remaining space) */}
               <div className="flex-1 w-full flex items-center gap-2.5 px-3 py-1.5">
                 <SearchIcon className="h-4 w-4 text-neutral-400 dark:text-[#AAB3BC] shrink-0" />
                 <input
@@ -665,98 +595,81 @@ export default function Categories() {
               {/* Divider */}
               <div className="hidden md:block h-6 w-px bg-black/10 dark:bg-white/15 shrink-0" />
 
-              {/* Location Picker */}
-              <div className="relative w-full md:w-auto shrink-0" ref={cityRef}>
+              {/* Auto Location Chip (No manual dropdown) */}
+              <div className="w-full md:w-auto flex items-center justify-between md:justify-start gap-1.5 px-3 py-1.5 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl md:rounded-full border border-black/5 dark:border-white/5 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsCityOpen(!isCityOpen)}
-                  className="w-full md:w-auto flex items-center justify-between gap-1.5 px-3 py-1.5 text-xs text-neutral-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl md:rounded-full transition-colors cursor-pointer"
+                  onClick={() => setIsNationwide(!isNationwide)}
+                  title={
+                    isDetecting
+                      ? "Detecting location..."
+                      : isLocationActive
+                        ? isNationwide
+                          ? `Showing nationwide gear. Click to filter by ${detectedCity}.`
+                          : `Filtering by ${detectedCity}. Click to view all India.`
+                        : "Location unavailable"
+                  }
+                  className="flex items-center gap-1.5 text-xs text-neutral-900 dark:text-white hover:opacity-80 transition-opacity cursor-pointer truncate"
                 >
-                  <div className="flex items-center gap-1.5 truncate">
-                    <MapPin className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-300 shrink-0" />
-                    <span className="truncate max-w-[110px] font-medium">
-                      {selectedCity}
-                    </span>
-                  </div>
-                  <ChevronDown className="h-3 w-3 text-neutral-400 shrink-0 ml-1" />
+                  <MapPin
+                    className={cn(
+                      "h-3.5 w-3.5 shrink-0",
+                      isLocationActive && !isNationwide
+                        ? "text-primary"
+                        : "text-neutral-500 dark:text-neutral-400",
+                    )}
+                  />
+                  <span className="truncate max-w-[130px] font-medium text-xs">
+                    {isDetecting
+                      ? "Detecting..."
+                      : isLocationActive
+                        ? isNationwide
+                          ? "All India"
+                          : detectedCity
+                        : "Location unavailable"}
+                  </span>
                 </button>
 
-                {isCityOpen && (
-                  <div className="absolute left-0 md:right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-[#111A22] border border-black/10 dark:border-white/15 shadow-2xl p-1.5 z-50">
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      detectLocation();
+                    }}
+                    disabled={isDetecting}
+                    title="Re-detect GPS location"
+                    className="p-1 rounded-full text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                    aria-label="Re-detect location"
+                  >
+                    <RotateCcw
+                      className={cn("h-3 w-3", isDetecting && "animate-spin")}
+                    />
+                  </button>
+
+                  {isLocationActive && (
                     <button
                       type="button"
-                      onClick={() => {
-                        detectLocation();
-                        if (detectedCity) handleCitySelect(detectedCity);
-                      }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-neutral-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer mb-1"
-                    >
-                      <MapPin className="h-3 w-3" />
-                      <span>
-                        {isDetecting ? "Detecting..." : "Use Current Location"}
-                      </span>
-                    </button>
-                    <div className="h-px bg-black/5 dark:bg-white/10 my-1" />
-                    <div className="max-h-48 overflow-y-auto">
-                      {popularCities.map((city) => (
-                        <button
-                          key={city}
-                          type="button"
-                          onClick={() => handleCitySelect(city)}
-                          className={cn(
-                            "w-full text-left px-2.5 py-1.5 text-xs rounded-xl transition-colors flex items-center justify-between",
-                            selectedCity === city
-                              ? "bg-black/5 dark:bg-white/10 font-bold text-neutral-950 dark:text-white"
-                              : "text-neutral-700 dark:text-[#AAB3BC] hover:bg-black/5 dark:hover:bg-white/5",
-                          )}
-                        >
-                          <span>{city}</span>
-                          {selectedCity === city && (
-                            <Check className="h-3 w-3 text-primary" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Divider */}
-              <div className="hidden md:block h-6 w-px bg-black/10 dark:bg-white/15 shrink-0" />
-
-              {/* Rental Date Range Selector */}
-              <div className="w-full md:w-auto flex items-center gap-1.5 px-3 py-1.5 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl md:rounded-full border border-black/5 dark:border-white/5 shrink-0">
-                <Calendar className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
-                <div className="flex items-center gap-1 text-[11px] font-mono text-neutral-800 dark:text-neutral-200">
-                  <input
-                    type="date"
-                    value={startDate}
-                    min={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => {
-                      const newStart = e.target.value;
-                      setStartDate(newStart);
-                      if (endDate < newStart) {
-                        setEndDate(newStart);
+                      onClick={() => setIsNationwide(!isNationwide)}
+                      title={
+                        isNationwide
+                          ? `Filter by ${detectedCity}`
+                          : "View all gear nationwide"
                       }
-                    }}
-                    title="Rental Start Date"
-                    aria-label="Rental start date"
-                    className="bg-transparent focus:outline-none cursor-pointer"
-                  />
-                  <span className="text-neutral-400 text-[10px]">→</span>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate || new Date().toISOString().split("T")[0]}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    title="Rental End Date"
-                    aria-label="Rental end date"
-                    className="bg-transparent focus:outline-none cursor-pointer"
-                  />
+                      className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors cursor-pointer",
+                        !isNationwide
+                          ? "bg-primary text-white dark:bg-primary dark:text-white shadow-xs"
+                          : "bg-black/10 dark:bg-white/15 text-neutral-700 dark:text-neutral-200 hover:bg-black/20",
+                      )}
+                    >
+                      {!isNationwide ? "Nearby" : "All India"}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Submit Search Button (PAYENT Neutral System) */}
+              {/* Submit Search Button (Compact at end) */}
               <button
                 type="submit"
                 className="w-full md:w-auto h-10 px-6 rounded-xl md:rounded-full bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] dark:active:bg-[#DCD9D1] text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
@@ -782,8 +695,6 @@ export default function Categories() {
                       search: (prev: Record<string, unknown>) => ({
                         ...prev,
                         q: tag,
-                        start: startDate,
-                        end: endDate,
                       }),
                     });
                     setCurrentPage(1);
@@ -857,10 +768,15 @@ export default function Categories() {
                 {totalItems}{" "}
                 {totalItems === 1 ? "piece of gear" : "pieces of gear"}
               </h2>
-              {isCheckingAvailability && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-neutral-500 dark:text-neutral-400">
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  Checking dates...
+              {isLocationActive && !isNationwide && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-bold">
+                  <MapPin className="h-3 w-3" />
+                  Nearby {detectedCity}
+                </span>
+              )}
+              {isLocationActive && isNationwide && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-neutral-600 dark:text-neutral-300 text-[11px] font-semibold">
+                  All India
                 </span>
               )}
               {mlResults !== null && (
@@ -970,7 +886,7 @@ export default function Categories() {
 
         {/* Active Filter Removal Chips */}
         {(activeCategory !== "all" ||
-          selectedCity !== "All Cities" ||
+          effectiveCity ||
           (maxPriceFilter !== null && maxPriceFilter < highestPriceInCatalog) ||
           minRatingFilter > 0 ||
           availableOnlyFilter ||
@@ -1015,12 +931,23 @@ export default function Categories() {
               </span>
             )}
 
-            {selectedCity !== "All Cities" && (
+            {effectiveCity && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs text-neutral-800 dark:text-[#E0E5EA] border border-black/10 dark:border-white/15">
-                Location: {selectedCity}
+                Location: {effectiveCity}
                 <button
                   type="button"
-                  onClick={() => handleCitySelect("All Cities")}
+                  onClick={() => {
+                    setIsNationwide(true);
+                    if (search.city) {
+                      navigate({
+                        to: "/browse",
+                        search: (prev: Record<string, unknown>) => ({
+                          ...prev,
+                          city: undefined,
+                        }),
+                      });
+                    }
+                  }}
                   className="hover:text-primary cursor-pointer"
                 >
                   <X className="h-3 w-3" />
@@ -1057,7 +984,7 @@ export default function Categories() {
 
             {availableOnlyFilter && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs text-neutral-800 dark:text-[#E0E5EA] border border-black/10 dark:border-white/15">
-                Available for Selected Dates
+                Available Gear Only
                 <button
                   type="button"
                   onClick={() => setAvailableOnlyFilter(false)}
@@ -1096,29 +1023,8 @@ export default function Categories() {
               </button>
             </div>
 
-            {/* Selected Rental Dates Overview in Filter Panel */}
-            <div>
-              <span className="block text-xs font-semibold text-neutral-700 dark:text-[#AAB3BC] mb-2">
-                Rental Duration
-              </span>
-              <div className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-xs">
-                <div className="flex items-center justify-between text-neutral-600 dark:text-neutral-400">
-                  <span>Start:</span>
-                  <span className="font-mono font-bold text-neutral-900 dark:text-white">
-                    {startDate}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-neutral-600 dark:text-neutral-400">
-                  <span>End:</span>
-                  <span className="font-mono font-bold text-neutral-900 dark:text-white">
-                    {endDate}
-                  </span>
-                </div>
-              </div>
-            </div>
-
             {/* Price Range Slider */}
-            <div className="pt-3 border-t border-black/10 dark:border-white/10">
+            <div>
               <div className="flex items-center justify-between text-xs font-semibold mb-2">
                 <span className="text-neutral-700 dark:text-[#AAB3BC]">
                   Max Daily Rate
@@ -1181,7 +1087,7 @@ export default function Categories() {
               <label className="flex items-center justify-between text-xs font-semibold text-neutral-700 dark:text-[#AAB3BC] cursor-pointer">
                 <span className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-neutral-600 dark:text-neutral-300" />
-                  Available for Dates
+                  Available Gear Only
                 </span>
                 <input
                   type="checkbox"
@@ -1280,12 +1186,15 @@ export default function Categories() {
                         key={product.id}
                         product={product}
                         isDateAvailable={
-                          availabilityMap[product.id]?.is_available ??
-                          product.available
+                          product.availability_status !== undefined
+                            ? product.availability_status === "available"
+                            : product.available !== false
                         }
-                        availabilityReason={availabilityMap[product.id]?.reason}
-                        selectedStartDate={startDate}
-                        selectedEndDate={endDate}
+                        availabilityReason={product.availability_reason}
+                        isNearby={
+                          isLocationActive &&
+                          isProductInLocation(product, detectedCity)
+                        }
                       />
                     ))}
                   </div>
@@ -1374,35 +1283,6 @@ export default function Categories() {
                   </button>
                 </div>
 
-                {/* Rental Dates in Mobile Drawer */}
-                <div>
-                  <span className="block text-xs font-semibold text-neutral-700 dark:text-[#AAB3BC] mb-2">
-                    Rental Dates
-                  </span>
-                  <div className="flex flex-col gap-2">
-                    <div>
-                      <label className="text-[10px] text-neutral-500 uppercase font-semibold">Start</label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        min={new Date().toISOString().split("T")[0]}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full mt-1 p-2 rounded-lg bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-xs font-mono text-neutral-900 dark:text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-neutral-500 uppercase font-semibold">End</label>
-                      <input
-                        type="date"
-                        value={endDate}
-                        min={startDate || new Date().toISOString().split("T")[0]}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full mt-1 p-2 rounded-lg bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-xs font-mono text-neutral-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Categories */}
                 <div>
                   <span className="block text-xs font-semibold text-neutral-700 dark:text-[#AAB3BC] mb-2">
@@ -1479,7 +1359,7 @@ export default function Categories() {
                 {/* Availability */}
                 <div>
                   <label className="flex items-center justify-between text-xs font-semibold text-neutral-700 dark:text-[#AAB3BC]">
-                    <span>Available for Selected Dates</span>
+                    <span>Available Gear Only</span>
                     <input
                       type="checkbox"
                       checked={availableOnlyFilter}

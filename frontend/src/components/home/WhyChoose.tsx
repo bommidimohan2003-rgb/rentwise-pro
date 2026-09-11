@@ -55,11 +55,12 @@ export function WhyChoose() {
                 Protected for Owners.
               </span>
             </h2>
-          <p className="text-sm md:text-base text-muted-foreground dark:text-neutral-400 font-medium">
-            Standard rental houses charge exorbitant deposits and rigid 24-hour
-            penalties. Payent gives you liquid access to certified, insured tech
-            hardware at your terms.
-          </p>
+            <p className="text-sm md:text-base text-muted-foreground dark:text-neutral-400 font-medium">
+              Standard rental houses charge exorbitant deposits and rigid 24-hour
+              penalties. Payent gives you liquid access to certified, insured tech
+              hardware at your terms.
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

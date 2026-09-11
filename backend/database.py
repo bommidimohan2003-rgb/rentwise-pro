@@ -478,6 +478,11 @@ def init_db():
             created_at VARCHAR(100)
         )
     """)
+    add_column_safely("support_tickets", "updated_at VARCHAR(100)")
+    add_column_safely("support_tickets", "unread_user_count INT DEFAULT 0")
+    add_column_safely("support_tickets", "last_read_user_at VARCHAR(100)")
+    add_index_safely("support_tickets", "idx_support_tickets_user_email", "user_email")
+    add_index_safely("support_tickets", "idx_support_tickets_status", "status")
 
     # Create admin_settings table
     execute_query("""
@@ -1098,10 +1103,14 @@ def get_custom_products(email: str):
                                u.address AS owner_address, 
                                u.city AS owner_city, 
                                u.state AS owner_state, 
-                               u.pincode AS owner_pincode
+                               u.pincode AS owner_pincode,
+                               u.status AS owner_status,
+                               u.verified AS owner_verified,
+                               a.status AS agent_status
                         FROM custom_products cp
-                        LEFT JOIN users u ON cp.user_email = u.email
-                        WHERE cp.user_email = %s 
+                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                        LEFT JOIN agents a ON LOWER(cp.user_email) = LOWER(a.user_email)
+                        WHERE LOWER(cp.user_email) = %s 
                         ORDER BY cp.created_at DESC
                     """, (clean_email,))
                     rows = cursor.fetchall()
@@ -1124,9 +1133,13 @@ def get_all_custom_products():
                                u.address AS owner_address, 
                                u.city AS owner_city, 
                                u.state AS owner_state, 
-                               u.pincode AS owner_pincode
+                               u.pincode AS owner_pincode,
+                               u.status AS owner_status,
+                               u.verified AS owner_verified,
+                               a.status AS agent_status
                         FROM custom_products cp
-                        LEFT JOIN users u ON cp.user_email = u.email
+                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                        LEFT JOIN agents a ON LOWER(cp.user_email) = LOWER(a.user_email)
                         ORDER BY cp.created_at DESC
                     """)
                     rows = cursor.fetchall()
@@ -1187,9 +1200,13 @@ def get_all_approved_custom_products():
                                u.address AS owner_address, 
                                u.city AS owner_city, 
                                u.state AS owner_state, 
-                               u.pincode AS owner_pincode
+                               u.pincode AS owner_pincode,
+                               u.status AS owner_status,
+                               u.verified AS owner_verified,
+                               a.status AS agent_status
                         FROM custom_products cp
-                        LEFT JOIN users u ON cp.user_email = u.email
+                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                        LEFT JOIN agents a ON LOWER(cp.user_email) = LOWER(a.user_email)
                         WHERE (cp.status = 'approved' OR cp.status IS NULL) 
                           AND (cp.hidden = 0 OR cp.hidden IS NULL) 
                         ORDER BY cp.created_at DESC
@@ -2680,6 +2697,73 @@ def check_products_booking_conflicts(product_ids: List[str], start_date_str: str
                         conflicted.add(pid)
 
     return conflicted
+
+def evaluate_product_availability(product: dict) -> tuple:
+    """
+    Authoritative evaluation of real lender-based product availability.
+    Returns: (is_available: bool, status_str: str, reason: Optional[str])
+
+    Business Rules:
+    1. Product exists and is not hidden or unlisted.
+    2. Product listing is approved (status == 'approved' or None).
+    3. Product belongs to an eligible/approved lender:
+       - owner_status in ('active', 'approved').
+       - If owner_status in ('pending', 'rejected', 'suspended'): NOT available.
+       - If agent_status in ('rejected', 'suspended'): NOT available.
+    4. Product is currently marked available by lender:
+       - bool(product.get('available', True)) is True.
+    5. No ongoing active rental booking conflict for current date.
+    """
+    if not product:
+        return False, "unavailable", "Product not found"
+
+    if product.get("hidden") or product.get("is_deleted"):
+        return False, "unavailable", "Product is unlisted"
+
+    prod_status = str(product.get("status") or "approved").lower().strip()
+    if prod_status in ("rejected", "pending"):
+        return False, "unavailable", f"Listing {prod_status}"
+
+    # Check lender account status
+    owner_status = str(product.get("owner_status") or "").lower().strip()
+    if not owner_status and isinstance(product.get("owner"), dict):
+        owner_status = str(product["owner"].get("status") or "").lower().strip()
+
+    owner_email = (
+        product.get("user_email")
+        or product.get("userEmail")
+        or (product.get("owner") if isinstance(product.get("owner"), dict) else {}).get("email")
+        or ""
+    ).strip().lower()
+
+    if not owner_status and owner_email:
+        u = get_user(owner_email)
+        if u:
+            owner_status = str(u.get("status") or "active").lower().strip()
+
+    # If owner account exists and is pending, rejected, or suspended => unavailable
+    if owner_status in ("pending", "rejected", "suspended"):
+        return False, "unavailable", f"Lender account {owner_status}"
+
+    # Check agent profile status
+    agent_status = str(product.get("agent_status") or "").lower().strip()
+    if agent_status in ("rejected", "suspended"):
+        return False, "unavailable", f"Lender profile {agent_status}"
+
+    # Check lender availability toggle
+    is_lender_available = bool(product.get("available", True))
+    if not is_lender_available:
+        return False, "unavailable", "Product currently unavailable from lender"
+
+    # Check active booking collision for today
+    pid = str(product.get("id") or "")
+    if pid:
+        today_str = dt.now(timezone.utc).strftime("%Y-%m-%d")
+        ongoing_conflicts = check_products_booking_conflicts([pid], today_str, today_str)
+        if pid in ongoing_conflicts:
+            return False, "unavailable", "Booked for current dates"
+
+    return True, "available", None
 
 # ============================================================
 # Cart Persistence & Operations

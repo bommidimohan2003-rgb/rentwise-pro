@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { CameraPhotoModal } from "@/components/profile/CameraPhotoModal";
+import type { UserProfileStats } from "@/types";
 import { cn } from "@/lib/utils";
 
 export default function Profile() {
@@ -50,6 +51,35 @@ export default function Profile() {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "location" | "payout" | "security">("details");
+
+  const [stats, setStats] = useState<UserProfileStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (!token) {
+      setLoadingStats(false);
+      return;
+    }
+    api
+      .getUserStats(token)
+      .then((data) => {
+        if (isMounted && data) {
+          setStats(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("[Profile] Stats load notice:", err);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingStats(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.email]);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -554,29 +584,76 @@ export default function Profile() {
 
           {/* Marketplace Stats Row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 mx-6 mb-6 rounded-2xl bg-secondary/30 border border-border/60 text-center backdrop-blur-md">
+            {/* Metric 1: Completed Rentals */}
             <div className="p-2 space-y-0.5">
-              <div className="text-xl font-black text-foreground font-display">14</div>
+              {loadingStats ? (
+                <div className="h-7 w-12 bg-secondary/80 animate-pulse rounded-lg mx-auto" />
+              ) : (
+                <div className="text-xl font-black text-foreground font-display">
+                  {stats?.completed_rentals ?? 0}
+                </div>
+              )}
               <div className="text-xs font-semibold text-muted-foreground">Completed Rentals</div>
             </div>
+
+            {/* Metric 2: Lender Rating & Reviews */}
             <div className="p-2 space-y-0.5">
-              <div className="text-xl font-black text-foreground font-display flex items-center justify-center gap-1">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                <span>4.9</span>
+              {loadingStats ? (
+                <div className="h-7 w-16 bg-secondary/80 animate-pulse rounded-lg mx-auto" />
+              ) : (
+                <div className="text-xl font-black text-foreground font-display flex items-center justify-center gap-1">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <span>
+                    {stats?.lender_rating !== null && stats?.lender_rating !== undefined
+                      ? stats.lender_rating.toFixed(1)
+                      : "New"}
+                  </span>
+                </div>
+              )}
+              <div className="text-xs font-semibold text-muted-foreground">
+                {stats?.review_count && stats.review_count > 0
+                  ? `Lender Rating (${stats.review_count})`
+                  : "No ratings yet"}
               </div>
-              <div className="text-xs font-semibold text-muted-foreground">Lender Rating (18)</div>
             </div>
+
+            {/* Metric 3: On-Time Return Rate */}
             <div className="p-2 space-y-0.5">
-              <div className="text-xl font-black text-foreground font-display flex items-center justify-center gap-1">
-                <Award className="h-4 w-4 text-emerald-500" />
-                <span>100%</span>
+              {loadingStats ? (
+                <div className="h-7 w-14 bg-secondary/80 animate-pulse rounded-lg mx-auto" />
+              ) : (
+                <div className="text-xl font-black text-foreground font-display flex items-center justify-center gap-1">
+                  <Award className="h-4 w-4 text-emerald-500" />
+                  <span>
+                    {stats?.on_time_return_rate !== null && stats?.on_time_return_rate !== undefined
+                      ? `${stats.on_time_return_rate}%`
+                      : "N/A"}
+                  </span>
+                </div>
+              )}
+              <div className="text-xs font-semibold text-muted-foreground">
+                {stats?.on_time_return_rate !== null && stats?.on_time_return_rate !== undefined
+                  ? "On-Time Return Rate"
+                  : "No return history"}
               </div>
-              <div className="text-xs font-semibold text-muted-foreground">On-Time Return Rate</div>
             </div>
+
+            {/* Metric 4: Avg Response Time */}
             <div className="p-2 space-y-0.5">
-              <div className="text-xl font-black text-foreground font-display flex items-center justify-center gap-1">
-                <Clock className="h-4 w-4 text-primary" />
-                <span>&lt; 1 hr</span>
-              </div>
+              {loadingStats ? (
+                <div className="h-7 w-14 bg-secondary/80 animate-pulse rounded-lg mx-auto" />
+              ) : (
+                <div className="text-xl font-black text-foreground font-display flex items-center justify-center gap-1">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <span>
+                    {stats?.average_response_time_minutes !== null && stats?.average_response_time_minutes !== undefined
+                      ? stats.average_response_time_minutes < 60
+                        ? `< 1 hr`
+                        : `${Math.round(stats.average_response_time_minutes / 60)} hrs`
+                      : "No data"}
+                  </span>
+                </div>
+              )}
               <div className="text-xs font-semibold text-muted-foreground">Avg Response Time</div>
             </div>
           </div>
