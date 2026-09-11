@@ -1,17 +1,11 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  Bell,
-  Heart,
-  LogOut,
-  Moon,
-  Sun,
-  User,
-} from "lucide-react";
+import { Bell, Heart, LogOut, Moon, Sun, User, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useCart } from "@/hooks/useCart";
 import { cn } from "@/lib/utils";
 import { LogoIcon } from "@/components/common/LogoIcon";
 import { toast } from "sonner";
@@ -19,7 +13,7 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 const links = [
   { to: "/", label: "Home" },
-  { to: "/categories", label: "Browse" },
+  { to: "/browse", label: "Browse" },
   { to: "/become-lender", label: "Become a Lender" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
@@ -30,6 +24,7 @@ export function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
   const { ids: wishlistIds } = useWishlist();
+  const { cartCount, toggleCart } = useCart();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -45,13 +40,22 @@ export function Navbar() {
       <header
         className={cn(
           "sticky top-0 z-50 w-full transition-all duration-300 border-b border-black/10 dark:border-white/10 bg-white/95 dark:bg-[#05090D]/90 backdrop-blur-md",
-          scrolled ? "shadow-md shadow-black/5 dark:shadow-2xl dark:shadow-black/80 bg-white dark:bg-[#05090D]/95" : "",
+          scrolled
+            ? "shadow-md shadow-black/5 dark:shadow-2xl dark:shadow-black/80 bg-white dark:bg-[#05090D]/95"
+            : "",
         )}
       >
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group shrink-0" id="nav-logo">
-            <motion.div whileHover={{ scale: 1.02 }} className="flex items-center shrink-0">
+          <Link
+            to="/"
+            className="flex items-center gap-2 group shrink-0"
+            id="nav-logo"
+          >
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="flex items-center shrink-0"
+            >
               <LogoIcon />
             </motion.div>
           </Link>
@@ -59,7 +63,13 @@ export function Navbar() {
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-8">
             {links.map((l) => {
-              const isActive = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
+              const isActive =
+                l.to === "/"
+                  ? pathname === "/"
+                  : l.to === "/browse"
+                    ? pathname.startsWith("/browse") ||
+                      pathname.startsWith("/categories")
+                    : pathname.startsWith(l.to);
               return (
                 <Link
                   key={l.to}
@@ -113,6 +123,23 @@ export function Navbar() {
                 </span>
               )}
             </Link>
+
+            {/* Cart Button */}
+            <button
+              type="button"
+              onClick={toggleCart}
+              aria-label={`Rental Cart (${cartCount} items)`}
+              title="Rental Cart"
+              id="nav-cart-top"
+              className="relative h-9 w-9 flex items-center justify-center rounded-full text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              <ShoppingBag className="h-4 w-4 sm:h-[18px] sm:w-[18px] stroke-[2]" />
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 px-1 min-w-[15px] h-[15px] rounded-full bg-[#161616] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] text-[9px] font-bold flex items-center justify-center leading-none shadow-sm">
+                  {cartCount}
+                </span>
+              )}
+            </button>
 
             {/* If Logged In: Notifications, Profile, Logout */}
             {user ? (

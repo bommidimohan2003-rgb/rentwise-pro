@@ -115,3 +115,44 @@ export interface Review {
   comment: string;
   date: string;
 }
+
+export interface CartItem {
+  id: string;
+  user_email: string;
+  product_id: string;
+  title: string;
+  price: number;
+  daily_price: number;
+  image: string;
+  category: string;
+  city: string;
+  start_date: string;
+  end_date: string;
+  days: number;
+  total_price: number;
+  is_available: boolean;
+  conflict_reason?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CartResponse {
+  items: CartItem[];
+  count: number;
+  subtotal: number;
+  tax: number;
+  total: number;
+}
+
+export interface ProductAvailabilityItem {
+  status: "available" | "unavailable";
+  is_available: boolean;
+  reason: string | null;
+}
+
+export interface BatchAvailabilityResponse {
+  start_date: string;
+  end_date: string;
+  availability: Record<string, ProductAvailabilityItem>;
+}
+

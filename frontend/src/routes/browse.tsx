@@ -10,7 +10,7 @@ type SearchParams = {
   end?: string;
 };
 
-export const Route = createFileRoute("/categories")({
+export const Route = createFileRoute("/browse")({
   validateSearch: (search: Record<string, unknown>): SearchParams => {
     return {
       q: (search.q as string) || undefined,
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/categories")({
       title: "PAYENT — Browse Gear",
       description:
         "Discover professional cameras, drones, laptops, audio gear, lighting and more from the PAYENT marketplace.",
-      path: "/categories",
+      path: "/browse",
     }),
   component: Categories,
 });

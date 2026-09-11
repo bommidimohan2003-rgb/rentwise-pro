@@ -11,7 +11,8 @@ import ssl
 import logging
 import hashlib
 import datetime
-from typing import Optional, List
+import uuid
+from typing import Optional, List, Set, Dict
 from datetime import datetime as dt, timezone, timedelta
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB, MYSQL_SSL
 
@@ -323,6 +324,24 @@ def init_db():
     add_column_safely("orders", "payment_status VARCHAR(50) DEFAULT 'unpaid'")
     add_column_safely("orders", "refund_id VARCHAR(255)")
     add_column_safely("orders", "refund_status VARCHAR(50)")
+
+    # Create cart_items table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS cart_items (
+            id VARCHAR(255) PRIMARY KEY,
+            user_email VARCHAR(255) NOT NULL,
+            product_id VARCHAR(255) NOT NULL,
+            start_date VARCHAR(50) NOT NULL,
+            end_date VARCHAR(50) NOT NULL,
+            days INT DEFAULT 1,
+            daily_price INT DEFAULT 0,
+            total_price INT DEFAULT 0,
+            created_at VARCHAR(100),
+            updated_at VARCHAR(100),
+            INDEX idx_cart_user (user_email),
+            INDEX idx_cart_product (product_id)
+        )
+    """)
 
     # Create custom_products table
     execute_query("""
@@ -643,6 +662,7 @@ MOCK_USERS = {
 }
 MOCK_OTPS = {}
 MOCK_ORDERS = {}
+MOCK_CARTS = {}
 MOCK_WISHLISTS = {}
 MOCK_NOTIFICATIONS = {}
 MOCK_PROCESSED_EVENTS = set()
@@ -2580,6 +2600,213 @@ def get_user_eligible_bookings(user_email: str) -> List[dict]:
             ]
     finally:
         conn.close()
+
+
+# ============================================================
+# Product Availability & Booking Conflict Resolution
+# ============================================================
+
+def parse_date_safely(date_str) -> Optional[datetime.date]:
+    """Parse a date string in various standard formats (ISO, YYYY-MM-DD)."""
+    if not date_str:
+        return None
+    cleaned = str(date_str).strip().split("T")[0].split(" ")[0]
+    try:
+        return datetime.date.fromisoformat(cleaned)
+    except Exception:
+        pass
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%Y/%m/%d", "%d/%m/%Y", "%b %d, %Y", "%b %d"):
+        try:
+            return dt.strptime(cleaned, fmt).date()
+        except Exception:
+            continue
+    return None
+
+def check_products_booking_conflicts(product_ids: List[str], start_date_str: str, end_date_str: str) -> Set[str]:
+    """
+    Batched query to check whether any of the specified products have conflicting active/confirmed bookings
+    for the requested date range [start_date, end_date].
+    Conflict condition: requested_start <= order_end AND requested_end >= order_start.
+    Returns a set of product_id strings that have conflicts.
+    """
+    conflicted: Set[str] = set()
+    if not product_ids:
+        return conflicted
+
+    req_start = parse_date_safely(start_date_str)
+    req_end = parse_date_safely(end_date_str)
+    if not req_start or not req_end:
+        return conflicted
+
+    if req_start > req_end:
+        req_start, req_end = req_end, req_start
+
+    # 1. Check in MySQL orders table
+    conn = get_db_connection()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                placeholders = ", ".join(["%s"] * len(product_ids))
+                query = f"""
+                    SELECT product_id, start_date, end_date, status
+                    FROM orders
+                    WHERE status NOT IN ('cancelled', 'refunded', 'rejected')
+                      AND product_id IN ({placeholders})
+                """
+                cursor.execute(query, tuple(product_ids))
+                rows = cursor.fetchall()
+                for row in rows:
+                    pid = str(row.get("product_id") or "")
+                    ord_start = parse_date_safely(row.get("start_date"))
+                    ord_end = parse_date_safely(row.get("end_date"))
+                    if ord_start and ord_end:
+                        if req_start <= ord_end and req_end >= ord_start:
+                            conflicted.add(pid)
+        except Exception as e:
+            logger.warning(f"Error checking booking conflicts in database: {e}")
+        finally:
+            conn.close()
+
+    # 2. Also check in-memory MOCK_ORDERS fallback
+    for order in MOCK_ORDERS.values():
+        pid = str(order.get("product_id") or order.get("productId") or "")
+        if pid in product_ids:
+            status = str(order.get("status") or "active").lower()
+            if status not in ('cancelled', 'refunded', 'rejected'):
+                ord_start = parse_date_safely(order.get("start_date") or order.get("startDate"))
+                ord_end = parse_date_safely(order.get("end_date") or order.get("endDate"))
+                if ord_start and ord_end:
+                    if req_start <= ord_end and req_end >= ord_start:
+                        conflicted.add(pid)
+
+    return conflicted
+
+# ============================================================
+# Cart Persistence & Operations
+# ============================================================
+
+def get_user_cart(user_email: str) -> List[dict]:
+    clean_email = (user_email or "").strip().lower()
+    if not clean_email:
+        return []
+
+    conn = get_db_connection()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT c.id, c.user_email, c.product_id, c.start_date, c.end_date,
+                           c.days, c.daily_price, c.total_price, c.created_at, c.updated_at,
+                           p.title, p.price as live_product_price, p.image, p.category,
+                           p.owner_name, p.available as product_available
+                    FROM cart_items c
+                    LEFT JOIN custom_products p ON c.product_id = p.id
+                    WHERE LOWER(c.user_email) = LOWER(%s)
+                    ORDER BY c.created_at DESC
+                """, (clean_email,))
+                rows = cursor.fetchall()
+                if rows is not None:
+                    items = []
+                    for r in rows:
+                        items.append({
+                            "id": r["id"],
+                            "user_email": clean_email,
+                            "product_id": r["product_id"],
+                            "title": r.get("title") or "Tech Gear",
+                            "price": int(r.get("daily_price") or r.get("live_product_price") or 0),
+                            "image": r.get("image") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+                            "category": r.get("category") or "gear",
+                            "city": r.get("city") or "India",
+                            "start_date": r["start_date"],
+                            "end_date": r["end_date"],
+                            "days": int(r.get("days") or 1),
+                            "daily_price": int(r.get("daily_price") or 0),
+                            "total_price": int(r.get("total_price") or 0),
+                            "is_product_active": bool(r.get("product_available", True)),
+                            "created_at": r.get("created_at") or "",
+                            "updated_at": r.get("updated_at") or ""
+                        })
+                    return items
+        except Exception as e:
+            logger.warning(f"Error fetching cart from database: {e}")
+        finally:
+            conn.close()
+
+    return MOCK_CARTS.get(clean_email, [])
+
+def add_or_update_cart_item(
+    user_email: str,
+    product_id: str,
+    start_date: str,
+    end_date: str,
+    days: int,
+    daily_price: int,
+    total_price: int,
+    product_details: Optional[dict] = None
+) -> dict:
+    clean_email = (user_email or "").strip().lower()
+    now_iso = dt.now(timezone.utc).isoformat()
+
+    existing_item = fetch_one(
+        "SELECT id FROM cart_items WHERE LOWER(user_email) = LOWER(%s) AND product_id = %s",
+        (clean_email, product_id)
+    )
+
+    if existing_item:
+        item_id = existing_item["id"]
+        execute_query("""
+            UPDATE cart_items
+            SET start_date = %s, end_date = %s, days = %s, daily_price = %s,
+                total_price = %s, updated_at = %s
+            WHERE id = %s
+        """, (start_date, end_date, days, daily_price, total_price, now_iso, item_id))
+    else:
+        item_id = f"cart_{uuid.uuid4().hex[:12]}"
+        execute_query("""
+            INSERT INTO cart_items
+            (id, user_email, product_id, start_date, end_date, days, daily_price, total_price, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (item_id, clean_email, product_id, start_date, end_date, days, daily_price, total_price, now_iso, now_iso))
+
+    item_data = {
+        "id": item_id,
+        "user_email": clean_email,
+        "product_id": product_id,
+        "title": product_details.get("title") if product_details else "Gear Rental",
+        "price": daily_price,
+        "image": product_details.get("image") if product_details else "",
+        "category": product_details.get("category") if product_details else "gear",
+        "city": product_details.get("city") if product_details else "India",
+        "start_date": start_date,
+        "end_date": end_date,
+        "days": days,
+        "daily_price": daily_price,
+        "total_price": total_price,
+        "created_at": now_iso,
+        "updated_at": now_iso
+    }
+
+    if clean_email not in MOCK_CARTS:
+        MOCK_CARTS[clean_email] = []
+    MOCK_CARTS[clean_email] = [it for it in MOCK_CARTS[clean_email] if it.get("product_id") != product_id]
+    MOCK_CARTS[clean_email].append(item_data)
+
+    return item_data
+
+def remove_cart_item(user_email: str, item_id: str) -> bool:
+    clean_email = (user_email or "").strip().lower()
+    execute_query("DELETE FROM cart_items WHERE id = %s AND LOWER(user_email) = LOWER(%s)", (item_id, clean_email))
+    if clean_email in MOCK_CARTS:
+        MOCK_CARTS[clean_email] = [it for it in MOCK_CARTS[clean_email] if it.get("id") != item_id]
+    return True
+
+def clear_user_cart(user_email: str) -> bool:
+    clean_email = (user_email or "").strip().lower()
+    execute_query("DELETE FROM cart_items WHERE LOWER(user_email) = LOWER(%s)", (clean_email,))
+    if clean_email in MOCK_CARTS:
+        MOCK_CARTS[clean_email] = []
+    return True
+
 
 
 

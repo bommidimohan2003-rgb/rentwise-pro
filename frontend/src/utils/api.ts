@@ -1,5 +1,13 @@
 import { storage, STORAGE_KEYS } from "./storage";
-import type { Order, Product, User } from "@/types";
+import type {
+  Order,
+  Product,
+  User,
+  CartItem,
+  CartResponse,
+  ProductAvailabilityItem,
+  BatchAvailabilityResponse,
+} from "@/types";
 
 const getApiBase = () => {
   if (typeof window !== "undefined") {
@@ -256,7 +264,7 @@ export const api = {
     return await res.json();
   },
 
-  async getMe(token: string): Promise<any> {
+  async getMe(token: string): Promise<User | null> {
     if (
       !API_BASE ||
       token.startsWith("admin-standalone-token-") ||
@@ -342,7 +350,9 @@ export const api = {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(parseApiError(data, "Failed to update profile in database"));
+        throw new Error(
+          parseApiError(data, "Failed to update profile in database"),
+        );
       }
       return await res.json();
     } catch (err) {
@@ -361,11 +371,14 @@ export const api = {
       }
       return { success: true, user: cached };
     }
-    const res = await this.fetchWithAuth(`${API_BASE}/api/users/profile/photo`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profile_photo_url: photoUrl }),
-    });
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/users/profile/photo`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_photo_url: photoUrl }),
+      },
+    );
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to upload profile photo."));
@@ -373,9 +386,15 @@ export const api = {
     return await res.json();
   },
 
-  async reverseGeocode(token?: string | null, latitude: number = 0, longitude: number = 0) {
+  async reverseGeocode(
+    token?: string | null,
+    latitude: number = 0,
+    longitude: number = 0,
+  ) {
     if (!API_BASE) return null;
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -386,7 +405,9 @@ export const api = {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(data, "Failed to reverse geocode location"));
+      throw new Error(
+        parseApiError(data, "Failed to reverse geocode location"),
+      );
     }
     return await res.json();
   },
@@ -398,11 +419,18 @@ export const api = {
     confirm_password: string,
   ) {
     if (!API_BASE) return null;
-    const res = await this.fetchWithAuth(`${API_BASE}/api/auth/change-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ current_password, new_password, confirm_password }),
-    });
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/auth/change-password`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          current_password,
+          new_password,
+          confirm_password,
+        }),
+      },
+    );
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to update password"));
@@ -417,7 +445,10 @@ export const api = {
       return this._refreshPromise;
     }
 
-    const currentRefreshToken = storage.get<string | null>(STORAGE_KEYS.refreshToken, null);
+    const currentRefreshToken = storage.get<string | null>(
+      STORAGE_KEYS.refreshToken,
+      null,
+    );
     if (!currentRefreshToken) return null;
 
     this._refreshPromise = (async () => {
@@ -453,8 +484,11 @@ export const api = {
     return this._refreshPromise;
   },
 
-  async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-    let token = storage.get<string | null>(STORAGE_KEYS.token, null);
+  async fetchWithAuth(
+    url: string,
+    options: RequestInit = {},
+  ): Promise<Response> {
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
     const headers = new Headers(options.headers || {});
     if (token && !headers.has("Authorization")) {
       headers.set("Authorization", `Bearer ${token}`);
@@ -463,7 +497,11 @@ export const api = {
 
     let res = await fetch(url, options);
 
-    if (res.status === 401 && !url.includes("/api/login") && !url.includes("/api/auth/refresh")) {
+    if (
+      res.status === 401 &&
+      !url.includes("/api/login") &&
+      !url.includes("/api/auth/refresh")
+    ) {
       const newToken = await this.refreshToken();
       if (newToken) {
         const retryHeaders = new Headers(options.headers || {});
@@ -486,7 +524,10 @@ export const api = {
 
   async logout(token: string) {
     try {
-      const currentRefreshToken = storage.get<string | null>(STORAGE_KEYS.refreshToken, null);
+      const currentRefreshToken = storage.get<string | null>(
+        STORAGE_KEYS.refreshToken,
+        null,
+      );
       await fetch(`${API_BASE}/api/auth/logout`, {
         method: "POST",
         headers: {
@@ -532,10 +573,13 @@ export const api = {
   },
 
   async revokeSession(token: string, sessionId: string) {
-    const res = await this.fetchWithAuth(`${API_BASE}/api/auth/sessions/${encodeURIComponent(sessionId)}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/auth/sessions/${encodeURIComponent(sessionId)}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      },
+    );
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to revoke session."));
@@ -699,9 +743,12 @@ export const api = {
   async cancelOrder(token: string, orderId: string) {
     let res: Response | null = null;
     try {
-      res = await this.fetchWithAuth(`${API_BASE}/api/orders/${orderId}/cancel`, {
-        method: "POST",
-      });
+      res = await this.fetchWithAuth(
+        `${API_BASE}/api/orders/${orderId}/cancel`,
+        {
+          method: "POST",
+        },
+      );
     } catch {
       /* fetch network error / backend offline */
     }
@@ -713,7 +760,9 @@ export const api = {
 
     const currentOrders = storage.get<Order[]>(STORAGE_KEYS.orders, []);
     const updatedOrders = currentOrders.map((o) =>
-      o.id === orderId || o.productId === orderId || (o as { product_id?: string }).product_id === orderId
+      o.id === orderId ||
+      o.productId === orderId ||
+      (o as { product_id?: string }).product_id === orderId
         ? { ...o, status: "cancelled" as const }
         : o,
     );
@@ -783,12 +832,15 @@ export const api = {
   },
 
   async deleteCustomProduct(token: string, id: string) {
-    const res = await this.fetchWithAuth(`${API_BASE}/api/products/custom/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/products/custom/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
     if (!res.ok) {
       const errData = await res
         .json()
@@ -885,6 +937,30 @@ export const api = {
     };
   },
 
+  async submitContactForm(data: {
+    name: string;
+    email: string;
+    phone?: string;
+    category?: string;
+    subject: string;
+    message: string;
+  }) {
+    const res = await fetch(`${API_BASE}/api/contact`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(
+        parseApiError(result, "Unable to send your message. Please try again."),
+      );
+    }
+    return result;
+  },
+
   async toggleCustomProductAvailability(token: string, productId: string) {
     const res = await this.fetchWithAuth(
       `${API_BASE}/api/products/custom/${productId}/toggle-availability`,
@@ -904,18 +980,21 @@ export const api = {
     endDate: string,
     couponCode?: string,
   ) {
-    const res = await this.fetchWithAuth(`${API_BASE}/api/payments/create-order`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/payments/create-order`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          start_date: startDate,
+          end_date: endDate,
+          coupon_code: couponCode || null,
+        }),
       },
-      body: JSON.stringify({
-        product_id: productId,
-        start_date: startDate,
-        end_date: endDate,
-        coupon_code: couponCode || null,
-      }),
-    });
+    );
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(data.detail || "Failed to create Razorpay order.");
@@ -1113,6 +1192,202 @@ export const api = {
       body: JSON.stringify(ticket),
     });
     if (!res.ok) throw new Error("Failed to create support ticket");
+    return await res.json();
+  },
+
+  async checkAvailabilityBatch(
+    startDate: string,
+    endDate: string,
+    productIds: string[],
+  ): Promise<BatchAvailabilityResponse> {
+    if (!API_BASE) {
+      const defaultMap: Record<string, ProductAvailabilityItem> = {};
+      productIds.forEach((pid) => {
+        defaultMap[pid] = {
+          status: "available",
+          is_available: true,
+          reason: null,
+        };
+      });
+      return {
+        start_date: startDate,
+        end_date: endDate,
+        availability: defaultMap,
+      };
+    }
+    const res = await fetch(`${API_BASE}/api/products/availability/batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        start_date: startDate,
+        end_date: endDate,
+        product_ids: productIds,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(
+        parseApiError(data, "Failed to check product availability"),
+      );
+    }
+    return await res.json();
+  },
+
+  async getProductAvailability(
+    id: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<ProductAvailabilityItem & { product_id: string }> {
+    if (!API_BASE) {
+      return {
+        product_id: id,
+        status: "available",
+        is_available: true,
+        reason: null,
+      };
+    }
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    const res = await fetch(
+      `${API_BASE}/api/products/${id}/availability?${params.toString()}`,
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to get availability"));
+    }
+    return await res.json();
+  },
+
+  async getCart(): Promise<CartResponse> {
+    if (!API_BASE) {
+      const stored = storage.get<CartItem[]>("payent_offline_cart", []);
+      const subtotal = stored.reduce(
+        (sum, it) => sum + (it.daily_price || 0) * (it.days || 1),
+        0,
+      );
+      const tax = Math.round(subtotal * 0.08);
+      return {
+        items: stored,
+        count: stored.length,
+        subtotal,
+        tax,
+        total: subtotal + tax,
+      };
+    }
+    const res = await this.fetchWithAuth(`${API_BASE}/api/cart`, {
+      method: "GET",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to load cart"));
+    }
+    return await res.json();
+  },
+
+  async addToCart(
+    productId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<{ success: boolean; message: string; item: CartItem }> {
+    if (!API_BASE) {
+      const stored = storage.get<CartItem[]>("payent_offline_cart", []);
+      const cached = _productCache.get(productId);
+      const newItem: CartItem = {
+        id: `offline_cart_${Date.now()}`,
+        user_email: "offline_user@payent.in",
+        product_id: productId,
+        title: cached?.title || "Tech Gear",
+        price: cached?.price || 1500,
+        daily_price: cached?.price || 1500,
+        image: cached?.image || "",
+        category: cached?.category || "gear",
+        city: "India",
+        start_date: startDate,
+        end_date: endDate,
+        days: 3,
+        total_price: (cached?.price || 1500) * 3,
+        is_available: true,
+      };
+      const filtered = stored.filter((i) => i.product_id !== productId);
+      filtered.push(newItem);
+      storage.set("payent_offline_cart", filtered);
+      return { success: true, message: "Added to cart", item: newItem };
+    }
+    const res = await this.fetchWithAuth(`${API_BASE}/api/cart`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        product_id: productId,
+        start_date: startDate,
+        end_date: endDate,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to add item to cart"));
+    }
+    return await res.json();
+  },
+
+  async removeFromCart(
+    itemId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    if (!API_BASE) {
+      const stored = storage.get<CartItem[]>("payent_offline_cart", []);
+      const filtered = stored.filter((i) => i.id !== itemId);
+      storage.set("payent_offline_cart", filtered);
+      return { success: true, message: "Item removed" };
+    }
+    const res = await this.fetchWithAuth(`${API_BASE}/api/cart/${itemId}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to remove item from cart"));
+    }
+    return await res.json();
+  },
+
+  async clearCart(): Promise<{ success: boolean; message: string }> {
+    if (!API_BASE) {
+      storage.set("payent_offline_cart", []);
+      return { success: true, message: "Cart cleared" };
+    }
+    const res = await this.fetchWithAuth(`${API_BASE}/api/cart`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to clear cart"));
+    }
+    return await res.json();
+  },
+
+  async validateCartCheckout(): Promise<{
+    valid: boolean;
+    item_count: number;
+    subtotal: number;
+    tax: number;
+    total: number;
+  }> {
+    if (!API_BASE) {
+      return {
+        valid: true,
+        item_count: 1,
+        subtotal: 3000,
+        tax: 240,
+        total: 3240,
+      };
+    }
+    const res = await this.fetchWithAuth(`${API_BASE}/api/cart/checkout`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Checkout validation failed"));
+    }
     return await res.json();
   },
 };

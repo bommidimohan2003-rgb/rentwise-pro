@@ -138,6 +138,12 @@ from database import (
     update_review_record,
     delete_review_record,
     recalculate_product_ratings,
+    check_products_booking_conflicts,
+    get_user_cart,
+    add_or_update_cart_item,
+    remove_cart_item,
+    clear_user_cart,
+    parse_date_safely,
     get_user_eligible_bookings
 )
 from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
@@ -1598,6 +1604,294 @@ def get_order_details(id: str, email: str = Depends(get_current_user_email)):
         "userEmail": order_owner
     }
 
+# ============================================================
+# Product Availability & Booking Conflict Endpoints
+# ============================================================
+
+class BatchAvailabilitySchema(BaseModel):
+    start_date: str
+    end_date: str
+    product_ids: List[str]
+
+class AddToCartSchema(BaseModel):
+    product_id: str
+    start_date: str
+    end_date: str
+
+@app.post("/api/products/availability/batch")
+def check_availability_batch(data: BatchAvailabilitySchema):
+    start_str = data.start_date
+    end_str = data.end_date
+    pids = [str(pid).strip() for pid in data.product_ids if str(pid).strip()]
+    
+    start_dt = parse_date_safely(start_str)
+    end_dt = parse_date_safely(end_str)
+    if not start_dt or not end_dt:
+        raise HTTPException(status_code=400, detail="Invalid start_date or end_date format.")
+    if start_dt > end_dt:
+        raise HTTPException(status_code=400, detail="start_date cannot be after end_date.")
+
+    # Single batch check for active booking conflicts
+    conflicted_pids = check_products_booking_conflicts(pids, start_str, end_str)
+
+    availability_map = {}
+    for pid in pids:
+        if pid in conflicted_pids:
+            availability_map[pid] = {
+                "status": "unavailable",
+                "is_available": False,
+                "reason": "Booked for selected dates"
+            }
+        else:
+            db_prod = fetch_one("SELECT available, status FROM custom_products WHERE id = %s", (pid,))
+            if db_prod:
+                is_avail = bool(db_prod.get("available", True)) and str(db_prod.get("status", "approved")).lower() != "rejected"
+            elif pid in MOCK_CUSTOM_PRODUCTS:
+                m = MOCK_CUSTOM_PRODUCTS[pid]
+                is_avail = bool(m.get("available", True)) and str(m.get("status", "approved")).lower() != "rejected"
+            else:
+                is_avail = True
+
+            if is_avail:
+                availability_map[pid] = {
+                    "status": "available",
+                    "is_available": True,
+                    "reason": None
+                }
+            else:
+                availability_map[pid] = {
+                    "status": "unavailable",
+                    "is_available": False,
+                    "reason": "Product currently unavailable"
+                }
+
+    return {
+        "start_date": start_str,
+        "end_date": end_str,
+        "availability": availability_map
+    }
+
+@app.get("/api/products/{id}/availability")
+def check_single_product_availability(
+    id: str,
+    start_date: str = Query(...),
+    end_date: str = Query(...)
+):
+    start_dt = parse_date_safely(start_date)
+    end_dt = parse_date_safely(end_date)
+    if not start_dt or not end_dt:
+        raise HTTPException(status_code=400, detail="Invalid start_date or end_date format.")
+    if start_dt > end_dt:
+        raise HTTPException(status_code=400, detail="start_date cannot be after end_date.")
+
+    conflicted_pids = check_products_booking_conflicts([id], start_date, end_date)
+    if id in conflicted_pids:
+        return {
+            "product_id": id,
+            "start_date": start_date,
+            "end_date": end_date,
+            "is_available": False,
+            "status": "unavailable",
+            "reason": "Booked for selected dates"
+        }
+    
+    db_prod = fetch_one("SELECT available, status FROM custom_products WHERE id = %s", (id,))
+    if db_prod and (not bool(db_prod.get("available", True)) or str(db_prod.get("status", "approved")).lower() == "rejected"):
+        return {
+            "product_id": id,
+            "start_date": start_date,
+            "end_date": end_date,
+            "is_available": False,
+            "status": "unavailable",
+            "reason": "Product currently unavailable"
+        }
+
+    return {
+        "product_id": id,
+        "start_date": start_date,
+        "end_date": end_date,
+        "is_available": True,
+        "status": "available",
+        "reason": None
+    }
+
+# ============================================================
+# Cart Endpoints
+# ============================================================
+
+@app.get("/api/cart")
+def get_cart_endpoint(email: str = Depends(get_current_user_email)):
+    clean_email = email.strip().lower()
+    raw_items = get_user_cart(clean_email)
+    
+    items = []
+    subtotal = 0
+    for it in raw_items:
+        pid = it.get("product_id")
+        start_d = it.get("start_date")
+        end_d = it.get("end_date")
+        
+        s_dt = parse_date_safely(start_d)
+        e_dt = parse_date_safely(end_d)
+        days = max(1, (e_dt - s_dt).days) if (s_dt and e_dt) else int(it.get("days") or 1)
+        daily_price = int(it.get("daily_price") or it.get("price") or 0)
+        item_total = daily_price * days
+        
+        conflicted = check_products_booking_conflicts([pid], start_d, end_d)
+        is_active = bool(it.get("is_product_active", True))
+        
+        is_avail = (pid not in conflicted) and is_active
+        reason = None
+        if pid in conflicted:
+            reason = "Booked for selected dates"
+        elif not is_active:
+            reason = "Product currently unavailable"
+            
+        enriched_item = {
+            "id": it.get("id"),
+            "user_email": clean_email,
+            "product_id": pid,
+            "title": it.get("title") or "Tech Gear",
+            "price": daily_price,
+            "daily_price": daily_price,
+            "image": it.get("image") or "",
+            "category": it.get("category") or "gear",
+            "city": it.get("city") or "India",
+            "start_date": start_d,
+            "end_date": end_d,
+            "days": days,
+            "total_price": item_total,
+            "is_available": is_avail,
+            "conflict_reason": reason,
+            "created_at": it.get("created_at") or "",
+            "updated_at": it.get("updated_at") or ""
+        }
+        items.append(enriched_item)
+        subtotal += item_total
+        
+    tax = int(round(subtotal * 0.08))
+    total = subtotal + tax
+    
+    return {
+        "items": items,
+        "count": len(items),
+        "subtotal": subtotal,
+        "tax": tax,
+        "total": total
+    }
+
+@app.post("/api/cart")
+def add_to_cart_endpoint(data: AddToCartSchema, email: str = Depends(get_current_user_email)):
+    clean_email = email.strip().lower()
+    pid = data.product_id.strip()
+    start_d = data.start_date.strip()
+    end_d = data.end_date.strip()
+    
+    s_dt = parse_date_safely(start_d)
+    e_dt = parse_date_safely(end_d)
+    if not s_dt or not e_dt:
+        raise HTTPException(status_code=400, detail="Invalid start_date or end_date format.")
+    if s_dt > e_dt:
+        raise HTTPException(status_code=400, detail="start_date cannot be after end_date.")
+        
+    prod = fetch_one("SELECT * FROM custom_products WHERE id = %s", (pid,))
+    if not prod and pid in MOCK_CUSTOM_PRODUCTS:
+        prod = MOCK_CUSTOM_PRODUCTS[pid]
+    if not prod:
+        prod = {
+            "id": pid,
+            "title": "Tech Gear",
+            "price": 1500,
+            "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+            "category": "gear",
+            "city": "India"
+        }
+        
+    conflicts = check_products_booking_conflicts([pid], start_d, end_d)
+    if pid in conflicts:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Product is already booked for the selected dates."
+        )
+        
+    days = max(1, (e_dt - s_dt).days)
+    daily_price = int(prod.get("price") or 0)
+    total_price = daily_price * days
+    
+    item = add_or_update_cart_item(
+        user_email=clean_email,
+        product_id=pid,
+        start_date=start_d,
+        end_date=end_d,
+        days=days,
+        daily_price=daily_price,
+        total_price=total_price,
+        product_details=prod
+    )
+    
+    return {
+        "success": True,
+        "message": "Item added to cart successfully.",
+        "item": item
+    }
+
+@app.delete("/api/cart/{item_id}")
+def delete_cart_item_endpoint(item_id: str, email: str = Depends(get_current_user_email)):
+    clean_email = email.strip().lower()
+    remove_cart_item(clean_email, item_id)
+    return {"success": True, "message": "Item removed from cart."}
+
+@app.delete("/api/cart")
+def clear_cart_endpoint(email: str = Depends(get_current_user_email)):
+    clean_email = email.strip().lower()
+    clear_user_cart(clean_email)
+    return {"success": True, "message": "Cart cleared."}
+
+@app.post("/api/cart/checkout")
+def validate_cart_checkout_endpoint(email: str = Depends(get_current_user_email)):
+    clean_email = email.strip().lower()
+    raw_items = get_user_cart(clean_email)
+    if not raw_items:
+        raise HTTPException(status_code=400, detail="Cart is empty.")
+        
+    conflicted_items = []
+    subtotal = 0
+    for it in raw_items:
+        pid = it.get("product_id")
+        start_d = it.get("start_date")
+        end_d = it.get("end_date")
+        conflicts = check_products_booking_conflicts([pid], start_d, end_d)
+        if pid in conflicts:
+            conflicted_items.append({
+                "id": it.get("id"),
+                "product_id": pid,
+                "title": it.get("title"),
+                "reason": "Booked for selected dates"
+            })
+        s_dt = parse_date_safely(start_d)
+        e_dt = parse_date_safely(end_d)
+        days = max(1, (e_dt - s_dt).days) if (s_dt and e_dt) else int(it.get("days") or 1)
+        subtotal += int(it.get("daily_price") or it.get("price") or 0) * days
+        
+    if conflicted_items:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "Some items in your cart are no longer available for the selected dates.",
+                "conflicts": conflicted_items
+            }
+        )
+        
+    tax = int(round(subtotal * 0.08))
+    total = subtotal + tax
+    return {
+        "valid": True,
+        "item_count": len(raw_items),
+        "subtotal": subtotal,
+        "tax": tax,
+        "total": total
+    }
+
 def format_product_dict(p: dict) -> dict:
     owner_info = p.get("owner") if isinstance(p.get("owner"), dict) else {}
     owner_name = p.get("owner_name") or owner_info.get("name") or "Lender"
@@ -1704,6 +1998,77 @@ def create_user_support_ticket(data: CreateSupportTicketSchema, email: str = Dep
         json.dumps(init_messages), now_str
     ))
     return {"success": True, "ticketId": ticket_id}
+
+class ContactInquirySchema(BaseModel):
+    name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    category: Optional[str] = "General Inquiry"
+    subject: str
+    message: str
+
+@app.post("/api/contact")
+def submit_contact_inquiry(data: ContactInquirySchema):
+    clean_name = data.name.strip()
+    clean_email = str(data.email).strip().lower()
+    clean_subject = data.subject.strip()
+    clean_message = data.message.strip()
+    clean_phone = (data.phone or "").strip()
+    clean_category = (data.category or "General Inquiry").strip()
+
+    if not clean_name or len(clean_name) < 2 or len(clean_name) > 100:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Name must be between 2 and 100 characters."
+        )
+
+    if not clean_subject or len(clean_subject) < 3 or len(clean_subject) > 200:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Subject must be between 3 and 200 characters."
+        )
+
+    if not clean_message or len(clean_message) < 10 or len(clean_message) > 5000:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Message must be between 10 and 5000 characters."
+        )
+
+    ticket_id = f"INQ-{int(time.time() * 1000)}"
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    init_messages = [{
+        "id": f"msg-{int(time.time() * 1000)}",
+        "sender": clean_name,
+        "senderType": "user",
+        "content": clean_message,
+        "phone": clean_phone,
+        "category": clean_category,
+        "timestamp": now_str
+    }]
+
+    full_subject = f"[{clean_category}] {clean_subject}"
+
+    try:
+        execute_query("""
+            INSERT INTO support_tickets (id, user_email, user_name, subject, status, priority, messages, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            ticket_id, clean_email, clean_name,
+            full_subject, "open", "medium",
+            json.dumps(init_messages), now_str
+        ))
+        logger.info(f"Contact inquiry received: {ticket_id} from {clean_email}")
+        return {
+            "success": True,
+            "message": "Message sent successfully. We received your message.",
+            "ticketId": ticket_id
+        }
+    except Exception as e:
+        logger.error(f"Error persisting contact inquiry: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to send your message. Please try again."
+        )
 
 _cache_store = {}
 
@@ -1958,6 +2323,269 @@ def check_admin_user(current_user_email: str = Depends(get_current_user_email)) 
     return user
 
 # ==============================================================================
+# --- REAL PRODUCT AVAILABILITY & BATCH CHECKING ENDPOINTS ---
+# ==============================================================================
+
+class BatchAvailabilityRequest(BaseModel):
+    start_date: str
+    end_date: str
+    product_ids: List[str]
+
+@app.post("/api/products/availability/batch")
+def batch_check_availability(payload: BatchAvailabilityRequest):
+    """
+    Batched date-aware availability check to eliminate N+1 frontend queries.
+    Cross-checks requested rental dates against active/confirmed bookings in MySQL `orders` table.
+    """
+    start_date = payload.start_date.strip()
+    end_date = payload.end_date.strip()
+    product_ids = [pid.strip() for pid in payload.product_ids if pid and pid.strip()]
+
+    if not product_ids:
+        return {"start_date": start_date, "end_date": end_date, "availability": {}}
+
+    conflicted_ids = check_products_booking_conflicts(product_ids, start_date, end_date)
+
+    availability_map = {}
+    for pid in product_ids:
+        if pid in conflicted_ids:
+            availability_map[pid] = {
+                "status": "unavailable",
+                "is_available": False,
+                "reason": "Booked for selected dates"
+            }
+        else:
+            prod = fetch_one("SELECT available FROM custom_products WHERE id = %s", (pid,))
+            if prod and prod.get("available") == 0:
+                availability_map[pid] = {
+                    "status": "unavailable",
+                    "is_available": False,
+                    "reason": "Listing currently paused by owner"
+                }
+            else:
+                availability_map[pid] = {
+                    "status": "available",
+                    "is_available": True,
+                    "reason": None
+                }
+
+    return {
+        "start_date": start_date,
+        "end_date": end_date,
+        "availability": availability_map
+    }
+
+@app.get("/api/products/{id}/availability")
+def single_product_availability(id: str, start_date: str, end_date: str):
+    """Check availability for a single product across a specific date range."""
+    conflicted = check_products_booking_conflicts([id], start_date, end_date)
+    is_conflicted = id in conflicted
+    prod = fetch_one("SELECT available FROM custom_products WHERE id = %s", (id,))
+    is_paused = prod and prod.get("available") == 0
+
+    if is_conflicted:
+        return {
+            "product_id": id,
+            "status": "unavailable",
+            "is_available": False,
+            "reason": "Booked for selected dates",
+            "start_date": start_date,
+            "end_date": end_date
+        }
+    elif is_paused:
+        return {
+            "product_id": id,
+            "status": "unavailable",
+            "is_available": False,
+            "reason": "Listing currently paused by owner",
+            "start_date": start_date,
+            "end_date": end_date
+        }
+    return {
+        "product_id": id,
+        "status": "available",
+        "is_available": True,
+        "reason": None,
+        "start_date": start_date,
+        "end_date": end_date
+    }
+
+# ==============================================================================
+# --- SHOPPING / RENTAL CART ENDPOINTS ---
+# ==============================================================================
+
+class AddToCartSchema(BaseModel):
+    product_id: str
+    start_date: str
+    end_date: str
+
+@app.get("/api/cart")
+def fetch_user_cart(current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    raw_items = get_user_cart(clean_email)
+
+    items = []
+    subtotal = 0
+
+    for item in raw_items:
+        pid = item["product_id"]
+        start_d = item["start_date"]
+        end_d = item["end_date"]
+        
+        try:
+            d1 = parse_date_safely(start_d)
+            d2 = parse_date_safely(end_d)
+            if d1 and d2 and d2 >= d1:
+                days = max(1, (d2 - d1).days)
+            else:
+                days = 1
+        except Exception:
+            days = 1
+
+        daily_price = int(item.get("price") or item.get("daily_price") or 0)
+        item_total = daily_price * days
+
+        conflicts = check_products_booking_conflicts([pid], start_d, end_d)
+        is_conflicted = pid in conflicts
+
+        item_resp = {
+            "id": item["id"],
+            "productId": pid,
+            "product_id": pid,
+            "title": item.get("title") or "Gear Rental",
+            "image": item.get("image") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+            "category": item.get("category") or "gear",
+            "city": item.get("city") or "India",
+            "startDate": start_d,
+            "start_date": start_d,
+            "endDate": end_d,
+            "end_date": end_d,
+            "days": days,
+            "dailyPrice": daily_price,
+            "daily_price": daily_price,
+            "totalPrice": item_total,
+            "total_price": item_total,
+            "isAvailable": not is_conflicted and item.get("is_product_active", True),
+            "is_available": not is_conflicted and item.get("is_product_active", True),
+            "conflictReason": "Booked for selected dates" if is_conflicted else None
+        }
+        items.append(item_resp)
+        subtotal += item_total
+
+    tax = int(subtotal * 0.08)
+    total = subtotal + tax
+
+    return {
+        "items": items,
+        "count": len(items),
+        "subtotal": subtotal,
+        "tax": tax,
+        "total": total
+    }
+
+@app.post("/api/cart")
+def add_item_to_cart(data: AddToCartSchema, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    pid = data.product_id.strip()
+    start_d = data.start_date.strip()
+    end_d = data.end_date.strip()
+
+    product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (pid,))
+    if not product:
+        product = fetch_one("SELECT * FROM custom_products WHERE id LIKE %s", (f"%{pid}%",))
+    
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Gear with ID '{pid}' not found in catalog."
+        )
+
+    if product.get("available") == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This gear listing is currently paused by the owner."
+        )
+
+    d1 = parse_date_safely(start_d)
+    d2 = parse_date_safely(end_d)
+    if not d1 or not d2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid rental date format. Please provide valid start and end dates."
+        )
+    if d1 > d2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rental start date cannot be after end date."
+        )
+
+    days = max(1, (d2 - d1).days)
+    daily_price = int(product.get("price", 0))
+    total_price = daily_price * days
+
+    conflicts = check_products_booking_conflicts([pid], start_d, end_d)
+    if pid in conflicts:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This gear is already booked for the selected rental dates. Please choose different dates."
+        )
+
+    saved_item = add_or_update_cart_item(
+        user_email=clean_email,
+        product_id=pid,
+        start_date=start_d,
+        end_date=end_d,
+        days=days,
+        daily_price=daily_price,
+        total_price=total_price,
+        product_details=product
+    )
+
+    return {
+        "success": True,
+        "message": f"'{product.get('title')}' added to your rental cart.",
+        "item": saved_item
+    }
+
+@app.delete("/api/cart/{item_id}")
+def delete_cart_item(item_id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    remove_cart_item(clean_email, item_id)
+    return {"success": True, "message": "Item removed from cart."}
+
+@app.delete("/api/cart")
+def clear_cart(current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    clear_user_cart(clean_email)
+    return {"success": True, "message": "Cart cleared successfully."}
+
+@app.post("/api/cart/checkout")
+def validate_cart_before_checkout(current_user_email: str = Depends(get_current_user_email)):
+    clean_email = current_user_email.strip().lower()
+    raw_items = get_user_cart(clean_email)
+    if not raw_items:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Your cart is empty.")
+
+    conflicted_items = []
+    for item in raw_items:
+        conflicts = check_products_booking_conflicts([item["product_id"]], item["start_date"], item["end_date"])
+        if item["product_id"] in conflicts:
+            conflicted_items.append({
+                "product_id": item["product_id"],
+                "title": item.get("title", "Gear"),
+                "start_date": item["start_date"],
+                "end_date": item["end_date"]
+            })
+
+    if conflicted_items:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="One or more items in your cart are no longer available for your selected dates. Please adjust your dates or remove the items."
+        )
+
+    return {"success": True, "can_checkout": True, "item_count": len(raw_items)}
+
+# ==============================================================================
 # --- RAZORPAY BACKEND PAYMENT ENDPOINTS ---
 # ==============================================================================
 class CreateRazorpayOrderSchema(BaseModel):
@@ -1987,6 +2615,13 @@ def create_razorpay_order(data: CreateRazorpayOrderSchema, current_user_email: s
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Product '{data.product_id}' not found in catalog."
+        )
+
+    conflicts = check_products_booking_conflicts([data.product_id], data.start_date, data.end_date)
+    if data.product_id in conflicts:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This gear is already booked by another creator for the selected dates. Please select different dates."
         )
 
     price_per_day = int(product.get("price", 0))

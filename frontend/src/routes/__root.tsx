@@ -14,6 +14,8 @@ import { storage } from "../utils/storage";
 import type { Product } from "../types";
 import { Toaster } from "@/components/ui/sonner";
 import { NoInternetState } from "@/components/states/NoInternetState";
+import { CartProvider } from "@/hooks/useCart";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 
 import appCss from "../styles.css?url";
 
@@ -298,11 +300,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <CartProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
 
-      {showChatbot && <HelpChatbot />}
-      <Toaster position="bottom-right" richColors />
+        <CartDrawer />
+        {showChatbot && <HelpChatbot />}
+        <Toaster position="bottom-right" richColors />
+      </CartProvider>
     </QueryClientProvider>
   );
 }

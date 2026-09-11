@@ -1,15 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import {
-  Instagram,
-  Linkedin,
-  Twitter,
-  Youtube,
-} from "lucide-react";
+import { Instagram, Linkedin, Twitter, Youtube } from "lucide-react";
 import { LogoIcon } from "@/components/common/LogoIcon";
 
 const navLinks = [
   { label: "Home", to: "/" },
-  { label: "Browse", to: "/categories" },
+  { label: "Browse", to: "/browse" },
   { label: "Become a Lender", to: "/become-lender" },
   { label: "About", to: "/about" },
   { label: "Contact", to: "/contact" },
@@ -40,7 +35,8 @@ export function Footer() {
                 to={link.to}
                 className="hover:text-black dark:hover:text-white transition-colors duration-200"
                 activeProps={{
-                  className: "text-neutral-950 dark:text-white font-semibold underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-4",
+                  className:
+                    "text-neutral-950 dark:text-white font-semibold underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-4",
                 }}
               >
                 {link.label}

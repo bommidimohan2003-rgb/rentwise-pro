@@ -42,3 +42,5 @@ __pycache__/
 .env*
 .vercel
 .playwright-mcp/
+scratch/
+

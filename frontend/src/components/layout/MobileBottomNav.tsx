@@ -1,5 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Compass, PlusCircle, LayoutDashboard, LogIn, User } from "lucide-react";
+import {
+  Home,
+  Compass,
+  PlusCircle,
+  LayoutDashboard,
+  LogIn,
+  User,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -15,7 +22,7 @@ export function MobileBottomNav() {
       exact: true,
     },
     {
-      to: "/categories",
+      to: "/browse",
       label: "Explore",
       icon: Compass,
       exact: false,
@@ -49,6 +56,10 @@ export function MobileBottomNav() {
 
           if (item.exact) {
             isActive = pathname === item.to;
+          } else if (item.to === "/browse") {
+            isActive =
+              pathname.startsWith("/browse") ||
+              pathname.startsWith("/categories");
           } else if (item.label === "Dashboard") {
             isActive =
               pathname.startsWith("/dashboard") ||
