@@ -332,11 +332,4 @@ export function ProductCard({
     </CSSTiltCard>
   );
 }
-              )}
-            </div >
-          </div >
-        </div >
-      </motion.div >
-    </CSSTiltCard >
-  );
-}
+
