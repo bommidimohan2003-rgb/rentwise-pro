@@ -356,7 +356,7 @@ export default function Checkout() {
             const err = verifyErr as { message?: string };
             setPaymentError(
               err.message ||
-                "Payment signature verification failed. Please contact support.",
+              "Payment signature verification failed. Please contact support.",
             );
             toast.error("Payment verification failed.");
           }
@@ -519,22 +519,20 @@ export default function Checkout() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("card")}
-                  className={`py-2 rounded-lg text-sm font-medium transition-all ${
-                    paymentMethod === "card"
+                  className={`py-2 rounded-lg text-sm font-medium transition-all ${paymentMethod === "card"
                       ? "bg-card text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   Credit / Debit Card
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("upi")}
-                  className={`py-2 rounded-lg text-sm font-medium transition-all ${
-                    paymentMethod === "upi"
+                  className={`py-2 rounded-lg text-sm font-medium transition-all ${paymentMethod === "upi"
                       ? "bg-card text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   UPI Payment
                 </button>
@@ -630,22 +628,20 @@ export default function Checkout() {
                     <button
                       type="button"
                       onClick={() => setUpiType("id")}
-                      className={`text-sm font-semibold flex items-center gap-1.5 transition-colors ${
-                        upiType === "id"
+                      className={`text-sm font-semibold flex items-center gap-1.5 transition-colors ${upiType === "id"
                           ? "text-primary border-b-2 border-primary pb-2 -mb-4.5"
                           : "text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       <Smartphone className="h-4 w-4" /> UPI ID
                     </button>
                     <button
                       type="button"
                       onClick={() => setUpiType("qr")}
-                      className={`text-sm font-semibold flex items-center gap-1.5 transition-colors ${
-                        upiType === "qr"
+                      className={`text-sm font-semibold flex items-center gap-1.5 transition-colors ${upiType === "qr"
                           ? "text-primary border-b-2 border-primary pb-2 -mb-4.5"
                           : "text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       <QrCode className="h-4 w-4" /> QR Code
                     </button>

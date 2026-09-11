@@ -336,11 +336,10 @@ export function HelpChatbot() {
                   className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                      m.sender === "user"
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${m.sender === "user"
                         ? "btn-gradient text-white rounded-tr-none"
                         : "bg-secondary/70 border border-border text-foreground rounded-tl-none whitespace-pre-line"
-                    }`}
+                      }`}
                   >
                     {m.text}
                   </div>

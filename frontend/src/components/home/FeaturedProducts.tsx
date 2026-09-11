@@ -113,10 +113,10 @@ export function FeaturedProducts() {
     selectedCategory === "All"
       ? products
       : products.filter(
-          (p) =>
-            p.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-            selectedCategory.toLowerCase().includes(p.category.toLowerCase())
-        );
+        (p) =>
+          p.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
+          selectedCategory.toLowerCase().includes(p.category.toLowerCase())
+      );
 
   const displayedProducts = filteredProducts.slice(0, 8);
 
@@ -146,11 +146,10 @@ export function FeaturedProducts() {
                     key={tab}
                     type="button"
                     onClick={() => setSelectedCategory(tab)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      selectedCategory === tab
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${selectedCategory === tab
                         ? "bg-white dark:bg-[#141F2B] text-neutral-950 dark:text-white shadow-xs border border-black/5 dark:border-white/10"
                         : "text-neutral-500 dark:text-[#8B98A5] hover:text-neutral-900 dark:hover:text-white"
-                    }`}
+                      }`}
                   >
                     {tab}
                   </button>
@@ -231,11 +230,10 @@ export function FeaturedProducts() {
                       className="absolute top-2.5 right-2.5 z-10 h-7 w-7 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md flex items-center justify-center text-neutral-600 dark:text-white hover:text-rose-500 hover:bg-white dark:hover:bg-black transition-all cursor-pointer shadow-sm"
                     >
                       <Heart
-                        className={`h-3.5 w-3.5 transition-colors ${
-                          isLiked
+                        className={`h-3.5 w-3.5 transition-colors ${isLiked
                             ? "fill-rose-500 text-rose-500"
                             : "stroke-[2]"
-                        }`}
+                          }`}
                       />
                     </button>
 

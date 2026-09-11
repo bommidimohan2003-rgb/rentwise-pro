@@ -274,8 +274,8 @@ export function Hero() {
                         setCityDropdownOpen(false);
                       }}
                       className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${selectedCity === c
-                          ? "bg-black/5 dark:bg-white/10 text-neutral-950 dark:text-white font-bold"
-                          : "text-neutral-700 dark:text-[#AAB3BC] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+                        ? "bg-black/5 dark:bg-white/10 text-neutral-950 dark:text-white font-bold"
+                        : "text-neutral-700 dark:text-[#AAB3BC] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
                         }`}
                     >
                       <span>{c}</span>

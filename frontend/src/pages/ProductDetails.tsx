@@ -36,7 +36,7 @@ export default function ProductDetails() {
   const navigate = useNavigate();
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
-  
+
   // Instant cache lookup for zero-latency initial render
   const initialCachedProduct = api.getCachedProduct(id);
   const [product, setProduct] = useState<Product | null>(initialCachedProduct);

@@ -97,10 +97,10 @@ export async function searchWithML(
             owner:
               typeof raw.owner === "object" && raw.owner !== null
                 ? (raw.owner as {
-                    name: string;
-                    avatar: string;
-                    rating: number;
-                  })
+                  name: string;
+                  avatar: string;
+                  rating: number;
+                })
                 : { name: "Payent Lender", avatar: "", rating: 4.9 },
           };
         });

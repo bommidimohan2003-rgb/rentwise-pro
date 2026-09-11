@@ -85,10 +85,10 @@ export function ProductCard({
 
   const isOwner = Boolean(
     user &&
-      !product.isReference &&
-      ((ownerEmail && userEmail && ownerEmail === userEmail) ||
-        (ownerName && userFullName && ownerName === userFullName) ||
-        (ownerName && userEmail && ownerName === userEmail)),
+    !product.isReference &&
+    ((ownerEmail && userEmail && ownerEmail === userEmail) ||
+      (ownerName && userFullName && ownerName === userFullName) ||
+      (ownerName && userEmail && ownerName === userEmail)),
   );
 
   const canDelete = Boolean(
@@ -330,5 +330,13 @@ export function ProductCard({
         </div>
       </motion.div>
     </CSSTiltCard>
+  );
+}
+              )}
+            </div >
+          </div >
+        </div >
+      </motion.div >
+    </CSSTiltCard >
   );
 }

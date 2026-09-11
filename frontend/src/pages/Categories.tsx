@@ -286,8 +286,8 @@ export default function Categories() {
       mlResults !== null
         ? mlResults
         : allProductsList.filter((p) =>
-            cat === "all" ? true : matchCategory(p.category, cat),
-          );
+          cat === "all" ? true : matchCategory(p.category, cat),
+        );
 
     if (mlResults === null && q) {
       list = advancedSearch(list, q);
@@ -930,10 +930,10 @@ export default function Categories() {
             {filteredReferenceProducts.map((refProd, i) => {
               const CategoryIcon =
                 categoryIcons[
-                  refProd.category.toLowerCase() as keyof typeof categoryIcons
+                refProd.category.toLowerCase() as keyof typeof categoryIcons
                 ] ||
                 categoryIcons[
-                  refProd.category as keyof typeof categoryIcons
+                refProd.category as keyof typeof categoryIcons
                 ] ||
                 Tag;
 
