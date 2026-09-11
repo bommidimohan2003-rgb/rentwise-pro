@@ -1,11 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="8" fill="#000000" />
-  <rect x="7" y="6" width="3.5" height="20" rx="1.75" fill="#FFFFFF" />
+  <defs>
+    <linearGradient id="p-fav-grad" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="50%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="p-fav-accent" x1="10" y1="4" x2="26" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6EE7B7" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="#05090D" />
   <path
-    fill="#FFFFFF"
     fill-rule="evenodd"
     clip-rule="evenodd"
-    d="M10.5 6H18.5C22.6421 6 26 9.35786 26 13.5C26 17.6421 22.6421 21 18.5 21H10.5V17.5H18.5C20.7091 17.5 22.5 15.7091 22.5 13.5C22.5 11.2909 20.7091 9.5 18.5 9.5H10.5V6Z"
+    d="M7 10C7 6.68629 9.68629 4 13 4H19C24.5228 4 29 8.47715 29 14C29 19.5228 24.5228 24 19 24H13V27.5C13 29.433 11.433 31 9.5 31C7.567 31 7 29.433 7 27.5V10ZM13 10H19C21.2091 10 23 11.7909 23 14C23 16.2091 21.2091 18 19 18H13V10Z"
+    fill="url(#p-fav-grad)"
   />
-  <circle cx="18.5" cy="13.5" r="2.25" fill="#FFFFFF" />
+  <path
+    d="M7 14C7 8.47715 11.4772 4 17 4H19C24.5228 4 29 8.47715 29 14C29 16.5 28.1 18.8 26.5 20.6C27.5 18.8 28 16.5 28 14C28 9.02944 23.9706 5 19 5H13C9.68629 5 7 7.68629 7 11V14Z"
+    fill="url(#p-fav-accent)"
+    opacity="0.8"
+  />
 </svg>
+

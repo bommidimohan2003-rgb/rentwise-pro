@@ -218,10 +218,8 @@ export function Sidebar() {
       >
         {/* Brand Logo */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-border/40">
-          <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-md shrink-0">
-              <LogoIcon className="h-4.5 w-4.5" />
-            </div>
+          <Link to="/admin/dashboard" className="flex items-center gap-2.5">
+            <LogoIcon className="h-7 w-7 shrink-0" iconOnly />
             {!collapsed && (
               <span className="font-display font-extrabold text-sm tracking-tight text-foreground">
                 Payent{" "}

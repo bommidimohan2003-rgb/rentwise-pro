@@ -132,9 +132,7 @@ export default function Login() {
         <div className="glass bg-card/65 rounded-3xl p-8 shadow-2xl border border-border/80 relative space-y-6">
           {/* Logo & Header */}
           <div className="flex flex-col items-center text-center">
-            <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-extrabold text-lg shadow-lg mb-4">
-              <LogoIcon className="h-6 w-6" />
-            </div>
+            <LogoIcon className="h-14 w-14 mb-3 drop-shadow-[0_4px_20px_rgba(16,185,129,0.3)]" iconOnly />
             <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
               {mode === "login" ? "Welcome Back" : "Register Admin Account"}
             </h1>
