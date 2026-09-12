@@ -14,6 +14,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
+import { LogoIcon } from "@/components/common/LogoIcon";
+
 const items = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Overview" },
   { to: "/lender-portal", icon: Store, label: "Lender Portal" },
@@ -46,6 +48,11 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:block w-64 shrink-0 sticky top-20 h-fit">
       <nav className="card-premium p-3 space-y-1">
+        {/* Brand Area */}
+        <div className="px-3 py-2.5 mb-2 border-b border-black/5 dark:border-white/5">
+          <LogoIcon showTagline={true} />
+        </div>
+
         {sidebarItems.map((it) => {
           const active = pathname === it.to;
           return (

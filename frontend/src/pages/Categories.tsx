@@ -6,7 +6,6 @@ import {
   ArrowUpDown,
   ChevronDown,
   Check,
-  Star,
   ArrowRight,
   SlidersHorizontal,
   Layers,
@@ -28,7 +27,7 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
 import { advancedSearch, isProductInLocation } from "@/utils/searchEngine";
 import { searchWithML } from "@/utils/smartSearch";
-import type { Product, Category, ProductAvailabilityItem } from "@/types";
+import type { Product, Category } from "@/types";
 import { cn } from "@/lib/utils";
 import { useSearch, useNavigate } from "@tanstack/react-router";
 import { tracker } from "@/utils/eventTracker";
@@ -36,8 +35,6 @@ import { storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserLocation } from "@/hooks/useUserLocation";
-
-import cameraImg from "@/assets/images/camera.png";
 
 type SortOption = "featured" | "newest" | "price_asc" | "price_desc" | "rating";
 
@@ -143,6 +140,7 @@ export default function Categories() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Additional filter states
+  const [minPriceFilter, setMinPriceFilter] = useState<number>(0);
   const [maxPriceFilter, setMaxPriceFilter] = useState<number | null>(null);
   const [minRatingFilter, setMinRatingFilter] = useState<number>(0);
   const [availableOnlyFilter, setAvailableOnlyFilter] =
@@ -164,27 +162,18 @@ export default function Categories() {
 
   const sortRef = useRef<HTMLDivElement>(null);
 
-  // User location detection (Auto-detected only)
+  // User location detection (Informational badge & sort prioritization only)
   const {
     city: detectedCity,
     isDetecting,
     detectLocation,
   } = useUserLocation();
 
-  const [isNationwide, setIsNationwide] = useState<boolean>(false);
-
   const isLocationActive = Boolean(
     detectedCity &&
       detectedCity !== "Location unavailable" &&
       detectedCity !== "All Cities",
   );
-
-  // Effective city filter: URL param if provided, else detected city unless user toggled nationwide
-  const effectiveCity = search.city
-    ? search.city
-    : !isNationwide && isLocationActive
-      ? detectedCity
-      : null;
 
   // Sync search keyword from URL
   useEffect(() => {
@@ -312,7 +301,6 @@ export default function Categories() {
       search: (prev: Record<string, unknown>) => ({
         ...prev,
         q: q.trim() || undefined,
-        city: search.city || undefined,
       }),
     });
     setCurrentPage(1);
@@ -331,11 +319,11 @@ export default function Categories() {
 
   const handleResetFilters = () => {
     setLocalQ("");
+    setMinPriceFilter(0);
     setMaxPriceFilter(highestPriceInCatalog);
     setMinRatingFilter(0);
     setAvailableOnlyFilter(false);
     setSort("featured");
-    setIsNationwide(false);
     navigate({
       to: "/browse",
       search: {},
@@ -373,28 +361,9 @@ export default function Categories() {
       return isApproved || isOwner;
     });
 
-    // Location Filter & Prioritization (Smart Metro Cluster Matching)
-    if (effectiveCity) {
-      const nearbyMatches = list.filter((p) =>
-        isProductInLocation(p, effectiveCity),
-      );
-      if (nearbyMatches.length > 0) {
-        list = nearbyMatches;
-      } else {
-        // If no products in this exact city, sort any partial matches first
-        list = [...list].sort((a, b) => {
-          const aIn = isProductInLocation(a, effectiveCity) ? 1 : 0;
-          const bIn = isProductInLocation(b, effectiveCity) ? 1 : 0;
-          return bIn - aIn;
-        });
-      }
-    } else if (isLocationActive) {
-      // In Nationwide mode, prioritize gear near the user's location at the top
-      list = [...list].sort((a, b) => {
-        const aIn = isProductInLocation(a, detectedCity) ? 1 : 0;
-        const bIn = isProductInLocation(b, detectedCity) ? 1 : 0;
-        return bIn - aIn;
-      });
+    // Min Price Filter
+    if (minPriceFilter > 0) {
+      list = list.filter((p) => (p.price || 0) >= minPriceFilter);
     }
 
     // Max Price Filter
@@ -414,6 +383,15 @@ export default function Categories() {
           return p.availability_status === "available";
         }
         return p.available !== false;
+      });
+    }
+
+    // Location Prioritization (Sort nearby items first if location detected, without filtering out others)
+    if (isLocationActive) {
+      list = [...list].sort((a, b) => {
+        const aIn = isProductInLocation(a, detectedCity) ? 1 : 0;
+        const bIn = isProductInLocation(b, detectedCity) ? 1 : 0;
+        return bIn - aIn;
       });
     }
 
@@ -451,7 +429,9 @@ export default function Categories() {
     sort,
     mlResults,
     allProductsList,
-    effectiveCity,
+    detectedCity,
+    isLocationActive,
+    minPriceFilter,
     maxPriceFilter,
     minRatingFilter,
     availableOnlyFilter,
@@ -469,7 +449,7 @@ export default function Categories() {
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (activeCategory !== "all") count++;
-    if (effectiveCity) count++;
+    if (minPriceFilter > 0) count++;
     if (maxPriceFilter !== null && maxPriceFilter < highestPriceInCatalog)
       count++;
     if (minRatingFilter > 0) count++;
@@ -478,7 +458,7 @@ export default function Categories() {
     return count;
   }, [
     activeCategory,
-    effectiveCity,
+    minPriceFilter,
     maxPriceFilter,
     highestPriceInCatalog,
     minRatingFilter,
@@ -528,182 +508,209 @@ export default function Categories() {
   return (
     <MainLayout>
       {/* 1. BROWSE HERO */}
+      {/* 1. BROWSE HERO (2-COLUMN BALANCED LAYOUT) */}
       <section className="relative overflow-hidden bg-neutral-50/70 dark:bg-[#05090D] border-b border-black/10 dark:border-white/10 pt-10 pb-8 sm:pt-14 sm:pb-12 transition-colors duration-300">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-gradient-to-b from-neutral-200/30 dark:from-[#0B1522] to-transparent rounded-full blur-[140px] pointer-events-none" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            {/* Eyebrow */}
-            <div className="flex items-center gap-2 mb-3">
-              <span className="inline-block w-2 h-2 rounded-full bg-primary" />
-              <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-[#AAB3BC]">
-                Explore The Gear
-              </span>
-            </div>
-
-            {/* Main Headline */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-neutral-950 dark:text-white leading-[1.1]">
-              Find the gear <br />
-              <span className="underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">
-                behind your next story.
-              </span>
-            </h1>
-
-            {/* Supporting Text */}
-            <p className="mt-4 text-sm sm:text-base text-neutral-600 dark:text-[#AAB3BC] leading-relaxed max-w-2xl">
-              Discover professional cameras, drones, laptops, audio gear,
-              lighting and more with verified real-time gear availability.
-            </p>
-          </div>
-
-          {/* 2. REBALANCED BROWSE SEARCH BAR (KEYWORD + AUTO-LOCATION ONLY) */}
-          <div className="mt-8 max-w-4xl">
-            <form
-              onSubmit={handleSearchSubmit}
-              className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/15 shadow-xl flex flex-col md:flex-row items-center gap-2 backdrop-blur-md"
-            >
-              {/* Keyword Input (flex-1 takes remaining space) */}
-              <div className="flex-1 w-full flex items-center gap-2.5 px-3 py-1.5">
-                <SearchIcon className="h-4 w-4 text-neutral-400 dark:text-[#AAB3BC] shrink-0" />
-                <input
-                  type="text"
-                  value={q}
-                  onChange={(e) => setLocalQ(e.target.value)}
-                  placeholder="Search gear (Sony FX3, DJI Mavic, MacBook...)"
-                  className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none"
-                />
-                {q && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLocalQ("");
-                      navigate({
-                        to: "/browse",
-                        search: (prev: Record<string, unknown>) => ({
-                          ...prev,
-                          q: undefined,
-                        }),
-                      });
-                    }}
-                    className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left Column: Headline & Search */}
+            <div className="lg:col-span-7">
+              {/* Eyebrow */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-block w-2 h-2 rounded-full bg-primary" />
+                <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-[#AAB3BC]">
+                  Explore The Gear
+                </span>
               </div>
 
-              {/* Divider */}
-              <div className="hidden md:block h-6 w-px bg-black/10 dark:bg-white/15 shrink-0" />
+              {/* Main Headline */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-neutral-950 dark:text-white leading-[1.1]">
+                Find the gear <br />
+                <span className="underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">
+                  behind your next story.
+                </span>
+              </h1>
 
-              {/* Auto Location Chip (No manual dropdown) */}
-              <div className="w-full md:w-auto flex items-center justify-between md:justify-start gap-1.5 px-3 py-1.5 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl md:rounded-full border border-black/5 dark:border-white/5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsNationwide(!isNationwide)}
-                  title={
-                    isDetecting
-                      ? "Detecting location..."
-                      : isLocationActive
-                        ? isNationwide
-                          ? `Showing nationwide gear. Click to filter by ${detectedCity}.`
-                          : `Filtering by ${detectedCity}. Click to view all India.`
-                        : "Location unavailable"
-                  }
-                  className="flex items-center gap-1.5 text-xs text-neutral-900 dark:text-white hover:opacity-80 transition-opacity cursor-pointer truncate"
+              {/* Supporting Text */}
+              <p className="mt-4 text-sm sm:text-base text-neutral-600 dark:text-[#AAB3BC] leading-relaxed max-w-xl">
+                Discover professional cinema cameras, aerial drones, studio workstations, sound systems, and production lighting with verified real-time gear availability.
+              </p>
+
+              {/* Rebalanced Search Bar */}
+              <div className="mt-7">
+                <form
+                  onSubmit={handleSearchSubmit}
+                  className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/15 shadow-xl flex flex-col md:flex-row items-center gap-2 backdrop-blur-md"
                 >
-                  <MapPin
-                    className={cn(
-                      "h-3.5 w-3.5 shrink-0",
-                      isLocationActive && !isNationwide
-                        ? "text-primary"
-                        : "text-neutral-500 dark:text-neutral-400",
-                    )}
-                  />
-                  <span className="truncate max-w-[130px] font-medium text-xs">
-                    {isDetecting
-                      ? "Detecting..."
-                      : isLocationActive
-                        ? isNationwide
-                          ? "All India"
-                          : detectedCity
-                        : "Location unavailable"}
-                  </span>
-                </button>
-
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      detectLocation();
-                    }}
-                    disabled={isDetecting}
-                    title="Re-detect GPS location"
-                    className="p-1 rounded-full text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-                    aria-label="Re-detect location"
-                  >
-                    <RotateCcw
-                      className={cn("h-3 w-3", isDetecting && "animate-spin")}
+                  {/* Keyword Input */}
+                  <div className="flex-1 w-full flex items-center gap-2.5 px-3 py-1.5">
+                    <SearchIcon className="h-4 w-4 text-neutral-400 dark:text-[#AAB3BC] shrink-0" />
+                    <input
+                      type="text"
+                      value={q}
+                      onChange={(e) => setLocalQ(e.target.value)}
+                      placeholder="Search gear (Sony FX3, DJI Mavic, MacBook...)"
+                      className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none"
                     />
-                  </button>
+                    {q && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLocalQ("");
+                          navigate({
+                            to: "/browse",
+                            search: (prev: Record<string, unknown>) => ({
+                              ...prev,
+                              q: undefined,
+                            }),
+                          });
+                        }}
+                        className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white cursor-pointer"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
 
-                  {isLocationActive && (
+                  {/* Location Info Pill (Informational only) */}
+                  <div className="w-full md:w-auto flex items-center justify-between md:justify-start gap-1.5 px-3 py-1.5 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl md:rounded-full border border-black/5 dark:border-white/5 shrink-0">
+                    <div className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-[#AAB3BC]">
+                      <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span suppressHydrationWarning className="font-medium text-xs truncate max-w-[120px]">
+                        {isDetecting ? "Locating..." : isLocationActive ? detectedCity : "Pan India"}
+                      </span>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => setIsNationwide(!isNationwide)}
-                      title={
-                        isNationwide
-                          ? `Filter by ${detectedCity}`
-                          : "View all gear nationwide"
-                      }
-                      className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors cursor-pointer",
-                        !isNationwide
-                          ? "bg-primary text-white dark:bg-primary dark:text-white shadow-xs"
-                          : "bg-black/10 dark:bg-white/15 text-neutral-700 dark:text-neutral-200 hover:bg-black/20",
-                      )}
+                      onClick={() => detectLocation()}
+                      disabled={isDetecting}
+                      title="Update location"
+                      className="p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
                     >
-                      {!isNationwide ? "Nearby" : "All India"}
+                      <RotateCcw className={cn("h-3 w-3", isDetecting && "animate-spin")} />
                     </button>
-                  )}
+                  </div>
+
+                  {/* Submit Search Button */}
+                  <button
+                    type="submit"
+                    className="w-full md:w-auto h-10 px-6 rounded-xl md:rounded-full bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] dark:active:bg-[#DCD9D1] text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <span>Search</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </form>
+
+                {/* Popular Searches */}
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-[11px] font-semibold text-neutral-400 dark:text-[#697680] mr-1">
+                    Popular:
+                  </span>
+                  {popularQueries.slice(0, 5).map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        setLocalQ(tag);
+                        navigate({
+                          to: "/browse",
+                          search: (prev: Record<string, unknown>) => ({
+                            ...prev,
+                            q: tag,
+                          }),
+                        });
+                        setCurrentPage(1);
+                      }}
+                      className="px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-neutral-700 dark:text-[#AAB3BC] text-[11px] transition-colors cursor-pointer"
+                    >
+                      {tag}
+                    </button>
+                  ))}
                 </div>
               </div>
+            </div>
 
-              {/* Submit Search Button (Compact at end) */}
-              <button
-                type="submit"
-                className="w-full md:w-auto h-10 px-6 rounded-xl md:rounded-full bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] dark:active:bg-[#DCD9D1] text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-              >
-                <span>Search</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </form>
+            {/* Right Column: Marketplace Highlights Panel */}
+            <div className="hidden lg:block lg:col-span-5">
+              <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0D151D]/90 p-6 shadow-xl backdrop-blur-md space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-black uppercase tracking-wider text-neutral-950 dark:text-white">
+                      Creator Gear Hub
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <ShieldCheck className="h-3 w-3" />
+                    Verified Roster
+                  </span>
+                </div>
 
-            {/* Quick Popular Searches */}
-            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="text-[11px] font-semibold text-neutral-400 dark:text-[#697680] mr-1">
-                Popular:
-              </span>
-              {popularQueries.slice(0, 5).map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => {
-                    setLocalQ(tag);
-                    navigate({
-                      to: "/browse",
-                      search: (prev: Record<string, unknown>) => ({
-                        ...prev,
-                        q: tag,
-                      }),
-                    });
-                    setCurrentPage(1);
-                  }}
-                  className="px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-neutral-700 dark:text-[#AAB3BC] text-[11px] transition-colors cursor-pointer"
-                >
-                  {tag}
-                </button>
-              ))}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleCategorySelect("cameras")}
+                    className="p-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Camera className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-primary transition-colors" />
+                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Cameras</span>
+                    </div>
+                    <p className="text-[10px] text-neutral-500 dark:text-[#8D98A3] mt-1 truncate">
+                      Sony FX3, Cinema, RED
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCategorySelect("drones")}
+                    className="p-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Plane className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-primary transition-colors" />
+                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Drones</span>
+                    </div>
+                    <p className="text-[10px] text-neutral-500 dark:text-[#8D98A3] mt-1 truncate">
+                      DJI Mavic 3, Inspire
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCategorySelect("audio")}
+                    className="p-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Mic className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-primary transition-colors" />
+                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Studio Audio</span>
+                    </div>
+                    <p className="text-[10px] text-neutral-500 dark:text-[#8D98A3] mt-1 truncate">
+                      Wireless Mics, Shure
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCategorySelect("lighting")}
+                    className="p-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sun className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-primary transition-colors" />
+                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Lighting</span>
+                    </div>
+                    <p className="text-[10px] text-neutral-500 dark:text-[#8D98A3] mt-1 truncate">
+                      Aputure, Softboxes
+                    </p>
+                  </button>
+                </div>
+
+                <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[11px] text-neutral-500 dark:text-[#8D98A3]">
+                  <span>100% Insured Rental Protection</span>
+                  <span className="font-semibold text-neutral-800 dark:text-neutral-200">Verified Peer Handover</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -768,15 +775,10 @@ export default function Categories() {
                 {totalItems}{" "}
                 {totalItems === 1 ? "piece of gear" : "pieces of gear"}
               </h2>
-              {isLocationActive && !isNationwide && (
+              {isLocationActive && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-bold">
                   <MapPin className="h-3 w-3" />
-                  Nearby {detectedCity}
-                </span>
-              )}
-              {isLocationActive && isNationwide && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-neutral-600 dark:text-neutral-300 text-[11px] font-semibold">
-                  All India
+                  Prioritizing {detectedCity}
                 </span>
               )}
               {mlResults !== null && (
@@ -866,7 +868,7 @@ export default function Categories() {
                         setIsSortOpen(false);
                       }}
                       className={cn(
-                        "w-full text-left px-3 py-1.5 text-xs rounded-xl transition-colors flex items-center justify-between",
+                        "w-full text-left px-3 py-1.5 text-xs rounded-xl transition-colors flex items-center justify-between cursor-pointer",
                         sort === opt.id
                           ? "bg-black/5 dark:bg-white/10 font-bold text-neutral-950 dark:text-white"
                           : "text-neutral-700 dark:text-[#AAB3BC] hover:bg-black/5 dark:hover:bg-white/5",
@@ -886,7 +888,7 @@ export default function Categories() {
 
         {/* Active Filter Removal Chips */}
         {(activeCategory !== "all" ||
-          effectiveCity ||
+          minPriceFilter > 0 ||
           (maxPriceFilter !== null && maxPriceFilter < highestPriceInCatalog) ||
           minRatingFilter > 0 ||
           availableOnlyFilter ||
@@ -931,22 +933,16 @@ export default function Categories() {
               </span>
             )}
 
-            {effectiveCity && (
+            {(minPriceFilter > 0 ||
+              (maxPriceFilter !== null &&
+                maxPriceFilter < highestPriceInCatalog)) && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs text-neutral-800 dark:text-[#E0E5EA] border border-black/10 dark:border-white/15">
-                Location: {effectiveCity}
+                Rate: ₹{minPriceFilter} - ₹{maxPriceFilter ?? highestPriceInCatalog}/day
                 <button
                   type="button"
                   onClick={() => {
-                    setIsNationwide(true);
-                    if (search.city) {
-                      navigate({
-                        to: "/browse",
-                        search: (prev: Record<string, unknown>) => ({
-                          ...prev,
-                          city: undefined,
-                        }),
-                      });
-                    }
+                    setMinPriceFilter(0);
+                    setMaxPriceFilter(highestPriceInCatalog);
                   }}
                   className="hover:text-primary cursor-pointer"
                 >
@@ -954,20 +950,6 @@ export default function Categories() {
                 </button>
               </span>
             )}
-
-            {maxPriceFilter !== null &&
-              maxPriceFilter < highestPriceInCatalog && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs text-neutral-800 dark:text-[#E0E5EA] border border-black/10 dark:border-white/15">
-                  Max ₹{maxPriceFilter}/day
-                  <button
-                    type="button"
-                    onClick={() => setMaxPriceFilter(highestPriceInCatalog)}
-                    className="hover:text-primary cursor-pointer"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              )}
 
             {minRatingFilter > 0 && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs text-neutral-800 dark:text-[#E0E5EA] border border-black/10 dark:border-white/15">
@@ -1023,14 +1005,14 @@ export default function Categories() {
               </button>
             </div>
 
-            {/* Price Range Slider */}
+            {/* Price Range Slider & Inputs */}
             <div>
               <div className="flex items-center justify-between text-xs font-semibold mb-2">
                 <span className="text-neutral-700 dark:text-[#AAB3BC]">
-                  Max Daily Rate
+                  Daily Rate Range
                 </span>
                 <span className="font-mono font-bold text-neutral-950 dark:text-white">
-                  ₹{maxPriceFilter ?? highestPriceInCatalog}
+                  ₹{minPriceFilter} - ₹{maxPriceFilter ?? highestPriceInCatalog}
                 </span>
               </div>
               <input
@@ -1151,7 +1133,7 @@ export default function Categories() {
                     No gear matches your filters.
                   </h3>
                   <p className="mt-1 text-xs text-neutral-500 dark:text-[#8D98A3] max-w-sm mx-auto">
-                    Try adjusting dates, clearing your search query, or resetting filters.
+                    Try adjusting your price range, clearing your search query, or resetting filters.
                   </p>
                   <div className="mt-5 flex items-center justify-center gap-3">
                     <button
@@ -1277,7 +1259,7 @@ export default function Categories() {
                   <button
                     type="button"
                     onClick={() => setIsFilterDrawerOpen(false)}
-                    className="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-white"
+                    className="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-white cursor-pointer"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -1295,7 +1277,7 @@ export default function Categories() {
                         type="button"
                         onClick={() => handleCategorySelect(c.id)}
                         className={cn(
-                          "px-3 py-1 rounded-full text-xs font-semibold border",
+                          "px-3 py-1 rounded-full text-xs font-semibold border cursor-pointer",
                           activeCategory === c.id
                             ? "bg-[#161616] text-white border-[#161616] dark:bg-[#F2F0EA] dark:text-[#0A0A0A]"
                             : "border-black/10 dark:border-white/15 text-neutral-700 dark:text-[#AAB3BC]",
@@ -1307,7 +1289,7 @@ export default function Categories() {
                   </div>
                 </div>
 
-                {/* Max Price */}
+                {/* Price Range */}
                 <div>
                   <div className="flex items-center justify-between text-xs font-semibold mb-2">
                     <span className="text-neutral-700 dark:text-[#AAB3BC]">
@@ -1324,7 +1306,7 @@ export default function Categories() {
                     step={200}
                     value={maxPriceFilter ?? highestPriceInCatalog}
                     onChange={(e) => setMaxPriceFilter(Number(e.target.value))}
-                    className="w-full accent-neutral-950 dark:accent-white"
+                    className="w-full accent-neutral-950 dark:accent-white cursor-pointer"
                   />
                 </div>
 
@@ -1344,7 +1326,7 @@ export default function Categories() {
                         type="button"
                         onClick={() => setMinRatingFilter(r.val)}
                         className={cn(
-                          "py-1.5 text-xs font-bold rounded-lg border",
+                          "py-1.5 text-xs font-bold rounded-lg border cursor-pointer",
                           minRatingFilter === r.val
                             ? "bg-[#161616] text-white border-[#161616] dark:bg-[#F2F0EA] dark:text-[#0A0A0A]"
                             : "border-black/10 dark:border-white/15 text-neutral-600 dark:text-[#AAB3BC]",
@@ -1358,13 +1340,13 @@ export default function Categories() {
 
                 {/* Availability */}
                 <div>
-                  <label className="flex items-center justify-between text-xs font-semibold text-neutral-700 dark:text-[#AAB3BC]">
+                  <label className="flex items-center justify-between text-xs font-semibold text-neutral-700 dark:text-[#AAB3BC] cursor-pointer">
                     <span>Available Gear Only</span>
                     <input
                       type="checkbox"
                       checked={availableOnlyFilter}
                       onChange={(e) => setAvailableOnlyFilter(e.target.checked)}
-                      className="h-4 w-4 rounded accent-neutral-950 dark:accent-white"
+                      className="h-4 w-4 rounded accent-neutral-950 dark:accent-white cursor-pointer"
                     />
                   </label>
                 </div>
@@ -1378,14 +1360,14 @@ export default function Categories() {
                     handleResetFilters();
                     setIsFilterDrawerOpen(false);
                   }}
-                  className="flex-1 py-2.5 rounded-xl border border-black/15 dark:border-white/20 text-xs font-bold text-neutral-900 dark:text-white"
+                  className="flex-1 py-2.5 rounded-xl border border-black/15 dark:border-white/20 text-xs font-bold text-neutral-900 dark:text-white cursor-pointer"
                 >
                   Clear All
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsFilterDrawerOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-[#161616] text-white dark:bg-[#F2F0EA] dark:text-[#0A0A0A] text-xs font-bold"
+                  className="flex-1 py-2.5 rounded-xl bg-[#161616] text-white dark:bg-[#F2F0EA] dark:text-[#0A0A0A] text-xs font-bold cursor-pointer"
                 >
                   Apply Filters
                 </button>

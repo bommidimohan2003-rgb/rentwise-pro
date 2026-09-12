@@ -113,7 +113,6 @@ export function Hero() {
       to: "/categories",
       search: {
         q: searchTerm.trim() || undefined,
-        city: selectedCity !== "All Cities" ? selectedCity : undefined,
       },
     });
   };
@@ -132,7 +131,7 @@ export function Hero() {
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] bg-gradient-to-b from-neutral-200/40 via-neutral-100/10 to-transparent dark:from-[#0B1522] dark:via-[#071017] dark:to-transparent rounded-full blur-[160px] pointer-events-none opacity-60" />
       <div className="absolute top-28 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-primary/5 dark:bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Full-Bleed Transparent Gear Image Cycling One After Another (Top to Bottom & Left to Right) */}
+      {/* Full-Bleed Transparent Gear Image Cycling One After Another */}
       <div className="absolute inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
@@ -154,7 +153,7 @@ export function Hero() {
         {/* Soft center ambient backlight glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-primary/5 dark:bg-white/10 rounded-full blur-[160px] pointer-events-none" />
 
-        {/* Subtle radial and vertical scrims ensuring text readability while keeping the image clearly visible in both light & dark */}
+        {/* Subtle radial and vertical scrims ensuring text readability */}
         <div className="absolute inset-0 bg-radial from-white/40 via-white/10 to-transparent dark:from-[#05090D]/75 dark:via-[#05090D]/40 dark:to-transparent pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-neutral-50/90 dark:from-[#05090D] via-neutral-50/40 dark:via-[#05090D]/80 to-transparent pointer-events-none" />
         <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-neutral-50/40 dark:from-[#05090D]/70 to-transparent pointer-events-none" />
@@ -194,106 +193,25 @@ export function Hero() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search gear (camera, drone...)"
+                placeholder="Search gear (camera, drone, laptop...)"
                 className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none truncate"
               />
             </div>
 
-            {/* Divider */}
-            <div className="h-6 w-px bg-black/10 dark:bg-white/15 shrink-0" />
-
-            {/* Location Selector (Directly Inside Search Bar) */}
-            <div className="relative shrink-0">
-              <button
-                type="button"
-                onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
-                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-left text-xs text-neutral-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl sm:rounded-full transition-colors cursor-pointer max-w-[125px] sm:max-w-[180px]"
-              >
-                <div className="flex items-center gap-1.5 truncate">
-                  {isDetecting ? (
-                    <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
-                  ) : (
-                    <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
-                  )}
-                  <div className="truncate">
-                    <div className="hidden sm:flex items-center gap-1 leading-none">
-                      <span className="text-[9px] text-neutral-400 dark:text-[#697680] uppercase">Location</span>
-                      {isAutoDetected && !isDetecting && (
-                        <span className="text-[8px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15 px-1 py-0.2 rounded">
-                          Auto
-                        </span>
-                      )}
-                    </div>
-                    <span className="font-medium text-neutral-900 dark:text-white truncate block text-[11px] sm:text-xs sm:mt-0.5">
-                      {isDetecting ? "Detecting..." : selectedCity}
-                    </span>
-                  </div>
-                </div>
-                <ChevronDown className="h-3 w-3 text-neutral-400 dark:text-[#AAB3BC] shrink-0" />
-              </button>
-
-              {cityDropdownOpen && (
-                <div className="absolute top-full mt-2 sm:bottom-full sm:mb-2 sm:top-auto right-0 sm:left-0 z-30 rounded-xl bg-white dark:bg-[#111B24] border border-black/10 dark:border-white/15 p-1.5 shadow-2xl space-y-1 w-[220px] max-h-60 overflow-y-auto">
-                  {/* Quick Action: Auto-Detect Location */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await detectLocation(true);
-                      setCityDropdownOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-semibold text-foreground dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer border border-black/10 dark:border-white/15"
-                  >
-                    <Crosshair className="h-3.5 w-3.5 animate-pulse shrink-0 text-primary" />
-                    <span>Auto-Detect Current Location</span>
-                  </button>
-
-                  <div className="h-px bg-black/10 dark:bg-white/10 my-1" />
-
-                  {/* Show detected city at top if not in popular list */}
-                  {selectedCity && !popularCities.includes(selectedCity) && (
-                    <button
-                      type="button"
-                      onClick={() => setCityDropdownOpen(false)}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <span className="truncate">📍 {selectedCity}</span>
-                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Current</span>
-                    </button>
-                  )}
-
-                  {/* Popular Cities */}
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-[#697680] px-2 py-0.5">
-                    Select City
-                  </div>
-                  {popularCities.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => {
-                        setSelectedCity(c);
-                        setCityDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${selectedCity === c
-                        ? "bg-black/5 dark:bg-white/10 text-neutral-950 dark:text-white font-bold"
-                        : "text-neutral-700 dark:text-[#AAB3BC] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
-                        }`}
-                    >
-                      <span>{c}</span>
-                      {selectedCity === c && <Check className="h-3.5 w-3.5 text-primary" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Informational Location Indicator (DISPLAY ONLY) */}
+            {selectedCity && selectedCity !== "All Cities" && (
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-black/5 dark:border-white/10 text-xs text-neutral-600 dark:text-neutral-300">
+                <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span className="truncate text-[11px] font-medium max-w-[120px]">{selectedCity}</span>
+              </div>
+            )}
 
             {/* Search Submit Button */}
             <button
               type="submit"
-              aria-label="Search"
-              className="h-8 sm:h-auto px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-xl sm:rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs sm:text-sm font-bold shadow-md transition-all cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+              className="h-9 sm:h-10 px-5 sm:px-6 rounded-xl sm:rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs sm:text-sm font-bold transition-colors shrink-0 shadow-sm cursor-pointer flex items-center gap-1.5"
             >
-              <Search className="h-3.5 w-3.5 sm:hidden" />
-              <span className="hidden sm:inline">Search</span>
+              <span>Search</span>
             </button>
           </form>
 

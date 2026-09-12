@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { NoInternetState } from "@/components/states/NoInternetState";
 import { CartProvider } from "@/hooks/useCart";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { AppPreloader } from "@/components/common/AppPreloader";
 
 import appCss from "../styles.css?url";
 
@@ -301,6 +302,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
+        <AppPreloader />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
 

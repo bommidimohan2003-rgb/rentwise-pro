@@ -590,6 +590,33 @@ export const api = {
     return await res.json();
   },
 
+  async getAuthStatus(token?: string): Promise<{
+    email: string;
+    status: string;
+    is_approved: boolean;
+    role: string;
+    verified: boolean;
+  }> {
+    if (!API_BASE) {
+      const cached = storage.get<Record<string, unknown> | null>(STORAGE_KEYS.currentUser, null);
+      return {
+        email: (cached?.email as string) || "user@payent.in",
+        status: (cached?.status as string) || "active",
+        is_approved: cached?.status === "active" || cached?.status === "approved",
+        role: (cached?.role as string) || "customer",
+        verified: true,
+      };
+    }
+    const res = await this.fetchWithAuth(`${API_BASE}/api/auth/status`, {
+      method: "GET",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to fetch auth status."));
+    }
+    return await res.json();
+  },
+
   async getWishlist(token: string) {
     const res = await this.fetchWithAuth(`${API_BASE}/api/wishlist`, {
       method: "GET",
@@ -1381,8 +1408,8 @@ export const api = {
 
   async addToCart(
     productId: string,
-    startDate: string,
-    endDate: string,
+    startDate?: string,
+    endDate?: string,
   ): Promise<{ success: boolean; message: string; item: CartItem }> {
     if (!API_BASE) {
       const stored = storage.get<CartItem[]>("payent_offline_cart", []);
@@ -1397,10 +1424,10 @@ export const api = {
         image: cached?.image || "",
         category: cached?.category || "gear",
         city: "India",
-        start_date: startDate,
-        end_date: endDate,
-        days: 3,
-        total_price: (cached?.price || 1500) * 3,
+        start_date: startDate || "",
+        end_date: endDate || "",
+        days: 1,
+        total_price: cached?.price || 1500,
         is_available: true,
       };
       const filtered = stored.filter((i) => i.product_id !== productId);
@@ -1413,8 +1440,8 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         product_id: productId,
-        start_date: startDate,
-        end_date: endDate,
+        start_date: startDate || null,
+        end_date: endDate || null,
       }),
     });
     if (!res.ok) {

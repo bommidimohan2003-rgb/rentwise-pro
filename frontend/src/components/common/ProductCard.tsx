@@ -176,17 +176,8 @@ export function ProductCard({
       return;
     }
 
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const threeDaysLater = new Date(today);
-    threeDaysLater.setDate(threeDaysLater.getDate() + 4);
-
-    const start = selectedStartDate || tomorrow.toISOString().split("T")[0];
-    const end = selectedEndDate || threeDaysLater.toISOString().split("T")[0];
-
     setIsAdding(true);
-    const success = await addToCart(product.id, start, end);
+    const success = await addToCart(product.id);
     setIsAdding(false);
 
     if (success) {

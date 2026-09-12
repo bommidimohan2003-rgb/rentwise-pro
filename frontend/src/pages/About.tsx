@@ -148,44 +148,148 @@ export default function About() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[450px] bg-gradient-to-b from-neutral-200/40 via-neutral-100/10 to-transparent dark:from-[#0B1522] dark:via-[#071017] dark:to-transparent rounded-full blur-[160px] pointer-events-none" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            {/* Eyebrow */}
-            <div className="flex items-center gap-2 mb-4">
-              <span className="inline-block w-2 h-2 rounded-full bg-primary" />
-              <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-[#AAB3BC]">
-                Built For People Who Create
-              </span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            {/* Left: About Story Headline & CTAs */}
+            <div className="lg:col-span-7">
+              {/* Eyebrow */}
+              <div className="flex items-center gap-2 mb-4">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-[#AAB3BC]">
+                  Built For People Who Create
+                </span>
+              </div>
+
+              {/* Headline */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-neutral-950 dark:text-white leading-[1.1]">
+                Gear should never <br />
+                <span className="underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">
+                  limit your story.
+                </span>
+              </h1>
+
+              {/* Supporting Text */}
+              <p className="mt-5 text-sm sm:text-base text-neutral-600 dark:text-[#AAB3BC] leading-relaxed max-w-xl">
+                PAYENT connects creators with the technology they need to create
+                more without owning everything. Rent professional cinema cameras, drones, workstations, and audio gear directly from verified lenders.
+              </p>
+
+              {/* Quick CTAs */}
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <Link
+                  to="/browse"
+                  className="inline-flex items-center gap-2 h-11 px-6 rounded-full bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] text-xs font-bold transition-all shadow-md cursor-pointer"
+                >
+                  <span>Explore Gear</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <Link
+                  to="/become-lender"
+                  className="inline-flex items-center gap-2 h-11 px-6 rounded-full border border-[#D6D6D6] dark:border-white/25 text-[#171717] dark:text-[#F3F3F3] hover:bg-[#F3F3F3] dark:hover:bg-white/[0.08] text-xs font-bold transition-all cursor-pointer"
+                >
+                  <span>Become a Lender</span>
+                </Link>
+              </div>
+
+              {/* Micro-trust indicators */}
+              <div className="mt-8 pt-6 border-t border-black/5 dark:border-white/5 flex flex-wrap items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  <span>Verified Creators</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4 text-emerald-500" />
+                  <span>Razorpay Protected</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-emerald-500" />
+                  <span>Direct Handoffs</span>
+                </div>
+              </div>
             </div>
 
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-neutral-950 dark:text-white leading-[1.08]">
-              Gear should never <br />
-              <span className="underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">
-                limit your story.
-              </span>
-            </h1>
+            {/* Right: Rich Functional Creator Ecosystem Panel */}
+            <div className="lg:col-span-5">
+              <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0D151D]/90 backdrop-blur-xl p-6 shadow-xl space-y-5">
+                {/* Panel Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-black/5 dark:border-white/5">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
+                        Creator Ecosystem
+                      </h3>
+                    </div>
+                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      Flagship production equipment available for rent
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                    LIVE
+                  </span>
+                </div>
 
-            {/* Supporting Text */}
-            <p className="mt-6 text-base sm:text-lg text-neutral-600 dark:text-[#AAB3BC] leading-relaxed max-w-2xl">
-              PAYENT connects creators with the technology they need to create
-              more without owning everything.
-            </p>
+                {/* Creator Categories Visual Strip */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
+                    <Camera className="w-4 h-4 text-emerald-500 mb-1" />
+                    <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Cameras</span>
+                    <span className="text-[9px] text-neutral-400">Cinema & FX</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
+                    <Plane className="w-4 h-4 text-emerald-500 mb-1" />
+                    <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Drones</span>
+                    <span className="text-[9px] text-neutral-400">DJI & Aerial</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
+                    <Monitor className="w-4 h-4 text-emerald-500 mb-1" />
+                    <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Laptops</span>
+                    <span className="text-[9px] text-neutral-400">M3 / Workstations</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
+                    <Mic2 className="w-4 h-4 text-emerald-500 mb-1" />
+                    <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Audio</span>
+                    <span className="text-[9px] text-neutral-400">Field & Lavs</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
+                    <Film className="w-4 h-4 text-emerald-500 mb-1" />
+                    <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Lenses</span>
+                    <span className="text-[9px] text-neutral-400">Anamorphic & Prime</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
+                    <Cpu className="w-4 h-4 text-emerald-500 mb-1" />
+                    <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Lighting</span>
+                    <span className="text-[9px] text-neutral-400">LED & Modifiers</span>
+                  </div>
+                </div>
 
-            {/* Quick CTAs */}
-            <div className="mt-8 flex flex-wrap items-center gap-3.5">
-              <Link
-                to="/browse"
-                className="inline-flex items-center gap-2 h-12 px-7 rounded-full bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] text-sm font-bold transition-all shadow-md cursor-pointer"
-              >
-                <span>Explore Gear</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/become-lender"
-                className="inline-flex items-center gap-2 h-12 px-7 rounded-full border border-[#D6D6D6] dark:border-white/25 text-[#171717] dark:text-[#F3F3F3] hover:bg-[#F3F3F3] dark:hover:bg-white/[0.08] text-sm font-bold transition-all cursor-pointer"
-              >
-                <span>Become a Lender</span>
-              </Link>
+                {/* Real Live Marketplace Metrics Grid */}
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-black/5 dark:border-white/5">
+                  <div className="p-3 rounded-2xl bg-neutral-100/70 dark:bg-white/[0.04]">
+                    <div className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-400">
+                      Live Catalog
+                    </div>
+                    <div className="text-lg font-black text-neutral-900 dark:text-white font-mono mt-0.5">
+                      {loadingStats ? "..." : `${stats?.activeListings || 2}+ Items`}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-neutral-100/70 dark:bg-white/[0.04]">
+                    <div className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-400">
+                      Completed Rentals
+                    </div>
+                    <div className="text-lg font-black text-neutral-900 dark:text-white font-mono mt-0.5">
+                      {loadingStats ? "..." : `${stats?.totalRentals || 0}+ Shoots`}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer preview */}
+                <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 pt-1">
+                  <span>Peer-to-peer verification</span>
+                  <Link to="/browse" className="font-semibold text-neutral-900 dark:text-white hover:underline flex items-center gap-1">
+                    Browse All Gear <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>

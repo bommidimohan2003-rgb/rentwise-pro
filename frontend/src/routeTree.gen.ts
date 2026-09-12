@@ -31,6 +31,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as BecomeLenderRouteImport } from './routes/become-lender'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AccountPendingRouteImport } from './routes/account-pending'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -164,6 +165,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountPendingRoute = AccountPendingRouteImport.update({
+  id: '/account-pending',
+  path: '/account-pending',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -278,6 +284,7 @@ const AdminProductsIdRoute = AdminProductsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/account-pending': typeof AccountPendingRoute
   '/admin': typeof AdminRouteWithChildren
   '/become-lender': typeof BecomeLenderRoute
   '/browse': typeof BrowseRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/account-pending': typeof AccountPendingRoute
   '/become-lender': typeof BecomeLenderRoute
   '/browse': typeof BrowseRoute
   '/cart': typeof CartRoute
@@ -370,6 +378,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/account-pending': typeof AccountPendingRoute
   '/admin': typeof AdminRouteWithChildren
   '/become-lender': typeof BecomeLenderRoute
   '/browse': typeof BrowseRoute
@@ -418,6 +427,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/account-pending'
     | '/admin'
     | '/become-lender'
     | '/browse'
@@ -464,6 +474,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/account-pending'
     | '/become-lender'
     | '/browse'
     | '/cart'
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/account-pending'
     | '/admin'
     | '/become-lender'
     | '/browse'
@@ -556,6 +568,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AccountPendingRoute: typeof AccountPendingRoute
   AdminRoute: typeof AdminRouteWithChildren
   BecomeLenderRoute: typeof BecomeLenderRoute
   BrowseRoute: typeof BrowseRoute
@@ -735,6 +748,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account-pending': {
+      id: '/account-pending'
+      path: '/account-pending'
+      fullPath: '/account-pending'
+      preLoaderRoute: typeof AccountPendingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -953,6 +973,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AccountPendingRoute: AccountPendingRoute,
   AdminRoute: AdminRouteWithChildren,
   BecomeLenderRoute: BecomeLenderRoute,
   BrowseRoute: BrowseRoute,

@@ -129,28 +129,105 @@ export default function Contact() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-b from-neutral-200/30 dark:from-[#0B1522] to-transparent rounded-full blur-[140px] pointer-events-none" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            {/* Eyebrow */}
-            <div className="flex items-center gap-2 mb-3">
-              <span className="inline-block w-2 h-2 rounded-full bg-primary" />
-              <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-[#AAB3BC]">
-                Let's Talk
-              </span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            {/* Left: Headline & Introduction */}
+            <div className="lg:col-span-7">
+              {/* Eyebrow */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-[#AAB3BC]">
+                  Let's Talk
+                </span>
+              </div>
+
+              {/* Headline */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-neutral-950 dark:text-white leading-[1.1]">
+                Have a question? <br />
+                <span className="underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">
+                  Let's figure it out.
+                </span>
+              </h1>
+
+              {/* Supporting Copy */}
+              <p className="mt-4 text-sm sm:text-base text-neutral-600 dark:text-[#AAB3BC] leading-relaxed max-w-xl">
+                Whether you need help selecting cinema lenses, verifying your lender profile, or resolving booking details, our team is directly reachable.
+              </p>
+
+              {/* Fast SLA badge */}
+              <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Avg. Response Time &lt; 15 Mins</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Verified Support Team</span>
+                </div>
+              </div>
             </div>
 
-            {/* Headline */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-neutral-950 dark:text-white leading-[1.1]">
-              Have a question? <br />
-              <span className="underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">
-                Let's figure it out.
-              </span>
-            </h1>
+            {/* Right: Direct Channels & Ticket Tracking Panel */}
+            <div className="lg:col-span-5">
+              <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0D151D]/90 backdrop-blur-xl p-6 shadow-xl space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
+                      Support Desk Active
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 font-semibold">
+                    Mon–Sat 9AM–9PM
+                  </span>
+                </div>
 
-            {/* Supporting Copy */}
-            <p className="mt-4 text-sm sm:text-base text-neutral-600 dark:text-[#AAB3BC] leading-relaxed max-w-2xl">
-              Whether you need help finding gear, managing a listing, or using
-              PAYENT, we're here to help.
-            </p>
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-2.5">
+                      <Mail className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <div>
+                        <div className="font-semibold text-neutral-900 dark:text-white">Direct Email</div>
+                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400">support@payent.in</div>
+                      </div>
+                    </div>
+                    <a
+                      href="mailto:support@payent.in"
+                      className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                    >
+                      Email Us
+                    </a>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-2.5">
+                      <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <div>
+                        <div className="font-semibold text-neutral-900 dark:text-white">Phone Support</div>
+                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400">+91 80 4567 8900</div>
+                      </div>
+                    </div>
+                    <a
+                      href="tel:+918045678900"
+                      className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                    >
+                      Call
+                    </a>
+                  </div>
+                </div>
+
+                {/* Ticket Portal Link */}
+                <div className="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
+                  <span className="text-neutral-500 dark:text-neutral-400 text-[11px]">Submitted inquiries?</span>
+                  <Link
+                    to="/messages"
+                    className="font-bold text-neutral-900 dark:text-white hover:underline flex items-center gap-1"
+                  >
+                    <span>Track In Messages</span>
+                    <Send className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -93,6 +93,8 @@ export function RegisterForm() {
     if (user) {
       if (user.role === "admin") {
         navigate({ to: "/admin/dashboard" });
+      } else if (user.status === "pending") {
+        navigate({ to: "/account-pending" });
       } else {
         navigate({ to: "/categories" });
       }
@@ -161,7 +163,7 @@ export function RegisterForm() {
         if (res.user?.role === "admin") {
           navigate({ to: "/admin/dashboard" });
         } else {
-          navigate({ to: "/categories" });
+          navigate({ to: "/account-pending" });
         }
         return;
       }

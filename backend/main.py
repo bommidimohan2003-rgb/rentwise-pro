@@ -255,9 +255,16 @@ async def custom_cors_and_security_middleware(request: Request, call_next):
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled Exception on {request.method} {request.url.path}: {exc}\n{traceback.format_exc()}")
+    origin = request.headers.get("origin", "*")
     return JSONResponse(
         status_code=500,
         content={"detail": f"Internal Server Error: {str(exc)}"},
+        headers={
+            "Access-Control-Allow-Origin": origin if origin else "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
+            "Access-Control-Allow-Headers": "*",
+        }
     )
 
 @app.get("/")
@@ -1083,6 +1090,40 @@ def get_me(current_user_email: str = Depends(get_current_user_email)):
         "verified": True
     }
 
+@app.get("/api/auth/status")
+@app.get("/api/users/me/status")
+def get_auth_status(
+    email: Optional[str] = None,
+    authorization: Optional[str] = Header(None)
+):
+    clean_email = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        try:
+            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+            clean_email = payload.get("sub")
+        except Exception:
+            pass
+    if not clean_email and email:
+        clean_email = email.strip().lower()
+
+    if not clean_email:
+        raise HTTPException(status_code=401, detail="Authentication token or email required.")
+
+    clean_email = clean_email.strip().lower()
+    user = get_user(clean_email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    status_val = (user.get("status") or "pending").lower()
+    is_approved = status_val in ("approved", "active")
+    return {
+        "email": clean_email,
+        "status": status_val,
+        "is_approved": is_approved,
+        "role": user.get("role", "customer"),
+        "verified": bool(user.get("verified") or is_approved)
+    }
+
 @app.get("/api/profile/stats")
 @app.get("/api/users/me/stats")
 def get_user_profile_stats(current_user_email: str = Depends(get_current_user_email)):
@@ -1879,6 +1920,11 @@ def get_cart_endpoint(email: str = Depends(get_current_user_email)):
         "total": total
     }
 
+class AddToCartSchema(BaseModel):
+    product_id: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
 @app.post("/api/cart")
 def add_to_cart_endpoint(data: AddToCartSchema, email: str = Depends(get_current_user_email)):
     clean_email = email.strip().lower()
@@ -1888,7 +1934,7 @@ def add_to_cart_endpoint(data: AddToCartSchema, email: str = Depends(get_current
 
     # If dates are missing, fallback to tomorrow -> 4 days later
     if not start_d or not end_d:
-        now_dt = dt.now(timezone.utc)
+        now_dt = datetime.datetime.now(datetime.timezone.utc)
         start_d = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
         end_d = (now_dt + datetime.timedelta(days=4)).strftime("%Y-%m-%d")
 
@@ -2681,8 +2727,8 @@ def single_product_availability(id: str, start_date: str, end_date: str):
 
 class AddToCartSchema(BaseModel):
     product_id: str
-    start_date: str
-    end_date: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
 
 @app.get("/api/cart")
 def fetch_user_cart(current_user_email: str = Depends(get_current_user_email)):
@@ -2752,8 +2798,12 @@ def fetch_user_cart(current_user_email: str = Depends(get_current_user_email)):
 def add_item_to_cart(data: AddToCartSchema, current_user_email: str = Depends(get_current_user_email)):
     clean_email = current_user_email.strip().lower()
     pid = data.product_id.strip()
-    start_d = data.start_date.strip()
-    end_d = data.end_date.strip()
+    start_d = data.start_date.strip() if data.start_date else ""
+    end_d = data.end_date.strip() if data.end_date else ""
+    if not start_d or not end_d:
+        now_dt = dt.now(timezone.utc)
+        start_d = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        end_d = (now_dt + datetime.timedelta(days=4)).strftime("%Y-%m-%d")
 
     product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (pid,))
     if not product:

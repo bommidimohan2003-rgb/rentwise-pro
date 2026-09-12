@@ -3,19 +3,15 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ShoppingBag,
   Trash2,
-  Calendar,
   ArrowRight,
   ShieldCheck,
-  AlertCircle,
-  Clock,
-  Sparkles,
   ChevronRight,
   Truck,
   CheckCircle2,
+  Calendar,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { useCart } from "@/hooks/useCart";
-import { cn } from "@/lib/utils";
 import cameraFallback from "@/assets/images/camera.png";
 
 export default function Cart() {
@@ -23,15 +19,10 @@ export default function Cart() {
     cartItems,
     cartCount,
     subtotal,
-    tax,
-    total,
-    isLoading,
     removeFromCart,
     clearCart,
   } = useCart();
   const navigate = useNavigate();
-
-  const hasUnavailableItems = cartItems.some((item) => !item.is_available);
 
   const handleCheckout = () => {
     if (cartItems.length > 0) {
@@ -89,16 +80,6 @@ export default function Cart() {
             )}
           </div>
 
-          {/* Unavailable Items Warning Banner */}
-          {hasUnavailableItems && (
-            <div className="mb-8 flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-xs sm:text-sm text-red-500 dark:text-red-400">
-              <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold">Booking Date Conflict:</span> One or more items in your cart are already booked for the selected rental duration. Please adjust dates or remove them to proceed to checkout.
-              </div>
-            </div>
-          )}
-
           {/* Main Grid: Left Items + Right Summary */}
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-neutral-200 dark:border-white/10 bg-white dark:bg-[#0D151D] p-12 sm:p-16 text-center shadow-sm">
@@ -126,12 +107,7 @@ export default function Cart() {
                 {cartItems.map((item) => (
                   <div
                     key={item.id}
-                    className={cn(
-                      "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border bg-white dark:bg-[#0D151D] shadow-sm transition-all",
-                      item.is_available
-                        ? "border-neutral-200 dark:border-white/10"
-                        : "border-red-500/30 bg-red-500/[0.02] dark:bg-red-500/[0.03]",
-                    )}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#0D151D] shadow-sm transition-all"
                   >
                     <div className="flex items-center gap-4 min-w-0 flex-1">
                       {/* Thumbnail */}
@@ -150,44 +126,27 @@ export default function Cart() {
                           <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 dark:text-[#8D98A3]">
                             {item.category}
                           </span>
-                          {item.is_available ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-neutral-700 dark:text-neutral-300">
-                              <span className="h-1.5 w-1.5 rounded-full bg-neutral-600 dark:bg-neutral-300" />
-                              Available
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-500 dark:text-red-400">
-                              <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                              {item.conflict_reason || "Booked for dates"}
-                            </span>
-                          )}
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-neutral-700 dark:text-neutral-300">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            Ready for booking
+                          </span>
                         </div>
 
                         <h3 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white truncate mt-0.5">
                           {item.title}
                         </h3>
 
-                        {/* Dates Row */}
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300">
-                          <div className="flex items-center gap-1 font-mono text-[11px]">
-                            <Calendar className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
-                            <span>{item.start_date} → {item.end_date}</span>
-                          </div>
-                          <span className="rounded-md bg-neutral-100 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-bold">
-                            {item.days} {item.days === 1 ? "day rental" : "days rental"}
-                          </span>
-                        </div>
+                        <p className="text-xs text-neutral-500 dark:text-[#8D98A3] mt-1">
+                          Location: {item.city || "Available locally"}
+                        </p>
                       </div>
                     </div>
 
                     {/* Right Side Price and Delete */}
                     <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-100 dark:border-white/5 gap-2">
                       <div className="text-left sm:text-right">
-                        <div className="text-base sm:text-lg font-black font-mono">
-                          ₹{item.total_price.toLocaleString("en-IN")}
-                        </div>
-                        <div className="text-[11px] text-neutral-500 dark:text-[#8D98A3]">
-                          ₹{(item.daily_price || item.price).toLocaleString("en-IN")}/day
+                        <div className="text-base sm:text-lg font-black font-mono text-neutral-950 dark:text-white">
+                          ₹{(item.daily_price || item.price).toLocaleString("en-IN")}<span className="text-xs font-normal text-neutral-500">/day</span>
                         </div>
                       </div>
 
@@ -214,37 +173,29 @@ export default function Cart() {
 
                   <div className="mt-4 space-y-2.5 text-xs">
                     <div className="flex justify-between text-neutral-600 dark:text-[#AAB3BC]">
-                      <span>Items Subtotal</span>
-                      <span className="font-mono font-semibold">₹{subtotal.toLocaleString("en-IN")}</span>
-                    </div>
-                    <div className="flex justify-between text-neutral-600 dark:text-[#AAB3BC]">
-                      <span>Estimated Tax (8%)</span>
-                      <span className="font-mono font-semibold">₹{tax.toLocaleString("en-IN")}</span>
+                      <span>Daily Rates Base</span>
+                      <span className="font-mono font-semibold">₹{subtotal.toLocaleString("en-IN")}/day</span>
                     </div>
                     <div className="flex justify-between text-neutral-600 dark:text-[#AAB3BC]">
                       <span>Deposit / Security</span>
                       <span className="font-semibold text-neutral-800 dark:text-neutral-200">Covered by Payent Shield</span>
                     </div>
 
-                    <div className="pt-4 border-t border-neutral-200 dark:border-white/10 flex justify-between items-baseline text-sm sm:text-base font-black text-neutral-950 dark:text-white">
-                      <span>Total</span>
-                      <span className="font-mono text-lg sm:text-xl">₹{total.toLocaleString("en-IN")}</span>
+                    <div className="p-3 bg-black/5 dark:bg-white/5 rounded-xl text-[11px] text-neutral-600 dark:text-[#AAB3BC] flex items-start gap-2 mt-3">
+                      <Calendar className="h-4 w-4 shrink-0 mt-0.5 text-neutral-500" />
+                      <span>
+                        Rental dates, total rental days, and courier/handover options are selected during checkout.
+                      </span>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    disabled={hasUnavailableItems}
                     onClick={handleCheckout}
                     id="cart-page-checkout-btn"
-                    className={cn(
-                      "mt-6 w-full flex items-center justify-center gap-2 rounded-full py-3 px-5 text-xs font-bold shadow-md transition-all",
-                      hasUnavailableItems
-                        ? "bg-neutral-300 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed"
-                        : "bg-[#161616] text-[#F2F0EA] hover:bg-[#262626] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white cursor-pointer",
-                    )}
+                    className="mt-6 w-full flex items-center justify-center gap-2 rounded-full py-3 px-5 text-xs font-bold shadow-md transition-all bg-[#161616] text-[#F2F0EA] hover:bg-[#262626] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white cursor-pointer"
                   >
-                    <span>Proceed to Checkout</span>
+                    <span>Proceed to Select Dates</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
 

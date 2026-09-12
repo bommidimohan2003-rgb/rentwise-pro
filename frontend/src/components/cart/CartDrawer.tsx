@@ -4,16 +4,11 @@ import {
   X,
   ShoppingBag,
   Trash2,
-  Calendar,
   ArrowRight,
   ShieldCheck,
-  AlertCircle,
-  Clock,
-  Sparkles,
 } from "lucide-react";
-import { useNavigate, Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useCart } from "@/hooks/useCart";
-import { cn } from "@/lib/utils";
 import cameraFallback from "@/assets/images/camera.png";
 
 export function CartDrawer() {
@@ -23,8 +18,6 @@ export function CartDrawer() {
     cartItems,
     cartCount,
     subtotal,
-    tax,
-    total,
     removeFromCart,
     clearCart,
   } = useCart();
@@ -97,7 +90,7 @@ export function CartDrawer() {
                   <button
                     type="button"
                     onClick={() => clearCart()}
-                    className="text-xs text-neutral-500 hover:text-red-500 dark:text-neutral-400 dark:hover:text-red-400 px-2 py-1 rounded transition-colors"
+                    className="text-xs text-neutral-500 hover:text-red-500 dark:text-neutral-400 dark:hover:text-red-400 px-2 py-1 rounded transition-colors cursor-pointer"
                   >
                     Clear
                   </button>
@@ -107,22 +100,12 @@ export function CartDrawer() {
                   onClick={closeCart}
                   aria-label="Close cart"
                   id="close-cart-drawer-btn"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white transition-colors cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
-
-            {/* Unavailable Items Alert Banner */}
-            {hasUnavailableItems && (
-              <div className="mx-4 mt-3 flex items-start gap-2.5 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-500 dark:text-red-400">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>
-                  Some items in your cart are already booked for the selected dates. Please adjust dates or remove them to proceed.
-                </span>
-              </div>
-            )}
 
             {/* Cart Items Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 space-y-4">
@@ -143,7 +126,7 @@ export function CartDrawer() {
                       closeCart();
                       navigate({ to: "/browse" });
                     }}
-                    className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-[#161616] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] px-5 py-2 text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity"
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-[#161616] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] px-5 py-2 text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity cursor-pointer"
                   >
                     <span>Explore Gear</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -153,12 +136,7 @@ export function CartDrawer() {
                 cartItems.map((item) => (
                   <div
                     key={item.id}
-                    className={cn(
-                      "flex flex-col gap-3 rounded-xl border p-3.5 transition-all bg-neutral-50/50 dark:bg-white/[0.03]",
-                      item.is_available
-                        ? "border-neutral-200 dark:border-white/10"
-                        : "border-red-500/30 bg-red-500/[0.02] dark:bg-red-500/[0.04]",
-                    )}
+                    className="flex flex-col gap-3 rounded-xl border border-neutral-200 dark:border-white/10 p-3.5 transition-all bg-neutral-50/50 dark:bg-white/[0.03]"
                   >
                     <div className="flex gap-3">
                       {/* Product Thumbnail */}
@@ -181,7 +159,7 @@ export function CartDrawer() {
                             type="button"
                             onClick={() => removeFromCart(item.id)}
                             aria-label={`Remove ${item.title} from cart`}
-                            className="text-neutral-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400 p-0.5 rounded transition-colors shrink-0"
+                            className="text-neutral-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400 p-0.5 rounded transition-colors shrink-0 cursor-pointer"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -190,38 +168,19 @@ export function CartDrawer() {
                         <p className="text-[11px] text-neutral-500 dark:text-neutral-400 capitalize mt-0.5">
                           {item.category} • {item.city || "Available locally"}
                         </p>
-
-                        {/* Date Range & Duration */}
-                        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-neutral-600 dark:text-neutral-300">
-                          <Calendar className="h-3 w-3 text-neutral-400 shrink-0" />
-                          <span className="font-mono">{item.start_date} → {item.end_date}</span>
-                          <span className="rounded bg-neutral-200/70 dark:bg-white/10 px-1 py-0.2 font-medium">
-                            {item.days} {item.days === 1 ? "day" : "days"}
-                          </span>
-                        </div>
                       </div>
                     </div>
 
-                    {/* Bottom row: Availability indicator & price */}
+                    {/* Bottom row: Availability indicator & daily rate */}
                     <div className="flex items-center justify-between pt-2 border-t border-neutral-200/60 dark:border-white/5">
-                      {item.is_available ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-neutral-700 dark:text-neutral-300">
-                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-600 dark:bg-neutral-300" />
-                          Available for dates
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 dark:text-red-400">
-                          <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                          {item.conflict_reason || "Conflict for dates"}
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-neutral-700 dark:text-neutral-300">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Available for booking
+                      </span>
 
                       <div className="text-right">
-                        <div className="text-xs font-bold font-mono">
-                          ₹{item.total_price.toLocaleString("en-IN")}
-                        </div>
-                        <div className="text-[9px] text-neutral-500 dark:text-neutral-400">
-                          ₹{(item.daily_price || item.price).toLocaleString("en-IN")}/day
+                        <div className="text-xs font-bold font-mono text-neutral-950 dark:text-white">
+                          ₹{(item.daily_price || item.price).toLocaleString("en-IN")}<span className="text-[10px] font-normal text-neutral-500">/day</span>
                         </div>
                       </div>
                     </div>
@@ -233,36 +192,32 @@ export function CartDrawer() {
             {/* Drawer Footer & Actions */}
             {cartItems.length > 0 && (
               <div className="border-t border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-[#070B10] p-5 sm:p-6 space-y-3">
+                {/* Note on checkout dates */}
+                <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400 bg-black/5 dark:bg-white/5 rounded-lg p-2.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-neutral-700 dark:text-neutral-300 shrink-0" />
+                  <span>Rental dates, duration, and handover options are chosen during checkout.</span>
+                </div>
+
                 {/* Summary Rows */}
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                    <span>Subtotal</span>
-                    <span className="font-mono">₹{subtotal.toLocaleString("en-IN")}</span>
-                  </div>
-                  <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                    <span>Estimated Tax (8%)</span>
-                    <span className="font-mono">₹{tax.toLocaleString("en-IN")}</span>
+                    <span>Daily Rates Subtotal</span>
+                    <span className="font-mono">₹{subtotal.toLocaleString("en-IN")}/day</span>
                   </div>
                   <div className="flex justify-between pt-1.5 border-t border-neutral-200 dark:border-white/10 text-sm font-bold text-neutral-900 dark:text-white">
-                    <span>Total Rental</span>
-                    <span className="font-mono">₹{total.toLocaleString("en-IN")}</span>
+                    <span>Total Daily Base</span>
+                    <span className="font-mono">₹{subtotal.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 
                 {/* Checkout CTA */}
                 <button
                   type="button"
-                  disabled={hasUnavailableItems}
                   onClick={handleCheckout}
                   id="cart-drawer-checkout-btn"
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 rounded-full py-2.5 px-4 text-xs font-bold shadow-md transition-all",
-                    hasUnavailableItems
-                      ? "bg-neutral-300 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed"
-                      : "bg-[#161616] text-[#F2F0EA] hover:bg-[#262626] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white cursor-pointer",
-                  )}
+                  className="w-full flex items-center justify-center gap-2 rounded-full py-2.5 px-4 text-xs font-bold shadow-md transition-all bg-[#161616] text-[#F2F0EA] hover:bg-[#262626] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white cursor-pointer"
                 >
-                  <span>Proceed to Checkout</span>
+                  <span>Select Dates & Checkout</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
 

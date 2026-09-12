@@ -7,13 +7,21 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (ready && !user) {
-      const currentPath =
-        typeof window !== "undefined" ? window.location.pathname : "";
-      if (currentPath && currentPath !== "/login" && currentPath !== "/") {
-        window.location.href = `/login?redirect=${encodeURIComponent(currentPath + (window.location.search || ""))}`;
-      } else {
-        navigate({ to: "/login" });
+    if (ready) {
+      if (!user) {
+        const currentPath =
+          typeof window !== "undefined" ? window.location.pathname : "";
+        if (currentPath && currentPath !== "/login" && currentPath !== "/") {
+          window.location.href = `/login?redirect=${encodeURIComponent(currentPath + (window.location.search || ""))}`;
+        } else {
+          navigate({ to: "/login" });
+        }
+      } else if (user.status === "pending" && user.role !== "admin") {
+        const currentPath =
+          typeof window !== "undefined" ? window.location.pathname : "";
+        if (currentPath !== "/account-pending" && !currentPath.startsWith("/profile")) {
+          navigate({ to: "/account-pending" });
+        }
       }
     }
   }, [ready, user, navigate]);

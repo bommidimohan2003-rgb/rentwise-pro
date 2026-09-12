@@ -25,8 +25,8 @@ interface CartContextType {
   toggleCart: () => void;
   addToCart: (
     productId: string,
-    startDate: string,
-    endDate: string,
+    startDate?: string,
+    endDate?: string,
   ) => Promise<boolean>;
   removeFromCart: (itemId: string) => Promise<boolean>;
   clearCart: () => Promise<boolean>;
@@ -74,8 +74,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       endDate,
     }: {
       productId: string;
-      startDate: string;
-      endDate: string;
+      startDate?: string;
+      endDate?: string;
     }) => {
       return await api.addToCart(productId, startDate, endDate);
     },
@@ -87,7 +87,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     onError: (err: unknown) => {
       const e = err as { message?: string };
       toast.error(
-        e.message || "Could not add to cart. Product may be booked for selected dates.",
+        e.message || "Could not add to cart.",
       );
     },
   });
@@ -119,7 +119,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   const addToCart = useCallback(
-    async (productId: string, startDate: string, endDate: string) => {
+    async (productId: string, startDate?: string, endDate?: string) => {
       try {
         await addMutation.mutateAsync({ productId, startDate, endDate });
         return true;
