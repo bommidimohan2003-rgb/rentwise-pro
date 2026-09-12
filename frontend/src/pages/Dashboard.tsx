@@ -1,7 +1,25 @@
-import { useNavigate } from "@tanstack/react-router";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Heart, Package, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useNavigate, Link } from "@tanstack/react-router";
+import { motion } from "framer-motion";
+import {
+  Bell,
+  Heart,
+  Package,
+  TrendingUp,
+  ArrowRight,
+  ShieldCheck,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  Camera,
+  MessageSquare,
+  User,
+  PlusCircle,
+  AlertCircle,
+  XCircle,
+  Store,
+  Compass,
+} from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +28,7 @@ import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { Order, Product, Notification } from "@/types";
 import { Button } from "@/components/common/Button";
+import { PayentLogoMark } from "@/components/common/LogoIcon";
 
 export default function Dashboard() {
   const { user, ready } = useAuth();
@@ -20,9 +39,8 @@ export default function Dashboard() {
   const [myListings, setMyListings] = useState<Product[]>([]);
   const [alertsList, setAlertsList] = useState<Notification[]>([]);
   const [publicProducts, setPublicProducts] = useState<Product[]>([]);
-  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(
-    null,
-  );
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
 
@@ -31,31 +49,37 @@ export default function Dashboard() {
   }, [ready, user, navigate]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setLoadingOrders(false);
+      return;
+    }
+
+    setLoadingOrders(true);
     api
       .getOrders(token)
-      .then(setOrders)
-      .catch((err) => console.error("Failed to load orders:", err));
+      .then((data) => setOrders(Array.isArray(data) ? data : []))
+      .catch((err) => console.warn("Failed to load orders:", err))
+      .finally(() => setLoadingOrders(false));
 
     api
       .getCustomProducts(token)
-      .then(setMyListings)
-      .catch((err) => console.error("Failed to load listings:", err));
+      .then((data) => setMyListings(Array.isArray(data) ? data : []))
+      .catch((err) => console.warn("Failed to load listings:", err));
 
     api
       .getNotifications(token)
-      .then(setAlertsList)
-      .catch((err) => console.error("Failed to load notifications:", err));
+      .then((data) => setAlertsList(Array.isArray(data) ? data : []))
+      .catch((err) => console.warn("Failed to load notifications:", err));
 
-    // Load public catalog for wishlist preview
     api
       .getPublicProducts()
-      .then((items) => setPublicProducts(items ?? []))
+      .then((items) => setPublicProducts(Array.isArray(items) ? items : []))
       .catch(() => {});
   }, [token]);
 
   const handleCancelOrder = (orderId: string) => {
     if (!token) return;
+    setCancellingOrderId(orderId);
     api
       .cancelOrder(token, orderId)
       .then(() => {
@@ -66,270 +90,466 @@ export default function Dashboard() {
         );
         toast.success("Order cancelled successfully!");
       })
-      .catch((err) => toast.error(err.message || "Failed to cancel order."));
+      .catch((err) => toast.error(err.message || "Failed to cancel order."))
+      .finally(() => setCancellingOrderId(null));
   };
 
-  const wishlistItems = publicProducts
-    .filter((p: Product) => ids.includes(p.id))
-    .slice(0, 3);
+  // Real Real-time Computed Values (Strictly ZERO fake numbers)
+  const activeRentalsCount = useMemo(
+    () => orders.filter((o) => o.status === "active" || o.status === "pending").length,
+    [orders],
+  );
 
-  // Compute real-time dashboard details dynamically
-  const activeRentalsCount = orders.filter(
-    (o) => o.status === "active" || o.status === "pending",
-  ).length;
-  const monthlyTotal = orders
-    .filter((o) => o.status !== "cancelled")
-    .reduce((sum, o) => sum + o.total, 0);
-  const savedItemsCount = ids.length;
-  const alertsCount = alertsList.length || 3;
+  const completedRentalsCount = useMemo(
+    () => orders.filter((o) => o.status === "completed" || o.status === "delivered").length,
+    [orders],
+  );
 
-  const stats = [
-    {
-      icon: Package,
-      label: "Active rentals",
-      value: String(activeRentalsCount),
-    },
-    {
-      icon: TrendingUp,
-      label: "This month",
-      value: `₹${monthlyTotal.toLocaleString("en-IN")}`,
-    },
-    {
-      icon: Heart,
-      label: "Saved items",
-      value: String(savedItemsCount),
-    },
-    {
-      icon: Bell,
-      label: "Alerts",
-      value: String(alertsCount),
-    },
-  ];
+  const totalSpent = useMemo(
+    () =>
+      orders
+        .filter((o) => o.status !== "cancelled")
+        .reduce((sum, o) => sum + (Number(o.total) || 0), 0),
+    [orders],
+  );
+
+  const unreadAlertsCount = useMemo(
+    () => alertsList.filter((n) => !n.read).length,
+    [alertsList],
+  );
+
+  const wishlistItems = useMemo(
+    () => publicProducts.filter((p) => ids.includes(p.id)).slice(0, 3),
+    [publicProducts, ids],
+  );
+
+  // Profile Completeness Engine
+  const profileStatus = useMemo(() => {
+    if (!user) return { percentage: 0, missing: [] };
+    const checks = [
+      { key: "fullName", label: "Full Name", valid: Boolean(user.fullName && user.fullName.length > 2) },
+      { key: "phone", label: "Phone Number", valid: Boolean(user.phone && user.phone.length >= 10) },
+      { key: "city", label: "City & Region", valid: Boolean(user.city) },
+      { key: "address", label: "Delivery Address", valid: Boolean(user.address) },
+      { key: "avatar", label: "Profile Photo", valid: Boolean(user.avatar || user.profilePhotoUrl) },
+    ];
+    const completed = checks.filter((c) => c.valid).length;
+    const percentage = Math.round((completed / checks.length) * 100);
+    const missing = checks.filter((c) => !c.valid).map((c) => c.label);
+    return { percentage, missing };
+  }, [user]);
+
+  const isLender = user?.role === "lender" || user?.role === "admin" || myListings.length > 0;
 
   return (
     <DashboardLayout>
-      <div>
-        <h1 className="text-3xl md:text-4xl font-bold">
-          Welcome back
-          {user
-            ? `, ${(user.fullName || user.email || "User").split(" ")[0]}`
-            : ""}
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Here's what's happening with your rentals.
-        </p>
-
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats.map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="card-premium p-5"
-            >
-              <div className="h-10 w-10 rounded-xl grid place-items-center bg-secondary border border-border text-foreground mb-3">
-                <s.icon className="h-5 w-5" />
+      <div className="space-y-8 max-w-6xl">
+        {/* 1. WELCOME & COMMAND HEADER */}
+        <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0D151D] p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-neutral-900 text-white flex items-center justify-center font-bold text-xl sm:text-2xl shadow-md border border-white/10 shrink-0">
+                {user?.fullName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "P"}
               </div>
-              <div className="text-2xl font-bold">{s.value}</div>
-              <div className="text-xs text-muted-foreground">{s.label}</div>
-            </motion.div>
-          ))}
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl sm:text-3xl font-black text-neutral-950 dark:text-white tracking-tight">
+                    Welcome back, {user?.fullName?.split(" ")[0] || "Creator"}
+                  </h1>
+                  {user?.verified || user?.status === "approved" || user?.status === "active" ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      <ShieldCheck className="w-3 h-3" />
+                      Verified Renter
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      <Clock className="w-3 h-3" />
+                      Review Pending
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-[#AAB3BC]">
+                  Your creator command center for equipment bookings, saved gear, and project rentals.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Command Shortcuts */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Link
+                to="/browse"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] text-xs font-bold transition-all shadow-sm"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Browse Gear</span>
+              </Link>
+              <Link
+                to="/orders"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-black/10 dark:border-white/15 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 text-xs font-bold transition-all"
+              >
+                <Package className="w-3.5 h-3.5" />
+                <span>My Bookings</span>
+              </Link>
+              <Link
+                to="/become-lender"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/5 text-xs font-bold transition-all"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>List Gear</span>
+              </Link>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-10 grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 card-premium p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Recent rentals</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate({ to: "/orders" })}
-              >
-                View all
-              </Button>
+        {/* 2. REAL METRICS KPI GRID */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-5 rounded-2xl bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/10 shadow-sm"
+          >
+            <div className="h-10 w-10 rounded-xl grid place-items-center bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-3">
+              <Package className="h-5 w-5" />
             </div>
-            <div className="mt-4 space-y-3">
-              {orders.slice(0, 5).map((o) => (
-                <div
-                  key={o.id}
-                  className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary transition-colors"
-                >
-                  <img
-                    src={o.productImage || o.product_image || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"}
-                    alt=""
-                    className="h-14 w-14 rounded-lg object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{o.productTitle || o.product_title || "Gear Rental"}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {o.startDate || o.start_date || "Today"} – {o.endDate || o.end_date || "Tomorrow"}
-                    </div>
-                  </div>
-                  <div className="text-right flex flex-col items-end gap-1.5">
-                    <div className="font-semibold">₹{o.total}</div>
-                    <div className="flex items-center gap-2">
-                      {(o.status === "active" || o.status === "pending") && (
-                        <button
-                          onClick={() => setCancellingOrderId(o.id)}
-                          className="text-xs px-2 py-0.5 rounded bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all font-medium"
-                        >
-                          Cancel
-                        </button>
-                      )}
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${
-                          o.status === "active"
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                            : o.status === "pending"
-                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                              : o.status === "cancelled"
-                                ? "bg-destructive/10 text-destructive border-destructive/20"
-                                : "bg-secondary text-muted-foreground border-border"
-                        }`}
-                      >
-                        {o.status}
-                      </span>
-                    </div>
-                  </div>
+            <div className="text-2xl font-black text-neutral-950 dark:text-white font-mono">
+              {activeRentalsCount}
+            </div>
+            <div className="text-xs font-medium text-neutral-500 dark:text-[#8D98A3] mt-0.5">
+              Active Rentals
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="p-5 rounded-2xl bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/10 shadow-sm"
+          >
+            <div className="h-10 w-10 rounded-xl grid place-items-center bg-neutral-100 dark:bg-white/5 text-neutral-800 dark:text-neutral-200 mb-3">
+              <TrendingUp className="h-5 w-5" />
+            </div>
+            <div className="text-2xl font-black text-neutral-950 dark:text-white font-mono">
+              ₹{totalSpent.toLocaleString("en-IN")}
+            </div>
+            <div className="text-xs font-medium text-neutral-500 dark:text-[#8D98A3] mt-0.5">
+              Total Spent
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="p-5 rounded-2xl bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/10 shadow-sm"
+          >
+            <div className="h-10 w-10 rounded-xl grid place-items-center bg-rose-500/10 text-rose-600 dark:text-rose-400 mb-3">
+              <Heart className="h-5 w-5" />
+            </div>
+            <div className="text-2xl font-black text-neutral-950 dark:text-white font-mono">
+              {ids.length}
+            </div>
+            <div className="text-xs font-medium text-neutral-500 dark:text-[#8D98A3] mt-0.5">
+              Saved Gear Items
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="p-5 rounded-2xl bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/10 shadow-sm"
+          >
+            <div className="h-10 w-10 rounded-xl grid place-items-center bg-amber-500/10 text-amber-600 dark:text-amber-400 mb-3">
+              <Bell className="h-5 w-5" />
+            </div>
+            <div className="text-2xl font-black text-neutral-950 dark:text-white font-mono">
+              {alertsList.length}
+            </div>
+            <div className="text-xs font-medium text-neutral-500 dark:text-[#8D98A3] mt-0.5">
+              System Notifications
+            </div>
+          </motion.div>
+        </div>
+
+        {/* 3. MAIN DASHBOARD CONTENT GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT 8 COLS: ACTIVE RENTALS & RECENT ORDERS */}
+          <div className="lg:col-span-8 space-y-6">
+            <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0D151D] p-6 shadow-sm">
+              <div className="flex items-center justify-between pb-4 border-b border-black/5 dark:border-white/5">
+                <div>
+                  <h2 className="text-base font-bold text-neutral-950 dark:text-white">
+                    Rental Bookings ({orders.length})
+                  </h2>
+                  <p className="text-xs text-neutral-500 dark:text-[#8D98A3] mt-0.5">
+                    Your active shoots, equipment handoffs, and order history
+                  </p>
                 </div>
-              ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate({ to: "/orders" })}
+                  className="text-xs font-bold"
+                >
+                  View all ({orders.length})
+                </Button>
+              </div>
+
+              {loadingOrders ? (
+                <div className="py-12 text-center text-xs text-neutral-400">
+                  Loading your rental bookings...
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="py-12 text-center space-y-3">
+                  <div className="h-12 w-12 rounded-2xl bg-neutral-100 dark:bg-white/5 mx-auto grid place-items-center text-neutral-400">
+                    <Camera className="w-6 h-6" />
+                  </div>
+                  <div className="font-bold text-neutral-900 dark:text-white text-sm">
+                    No equipment rentals yet
+                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-[#8D98A3] max-w-sm mx-auto">
+                    Explore cinema cameras, drones, and studio workstations for your upcoming production shoot.
+                  </p>
+                  <Link
+                    to="/browse"
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#161616] text-white dark:bg-[#F2F0EA] dark:text-[#161616] text-xs font-bold shadow-sm mt-2"
+                  >
+                    <span>Browse Equipment</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {orders.slice(0, 5).map((o) => (
+                    <div
+                      key={o.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-black/5 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02] hover:bg-neutral-100/60 dark:hover:bg-white/[0.04] transition-colors"
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <img
+                          src={
+                            o.productImage ||
+                            o.product_image ||
+                            "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
+                          }
+                          alt=""
+                          className="h-14 w-14 rounded-xl object-cover border border-black/10 dark:border-white/10 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm text-neutral-950 dark:text-white truncate">
+                            {o.productTitle || o.product_title || "Cinema Gear Rental"}
+                          </div>
+                          <div className="text-xs text-neutral-500 dark:text-[#8D98A3] mt-0.5">
+                            {o.startDate || o.start_date || "Today"} → {o.endDate || o.end_date || "Upcoming"}
+                          </div>
+                          <div className="text-[11px] font-mono text-neutral-400 mt-0.5">
+                            ID: {o.id.slice(0, 8)}...
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
+                        <div className="font-black text-sm text-neutral-900 dark:text-white font-mono">
+                          ₹{Number(o.total || 0).toLocaleString("en-IN")}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {(o.status === "active" || o.status === "pending") && (
+                            <button
+                              type="button"
+                              onClick={() => handleCancelOrder(o.id)}
+                              disabled={cancellingOrderId === o.id}
+                              className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 cursor-pointer"
+                            >
+                              {cancellingOrderId === o.id ? "Cancelling..." : "Cancel"}
+                            </button>
+                          )}
+                          <span
+                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                              o.status === "active"
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                : o.status === "pending"
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                  : o.status === "cancelled"
+                                    ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                                    : "bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-white/10"
+                            }`}
+                          >
+                            {o.status.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="space-y-6">
-            {/* My Listings Card */}
-            <div className="card-premium p-6">
+          {/* RIGHT 4 COLS: PROFILE COMPLETION + LENDER STUDIO + WISHLIST */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Profile Completeness Card */}
+            <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0D151D] p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">
-                  My Listings ({myListings.length})
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate({ to: "/become-lender" })}
-                >
-                  Add gear
-                </Button>
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-emerald-500" />
+                  <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
+                    Profile Completeness
+                  </h3>
+                </div>
+                <span className="text-xs font-mono font-black text-neutral-900 dark:text-white">
+                  {profileStatus.percentage}%
+                </span>
               </div>
-              <div className="mt-4 space-y-3">
-                {myListings.length ? (
-                  myListings.slice(0, 3).map((p) => (
-                    <div key={p.id} className="flex items-center gap-3">
-                      <img
-                        src={p.image}
-                        alt=""
-                        className="h-12 w-12 rounded-lg object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">
-                          {p.title}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          ₹{p.price}/day • {p.category}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No items listed for rent yet.
+
+              {/* Progress Bar */}
+              <div className="w-full h-2 rounded-full bg-neutral-100 dark:bg-white/10 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${profileStatus.percentage}%` }}
+                />
+              </div>
+
+              {profileStatus.missing.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                    Complete remaining items for faster booking verification:
                   </p>
-                )}
-              </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {profileStatus.missing.map((item) => (
+                      <span
+                        key={item}
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                      >
+                        + {item}
+                      </span>
+                    ))}
+                  </div>
+                  <Link
+                    to="/profile"
+                    className="block text-center mt-3 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline pt-2 border-t border-black/5 dark:border-white/5"
+                  >
+                    Complete Profile Now →
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold pt-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Profile 100% verified & complete</span>
+                </div>
+              )}
             </div>
 
-            {/* Wishlist Card */}
-            <div className="card-premium p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Wishlist</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate({ to: "/wishlist" })}
+            {/* Role-Aware Lender Widget */}
+            {isLender ? (
+              <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0D151D] p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
+                  <div className="flex items-center gap-2">
+                    <Store className="w-4 h-4 text-emerald-500" />
+                    <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
+                      Lender Inventory
+                    </h3>
+                  </div>
+                  <Link
+                    to="/lender-portal"
+                    className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    Portal →
+                  </Link>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-neutral-500">Live Gear Listings:</span>
+                    <span className="font-bold text-neutral-950 dark:text-white font-mono">
+                      {myListings.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-neutral-500">Verification Status:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      Approved Lender
+                    </span>
+                  </div>
+                </div>
+
+                <Link
+                  to="/become-lender"
+                  className="w-full h-9 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-900 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  See all
-                </Button>
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>List New Equipment</span>
+                </Link>
               </div>
-              <div className="mt-4 space-y-3">
-                {wishlistItems.length ? (
-                  wishlistItems.map((p: Product) => (
-                    <div key={p.id} className="flex items-center gap-3">
+            ) : (
+              <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.03] p-6 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Monetize Your Equipment</span>
+                </div>
+                <p className="text-xs text-neutral-600 dark:text-[#AAB3BC] leading-relaxed">
+                  Have cinema cameras, lenses, or drones idle between shoots? List them on PAYENT and earn rental revenue.
+                </p>
+                <Link
+                  to="/become-lender"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-900 dark:text-white hover:underline pt-1"
+                >
+                  <span>Become a Lender →</span>
+                </Link>
+              </div>
+            )}
+
+            {/* Wishlist Preview */}
+            <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0D151D] p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
+                <div className="flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-rose-500" />
+                  <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
+                    Saved Gear ({ids.length})
+                  </h3>
+                </div>
+                <Link
+                  to="/wishlist"
+                  className="text-xs font-bold text-neutral-600 dark:text-neutral-400 hover:underline"
+                >
+                  View all →
+                </Link>
+              </div>
+
+              {wishlistItems.length === 0 ? (
+                <p className="text-xs text-neutral-500 dark:text-[#8D98A3] py-2">
+                  No saved gear yet. Tap the heart on any product to save it for upcoming projects.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {wishlistItems.map((item) => (
+                    <Link
+                      key={item.id}
+                      to="/product/$id"
+                      params={{ id: item.id }}
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors group"
+                    >
                       <img
-                        src={p.image}
-                        alt=""
-                        className="h-12 w-12 rounded-lg object-cover"
+                        src={item.image}
+                        alt={item.title}
+                        className="h-10 w-10 rounded-lg object-cover border border-black/5 dark:border-white/5"
                       />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">
-                          {p.title}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-neutral-900 dark:text-white truncate group-hover:text-emerald-500 transition-colors">
+                          {item.title}
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          ₹{p.price}/day
+                        <div className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                          ₹{item.price}/day • {item.category}
                         </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No saved items yet.
-                  </p>
-                )}
-              </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-      <AnimatePresence>
-        {cancellingOrderId && (
-          <div className="fixed inset-0 z-50 grid place-items-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setCancellingOrderId(null)}
-              className="fixed inset-0 bg-background/85 backdrop-blur-md"
-            />
-            {/* Modal Container */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 350 }}
-              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-2xl backdrop-blur-xl z-10"
-            >
-              <div className="flex flex-col gap-2">
-                <h3 className="text-xl font-bold text-foreground">
-                  Cancel Gear Rental
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Are you sure you want to cancel this gear rental? Once
-                  cancelled, the reservation holds will be released back to the
-                  lender. This action cannot be undone.
-                </p>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => setCancellingOrderId(null)}
-                >
-                  Keep Rental
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    handleCancelOrder(cancellingOrderId);
-                    setCancellingOrderId(null);
-                  }}
-                >
-                  Confirm Cancellation
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </DashboardLayout>
   );
 }

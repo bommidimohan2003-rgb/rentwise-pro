@@ -64,7 +64,7 @@ export default function AccountPending() {
           }
           toast.success("Account Approved! Welcome to Payent.");
           setTimeout(() => {
-            navigate({ to: "/categories" });
+            navigate({ to: "/dashboard" });
           }, 1500);
         } else if (rawStatus === "rejected") {
           setStatus("rejected");
@@ -85,7 +85,7 @@ export default function AccountPending() {
   // If already approved on initial render, navigate immediately
   useEffect(() => {
     if (user?.status === "approved" || user?.status === "active" || user?.role === "admin") {
-      navigate({ to: "/categories" });
+      navigate({ to: "/dashboard" });
     }
   }, [user, navigate]);
 
@@ -181,36 +181,36 @@ export default function AccountPending() {
         {status === "approved" ? (
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-4">
             <CheckCircle2 className="w-4 h-4" />
-            <span>Account Approved</span>
+            <span>APPROVED</span>
           </div>
         ) : status === "rejected" ? (
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold mb-4">
             <AlertCircle className="w-4 h-4" />
-            <span>Verification Declined</span>
+            <span>REJECTED</span>
           </div>
         ) : (
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold mb-4">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span>Pending Admin Approval</span>
+            <span>PENDING APPROVAL</span>
           </div>
         )}
 
         {/* Headline */}
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white mb-3">
           {status === "approved"
-            ? "You're Verified & Approved!"
+            ? "Your account is approved!"
             : status === "rejected"
-              ? "Account Review Notice"
-              : "Your account is being reviewed"}
+              ? "Your account could not be approved."
+              : "Your account is being reviewed."}
         </h1>
 
         {/* Supporting Copy */}
         <p className="text-sm sm:text-base text-neutral-400 max-w-md mx-auto leading-relaxed mb-8">
           {status === "approved"
-            ? "Welcome to the PAYENT creator marketplace. Directing you to live gear..."
+            ? "Welcome to PAYENT. Entering your creator workspace..."
             : status === "rejected"
-              ? "We were unable to verify your account credentials. Please reach out to support for assistance."
-              : "Thanks for joining PAYENT. Our team is reviewing your account details and credentials to maintain high marketplace standards."}
+              ? "We were unable to approve your account at this time. Please contact PAYENT Support for further assistance."
+              : "Thanks for joining PAYENT. Your account details are being reviewed by our team."}
         </p>
 
         {/* Progress Step Strip */}
@@ -285,16 +285,8 @@ export default function AccountPending() {
           </button>
 
           <Link
-            to="/profile"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white font-semibold text-xs hover:bg-white/15 border border-white/10 transition-colors"
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>View Profile</span>
-          </Link>
-
-          <Link
             to="/contact"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-transparent text-neutral-400 font-semibold text-xs hover:text-white border border-white/10 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-transparent text-neutral-300 font-semibold text-xs hover:text-white border border-white/10 hover:border-white/20 transition-colors"
           >
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Contact Support</span>

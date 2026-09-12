@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Camera,
   Plane,
@@ -17,6 +17,7 @@ interface AppPreloaderProps {
 export function AppPreloader({ onComplete, forceShow = false }: AppPreloaderProps) {
   const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   const [stage, setStage] = useState<
     "enter" | "converge" | "compress" | "logo" | "wordmark" | "exit"
@@ -44,32 +45,38 @@ export function AppPreloader({ onComplete, forceShow = false }: AppPreloaderProp
       return;
     }
 
-    // Step 1: Quadrants enter (0.0s - 0.6s)
+    if (shouldReduceMotion) {
+      const t = setTimeout(() => {
+        setIsVisible(false);
+        try {
+          sessionStorage.setItem("payent:preloaded", "true");
+        } catch {}
+        if (onComplete) onComplete();
+      }, 400);
+      return () => clearTimeout(t);
+    }
+
+    // Step 1: Converge toward center (0.4s)
     const t1 = setTimeout(() => {
       setStage("converge");
-    }, 600);
+    }, 400);
 
-    // Step 2: Converge toward center (0.6s - 1.2s)
+    // Step 2: Compress into Green P logo (0.8s)
     const t2 = setTimeout(() => {
-      setStage("compress");
+      setStage("logo");
+    }, 850);
+
+    // Step 3: Reveal PAYENT wordmark & tagline (1.2s)
+    const t3 = setTimeout(() => {
+      setStage("wordmark");
     }, 1200);
 
-    // Step 3: Compress into Green P logo (1.2s - 1.7s)
-    const t3 = setTimeout(() => {
-      setStage("logo");
-    }, 1650);
-
-    // Step 4: Reveal PAYENT wordmark & tagline (1.7s - 2.3s)
+    // Step 4: Smooth exit fade (1.6s)
     const t4 = setTimeout(() => {
-      setStage("wordmark");
-    }, 2000);
-
-    // Step 5: Smooth exit fade (2.5s)
-    const t5 = setTimeout(() => {
       setStage("exit");
-    }, 2500);
+    }, 1550);
 
-    const t6 = setTimeout(() => {
+    const t5 = setTimeout(() => {
       setIsVisible(false);
       try {
         sessionStorage.setItem("payent:preloaded", "true");
@@ -77,7 +84,7 @@ export function AppPreloader({ onComplete, forceShow = false }: AppPreloaderProp
         /* ignore */
       }
       if (onComplete) onComplete();
-    }, 2900);
+    }, 1850);
 
     return () => {
       clearTimeout(t1);
@@ -85,9 +92,8 @@ export function AppPreloader({ onComplete, forceShow = false }: AppPreloaderProp
       clearTimeout(t3);
       clearTimeout(t4);
       clearTimeout(t5);
-      clearTimeout(t6);
     };
-  }, [isVisible, onComplete]);
+  }, [isVisible, shouldReduceMotion, onComplete]);
 
   if (!mounted || !isVisible) return null;
 

@@ -820,7 +820,16 @@ export const api = {
         if (!res.ok) {
           items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
         } else {
-          items = await res.json();
+          const json = await res.json();
+          if (Array.isArray(json)) {
+            items = json;
+          } else if (json && Array.isArray(json.data)) {
+            items = json.data;
+          } else if (json && Array.isArray(json.products)) {
+            items = json.products;
+          } else {
+            items = [];
+          }
         }
       } catch {
         items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
@@ -828,7 +837,12 @@ export const api = {
     }
     if (Array.isArray(items)) {
       items.forEach((p) => {
-        if (p && p.id) _productCache.set(p.id, p);
+        if (p && p.id) {
+          if (!p.image || p.image.startsWith("/assets/camera-") || p.image.includes("404")) {
+            p.image = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80";
+          }
+          _productCache.set(p.id, p);
+        }
       });
     }
     return items;

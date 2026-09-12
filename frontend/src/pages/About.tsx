@@ -14,9 +14,12 @@ import {
   MessageSquare,
   Clock,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { api } from "@/utils/api";
+import { PayentLogoMark } from "@/components/common/LogoIcon";
+import heroFilmmakerImg from "@/assets/images/hero_filmmaker_rig.jpg";
 
 interface PublicStats {
   activeListings: number;
@@ -207,63 +210,63 @@ export default function About() {
               </div>
             </div>
 
-            {/* Right: Rich Functional Creator Ecosystem Panel */}
+            {/* Right: Editorial Creator & Gear Composition */}
             <div className="lg:col-span-5">
-              <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0D151D]/90 backdrop-blur-xl p-6 shadow-xl space-y-5">
-                {/* Panel Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-black/5 dark:border-white/5">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
-                        Creator Ecosystem
-                      </h3>
-                    </div>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
-                      Flagship production equipment available for rent
-                    </p>
+              <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0D151D]/90 backdrop-blur-xl p-5 sm:p-6 shadow-2xl space-y-5">
+                {/* Cinematic Visual Banner with Overlay */}
+                <div className="relative h-44 sm:h-48 rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 group">
+                  <img
+                    src={heroFilmmakerImg}
+                    alt="Creators filming on set"
+                    className="w-full h-full object-cover object-center filter contrast-110 brightness-95 group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                  
+                  {/* Floating Brand Badge */}
+                  <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white shadow-lg">
+                    <PayentLogoMark className="w-4 h-4" />
+                    <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-400">
+                      CREATOR HUB
+                    </span>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-                    LIVE
-                  </span>
+
+                  {/* Editorial Tagline Overlay */}
+                  <div className="absolute bottom-3 inset-x-3 flex items-center justify-between text-white">
+                    <div>
+                      <div className="text-xs font-black tracking-wide uppercase text-white drop-shadow-md">
+                        Real Gear • Real Creators
+                      </div>
+                      <div className="text-[10px] text-neutral-300 font-medium">
+                        Verified peer-to-peer equipment exchange
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold backdrop-blur-md">
+                      ACTIVE
+                    </span>
+                  </div>
                 </div>
 
                 {/* Creator Categories Visual Strip */}
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
+                  <div className="flex flex-col items-center p-2 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
                     <Camera className="w-4 h-4 text-emerald-500 mb-1" />
                     <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Cameras</span>
                     <span className="text-[9px] text-neutral-400">Cinema & FX</span>
                   </div>
-                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
+                  <div className="flex flex-col items-center p-2 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
                     <Plane className="w-4 h-4 text-emerald-500 mb-1" />
                     <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Drones</span>
                     <span className="text-[9px] text-neutral-400">DJI & Aerial</span>
                   </div>
-                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
+                  <div className="flex flex-col items-center p-2 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
                     <Monitor className="w-4 h-4 text-emerald-500 mb-1" />
                     <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Laptops</span>
-                    <span className="text-[9px] text-neutral-400">M3 / Workstations</span>
-                  </div>
-                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
-                    <Mic2 className="w-4 h-4 text-emerald-500 mb-1" />
-                    <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Audio</span>
-                    <span className="text-[9px] text-neutral-400">Field & Lavs</span>
-                  </div>
-                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
-                    <Film className="w-4 h-4 text-emerald-500 mb-1" />
-                    <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Lenses</span>
-                    <span className="text-[9px] text-neutral-400">Anamorphic & Prime</span>
-                  </div>
-                  <div className="flex flex-col items-center p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5 text-center">
-                    <Cpu className="w-4 h-4 text-emerald-500 mb-1" />
-                    <span className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200">Lighting</span>
-                    <span className="text-[9px] text-neutral-400">LED & Modifiers</span>
+                    <span className="text-[9px] text-neutral-400">M3 Studio</span>
                   </div>
                 </div>
 
                 {/* Real Live Marketplace Metrics Grid */}
-                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-black/5 dark:border-white/5">
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-black/5 dark:border-white/5">
                   <div className="p-3 rounded-2xl bg-neutral-100/70 dark:bg-white/[0.04]">
                     <div className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-400">
                       Live Catalog
@@ -274,19 +277,19 @@ export default function About() {
                   </div>
                   <div className="p-3 rounded-2xl bg-neutral-100/70 dark:bg-white/[0.04]">
                     <div className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-400">
-                      Completed Rentals
+                      Verified Safety
                     </div>
                     <div className="text-lg font-black text-neutral-900 dark:text-white font-mono mt-0.5">
-                      {loadingStats ? "..." : `${stats?.totalRentals || 0}+ Shoots`}
+                      100% Escrow
                     </div>
                   </div>
                 </div>
 
                 {/* Footer preview */}
                 <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 pt-1">
-                  <span>Peer-to-peer verification</span>
+                  <span>Direct local & courier handoffs</span>
                   <Link to="/browse" className="font-semibold text-neutral-900 dark:text-white hover:underline flex items-center gap-1">
-                    Browse All Gear <ArrowRight className="w-3 h-3" />
+                    Explore Roster <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>

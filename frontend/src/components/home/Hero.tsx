@@ -202,7 +202,7 @@ export function Hero() {
             {selectedCity && selectedCity !== "All Cities" && (
               <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-black/5 dark:border-white/10 text-xs text-neutral-600 dark:text-neutral-300">
                 <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                <span className="truncate text-[11px] font-medium max-w-[120px]">{selectedCity}</span>
+                <span suppressHydrationWarning className="truncate text-[11px] font-medium max-w-[120px]">{selectedCity}</span>
               </div>
             )}
 

@@ -1049,6 +1049,7 @@ def mask_aadhaar(aadhaar: Optional[str]) -> str:
     return "XXXX-XXXX-9012"
 
 @app.get("/api/me")
+@app.get("/api/users/me")
 @app.get("/api/profile")
 def get_me(current_user_email: str = Depends(get_current_user_email)):
     user = get_user(current_user_email)

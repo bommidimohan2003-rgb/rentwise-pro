@@ -10,7 +10,7 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 import { HelpChatbot } from "../components/common/HelpChatbot";
 import { api } from "../utils/api";
-import { storage } from "../utils/storage";
+import { storage, STORAGE_KEYS } from "../utils/storage";
 import type { Product } from "../types";
 import { Toaster } from "@/components/ui/sonner";
 import { NoInternetState } from "@/components/states/NoInternetState";

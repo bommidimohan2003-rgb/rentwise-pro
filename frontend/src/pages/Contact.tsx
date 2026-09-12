@@ -166,22 +166,38 @@ export default function Contact() {
               </div>
             </div>
 
-            {/* Right: Direct Channels & Ticket Tracking Panel */}
+            {/* Right: Structured Support Categories & Direct Channels Panel */}
             <div className="lg:col-span-5">
-              <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0D151D]/90 backdrop-blur-xl p-6 shadow-xl space-y-4">
+              <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0D151D]/90 backdrop-blur-xl p-5 sm:p-6 shadow-2xl space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <h3 className="text-sm font-bold text-neutral-950 dark:text-white">
-                      Support Desk Active
+                      Creator Support Hub
                     </h3>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 font-semibold">
-                    Mon–Sat 9AM–9PM
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                    LIVE RESPONSE
                   </span>
                 </div>
 
-                <div className="space-y-2.5 text-xs">
+                {/* Support Disciplines */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                    <div className="text-[11px] font-bold text-neutral-900 dark:text-white">Rental Help</div>
+                    <div className="text-[9px] text-neutral-400 mt-0.5">Gear booking & handoff</div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                    <div className="text-[11px] font-bold text-neutral-900 dark:text-white">Listing Help</div>
+                    <div className="text-[9px] text-neutral-400 mt-0.5">Lender gear catalog</div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                    <div className="text-[11px] font-bold text-neutral-900 dark:text-white">Account & KYC</div>
+                    <div className="text-[9px] text-neutral-400 mt-0.5">Escrow & verification</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 text-xs pt-1">
                   <div className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
                     <div className="flex items-center gap-2.5">
                       <Mail className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -217,7 +233,7 @@ export default function Contact() {
 
                 {/* Ticket Portal Link */}
                 <div className="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
-                  <span className="text-neutral-500 dark:text-neutral-400 text-[11px]">Submitted inquiries?</span>
+                  <span className="text-neutral-500 dark:text-neutral-400 text-[11px]">Submitted rental inquiries?</span>
                   <Link
                     to="/messages"
                     className="font-bold text-neutral-900 dark:text-white hover:underline flex items-center gap-1"
