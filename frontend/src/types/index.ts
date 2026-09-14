@@ -195,3 +195,110 @@ export interface BatchAvailabilityResponse {
   availability: Record<string, ProductAvailabilityItem>;
 }
 
+export type DeliveryStatus =
+  | "PENDING"
+  | "PREPARING"
+  | "READY"
+  | "OUT_FOR_DELIVERY"
+  | "NEAR_DESTINATION"
+  | "DELIVERED"
+  | "CANCELLED";
+
+export interface DeliveryLocationUpdate {
+  id: string;
+  delivery_id: string;
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  heading?: number | null;
+  speed?: number | null;
+  recorded_at: string;
+}
+
+export interface Delivery {
+  id: string;
+  booking_id: string;
+  delivery_method: string;
+  status: DeliveryStatus;
+  pickup_address?: string | null;
+  delivery_address?: string | null;
+  delivery_latitude?: number | null;
+  delivery_longitude?: number | null;
+  current_latitude?: number | null;
+  current_longitude?: number | null;
+  eta_minutes?: number | null;
+  started_at?: string | null;
+  near_destination_at?: string | null;
+  delivered_at?: string | null;
+  customer_confirmed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeliveryTrackingData extends Delivery {
+  locations?: DeliveryLocationUpdate[];
+}
+
+export interface BookingDeliveryResponse {
+  success: boolean;
+  delivery: Delivery;
+  locations: DeliveryLocationUpdate[];
+  booking: {
+    id: string;
+    productId: string;
+    productTitle: string;
+    productImage: string;
+    startDate?: string;
+    endDate?: string;
+    status: string;
+    total: number;
+  };
+  isCustomer: boolean;
+  counterparty: {
+    name: string;
+    email: string;
+    phone?: string;
+    role: "customer" | "lender";
+  };
+}
+
+export interface RealtimeMessage {
+  id: string;
+  conversation_id: string;
+  sender_email: string;
+  sender_name: string;
+  message_type: "TEXT" | "IMAGE" | "SYSTEM";
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RealtimeConversation {
+  id: string;
+  bookingId?: string | null;
+  productId?: string | null;
+  productTitle?: string;
+  productImage?: string;
+  bookingStatus?: string;
+  deliveryId?: string | null;
+  deliveryStatus?: DeliveryStatus;
+  deliveryEtaMinutes?: number | null;
+  etaMinutes?: number | null;
+  isCustomer: boolean;
+  counterparty: {
+    name: string;
+    email: string;
+    avatar?: string;
+    phone?: string;
+    role: "customer" | "lender";
+  };
+  lastMessage?: string;
+  lastMessageAt?: string;
+  unread?: boolean;
+  unreadCount?: number;
+  messagesCount?: number;
+  messages?: RealtimeMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+

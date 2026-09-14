@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Package } from "lucide-react";
+import { Package, Truck, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/common/Button";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
@@ -70,7 +70,7 @@ export default function Orders() {
           <Package className="h-7 w-7 text-primary" /> Orders
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Track and manage all your gear rentals.
+          Track, manage, and coordinate all your gear rentals in real time.
         </p>
 
         <div className="mt-8">
@@ -92,31 +92,35 @@ export default function Orders() {
             />
           ) : (
             <div className="card-premium overflow-hidden">
-              <div className="hidden md:grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 border-b border-border text-xs uppercase text-muted-foreground">
+              <div className="hidden md:grid grid-cols-[70px_1fr_130px_100px_110px_180px] gap-4 p-4 border-b border-border text-xs uppercase text-muted-foreground font-semibold">
                 <div>Item</div>
                 <div>Details</div>
-                <div>Dates</div>
+                <div>Rental Dates</div>
                 <div>Total</div>
                 <div>Status</div>
+                <div className="text-right">Live Actions</div>
               </div>
               {orders.map((o) => (
                 <div
                   key={o.id}
-                  className="grid grid-cols-[80px_1fr_120px_120px_100px] gap-4 p-4 items-center border-b border-border last:border-0"
+                  className="grid grid-cols-1 md:grid-cols-[70px_1fr_130px_100px_110px_180px] gap-4 p-4 items-center border-b border-border last:border-0 hover:bg-secondary/15 transition-colors"
                 >
                   <img
                     src={o.productImage || o.product_image || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"}
                     alt=""
-                    className="h-14 w-14 rounded-lg object-cover"
+                    className="h-14 w-14 rounded-xl object-cover border border-border"
                   />
-                  <div className="font-medium">{o.productTitle || o.product_title || "Gear Rental"}</div>
-                  <div className="text-sm text-muted-foreground">
+                  <div>
+                    <div className="font-semibold text-foreground leading-snug">{o.productTitle || o.product_title || "Gear Rental"}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Booking #{o.id}</div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
                     {o.startDate || o.start_date || "Today"} – {o.endDate || o.end_date || "Tomorrow"}
                   </div>
-                  <div className="font-semibold">₹{o.total}</div>
+                  <div className="font-bold text-foreground">₹{o.total}</div>
                   <div className="flex flex-col gap-1 items-start">
                     <span
-                      className={`text-xs px-2.5 py-0.5 rounded-full font-semibold w-fit border ${o.status === "active"
+                      className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider w-fit border ${o.status === "active"
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                           : o.status === "pending"
                             ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
@@ -130,11 +134,27 @@ export default function Orders() {
                     {(o.status === "active" || o.status === "pending") && (
                       <button
                         onClick={() => setCancellingOrderId(o.id)}
-                        className="text-[10px] mt-1 text-destructive hover:underline font-semibold"
+                        className="text-[10px] text-destructive hover:underline font-semibold mt-1"
                       >
                         Cancel Rental
                       </button>
                     )}
+                  </div>
+                  <div className="flex flex-col sm:flex-row md:flex-col gap-1.5 w-full">
+                    <button
+                      onClick={() => navigate({ to: `/delivery/${o.id}` })}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs shadow-sm hover:opacity-95 transition-all cursor-pointer"
+                    >
+                      <Truck className="h-3.5 w-3.5" />
+                      <span>Track Delivery</span>
+                    </button>
+                    <button
+                      onClick={() => navigate({ to: "/messages", search: { bookingId: o.id } as any })}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card text-foreground font-semibold text-xs hover:bg-secondary transition-all cursor-pointer"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                      <span>Chat with Lender</span>
+                    </button>
                   </div>
                 </div>
               ))}

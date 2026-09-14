@@ -119,6 +119,14 @@ from database import (
     get_popular_search_queries,
     has_admin_user,
     MOCK_CUSTOM_PRODUCTS,
+    MOCK_ORDERS,
+    MOCK_CARTS,
+    MOCK_WISHLISTS,
+    MOCK_NOTIFICATIONS,
+    MOCK_DELIVERIES,
+    MOCK_DELIVERY_LOCATIONS,
+    MOCK_CONVERSATIONS,
+    MOCK_MESSAGES,
     fetch_one,
     fetch_all,
     create_db_session,
@@ -145,7 +153,22 @@ from database import (
     remove_cart_item,
     clear_user_cart,
     parse_date_safely,
-    get_user_eligible_bookings
+    get_user_eligible_bookings,
+    get_or_create_delivery,
+    get_delivery,
+    get_delivery_by_booking,
+    update_delivery_status,
+    add_delivery_location,
+    get_delivery_locations,
+    confirm_delivery_receipt,
+    get_or_create_booking_conversation,
+    get_conversation,
+    get_user_conversations,
+    get_conversation_detail,
+    get_conversation_messages,
+    add_message,
+    mark_conversation_read,
+    estimate_delivery_eta_minutes
 )
 from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
 from search_ml import ml_search_engine
@@ -2127,7 +2150,6 @@ class CreateSupportTicketSchema(BaseModel):
 
 @app.get("/api/support")
 @app.get("/api/messages")
-@app.get("/api/conversations")
 def fetch_user_conversations(current_user_email: str = Depends(get_current_user_email)):
     clean_email = current_user_email.strip().lower()
     tickets = fetch_all("""
@@ -2271,7 +2293,7 @@ def create_new_conversation(data: NewConversationSchema, current_user_email: str
 
 @app.patch("/api/messages/{id}/read")
 @app.post("/api/messages/{id}/read")
-def mark_conversation_read(id: str, current_user_email: str = Depends(get_current_user_email)):
+def mark_support_ticket_read(id: str, current_user_email: str = Depends(get_current_user_email)):
     clean_email = current_user_email.strip().lower()
     ticket = fetch_one("SELECT * FROM support_tickets WHERE id = %s", (id,))
     if not ticket:
@@ -3423,6 +3445,782 @@ def broadcast_admin_event(event_type: str, data: dict):
             asyncio.run(ws_manager.broadcast(payload))
     except Exception as e:
         logger.warning(f"Could not broadcast WS event {event_type}: {e}")
+
+# ----------------------------------------------------------------------
+# Delivery & Real-Time Chat WebSocket Infrastructure
+# ----------------------------------------------------------------------
+
+class DeliveryConnectionManager:
+    def __init__(self):
+        self.rooms: dict[str, list[WebSocket]] = {}
+
+    async def connect(self, delivery_id: str, websocket: WebSocket):
+        if delivery_id not in self.rooms:
+            self.rooms[delivery_id] = []
+        self.rooms[delivery_id].append(websocket)
+
+    def disconnect(self, delivery_id: str, websocket: WebSocket):
+        if delivery_id in self.rooms:
+            if websocket in self.rooms[delivery_id]:
+                self.rooms[delivery_id].remove(websocket)
+            if not self.rooms[delivery_id]:
+                del self.rooms[delivery_id]
+
+    async def broadcast(self, delivery_id: str, message: dict):
+        if delivery_id not in self.rooms:
+            return
+        disconnected = []
+        for connection in list(self.rooms[delivery_id]):
+            try:
+                await connection.send_json(message)
+            except Exception:
+                disconnected.append(connection)
+        for conn in disconnected:
+            self.disconnect(delivery_id, conn)
+
+delivery_ws_manager = DeliveryConnectionManager()
+
+class ConversationConnectionManager:
+    def __init__(self):
+        self.rooms: dict[str, list[WebSocket]] = {}
+
+    async def connect(self, conversation_id: str, websocket: WebSocket):
+        if conversation_id not in self.rooms:
+            self.rooms[conversation_id] = []
+        self.rooms[conversation_id].append(websocket)
+
+    def disconnect(self, conversation_id: str, websocket: WebSocket):
+        if conversation_id in self.rooms:
+            if websocket in self.rooms[conversation_id]:
+                self.rooms[conversation_id].remove(websocket)
+            if not self.rooms[conversation_id]:
+                del self.rooms[conversation_id]
+
+    async def broadcast(self, conversation_id: str, message: dict):
+        if conversation_id not in self.rooms:
+            return
+        disconnected = []
+        for connection in list(self.rooms[conversation_id]):
+            try:
+                await connection.send_json(message)
+            except Exception:
+                disconnected.append(connection)
+        for conn in disconnected:
+            self.disconnect(conversation_id, conn)
+
+chat_ws_manager = ConversationConnectionManager()
+
+def broadcast_delivery_update(delivery_id: str, event_type: str, data: dict):
+    if delivery_id not in delivery_ws_manager.rooms:
+        return
+    payload = {
+        "type": event_type,
+        "deliveryId": delivery_id,
+        "data": data,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                loop.create_task(delivery_ws_manager.broadcast(delivery_id, payload))
+        except RuntimeError:
+            pass
+    except Exception as e:
+        logger.warning(f"Could not broadcast delivery update: {e}")
+
+def broadcast_chat_message(conversation_id: str, message_data: dict):
+    if conversation_id not in chat_ws_manager.rooms:
+        return
+    payload = {
+        "type": "message.received",
+        "conversationId": conversation_id,
+        "data": message_data,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                loop.create_task(chat_ws_manager.broadcast(conversation_id, payload))
+        except RuntimeError:
+            pass
+    except Exception as e:
+        logger.warning(f"Could not broadcast chat message: {e}")
+
+@app.websocket("/api/deliveries/{delivery_id}/ws")
+async def delivery_websocket(websocket: WebSocket, delivery_id: str, token: Optional[str] = None):
+    await websocket.accept()
+
+    if not token:
+        await websocket.close(code=4001, reason="Authentication token required.")
+        return
+
+    payload = decode_access_token(token, expected_type="access")
+    if not payload or "sub" not in payload:
+        await websocket.close(code=4003, reason="Invalid or expired token.")
+        return
+
+    user_email = payload["sub"].strip().lower()
+    delivery = get_delivery(delivery_id)
+    if not delivery:
+        await websocket.close(code=4004, reason="Delivery not found.")
+        return
+
+    order = None
+    if delivery.get("booking_id"):
+        try:
+            order = fetch_one("SELECT * FROM orders WHERE id = %s", (delivery["booking_id"],))
+        except Exception:
+            pass
+        if not order:
+            order = MOCK_ORDERS.get(delivery["booking_id"])
+
+    customer_email = (order.get("user_email") if order else "").strip().lower()
+    product_id = order.get("product_id") if order else ""
+    product = None
+    if product_id:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(product_id)
+    lender_email = (product.get("user_email") if product else "").strip().lower()
+
+    user_rec = get_user(user_email) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if user_email not in (customer_email, lender_email) and not is_admin:
+        await websocket.close(code=4003, reason="Not authorized to track this delivery.")
+        return
+
+    await delivery_ws_manager.connect(delivery_id, websocket)
+    logger.info(f"WebSocket client connected to delivery {delivery_id} ({user_email})")
+
+    try:
+        await websocket.send_json({
+            "type": "delivery.connected",
+            "deliveryId": delivery_id,
+            "data": {
+                "status": delivery.get("status"),
+                "currentLatitude": delivery.get("current_latitude"),
+                "currentLongitude": delivery.get("current_longitude"),
+                "deliveryLatitude": delivery.get("delivery_latitude"),
+                "deliveryLongitude": delivery.get("delivery_longitude"),
+                "etaMinutes": delivery.get("eta_minutes"),
+                "updatedAt": delivery.get("updated_at")
+            },
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        })
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_json({"type": "pong", "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()})
+    except WebSocketDisconnect:
+        delivery_ws_manager.disconnect(delivery_id, websocket)
+        logger.info(f"WebSocket disconnected from delivery {delivery_id}: {user_email}")
+    except Exception as e:
+        delivery_ws_manager.disconnect(delivery_id, websocket)
+        logger.warning(f"WebSocket delivery error ({user_email}): {e}")
+
+@app.websocket("/api/conversations/{conversation_id}/ws")
+async def conversation_websocket(websocket: WebSocket, conversation_id: str, token: Optional[str] = None):
+    await websocket.accept()
+
+    if not token:
+        await websocket.close(code=4001, reason="Authentication token required.")
+        return
+
+    payload = decode_access_token(token, expected_type="access")
+    if not payload or "sub" not in payload:
+        await websocket.close(code=4003, reason="Invalid or expired token.")
+        return
+
+    user_email = payload["sub"].strip().lower()
+    conv = None
+    try:
+        conv = fetch_one("SELECT * FROM conversations WHERE id = %s", (conversation_id,))
+    except Exception:
+        pass
+    if not conv:
+        conv = MOCK_CONVERSATIONS.get(conversation_id)
+
+    if not conv:
+        await websocket.close(code=4004, reason="Conversation not found.")
+        return
+
+    user_rec = get_user(user_email) or {}
+    is_admin = user_rec.get("role") == "admin"
+    is_member = (conv.get("customer_email", "").strip().lower() == user_email or
+                 conv.get("lender_email", "").strip().lower() == user_email or
+                 is_admin)
+
+    if not is_member:
+        await websocket.close(code=4003, reason="Not authorized to join this conversation.")
+        return
+
+    await chat_ws_manager.connect(conversation_id, websocket)
+    logger.info(f"WebSocket client connected to conversation {conversation_id} ({user_email})")
+
+    try:
+        await websocket.send_json({
+            "type": "chat.connected",
+            "conversationId": conversation_id,
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        })
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_json({"type": "pong", "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()})
+    except WebSocketDisconnect:
+        chat_ws_manager.disconnect(conversation_id, websocket)
+        logger.info(f"WebSocket disconnected from conversation {conversation_id}: {user_email}")
+    except Exception as e:
+        chat_ws_manager.disconnect(conversation_id, websocket)
+        logger.warning(f"WebSocket chat error ({user_email}): {e}")
+
+# ==============================================================================
+# --- DELIVERY TRACKING API ENDPOINTS ---
+# ==============================================================================
+
+class DeliveryStatusUpdateSchema(BaseModel):
+    status: str
+    note: Optional[str] = None
+
+class DeliveryLocationUpdateSchema(BaseModel):
+    latitude: float
+    longitude: float
+    heading: Optional[float] = None
+    speed: Optional[float] = None
+    accuracy: Optional[float] = None
+
+@app.get("/api/bookings/{booking_id}/delivery")
+def get_booking_delivery_endpoint(booking_id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_bid = booking_id.strip()
+
+    order = None
+    try:
+        order = fetch_one("SELECT * FROM orders WHERE id = %s", (clean_bid,))
+    except Exception:
+        pass
+    if not order:
+        order = MOCK_ORDERS.get(clean_bid)
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Booking not found.")
+
+    customer_email = (order.get("user_email") or "").strip().lower()
+    product_id = order.get("product_id") or order.get("productId") or ""
+    product = None
+    if product_id:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+    lender_email = (product.get("user_email") or "").strip().lower()
+
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != customer_email and clean_user != lender_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Not authorized to view this booking's delivery.")
+
+    delivery = get_or_create_delivery(clean_bid, clean_user)
+    locations = get_delivery_locations(delivery["id"], limit=30)
+    is_customer = clean_user == customer_email
+
+    counterparty_email = lender_email if is_customer else customer_email
+    counterparty_user = get_user(counterparty_email) or {}
+    counterparty_name = counterparty_user.get("full_name") or counterparty_email.split("@")[0]
+    counterparty_phone = counterparty_user.get("phone") or ""
+
+    return {
+        "success": True,
+        "delivery": delivery,
+        "locations": locations,
+        "booking": {
+            "id": clean_bid,
+            "productId": product_id,
+            "productTitle": order.get("product_title") or product.get("title") or "Gear Rental",
+            "productImage": order.get("product_image") or product.get("image") or "",
+            "startDate": order.get("start_date"),
+            "endDate": order.get("end_date"),
+            "status": order.get("status"),
+            "total": order.get("total")
+        },
+        "isCustomer": is_customer,
+        "counterparty": {
+            "name": counterparty_name,
+            "email": counterparty_email,
+            "phone": counterparty_phone,
+            "role": "lender" if is_customer else "customer"
+        }
+    }
+
+@app.post("/api/deliveries/{delivery_id}/status")
+def update_delivery_status_endpoint(delivery_id: str, data: DeliveryStatusUpdateSchema, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_did = delivery_id.strip()
+    target_status = data.status.strip().upper()
+
+    delivery = get_delivery(clean_did)
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found.")
+
+    order = None
+    if delivery.get("booking_id"):
+        try:
+            order = fetch_one("SELECT * FROM orders WHERE id = %s", (delivery["booking_id"],))
+        except Exception:
+            pass
+        if not order:
+            order = MOCK_ORDERS.get(delivery["booking_id"])
+
+    product_id = order.get("product_id") if order else ""
+    product = None
+    if product_id:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+    lender_email = (product.get("user_email") if product else "").strip().lower()
+
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != lender_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Only the verified lender can update delivery status.")
+
+    try:
+        updated_del = update_delivery_status(clean_did, target_status, clean_user)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+    customer_email = order.get("user_email") if order else ""
+    bid = delivery.get("booking_id")
+    conv = get_or_create_booking_conversation(bid, clean_user) if bid else None
+
+    status_messages = {
+        "PREPARING": "Lender has begun preparing and inspecting your rental gear.",
+        "READY": "Gear has been packaged and is ready for dispatch.",
+        "OUT_FOR_DELIVERY": "Delivery has started. Your gear is on the way!",
+        "NEAR_DESTINATION": "Delivery is near the destination. Please be ready to receive your gear.",
+        "DELIVERED": "Product marked as delivered. Please inspect the gear and confirm receipt in your app."
+    }
+
+    if target_status in status_messages and conv:
+        add_message(
+            conv["id"],
+            sender_email="system",
+            sender_name="Payent Delivery",
+            content=status_messages[target_status],
+            message_type="SYSTEM"
+        )
+        broadcast_chat_message(conv["id"], {
+            "id": f"sys-{int(time.time()*1000)}",
+            "conversation_id": conv["id"],
+            "sender_email": "system",
+            "sender_name": "Payent Delivery",
+            "message_type": "SYSTEM",
+            "content": status_messages[target_status],
+            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        })
+
+    if customer_email and target_status in status_messages:
+        create_notification(
+            email=customer_email,
+            title=f"Delivery Update: {target_status.replace('_', ' ').title()}",
+            message=status_messages[target_status],
+            notif_type="delivery"
+        )
+
+    broadcast_delivery_update(clean_did, "delivery.status_updated", {
+        "deliveryId": clean_did,
+        "status": target_status,
+        "startedAt": updated_del.get("started_at"),
+        "nearDestinationAt": updated_del.get("near_destination_at"),
+        "deliveredAt": updated_del.get("delivered_at"),
+        "updatedAt": updated_del.get("updated_at")
+    })
+
+    return {
+        "success": True,
+        "delivery": updated_del,
+        "message": f"Delivery transitioned to {target_status}"
+    }
+
+@app.post("/api/deliveries/{delivery_id}/location")
+def update_delivery_location_endpoint(delivery_id: str, data: DeliveryLocationUpdateSchema, current_user_email: str = Depends(get_current_user_email), request: Request = None):
+    clean_user = current_user_email.strip().lower()
+    clean_did = delivery_id.strip()
+
+    key = f"del_loc_rl:{clean_did}"
+    is_locked, secs = record_failed_auth_attempt(key, max_attempts=30, lock_duration_secs=60)
+    if is_locked:
+        raise HTTPException(status_code=429, detail=f"Location update rate limit reached. Please wait {secs}s.")
+
+    delivery = get_delivery(clean_did)
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found.")
+
+    if delivery.get("status") not in ("OUT_FOR_DELIVERY", "NEAR_DESTINATION"):
+        raise HTTPException(status_code=400, detail="Live location tracking is only permitted while delivery is active (OUT_FOR_DELIVERY or NEAR_DESTINATION).")
+
+    order = None
+    if delivery.get("booking_id"):
+        try:
+            order = fetch_one("SELECT * FROM orders WHERE id = %s", (delivery["booking_id"],))
+        except Exception:
+            pass
+        if not order:
+            order = MOCK_ORDERS.get(delivery["booking_id"])
+
+    product_id = order.get("product_id") if order else ""
+    product = None
+    if product_id:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+    lender_email = (product.get("user_email") if product else "").strip().lower()
+
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != lender_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Only the lender can broadcast delivery location.")
+
+    if not (-90.0 <= data.latitude <= 90.0) or not (-180.0 <= data.longitude <= 180.0):
+        raise HTTPException(status_code=422, detail="Invalid GPS coordinates.")
+
+    loc = add_delivery_location(
+        clean_did,
+        latitude=data.latitude,
+        longitude=data.longitude,
+        heading=data.heading,
+        speed=data.speed,
+        accuracy=data.accuracy
+    )
+
+    broadcast_delivery_update(clean_did, "delivery.location_updated", {
+        "deliveryId": clean_did,
+        "latitude": data.latitude,
+        "longitude": data.longitude,
+        "heading": data.heading,
+        "speed": data.speed,
+        "accuracy": data.accuracy,
+        "etaMinutes": delivery.get("eta_minutes"),
+        "recordedAt": loc.get("recorded_at")
+    })
+
+    return {
+        "success": True,
+        "location": loc,
+        "etaMinutes": delivery.get("eta_minutes")
+    }
+
+@app.post("/api/deliveries/{delivery_id}/confirm")
+def confirm_delivery_endpoint(delivery_id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_did = delivery_id.strip()
+
+    delivery = get_delivery(clean_did)
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found.")
+
+    order = None
+    if delivery.get("booking_id"):
+        try:
+            order = fetch_one("SELECT * FROM orders WHERE id = %s", (delivery["booking_id"],))
+        except Exception:
+            pass
+        if not order:
+            order = MOCK_ORDERS.get(delivery["booking_id"])
+
+    customer_email = (order.get("user_email") if order else "").strip().lower()
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != customer_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Only the customer who booked the gear can confirm delivery receipt.")
+
+    try:
+        updated_del = confirm_delivery_receipt(clean_did, clean_user)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+    bid = delivery.get("booking_id")
+    conv = get_or_create_booking_conversation(bid, clean_user) if bid else None
+    if conv:
+        add_message(
+            conv["id"],
+            sender_email="system",
+            sender_name="Payent System",
+            content="Customer confirmed receipt of the gear. Rental period is now active.",
+            message_type="SYSTEM"
+        )
+
+    product_id = order.get("product_id") if order else ""
+    product = None
+    if product_id:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+    lender_email = (product.get("user_email") if product else "").strip().lower()
+    if lender_email:
+        create_notification(
+            email=lender_email,
+            title="Delivery Receipt Confirmed",
+            message=f"Customer confirmed receipt for booking #{bid}. The rental period is now underway.",
+            notif_type="booking"
+        )
+
+    broadcast_delivery_update(clean_did, "delivery.confirmed", {
+        "deliveryId": clean_did,
+        "customerConfirmedAt": updated_del.get("customer_confirmed_at")
+    })
+
+    return {
+        "success": True,
+        "delivery": updated_del,
+        "message": "Delivery receipt confirmed. Enjoy your gear rental!"
+    }
+
+@app.get("/api/deliveries/{delivery_id}/tracking")
+def get_delivery_tracking_endpoint(delivery_id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_did = delivery_id.strip()
+
+    delivery = get_delivery(clean_did)
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found.")
+
+    order = None
+    if delivery.get("booking_id"):
+        try:
+            order = fetch_one("SELECT * FROM orders WHERE id = %s", (delivery["booking_id"],))
+        except Exception:
+            pass
+        if not order:
+            order = MOCK_ORDERS.get(delivery["booking_id"])
+
+    customer_email = (order.get("user_email") if order else "").strip().lower()
+    product_id = order.get("product_id") if order else ""
+    product = None
+    if product_id:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+    lender_email = (product.get("user_email") if product else "").strip().lower()
+
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != customer_email and clean_user != lender_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Not authorized to view tracking.")
+
+    is_customer = clean_user == customer_email
+    locations = get_delivery_locations(clean_did, limit=50)
+
+    curr_lat = delivery.get("current_latitude") if delivery.get("current_latitude") is not None else delivery.get("currentLatitude")
+    curr_lng = delivery.get("current_longitude") if delivery.get("current_longitude") is not None else delivery.get("currentLongitude")
+    dest_lat = delivery.get("delivery_latitude") if delivery.get("delivery_latitude") is not None else delivery.get("deliveryLatitude")
+    dest_lng = delivery.get("delivery_longitude") if delivery.get("delivery_longitude") is not None else delivery.get("deliveryLongitude")
+
+    return {
+        "success": True,
+        "isCustomer": is_customer,
+        "tracking": {
+            "id": delivery["id"],
+            "bookingId": delivery.get("booking_id"),
+            "status": delivery.get("status"),
+            "pickupAddress": delivery.get("pickup_address"),
+            "deliveryAddress": delivery.get("delivery_address"),
+            "deliveryLatitude": float(dest_lat) if dest_lat is not None else None,
+            "deliveryLongitude": float(dest_lng) if dest_lng is not None else None,
+            "currentLatitude": float(curr_lat) if curr_lat is not None else None,
+            "currentLongitude": float(curr_lng) if curr_lng is not None else None,
+            "etaMinutes": delivery.get("eta_minutes"),
+            "startedAt": delivery.get("started_at"),
+            "nearDestinationAt": delivery.get("near_destination_at"),
+            "deliveredAt": delivery.get("delivered_at"),
+            "customerConfirmedAt": delivery.get("customer_confirmed_at"),
+            "isCustomer": is_customer,
+            "locations": locations,
+            "delivery": delivery,
+        },
+    }
+
+@app.get("/api/deliveries/{delivery_id}/locations")
+def get_delivery_locations_endpoint(delivery_id: str, limit: int = Query(50, ge=1, le=200), current_user_email: str = Depends(get_current_user_email)):
+    clean_did = delivery_id.strip()
+    delivery = get_delivery(clean_did)
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found.")
+    locations = get_delivery_locations(clean_did, limit=limit)
+    return {"success": True, "locations": locations}
+
+# ==============================================================================
+# --- BOOKING-LINKED PERSISTENT CHAT & CONVERSATIONS API ---
+# ==============================================================================
+
+class SendChatMessageSchema(BaseModel):
+    content: str
+    message_type: Optional[str] = "TEXT"
+
+@app.get("/api/bookings/{booking_id}/conversation")
+def get_booking_conversation_endpoint(booking_id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_bid = booking_id.strip()
+
+    order = None
+    try:
+        order = fetch_one("SELECT * FROM orders WHERE id = %s", (clean_bid,))
+    except Exception:
+        pass
+    if not order:
+        order = MOCK_ORDERS.get(clean_bid)
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Booking not found.")
+
+    customer_email = (order.get("user_email") or "").strip().lower()
+    product_id = order.get("product_id") or order.get("productId") or ""
+    product = None
+    if product_id:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+    lender_email = (product.get("user_email") or "").strip().lower()
+
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != customer_email and clean_user != lender_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Not authorized to view this booking's conversation.")
+
+    conv = get_or_create_booking_conversation(clean_bid, clean_user)
+    detail = get_conversation_detail(conv["id"], clean_user)
+
+    return {
+        "success": True,
+        "conversation": detail
+    }
+
+@app.get("/api/conversations")
+def get_conversations_endpoint(current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    convs = get_user_conversations(clean_user)
+    return {
+        "success": True,
+        "conversations": convs
+    }
+
+@app.get("/api/conversations/{conversation_id}")
+def get_conversation_endpoint(conversation_id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_cid = conversation_id.strip()
+
+    detail = get_conversation_detail(clean_cid, clean_user)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Conversation not found or access denied.")
+
+    return {
+        "success": True,
+        "conversation": detail
+    }
+
+@app.post("/api/conversations/{conversation_id}/messages")
+def send_conversation_message_endpoint(conversation_id: str, data: SendChatMessageSchema, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_cid = conversation_id.strip()
+    clean_content = data.content.strip()
+
+    if not clean_content:
+        raise HTTPException(status_code=422, detail="Message content cannot be empty.")
+    if len(clean_content) > 5000:
+        raise HTTPException(status_code=422, detail="Message content exceeds maximum allowed length of 5000 characters.")
+
+    conv = None
+    try:
+        conv = fetch_one("SELECT * FROM conversations WHERE id = %s", (clean_cid,))
+    except Exception:
+        pass
+    if not conv:
+        conv = MOCK_CONVERSATIONS.get(clean_cid)
+
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+    is_customer = conv.get("customer_email", "").strip().lower() == clean_user
+    is_lender = conv.get("lender_email", "").strip().lower() == clean_user
+
+    if not is_customer and not is_lender and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Not authorized to message in this conversation.")
+
+    sender_name = user_rec.get("full_name") or clean_user.split("@")[0]
+    msg = add_message(
+        conversation_id=clean_cid,
+        sender_email=clean_user,
+        sender_name=sender_name,
+        content=clean_content,
+        message_type=data.message_type or "TEXT"
+    )
+
+    counterparty_email = conv.get("lender_email") if is_customer else conv.get("customer_email")
+    if counterparty_email:
+        create_notification(
+            email=counterparty_email,
+            title=f"New Message from {sender_name}",
+            message=clean_content[:100] + ("..." if len(clean_content) > 100 else ""),
+            notif_type="message"
+        )
+
+    broadcast_chat_message(clean_cid, msg)
+
+    return {
+        "success": True,
+        "message": msg
+    }
+
+@app.patch("/api/conversations/{conversation_id}/read")
+def mark_conversation_read_patch_endpoint(conversation_id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_cid = conversation_id.strip()
+
+    conv = get_conversation(clean_cid)
+    if not conv:
+        for c in MOCK_CONVERSATIONS.values():
+            if c.get("id") == clean_cid or c.get("booking_id") == clean_cid:
+                conv = c
+                break
+
+    target_id = conv["id"] if conv else clean_cid
+    mark_conversation_read(target_id, clean_user)
+    return {"success": True}
+
+@app.post("/api/conversations/{conversation_id}/read")
+def mark_conversation_read_post_endpoint(conversation_id: str, current_user_email: str = Depends(get_current_user_email)):
+    return mark_conversation_read_patch_endpoint(conversation_id, current_user_email)
 
 @app.websocket("/api/admin/ws")
 async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):

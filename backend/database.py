@@ -608,6 +608,106 @@ def init_db():
     add_index_safely("api_keys", "idx_api_keys_user", "user_email")
     add_index_safely("api_keys", "idx_api_keys_active", "is_active")
 
+    # Create deliveries table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS deliveries (
+            id VARCHAR(255) PRIMARY KEY,
+            booking_id VARCHAR(255) NOT NULL,
+            delivery_method VARCHAR(50) DEFAULT 'lender_delivery',
+            status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+            pickup_address VARCHAR(500) NULL,
+            delivery_address VARCHAR(500) NULL,
+            delivery_latitude DECIMAL(10, 8) NULL,
+            delivery_longitude DECIMAL(11, 8) NULL,
+            current_latitude DECIMAL(10, 8) NULL,
+            current_longitude DECIMAL(11, 8) NULL,
+            eta_minutes INT NULL,
+            started_at VARCHAR(100) NULL,
+            near_destination_at VARCHAR(100) NULL,
+            delivered_at VARCHAR(100) NULL,
+            customer_confirmed_at VARCHAR(100) NULL,
+            created_at VARCHAR(100) NOT NULL,
+            updated_at VARCHAR(100) NOT NULL
+        )
+    """)
+    add_index_safely("deliveries", "idx_deliveries_booking_id", "booking_id")
+    add_index_safely("deliveries", "idx_deliveries_status", "status")
+
+    # Create delivery_location_updates table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS delivery_location_updates (
+            id VARCHAR(255) PRIMARY KEY,
+            delivery_id VARCHAR(255) NOT NULL,
+            latitude DECIMAL(10, 8) NOT NULL,
+            longitude DECIMAL(11, 8) NOT NULL,
+            accuracy FLOAT NULL,
+            heading FLOAT NULL,
+            speed FLOAT NULL,
+            recorded_at VARCHAR(100) NOT NULL
+        )
+    """)
+    add_index_safely("delivery_location_updates", "idx_loc_delivery_id", "delivery_id")
+    add_index_safely("delivery_location_updates", "idx_loc_recorded_at", "recorded_at")
+
+    # Create conversations table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS conversations (
+            id VARCHAR(255) PRIMARY KEY,
+            booking_id VARCHAR(255) NULL,
+            product_id VARCHAR(255) NULL,
+            customer_email VARCHAR(255) NOT NULL,
+            lender_email VARCHAR(255) NOT NULL,
+            created_at VARCHAR(100) NOT NULL,
+            updated_at VARCHAR(100) NOT NULL
+        )
+    """)
+    add_index_safely("conversations", "idx_conv_booking_id", "booking_id")
+    add_index_safely("conversations", "idx_conv_customer", "customer_email")
+    add_index_safely("conversations", "idx_conv_lender", "lender_email")
+
+    # Create conversation_members table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS conversation_members (
+            id VARCHAR(255) PRIMARY KEY,
+            conversation_id VARCHAR(255) NOT NULL,
+            user_email VARCHAR(255) NOT NULL,
+            role VARCHAR(50) NOT NULL,
+            last_read_at VARCHAR(100) NULL
+        )
+    """)
+    add_index_safely("conversation_members", "idx_cm_conversation_id", "conversation_id")
+    add_index_safely("conversation_members", "idx_cm_user_email", "user_email")
+
+    # Create messages table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS messages (
+            id VARCHAR(255) PRIMARY KEY,
+            conversation_id VARCHAR(255) NOT NULL,
+            sender_email VARCHAR(255) NOT NULL,
+            sender_name VARCHAR(255) NOT NULL,
+            message_type VARCHAR(50) NOT NULL DEFAULT 'TEXT',
+            content TEXT NOT NULL,
+            created_at VARCHAR(100) NOT NULL,
+            updated_at VARCHAR(100) NOT NULL,
+            deleted_at VARCHAR(100) NULL
+        )
+    """)
+    add_index_safely("messages", "idx_messages_conversation_id", "conversation_id")
+    add_index_safely("messages", "idx_messages_created_at", "created_at")
+
+    # Create message_attachments table
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS message_attachments (
+            id VARCHAR(255) PRIMARY KEY,
+            message_id VARCHAR(255) NOT NULL,
+            file_url LONGTEXT NOT NULL,
+            file_type VARCHAR(100) NOT NULL,
+            file_size INT DEFAULT 0,
+            created_at VARCHAR(100) NOT NULL
+        )
+    """)
+    add_index_safely("message_attachments", "idx_ma_message_id", "message_id")
+
     # Seed initial data if tables are empty
     conn = get_db_connection()
     try:
@@ -674,6 +774,12 @@ MOCK_PROCESSED_EVENTS = set()
 MOCK_USER_EVENTS = []
 MOCK_CUSTOM_PRODUCTS = {}
 MOCK_REVIEWS = {}
+MOCK_DELIVERIES = {}
+MOCK_DELIVERY_LOCATIONS = {}
+MOCK_CONVERSATIONS = {}
+MOCK_CONVERSATION_MEMBERS = {}
+MOCK_MESSAGES = {}
+MOCK_MESSAGE_ATTACHMENTS = {}
 
 def get_user(email: str):
     if not email:
@@ -1342,21 +1448,54 @@ def get_notifications(email: str):
         print(f"Notice: Database read error in get_notifications: {e}")
     return [n for n in MOCK_NOTIFICATIONS.values() if (n.get("user_email") or n.get("userEmail")) == clean_email]
 
-def create_notification(email: str, n: dict):
-    clean_email = (email or "").strip().lower()
-    MOCK_NOTIFICATIONS[n["id"]] = {**n, "user_email": clean_email}
-    execute_query("""
-        INSERT INTO notifications (id, user_email, title, message, type, is_read, created_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, (
-        n["id"],
-        clean_email,
-        n["title"],
-        n["message"],
-        n["type"],
-        n.get("read") or n.get("is_read") or False,
-        n.get("createdAt") or n.get("created_at") or dt.now(timezone.utc).isoformat()
-    ))
+def create_notification(email: str = None, n: dict = None, **kwargs):
+    clean_email = (email or kwargs.get("user_email") or "").strip().lower()
+    if not clean_email:
+        return None
+
+    if n is not None and isinstance(n, dict):
+        notif_id = n.get("id") or f"notif_{uuid.uuid4().hex[:10]}"
+        notif_title = n.get("title") or "Notification"
+        notif_message = n.get("message") or ""
+        notif_type = n.get("type") or "info"
+        notif_read = n.get("read") or n.get("is_read") or False
+        notif_created_at = n.get("createdAt") or n.get("created_at") or dt.now(timezone.utc).isoformat()
+    else:
+        notif_id = kwargs.get("id") or f"notif_{uuid.uuid4().hex[:10]}"
+        notif_title = kwargs.get("title") or "Notification"
+        notif_message = kwargs.get("message") or ""
+        notif_type = kwargs.get("notif_type") or kwargs.get("type") or "info"
+        notif_read = kwargs.get("read") or kwargs.get("is_read") or False
+        notif_created_at = kwargs.get("createdAt") or kwargs.get("created_at") or dt.now(timezone.utc).isoformat()
+
+    notif_data = {
+        "id": notif_id,
+        "user_email": clean_email,
+        "title": notif_title,
+        "message": notif_message,
+        "type": notif_type,
+        "is_read": notif_read,
+        "read": notif_read,
+        "created_at": notif_created_at,
+        "createdAt": notif_created_at,
+    }
+    MOCK_NOTIFICATIONS[notif_id] = notif_data
+    try:
+        execute_query("""
+            INSERT INTO notifications (id, user_email, title, message, type, is_read, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            notif_id,
+            clean_email,
+            notif_title,
+            notif_message,
+            notif_type,
+            notif_read,
+            notif_created_at
+        ))
+    except Exception as e:
+        print(f"Notice: Database write error in create_notification: {e}")
+    return notif_data
 
 def mark_notifications_read(email: str):
     clean_email = (email or "").strip().lower()
@@ -2889,6 +3028,575 @@ def clear_user_cart(user_email: str) -> bool:
     execute_query("DELETE FROM cart_items WHERE LOWER(user_email) = LOWER(%s)", (clean_email,))
     if clean_email in MOCK_CARTS:
         MOCK_CARTS[clean_email] = []
+    return True
+
+# ==============================================================================
+# --- DELIVERIES CRUD & STATE MACHINE ---
+# ==============================================================================
+
+DELIVERY_VALID_TRANSITIONS = {
+    "PENDING": ["PREPARING", "CANCELLED"],
+    "PREPARING": ["READY", "CANCELLED"],
+    "READY": ["OUT_FOR_DELIVERY", "CANCELLED"],
+    "OUT_FOR_DELIVERY": ["NEAR_DESTINATION", "DELIVERED", "CANCELLED"],
+    "NEAR_DESTINATION": ["DELIVERED", "CANCELLED"],
+    "DELIVERED": [],
+    "CANCELLED": []
+}
+
+def calculate_haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate the great circle distance between two points on the earth in kilometers."""
+    import math
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2) ** 2 +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+def estimate_delivery_eta_minutes(curr_lat: float, curr_lng: float, dest_lat: float, dest_lng: float, speed_kmh: float = 25.0) -> Optional[int]:
+    """Estimate delivery ETA in minutes based on distance and average urban speed (25 km/h)."""
+    try:
+        import math
+        dist_km = calculate_haversine_distance_km(curr_lat, curr_lng, dest_lat, dest_lng)
+        avg_speed_kmh = speed_kmh or 25.0
+        hours = dist_km / avg_speed_kmh
+        minutes = max(2, int(math.ceil(hours * 60.0)))
+        return minutes
+    except Exception:
+        return None
+
+def get_delivery_by_booking(booking_id: str) -> Optional[dict]:
+    clean_id = (booking_id or "").strip()
+    if not clean_id:
+        return None
+    try:
+        row = fetch_one("SELECT * FROM deliveries WHERE booking_id = %s", (clean_id,))
+        if row:
+            return row
+    except Exception as e:
+        logger.warning(f"get_delivery_by_booking DB error: {e}")
+    for d in MOCK_DELIVERIES.values():
+        if d.get("booking_id") == clean_id:
+            return d
+    return None
+
+def get_delivery(delivery_id: str) -> Optional[dict]:
+    clean_id = (delivery_id or "").strip()
+    if not clean_id:
+        return None
+    try:
+        row = fetch_one("SELECT * FROM deliveries WHERE id = %s", (clean_id,))
+        if row:
+            return row
+    except Exception as e:
+        logger.warning(f"get_delivery DB error: {e}")
+    return MOCK_DELIVERIES.get(clean_id)
+
+def get_or_create_delivery(booking_id: str, current_user_email: str) -> dict:
+    existing = get_delivery_by_booking(booking_id)
+    if existing:
+        return existing
+
+    # Find the order
+    order = None
+    try:
+        order = fetch_one("SELECT * FROM orders WHERE id = %s", (booking_id,))
+    except Exception:
+        pass
+    if not order:
+        order = MOCK_ORDERS.get(booking_id)
+    
+    if not order:
+        order = {
+            "id": booking_id,
+            "user_email": current_user_email,
+            "product_id": "product_default"
+        }
+
+    customer_email = order.get("user_email") or current_user_email
+    product_id = order.get("product_id") or order.get("productId") or ""
+    
+    product = None
+    try:
+        product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+    except Exception:
+        pass
+    if not product:
+        product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+
+    lender_email = product.get("user_email") or "lender@payent.in"
+    customer = get_user(customer_email) or {}
+    lender = get_user(lender_email) or {}
+
+    pickup_address = f"{lender.get('address', '')}, {lender.get('city', 'Bengaluru')}".strip(", ") or "Lender Hub, Indiranagar, Bengaluru"
+    delivery_address = f"{customer.get('address', '')}, {customer.get('city', 'Bengaluru')}".strip(", ") or "Customer Delivery Location, Bengaluru"
+
+    pickup_lat = float(lender.get("latitude") or 12.9716)
+    pickup_lng = float(lender.get("longitude") or 77.5946)
+    delivery_lat = float(customer.get("latitude") or 12.9352)
+    delivery_lng = float(customer.get("longitude") or 77.6245)
+
+    now_iso = dt.now(timezone.utc).isoformat()
+    del_id = f"del-{uuid.uuid4().hex[:12]}"
+
+    delivery_data = {
+        "id": del_id,
+        "booking_id": booking_id,
+        "delivery_method": "lender_delivery",
+        "status": "PENDING",
+        "pickup_address": pickup_address,
+        "delivery_address": delivery_address,
+        "delivery_latitude": delivery_lat,
+        "delivery_longitude": delivery_lng,
+        "current_latitude": pickup_lat,
+        "current_longitude": pickup_lng,
+        "eta_minutes": 25,
+        "started_at": None,
+        "near_destination_at": None,
+        "delivered_at": None,
+        "customer_confirmed_at": None,
+        "created_at": now_iso,
+        "updated_at": now_iso
+    }
+
+    MOCK_DELIVERIES[del_id] = delivery_data
+
+    execute_query("""
+        INSERT INTO deliveries (
+            id, booking_id, delivery_method, status, pickup_address, delivery_address,
+            delivery_latitude, delivery_longitude, current_latitude, current_longitude,
+            eta_minutes, started_at, near_destination_at, delivered_at, customer_confirmed_at,
+            created_at, updated_at
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        del_id, booking_id, "lender_delivery", "PENDING", pickup_address, delivery_address,
+        delivery_lat, delivery_lng, pickup_lat, pickup_lng,
+        25, None, None, None, None, now_iso, now_iso
+    ))
+
+    add_delivery_location(del_id, pickup_lat, pickup_lng, heading=0.0, speed=0.0, accuracy=10.0)
+    return delivery_data
+
+def update_delivery_status(delivery_id: str, new_status: str, user_email: str) -> dict:
+    delivery = get_delivery(delivery_id)
+    if not delivery:
+        raise ValueError("Delivery not found")
+
+    curr_status = delivery.get("status", "PENDING")
+    allowed = DELIVERY_VALID_TRANSITIONS.get(curr_status, [])
+    if new_status not in allowed:
+        raise ValueError(f"Invalid transition from {curr_status} to {new_status}. Allowed transitions: {allowed}")
+
+    now_iso = dt.now(timezone.utc).isoformat()
+    started_at = delivery.get("started_at")
+    near_at = delivery.get("near_destination_at")
+    delivered_at = delivery.get("delivered_at")
+
+    if new_status == "OUT_FOR_DELIVERY" and not started_at:
+        started_at = now_iso
+    elif new_status == "NEAR_DESTINATION" and not near_at:
+        near_at = now_iso
+    elif new_status == "DELIVERED" and not delivered_at:
+        delivered_at = now_iso
+
+    delivery["status"] = new_status
+    delivery["started_at"] = started_at
+    delivery["near_destination_at"] = near_at
+    delivery["delivered_at"] = delivered_at
+    delivery["updated_at"] = now_iso
+
+    MOCK_DELIVERIES[delivery_id] = delivery
+
+    execute_query("""
+        UPDATE deliveries SET
+            status = %s,
+            started_at = %s,
+            near_destination_at = %s,
+            delivered_at = %s,
+            updated_at = %s
+        WHERE id = %s
+    """, (new_status, started_at, near_at, delivered_at, now_iso, delivery_id))
+
+    return delivery
+
+def confirm_delivery_receipt(delivery_id: str, user_email: str) -> dict:
+    delivery = get_delivery(delivery_id)
+    if not delivery:
+        raise ValueError("Delivery not found")
+
+    if delivery.get("status") not in ("DELIVERED", "OUT_FOR_DELIVERY", "NEAR_DESTINATION"):
+        raise ValueError("Cannot confirm receipt until product is in transit or delivered")
+
+    now_iso = dt.now(timezone.utc).isoformat()
+    delivery["status"] = "DELIVERED"
+    if not delivery.get("delivered_at"):
+        delivery["delivered_at"] = now_iso
+    delivery["customer_confirmed_at"] = now_iso
+    delivery["updated_at"] = now_iso
+
+    MOCK_DELIVERIES[delivery_id] = delivery
+
+    execute_query("""
+        UPDATE deliveries SET
+            status = 'DELIVERED',
+            delivered_at = COALESCE(delivered_at, %s),
+            customer_confirmed_at = %s,
+            updated_at = %s
+        WHERE id = %s
+    """, (now_iso, now_iso, now_iso, delivery_id))
+
+    return delivery
+
+def add_delivery_location(delivery_id: str, latitude: float, longitude: float,
+                          heading: Optional[float] = None, speed: Optional[float] = None,
+                          accuracy: Optional[float] = None) -> dict:
+    delivery = get_delivery(delivery_id)
+    if not delivery:
+        raise ValueError("Delivery not found")
+
+    now_iso = dt.now(timezone.utc).isoformat()
+    loc_id = f"loc-{uuid.uuid4().hex[:12]}"
+
+    dest_lat = delivery.get("delivery_latitude")
+    dest_lng = delivery.get("delivery_longitude")
+    eta_mins = None
+    if dest_lat is not None and dest_lng is not None:
+        eta_mins = estimate_delivery_eta_minutes(latitude, longitude, float(dest_lat), float(dest_lng))
+        delivery["eta_minutes"] = eta_mins
+
+    loc_record = {
+        "id": loc_id,
+        "delivery_id": delivery_id,
+        "latitude": latitude,
+        "longitude": longitude,
+        "accuracy": accuracy,
+        "heading": heading,
+        "speed": speed,
+        "recorded_at": now_iso
+    }
+
+    if delivery_id not in MOCK_DELIVERY_LOCATIONS:
+        MOCK_DELIVERY_LOCATIONS[delivery_id] = []
+    MOCK_DELIVERY_LOCATIONS[delivery_id].append(loc_record)
+
+    delivery["current_latitude"] = latitude
+    delivery["current_longitude"] = longitude
+    delivery["updated_at"] = now_iso
+    MOCK_DELIVERIES[delivery_id] = delivery
+
+    execute_query("""
+        INSERT INTO delivery_location_updates (id, delivery_id, latitude, longitude, accuracy, heading, speed, recorded_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (loc_id, delivery_id, latitude, longitude, accuracy, heading, speed, now_iso))
+
+    execute_query("""
+        UPDATE deliveries SET
+            current_latitude = %s,
+            current_longitude = %s,
+            eta_minutes = %s,
+            updated_at = %s
+        WHERE id = %s
+    """, (latitude, longitude, eta_mins, now_iso, delivery_id))
+
+    return loc_record
+
+def get_delivery_locations(delivery_id: str, limit: int = 50) -> List[dict]:
+    try:
+        rows = fetch_all("""
+            SELECT * FROM delivery_location_updates
+            WHERE delivery_id = %s
+            ORDER BY recorded_at ASC
+            LIMIT %s
+        """, (delivery_id, limit))
+        if rows:
+            return rows
+    except Exception as e:
+        logger.warning(f"get_delivery_locations DB error: {e}")
+    return MOCK_DELIVERY_LOCATIONS.get(delivery_id, [])[-limit:]
+
+# ==============================================================================
+# --- CONVERSATIONS & PERSISTENT MESSAGING CRUD ---
+# ==============================================================================
+
+def get_or_create_booking_conversation(booking_id: str, user_email: str) -> dict:
+    clean_bid = (booking_id or "").strip()
+    clean_user = (user_email or "").strip().lower()
+
+    try:
+        conv = fetch_one("SELECT * FROM conversations WHERE booking_id = %s", (clean_bid,))
+        if conv:
+            return conv
+    except Exception as e:
+        logger.warning(f"get_or_create_booking_conversation check DB error: {e}")
+
+    for c in MOCK_CONVERSATIONS.values():
+        if c.get("booking_id") == clean_bid:
+            return c
+
+    order = None
+    try:
+        order = fetch_one("SELECT * FROM orders WHERE id = %s", (clean_bid,))
+    except Exception:
+        pass
+    if not order:
+        order = MOCK_ORDERS.get(clean_bid, {})
+
+    customer_email = order.get("user_email") or clean_user
+    product_id = order.get("product_id") or order.get("productId") or ""
+
+    product = None
+    try:
+        product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+    except Exception:
+        pass
+    if not product:
+        product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+
+    lender_email = product.get("user_email") or (clean_user if clean_user != customer_email else "lender@payent.in")
+    now_iso = dt.now(timezone.utc).isoformat()
+    conv_id = f"conv-{uuid.uuid4().hex[:12]}"
+
+    conv_data = {
+        "id": conv_id,
+        "booking_id": clean_bid,
+        "product_id": product_id,
+        "customer_email": customer_email,
+        "lender_email": lender_email,
+        "created_at": now_iso,
+        "updated_at": now_iso
+    }
+    MOCK_CONVERSATIONS[conv_id] = conv_data
+
+    execute_query("""
+        INSERT INTO conversations (id, booking_id, product_id, customer_email, lender_email, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (conv_id, clean_bid, product_id, customer_email, lender_email, now_iso, now_iso))
+
+    execute_query("""
+        INSERT INTO conversation_members (id, conversation_id, user_email, role, last_read_at)
+        VALUES (%s, %s, %s, %s, %s), (%s, %s, %s, %s, %s)
+    """, (
+        f"cm-{uuid.uuid4().hex[:8]}", conv_id, customer_email, "customer", now_iso,
+        f"cm-{uuid.uuid4().hex[:8]}", conv_id, lender_email, "lender", now_iso
+    ))
+
+    prod_title = order.get("product_title") or product.get("title") or "Gear"
+    add_message(
+        conv_id,
+        sender_email="system",
+        sender_name="Payent System",
+        content=f"Booking confirmed for {prod_title}. You can now coordinate delivery and rental logistics here.",
+        message_type="SYSTEM"
+    )
+
+    return conv_data
+
+def get_conversation_messages(conversation_id: str, limit: int = 100) -> List[dict]:
+    try:
+        rows = fetch_all("""
+            SELECT * FROM messages
+            WHERE conversation_id = %s
+            ORDER BY created_at ASC
+            LIMIT %s
+        """, (conversation_id, limit))
+        if rows:
+            return rows
+    except Exception as e:
+        logger.warning(f"get_conversation_messages DB error: {e}")
+
+    return [m for m in MOCK_MESSAGES.get(conversation_id, [])][-limit:]
+
+def get_user_conversations(user_email: str) -> List[dict]:
+    clean_user = (user_email or "").strip().lower()
+    raw_convs = []
+
+    try:
+        raw_convs = fetch_all("""
+            SELECT c.*, 
+                   cm.last_read_at,
+                   o.product_title, o.product_image, o.status as booking_status, o.start_date, o.end_date,
+                   d.id as delivery_id, d.status as delivery_status, d.eta_minutes
+            FROM conversations c
+            LEFT JOIN conversation_members cm ON cm.conversation_id = c.id AND LOWER(cm.user_email) = %s
+            LEFT JOIN orders o ON o.id = c.booking_id
+            LEFT JOIN deliveries d ON d.booking_id = c.booking_id
+            WHERE LOWER(c.customer_email) = %s OR LOWER(c.lender_email) = %s
+            ORDER BY c.updated_at DESC
+        """, (clean_user, clean_user, clean_user))
+    except Exception as e:
+        logger.warning(f"get_user_conversations DB error: {e}")
+
+    if not raw_convs:
+        raw_convs = [
+            c for c in MOCK_CONVERSATIONS.values()
+            if c.get("customer_email", "").lower() == clean_user or c.get("lender_email", "").lower() == clean_user
+        ]
+
+    results = []
+    for c in raw_convs:
+        cid = c["id"]
+        is_customer = c.get("customer_email", "").lower() == clean_user
+        counterparty_email = c.get("lender_email") if is_customer else c.get("customer_email")
+        counterparty_user = get_user(counterparty_email) or {}
+        counterparty_name = counterparty_user.get("full_name") or (counterparty_email.split("@")[0] if counterparty_email else "Partner")
+        counterparty_avatar = counterparty_user.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
+
+        msgs = get_conversation_messages(cid)
+        last_msg = msgs[-1] if msgs else {}
+
+        last_read_at = c.get("last_read_at") or "1970-01-01"
+        unread_cnt = sum(
+            1 for m in msgs
+            if m.get("sender_email", "").lower() != clean_user
+            and m.get("created_at", "") > last_read_at
+        )
+
+        results.append({
+            "id": cid,
+            "bookingId": c.get("booking_id"),
+            "productId": c.get("product_id"),
+            "productTitle": c.get("product_title") or "Gear Rental",
+            "productImage": c.get("product_image") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+            "bookingStatus": c.get("booking_status") or "active",
+            "deliveryId": c.get("delivery_id"),
+            "deliveryStatus": c.get("delivery_status") or "PENDING",
+            "etaMinutes": c.get("eta_minutes"),
+            "isCustomer": is_customer,
+            "counterparty": {
+                "name": counterparty_name,
+                "email": counterparty_email,
+                "avatar": counterparty_avatar,
+                "role": "lender" if is_customer else "customer"
+            },
+            "lastMessage": last_msg.get("content", ""),
+            "lastMessageAt": last_msg.get("created_at") or c.get("updated_at"),
+            "unread": unread_cnt > 0,
+            "unreadCount": unread_cnt,
+            "messagesCount": len(msgs),
+            "createdAt": c.get("created_at"),
+            "updatedAt": c.get("updated_at")
+        })
+
+    return results
+
+def get_conversation(conversation_id: str) -> Optional[dict]:
+    clean_cid = (conversation_id or "").strip()
+    if not clean_cid:
+        return None
+    try:
+        row = fetch_one("SELECT * FROM conversations WHERE id = %s", (clean_cid,))
+        if row:
+            return row
+    except Exception as e:
+        logger.warning(f"get_conversation DB error: {e}")
+    if clean_cid in MOCK_CONVERSATIONS:
+        return MOCK_CONVERSATIONS[clean_cid]
+    for c in MOCK_CONVERSATIONS.values():
+        if c.get("id") == clean_cid or c.get("booking_id") == clean_cid:
+            return c
+    return None
+
+def get_conversation_detail(conversation_id: str, current_user_email: str) -> Optional[dict]:
+    clean_cid = (conversation_id or "").strip()
+    clean_user = (current_user_email or "").strip().lower()
+
+    conv = get_conversation(clean_cid)
+
+    if not conv:
+        return None
+
+    if conv.get("customer_email", "").lower() != clean_user and conv.get("lender_email", "").lower() != clean_user:
+        curr = get_user(clean_user) or {}
+        if curr.get("role") != "admin":
+            return None
+
+    is_customer = conv.get("customer_email", "").lower() == clean_user
+    counterparty_email = conv.get("lender_email") if is_customer else conv.get("customer_email")
+    counterparty_user = get_user(counterparty_email) or {}
+    counterparty_name = counterparty_user.get("full_name") or counterparty_email.split("@")[0]
+    counterparty_avatar = counterparty_user.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
+
+    order = None
+    delivery = None
+    if conv.get("booking_id"):
+        try:
+            order = fetch_one("SELECT * FROM orders WHERE id = %s", (conv["booking_id"],))
+        except Exception:
+            pass
+        if not order:
+            order = MOCK_ORDERS.get(conv["booking_id"])
+
+        delivery = get_delivery_by_booking(conv["booking_id"])
+
+    messages = get_conversation_messages(clean_cid)
+
+    return {
+        "id": conv["id"],
+        "bookingId": conv.get("booking_id"),
+        "productId": conv.get("product_id"),
+        "productTitle": order.get("product_title") if order else "Gear Rental",
+        "productImage": order.get("product_image") if order else "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+        "bookingStatus": order.get("status") if order else "active",
+        "deliveryId": delivery.get("id") if delivery else None,
+        "deliveryStatus": delivery.get("status") if delivery else "PENDING",
+        "deliveryEtaMinutes": delivery.get("eta_minutes") if delivery else None,
+        "isCustomer": is_customer,
+        "counterparty": {
+            "name": counterparty_name,
+            "email": counterparty_email,
+            "avatar": counterparty_avatar,
+            "role": "lender" if is_customer else "customer"
+        },
+        "createdAt": conv.get("created_at"),
+        "updatedAt": conv.get("updated_at"),
+        "messages": messages
+    }
+
+def add_message(conversation_id: str, sender_email: str, sender_name: str,
+                content: str, message_type: str = "TEXT") -> dict:
+    now_iso = dt.now(timezone.utc).isoformat()
+    msg_id = f"msg-{uuid.uuid4().hex[:12]}"
+
+    msg_record = {
+        "id": msg_id,
+        "conversation_id": conversation_id,
+        "sender_email": sender_email,
+        "sender_name": sender_name,
+        "message_type": message_type,
+        "content": content,
+        "created_at": now_iso,
+        "updated_at": now_iso,
+        "deleted_at": None
+    }
+
+    if conversation_id not in MOCK_MESSAGES:
+        MOCK_MESSAGES[conversation_id] = []
+    MOCK_MESSAGES[conversation_id].append(msg_record)
+
+    if conversation_id in MOCK_CONVERSATIONS:
+        MOCK_CONVERSATIONS[conversation_id]["updated_at"] = now_iso
+
+    execute_query("""
+        INSERT INTO messages (id, conversation_id, sender_email, sender_name, message_type, content, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (msg_id, conversation_id, sender_email, sender_name, message_type, content, now_iso, now_iso))
+
+    execute_query("UPDATE conversations SET updated_at = %s WHERE id = %s", (now_iso, conversation_id))
+
+    return msg_record
+
+def mark_conversation_read(conversation_id: str, user_email: str) -> bool:
+    clean_user = (user_email or "").strip().lower()
+    now_iso = dt.now(timezone.utc).isoformat()
+
+    execute_query("""
+        UPDATE conversation_members
+        SET last_read_at = %s
+        WHERE conversation_id = %s AND LOWER(user_email) = %s
+    """, (now_iso, conversation_id, clean_user))
+
     return True
 
 

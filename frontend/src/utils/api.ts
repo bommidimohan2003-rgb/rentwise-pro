@@ -10,6 +10,12 @@ import type {
   UserProfileStats,
   Conversation,
   ConversationMessage,
+  BookingDeliveryResponse,
+  Delivery,
+  DeliveryTrackingData,
+  DeliveryLocationUpdate,
+  RealtimeConversation,
+  RealtimeMessage,
 } from "@/types";
 
 const getApiBase = () => {
@@ -1521,6 +1527,220 @@ export const api = {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Checkout validation failed"));
+    }
+    return await res.json();
+  },
+
+  // --- Delivery Tracking API ---
+  async getBookingDelivery(
+    token: string,
+    bookingId: string,
+    signal?: AbortSignal,
+  ): Promise<BookingDeliveryResponse> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/bookings/${bookingId}/delivery`,
+      {
+        method: "GET",
+        signal,
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to load delivery information"));
+    }
+    return await res.json();
+  },
+
+  async updateDeliveryStatus(
+    token: string,
+    deliveryId: string,
+    status: string,
+    note?: string,
+  ): Promise<{ success: boolean; delivery: Delivery; message: string }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/deliveries/${deliveryId}/status`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, note }),
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to update delivery status"));
+    }
+    return await res.json();
+  },
+
+  async sendDeliveryLocation(
+    token: string,
+    deliveryId: string,
+    coords: {
+      latitude: number;
+      longitude: number;
+      heading?: number | null;
+      speed?: number | null;
+      accuracy?: number | null;
+    },
+  ): Promise<{ success: boolean; location: DeliveryLocationUpdate; etaMinutes?: number }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/deliveries/${deliveryId}/location`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(coords),
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to send delivery location"));
+    }
+    return await res.json();
+  },
+
+  async confirmDeliveryReceipt(
+    token: string,
+    deliveryId: string,
+  ): Promise<{ success: boolean; delivery: Delivery; message: string }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/deliveries/${deliveryId}/confirm`,
+      {
+        method: "POST",
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to confirm delivery receipt"));
+    }
+    return await res.json();
+  },
+
+  async getDeliveryTracking(
+    token: string,
+    deliveryId: string,
+    signal?: AbortSignal,
+  ): Promise<{ success: boolean; tracking: DeliveryTrackingData }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/deliveries/${deliveryId}/tracking`,
+      {
+        method: "GET",
+        signal,
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to fetch tracking data"));
+    }
+    return await res.json();
+  },
+
+  async getDeliveryLocations(
+    token: string,
+    deliveryId: string,
+    limit: number = 50,
+    signal?: AbortSignal,
+  ): Promise<{ success: boolean; locations: DeliveryLocationUpdate[] }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/deliveries/${deliveryId}/locations?limit=${limit}`,
+      {
+        method: "GET",
+        signal,
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to fetch locations"));
+    }
+    return await res.json();
+  },
+
+  // --- Real-time Booking Conversations API ---
+  async getBookingConversation(
+    token: string,
+    bookingId: string,
+    signal?: AbortSignal,
+  ): Promise<{ success: boolean; conversation: RealtimeConversation }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/bookings/${bookingId}/conversation`,
+      {
+        method: "GET",
+        signal,
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to fetch booking conversation"));
+    }
+    return await res.json();
+  },
+
+  async getRealtimeConversations(
+    token: string,
+    signal?: AbortSignal,
+  ): Promise<{ success: boolean; conversations: RealtimeConversation[] }> {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/conversations`, {
+      method: "GET",
+      signal,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to fetch conversations"));
+    }
+    return await res.json();
+  },
+
+  async getRealtimeConversationDetail(
+    token: string,
+    conversationId: string,
+    signal?: AbortSignal,
+  ): Promise<{ success: boolean; conversation: RealtimeConversation }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/conversations/${conversationId}`,
+      {
+        method: "GET",
+        signal,
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to load conversation"));
+    }
+    return await res.json();
+  },
+
+  async sendRealtimeMessage(
+    token: string,
+    conversationId: string,
+    content: string,
+    messageType: string = "TEXT",
+  ): Promise<{ success: boolean; message: RealtimeMessage }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/conversations/${conversationId}/messages`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, message_type: messageType }),
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Unable to send your message. Please try again."));
+    }
+    return await res.json();
+  },
+
+  async markRealtimeConversationRead(
+    token: string,
+    conversationId: string,
+  ): Promise<{ success: boolean }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/conversations/${conversationId}/read`,
+      {
+        method: "PATCH",
+      },
+    );
+    if (!res.ok) {
+      return { success: false };
     }
     return await res.json();
   },
