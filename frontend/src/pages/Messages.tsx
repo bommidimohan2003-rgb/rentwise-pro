@@ -18,6 +18,7 @@ import {
   Package,
   Navigation,
   RefreshCw,
+  ArrowLeft,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
@@ -225,22 +226,35 @@ export default function Messages() {
     const token = storage.get<string | null>(STORAGE_KEYS.token, null);
     if (!token) return;
 
-    let isSubscribed = true;
-
-    // Build WebSocket URL
-    const isHttps = window.location.protocol === "https:";
-    const host = window.location.hostname;
-    // Connect to port 8001 (or current port if behind reverse proxy)
-    const port = window.location.port === "3000" ? "8001" : window.location.port;
-    const wsProtocol = isHttps ? "wss:" : "ws:";
-    const wsUrl = `${wsProtocol}//${host}:${port}/api/conversations/${activeId}/ws?token=${encodeURIComponent(token)}`;
+    // Build WebSocket URL from API_BASE / VITE_API_URL
+    let wsUrl: string;
+    const apiBase =
+      import.meta.env.VITE_API_URL ||
+      (typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1")
+        ? "http://127.0.0.1:8001"
+        : typeof window !== "undefined"
+          ? window.location.origin
+          : "");
+    const wsProto = apiBase.startsWith("https") ? "wss" : "ws";
+    const cleanHost = apiBase.replace(/^https?:\/\//, "");
+    wsUrl = `${wsProto}://${cleanHost}/api/conversations/${activeId}/ws?token=${encodeURIComponent(token)}`;
 
     try {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
+      let pingTimer: ReturnType<typeof setInterval> | null = null;
+
       ws.onopen = () => {
         if (isSubscribed) setWsConnected(true);
+        // Send keepalive ping every 25 seconds to keep connection alive through proxies
+        pingTimer = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send("ping");
+          }
+        }, 25000);
       };
 
       ws.onmessage = (event) => {
@@ -281,12 +295,13 @@ export default function Messages() {
 
       ws.onclose = () => {
         if (isSubscribed) setWsConnected(false);
+        if (pingTimer) clearInterval(pingTimer);
       };
     } catch {
       setWsConnected(false);
     }
 
-    // Polling fallback every 8 seconds
+    // Polling fallback every 8 seconds for resilient cross-environment syncing
     const pollInterval = setInterval(() => {
       if (isSubscribed) {
         loadActiveThread(activeId, false);
@@ -478,16 +493,21 @@ export default function Messages() {
         </div>
 
         {/* Main Messenger Container */}
-        <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[680px] max-h-[780px]">
+        <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[680px] max-h-[820px]">
           {/* LEFT: Conversation List */}
-          <div className="md:col-span-5 lg:col-span-4 border-r border-border flex flex-col bg-secondary/15">
+          <div
+            className={cn(
+              "md:col-span-5 lg:col-span-4 border-r border-border flex-col bg-secondary/15 h-[680px] md:h-auto",
+              activeId ? "hidden md:flex" : "flex",
+            )}
+          >
             <div className="p-4 border-b border-border flex items-center justify-between">
               <div className="text-xs font-black uppercase tracking-wider text-muted-foreground">
                 Conversations ({conversations.length})
               </div>
               <button
                 onClick={() => loadConversations()}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
                 title="Refresh conversations"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
@@ -615,27 +635,42 @@ export default function Messages() {
           </div>
 
           {/* RIGHT: Active Thread View */}
-          <div className="md:col-span-7 lg:col-span-8 flex flex-col h-full bg-card">
+          <div
+            className={cn(
+              "md:col-span-7 lg:col-span-8 flex-col h-[680px] md:h-auto bg-card",
+              activeId ? "flex" : "hidden md:flex",
+            )}
+          >
             {activeConversation ? (
               <>
                 {/* Header with Counterparty, Gear details, Delivery badge, and Live Map CTA */}
-                <div className="p-4 sm:p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-secondary/15">
-                  <div className="flex items-center gap-3.5 min-w-0">
+                <div className="p-3.5 sm:p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-secondary/15">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Mobile Back button */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveId(null)}
+                      className="md:hidden p-2 -ml-1 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer shrink-0"
+                      aria-label="Back to conversations"
+                    >
+                      <ArrowLeft className="h-5 w-5" />
+                    </button>
+
                     {activeConversation.productImage ? (
                       <img
                         src={activeConversation.productImage}
                         alt=""
-                        className="h-12 w-12 rounded-xl object-cover border border-border shrink-0"
+                        className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl object-cover border border-border shrink-0"
                       />
                     ) : (
-                      <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        <User className="h-6 w-6" />
+                      <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <User className="h-5 w-5 sm:h-6 sm:w-6" />
                       </div>
                     )}
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-base font-bold text-foreground truncate">
+                        <h2 className="text-sm sm:text-base font-bold text-foreground truncate">
                           {activeConversation.counterparty?.name || "Rental Partner"}
                         </h2>
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-secondary text-muted-foreground uppercase">
@@ -644,7 +679,7 @@ export default function Messages() {
                         {deliveryBadge && (
                           <span
                             className={cn(
-                              "text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border",
+                              "text-[9px] sm:text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border",
                               deliveryBadge.color,
                             )}
                           >
