@@ -1,11 +1,12 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Bell, Heart, LogOut, Moon, Sun, User, ShoppingBag } from "lucide-react";
+import { Bell, Heart, LogOut, Moon, Sun, User, ShoppingBag, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useCart } from "@/hooks/useCart";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { cn } from "@/lib/utils";
 import { LogoIcon } from "@/components/common/LogoIcon";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ export function Navbar() {
   const { theme, toggle } = useTheme();
   const { ids: wishlistIds } = useWishlist();
   const { cartCount, toggleCart } = useCart();
+  const { unreadCount } = useUnreadMessages();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -141,9 +143,25 @@ export function Navbar() {
               )}
             </button>
 
-            {/* If Logged In: Notifications, Profile, Logout */}
+            {/* If Logged In: Messages, Notifications, Profile */}
             {user ? (
               <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Messages Icon Button */}
+                <Link
+                  to="/messages"
+                  aria-label="Messages"
+                  title="Messages & Inquiries"
+                  id="nav-messages-btn"
+                  className="relative h-9 w-9 flex items-center justify-center rounded-full text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <MessageSquare className="h-4 w-4 sm:h-[18px] sm:w-[18px] stroke-[2]" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 px-1 min-w-[15px] h-[15px] rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shadow-sm">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </Link>
+
                 <button
                   type="button"
                   onClick={() => navigate({ to: "/notifications" })}

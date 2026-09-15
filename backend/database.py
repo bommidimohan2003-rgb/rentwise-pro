@@ -657,13 +657,17 @@ def init_db():
             product_id VARCHAR(255) NULL,
             customer_email VARCHAR(255) NOT NULL,
             lender_email VARCHAR(255) NOT NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'active',
             created_at VARCHAR(100) NOT NULL,
             updated_at VARCHAR(100) NOT NULL
         )
     """)
+    add_column_safely("conversations", "status VARCHAR(50) DEFAULT 'active'")
     add_index_safely("conversations", "idx_conv_booking_id", "booking_id")
     add_index_safely("conversations", "idx_conv_customer", "customer_email")
     add_index_safely("conversations", "idx_conv_lender", "lender_email")
+    add_index_safely("conversations", "idx_conv_product_id", "product_id")
+    add_index_safely("conversations", "idx_conv_status", "status")
 
     # Create conversation_members table
     execute_query("""
@@ -672,9 +676,11 @@ def init_db():
             conversation_id VARCHAR(255) NOT NULL,
             user_email VARCHAR(255) NOT NULL,
             role VARCHAR(50) NOT NULL,
-            last_read_at VARCHAR(100) NULL
+            last_read_at VARCHAR(100) NULL,
+            created_at VARCHAR(100) NULL
         )
     """)
+    add_column_safely("conversation_members", "created_at VARCHAR(100) NULL")
     add_index_safely("conversation_members", "idx_cm_conversation_id", "conversation_id")
     add_index_safely("conversation_members", "idx_cm_user_email", "user_email")
 
@@ -689,11 +695,16 @@ def init_db():
             content TEXT NOT NULL,
             created_at VARCHAR(100) NOT NULL,
             updated_at VARCHAR(100) NOT NULL,
+            read_at VARCHAR(100) NULL,
             deleted_at VARCHAR(100) NULL
         )
     """)
+    add_column_safely("messages", "read_at VARCHAR(100) NULL")
+    add_column_safely("messages", "deleted_at VARCHAR(100) NULL")
     add_index_safely("messages", "idx_messages_conversation_id", "conversation_id")
     add_index_safely("messages", "idx_messages_created_at", "created_at")
+    add_index_safely("messages", "idx_messages_sender_email", "sender_email")
+    add_index_safely("messages", "idx_messages_type", "message_type")
 
     # Create message_attachments table
     execute_query("""
@@ -701,11 +712,13 @@ def init_db():
             id VARCHAR(255) PRIMARY KEY,
             message_id VARCHAR(255) NOT NULL,
             file_url LONGTEXT NOT NULL,
+            file_name VARCHAR(255) NULL,
             file_type VARCHAR(100) NOT NULL,
             file_size INT DEFAULT 0,
             created_at VARCHAR(100) NOT NULL
         )
     """)
+    add_column_safely("message_attachments", "file_name VARCHAR(255) NULL")
     add_index_safely("message_attachments", "idx_ma_message_id", "message_id")
 
     # Seed initial data if tables are empty
@@ -3317,10 +3330,120 @@ def get_delivery_locations(delivery_id: str, limit: int = 50) -> List[dict]:
     return MOCK_DELIVERY_LOCATIONS.get(delivery_id, [])[-limit:]
 
 # ==============================================================================
-# --- CONVERSATIONS & PERSISTENT MESSAGING CRUD ---
+# --- CUSTOMER ↔ LENDER CONVERSATIONS & PERSISTENT MESSAGING CRUD ---
 # ==============================================================================
 
+def get_or_create_product_conversation(product_id: str, customer_email: str, initial_message: Optional[str] = None) -> dict:
+    """
+    Creates or retrieves a pre-booking inquiry conversation between customer and lender for a specific product.
+    Strictly verifies customer != lender, resolves product owner from custom_products, and avoids duplicate conversations.
+    """
+    clean_pid = (product_id or "").strip()
+    clean_cust = (customer_email or "").strip().lower()
+
+    if not clean_pid:
+        raise ValueError("Product ID is required to initiate conversation.")
+
+    product = None
+    try:
+        product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (clean_pid,))
+    except Exception as e:
+        logger.warning(f"get_or_create_product_conversation product fetch DB error: {e}")
+    if not product:
+        product = MOCK_CUSTOM_PRODUCTS.get(clean_pid)
+
+    if not product:
+        raise ValueError(f"Product '{clean_pid}' not found.")
+
+    lender_email = (product.get("user_email") or "").strip().lower()
+    if not lender_email:
+        lender_email = "lender@payent.in"
+
+    if clean_cust == lender_email:
+        raise ValueError("You cannot start a conversation with yourself for your own listing.")
+
+    # Check for existing conversation for this customer + lender + product (where booking_id is null or active)
+    existing_conv = None
+    try:
+        existing_conv = fetch_one("""
+            SELECT * FROM conversations 
+            WHERE product_id = %s 
+              AND ((LOWER(customer_email) = %s AND LOWER(lender_email) = %s)
+                OR (LOWER(customer_email) = %s AND LOWER(lender_email) = %s))
+            ORDER BY created_at DESC
+            LIMIT 1
+        """, (clean_pid, clean_cust, lender_email, lender_email, clean_cust))
+    except Exception as e:
+        logger.warning(f"get_or_create_product_conversation search DB error: {e}")
+
+    if not existing_conv:
+        for c in MOCK_CONVERSATIONS.values():
+            if c.get("product_id") == clean_pid and (
+                (c.get("customer_email", "").lower() == clean_cust and c.get("lender_email", "").lower() == lender_email) or
+                (c.get("customer_email", "").lower() == lender_email and c.get("lender_email", "").lower() == clean_cust)
+            ):
+                existing_conv = c
+                break
+
+    now_iso = dt.now(timezone.utc).isoformat()
+
+    if existing_conv:
+        conv_id = existing_conv["id"]
+        if initial_message and initial_message.strip():
+            cust_user = get_user(clean_cust) or {}
+            sender_name = cust_user.get("full_name") or clean_cust.split("@")[0]
+            add_message(conv_id, clean_cust, sender_name, initial_message.strip(), "TEXT")
+        return existing_conv
+
+    # Create new conversation
+    conv_id = f"conv-{uuid.uuid4().hex[:12]}"
+    conv_data = {
+        "id": conv_id,
+        "booking_id": None,
+        "product_id": clean_pid,
+        "customer_email": clean_cust,
+        "lender_email": lender_email,
+        "status": "active",
+        "created_at": now_iso,
+        "updated_at": now_iso
+    }
+    MOCK_CONVERSATIONS[conv_id] = conv_data
+
+    execute_query("""
+        INSERT INTO conversations (id, booking_id, product_id, customer_email, lender_email, status, created_at, updated_at)
+        VALUES (%s, NULL, %s, %s, %s, 'active', %s, %s)
+    """, (conv_id, clean_pid, clean_cust, lender_email, now_iso, now_iso))
+
+    execute_query("""
+        INSERT INTO conversation_members (id, conversation_id, user_email, role, last_read_at, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s), (%s, %s, %s, %s, %s, %s)
+    """, (
+        f"cm-{uuid.uuid4().hex[:8]}", conv_id, clean_cust, "customer", None, now_iso,
+        f"cm-{uuid.uuid4().hex[:8]}", conv_id, lender_email, "lender", None, now_iso
+    ))
+
+    prod_title = product.get("title") or "Gear"
+    # System welcome message
+    add_message(
+        conv_id,
+        sender_email="system",
+        sender_name="Payent System",
+        content=f"Inquiry started for {prod_title}. Connect directly with the lender to ask about gear specs, availability, and rental options.",
+        message_type="SYSTEM"
+    )
+
+    if initial_message and initial_message.strip():
+        cust_user = get_user(clean_cust) or {}
+        sender_name = cust_user.get("full_name") or clean_cust.split("@")[0]
+        add_message(conv_id, clean_cust, sender_name, initial_message.strip(), "TEXT")
+
+    return conv_data
+
 def get_or_create_booking_conversation(booking_id: str, user_email: str) -> dict:
+    """
+    Creates or retrieves a conversation linked to a confirmed booking.
+    Upgrades an existing pre-booking conversation if one already exists for this customer + product.
+    """
     clean_bid = (booking_id or "").strip()
     clean_user = (user_email or "").strip().lower()
 
@@ -3347,68 +3470,143 @@ def get_or_create_booking_conversation(booking_id: str, user_email: str) -> dict
     product_id = order.get("product_id") or order.get("productId") or ""
 
     product = None
-    try:
-        product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
-    except Exception:
-        pass
-    if not product:
-        product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+    if product_id:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
 
-    lender_email = product.get("user_email") or (clean_user if clean_user != customer_email else "lender@payent.in")
+    lender_email = (product.get("user_email") if product else "") or (clean_user if clean_user != customer_email else "lender@payent.in")
     now_iso = dt.now(timezone.utc).isoformat()
-    conv_id = f"conv-{uuid.uuid4().hex[:12]}"
 
+    # Check if a pre-booking conversation exists for this customer + product without booking_id
+    if product_id:
+        pre_conv = None
+        try:
+            pre_conv = fetch_one("""
+                SELECT * FROM conversations 
+                WHERE product_id = %s 
+                  AND (LOWER(customer_email) = %s OR LOWER(lender_email) = %s)
+                  AND (booking_id IS NULL OR booking_id = '')
+                LIMIT 1
+            """, (product_id, customer_email, customer_email))
+        except Exception:
+            pass
+
+        if pre_conv:
+            conv_id = pre_conv["id"]
+            execute_query("UPDATE conversations SET booking_id = %s, updated_at = %s WHERE id = %s", (clean_bid, now_iso, conv_id))
+            if conv_id in MOCK_CONVERSATIONS:
+                MOCK_CONVERSATIONS[conv_id]["booking_id"] = clean_bid
+                MOCK_CONVERSATIONS[conv_id]["updated_at"] = now_iso
+
+            prod_title = order.get("product_title") or (product.get("title") if product else "Gear")
+            add_message(
+                conv_id,
+                sender_email="system",
+                sender_name="Payent System",
+                content=f"Booking #{clean_bid} confirmed for {prod_title}. You can now coordinate delivery and handover logistics here.",
+                message_type="SYSTEM"
+            )
+            pre_conv["booking_id"] = clean_bid
+            pre_conv["updated_at"] = now_iso
+            return pre_conv
+
+    # Create new booking-linked conversation
+    conv_id = f"conv-{uuid.uuid4().hex[:12]}"
     conv_data = {
         "id": conv_id,
         "booking_id": clean_bid,
         "product_id": product_id,
         "customer_email": customer_email,
         "lender_email": lender_email,
+        "status": "active",
         "created_at": now_iso,
         "updated_at": now_iso
     }
     MOCK_CONVERSATIONS[conv_id] = conv_data
 
     execute_query("""
-        INSERT INTO conversations (id, booking_id, product_id, customer_email, lender_email, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO conversations (id, booking_id, product_id, customer_email, lender_email, status, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, 'active', %s, %s)
     """, (conv_id, clean_bid, product_id, customer_email, lender_email, now_iso, now_iso))
 
     execute_query("""
-        INSERT INTO conversation_members (id, conversation_id, user_email, role, last_read_at)
-        VALUES (%s, %s, %s, %s, %s), (%s, %s, %s, %s, %s)
+        INSERT INTO conversation_members (id, conversation_id, user_email, role, last_read_at, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s), (%s, %s, %s, %s, %s, %s)
     """, (
-        f"cm-{uuid.uuid4().hex[:8]}", conv_id, customer_email, "customer", now_iso,
-        f"cm-{uuid.uuid4().hex[:8]}", conv_id, lender_email, "lender", now_iso
+        f"cm-{uuid.uuid4().hex[:8]}", conv_id, customer_email, "customer", now_iso, now_iso,
+        f"cm-{uuid.uuid4().hex[:8]}", conv_id, lender_email, "lender", now_iso, now_iso
     ))
 
-    prod_title = order.get("product_title") or product.get("title") or "Gear"
+    prod_title = order.get("product_title") or (product.get("title") if product else "Gear")
     add_message(
         conv_id,
         sender_email="system",
         sender_name="Payent System",
-        content=f"Booking confirmed for {prod_title}. You can now coordinate delivery and rental logistics here.",
+        content=f"Booking #{clean_bid} confirmed for {prod_title}. You can now coordinate delivery and rental logistics here.",
         message_type="SYSTEM"
     )
 
     return conv_data
 
-def get_conversation_messages(conversation_id: str, limit: int = 100) -> List[dict]:
+def get_conversation_messages(conversation_id: str, limit: int = 150) -> List[dict]:
+    """
+    Fetches message history and linked attachments for a conversation.
+    """
+    clean_cid = (conversation_id or "").strip()
+    raw_msgs = []
     try:
-        rows = fetch_all("""
+        raw_msgs = fetch_all("""
             SELECT * FROM messages
-            WHERE conversation_id = %s
+            WHERE conversation_id = %s AND deleted_at IS NULL
             ORDER BY created_at ASC
             LIMIT %s
-        """, (conversation_id, limit))
-        if rows:
-            return rows
+        """, (clean_cid, limit))
     except Exception as e:
         logger.warning(f"get_conversation_messages DB error: {e}")
 
-    return [m for m in MOCK_MESSAGES.get(conversation_id, [])][-limit:]
+    if not raw_msgs:
+        raw_msgs = [m for m in MOCK_MESSAGES.get(clean_cid, []) if not m.get("deleted_at")][-limit:]
 
-def get_user_conversations(user_email: str) -> List[dict]:
+    # Fetch attachments for these messages
+    msg_ids = [m["id"] for m in raw_msgs if m.get("id")]
+    attachments_by_msg = {}
+    if msg_ids:
+        try:
+            format_strings = ','.join(['%s'] * len(msg_ids))
+            att_rows = fetch_all(f"""
+                SELECT * FROM message_attachments 
+                WHERE message_id IN ({format_strings})
+                ORDER BY created_at ASC
+            """, tuple(msg_ids))
+            for a in (att_rows or []):
+                mid = a["message_id"]
+                if mid not in attachments_by_msg:
+                    attachments_by_msg[mid] = []
+                attachments_by_msg[mid].append(a)
+        except Exception as e:
+            logger.warning(f"get_conversation_messages attachments DB error: {e}")
+
+    # Fallback to mock attachments
+    for mid in msg_ids:
+        if mid in MOCK_MESSAGE_ATTACHMENTS:
+            if mid not in attachments_by_msg:
+                attachments_by_msg[mid] = []
+            attachments_by_msg[mid].extend(MOCK_MESSAGE_ATTACHMENTS[mid])
+
+    for m in raw_msgs:
+        m["attachments"] = attachments_by_msg.get(m["id"], [])
+
+    return raw_msgs
+
+def get_user_conversations(user_email: str, search: Optional[str] = None) -> List[dict]:
+    """
+    Fetches all conversations where user is customer or lender.
+    Supports search filtering and unread count aggregation.
+    """
     clean_user = (user_email or "").strip().lower()
     raw_convs = []
 
@@ -3416,11 +3614,16 @@ def get_user_conversations(user_email: str) -> List[dict]:
         raw_convs = fetch_all("""
             SELECT c.*, 
                    cm.last_read_at,
-                   o.product_title, o.product_image, o.status as booking_status, o.start_date, o.end_date,
+                   COALESCE(o.product_title, cp.title, 'Gear Rental') as product_title, 
+                   COALESCE(o.product_image, cp.image, 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600') as product_image, 
+                   cp.price as product_price,
+                   cp.category as product_category,
+                   o.status as booking_status, o.start_date, o.end_date, o.total as booking_total,
                    d.id as delivery_id, d.status as delivery_status, d.eta_minutes
             FROM conversations c
             LEFT JOIN conversation_members cm ON cm.conversation_id = c.id AND LOWER(cm.user_email) = %s
             LEFT JOIN orders o ON o.id = c.booking_id
+            LEFT JOIN custom_products cp ON cp.id = c.product_id
             LEFT JOIN deliveries d ON d.booking_id = c.booking_id
             WHERE LOWER(c.customer_email) = %s OR LOWER(c.lender_email) = %s
             ORDER BY c.updated_at DESC
@@ -3435,13 +3638,16 @@ def get_user_conversations(user_email: str) -> List[dict]:
         ]
 
     results = []
+    clean_search = (search or "").strip().lower()
+
     for c in raw_convs:
         cid = c["id"]
         is_customer = c.get("customer_email", "").lower() == clean_user
         counterparty_email = c.get("lender_email") if is_customer else c.get("customer_email")
         counterparty_user = get_user(counterparty_email) or {}
         counterparty_name = counterparty_user.get("full_name") or (counterparty_email.split("@")[0] if counterparty_email else "Partner")
-        counterparty_avatar = counterparty_user.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
+        counterparty_avatar = counterparty_user.get("avatar") or counterparty_user.get("profilePhotoUrl") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
+        counterparty_verified = counterparty_user.get("verified", True)
 
         msgs = get_conversation_messages(cid)
         last_msg = msgs[-1] if msgs else {}
@@ -3453,21 +3659,27 @@ def get_user_conversations(user_email: str) -> List[dict]:
             and m.get("created_at", "") > last_read_at
         )
 
-        results.append({
+        item = {
             "id": cid,
             "bookingId": c.get("booking_id"),
             "productId": c.get("product_id"),
             "productTitle": c.get("product_title") or "Gear Rental",
             "productImage": c.get("product_image") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
-            "bookingStatus": c.get("booking_status") or "active",
+            "productPrice": c.get("product_price"),
+            "productCategory": c.get("product_category"),
+            "bookingStatus": c.get("booking_status") or ("active" if c.get("booking_id") else None),
+            "bookingStartDate": c.get("start_date"),
+            "bookingEndDate": c.get("end_date"),
+            "bookingTotal": c.get("booking_total"),
             "deliveryId": c.get("delivery_id"),
-            "deliveryStatus": c.get("delivery_status") or "PENDING",
+            "deliveryStatus": c.get("delivery_status") or ("PENDING" if c.get("booking_id") else None),
             "etaMinutes": c.get("eta_minutes"),
             "isCustomer": is_customer,
             "counterparty": {
                 "name": counterparty_name,
                 "email": counterparty_email,
                 "avatar": counterparty_avatar,
+                "verified": counterparty_verified,
                 "role": "lender" if is_customer else "customer"
             },
             "lastMessage": last_msg.get("content", ""),
@@ -3477,7 +3689,18 @@ def get_user_conversations(user_email: str) -> List[dict]:
             "messagesCount": len(msgs),
             "createdAt": c.get("created_at"),
             "updatedAt": c.get("updated_at")
-        })
+        }
+
+        # Search filtering
+        if clean_search:
+            match_name = clean_search in counterparty_name.lower()
+            match_prod = clean_search in (item["productTitle"] or "").lower()
+            match_book = clean_search in (item["bookingId"] or "").lower()
+            match_msg = clean_search in (item["lastMessage"] or "").lower()
+            if not (match_name or match_prod or match_book or match_msg):
+                continue
+
+        results.append(item)
 
     return results
 
@@ -3499,24 +3722,31 @@ def get_conversation(conversation_id: str) -> Optional[dict]:
     return None
 
 def get_conversation_detail(conversation_id: str, current_user_email: str) -> Optional[dict]:
+    """
+    Fetches complete conversation detail with authorization check.
+    Returns product info, booking info, delivery tracking info, counterparty profile, and messages.
+    """
     clean_cid = (conversation_id or "").strip()
     clean_user = (current_user_email or "").strip().lower()
 
     conv = get_conversation(clean_cid)
-
     if not conv:
         return None
 
-    if conv.get("customer_email", "").lower() != clean_user and conv.get("lender_email", "").lower() != clean_user:
+    cust_email = (conv.get("customer_email") or "").strip().lower()
+    lend_email = (conv.get("lender_email") or "").strip().lower()
+
+    if cust_email != clean_user and lend_email != clean_user:
         curr = get_user(clean_user) or {}
         if curr.get("role") != "admin":
             return None
 
-    is_customer = conv.get("customer_email", "").lower() == clean_user
-    counterparty_email = conv.get("lender_email") if is_customer else conv.get("customer_email")
+    is_customer = cust_email == clean_user
+    counterparty_email = lend_email if is_customer else cust_email
     counterparty_user = get_user(counterparty_email) or {}
-    counterparty_name = counterparty_user.get("full_name") or counterparty_email.split("@")[0]
-    counterparty_avatar = counterparty_user.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
+    counterparty_name = counterparty_user.get("full_name") or (counterparty_email.split("@")[0] if counterparty_email else "Partner")
+    counterparty_avatar = counterparty_user.get("avatar") or counterparty_user.get("profilePhotoUrl") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
+    counterparty_verified = counterparty_user.get("verified", True)
 
     order = None
     delivery = None
@@ -3530,23 +3760,45 @@ def get_conversation_detail(conversation_id: str, current_user_email: str) -> Op
 
         delivery = get_delivery_by_booking(conv["booking_id"])
 
+    product = None
+    pid = conv.get("product_id") or (order.get("product_id") if order else None)
+    if pid:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (pid,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(pid)
+
+    product_title = (order.get("product_title") if order else None) or (product.get("title") if product else "Gear Rental")
+    product_image = (order.get("product_image") if order else None) or (product.get("image") if product else "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600")
+    product_price = (product.get("price") if product else None) or (order.get("price") if order else None)
+
     messages = get_conversation_messages(clean_cid)
 
     return {
         "id": conv["id"],
         "bookingId": conv.get("booking_id"),
-        "productId": conv.get("product_id"),
-        "productTitle": order.get("product_title") if order else "Gear Rental",
-        "productImage": order.get("product_image") if order else "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
-        "bookingStatus": order.get("status") if order else "active",
+        "productId": pid,
+        "productTitle": product_title,
+        "productImage": product_image,
+        "productPrice": product_price,
+        "productCategory": product.get("category") if product else None,
+        "productDescription": product.get("description") if product else None,
+        "bookingStatus": order.get("status") if order else ("active" if conv.get("booking_id") else None),
+        "bookingStartDate": order.get("start_date") if order else None,
+        "bookingEndDate": order.get("end_date") if order else None,
+        "bookingTotal": order.get("total_price") if order else None,
         "deliveryId": delivery.get("id") if delivery else None,
-        "deliveryStatus": delivery.get("status") if delivery else "PENDING",
+        "deliveryStatus": delivery.get("status") if delivery else ("PENDING" if conv.get("booking_id") else None),
         "deliveryEtaMinutes": delivery.get("eta_minutes") if delivery else None,
         "isCustomer": is_customer,
         "counterparty": {
             "name": counterparty_name,
             "email": counterparty_email,
             "avatar": counterparty_avatar,
+            "phone": counterparty_user.get("phone"),
+            "verified": counterparty_verified,
             "role": "lender" if is_customer else "customer"
         },
         "createdAt": conv.get("created_at"),
@@ -3555,7 +3807,15 @@ def get_conversation_detail(conversation_id: str, current_user_email: str) -> Op
     }
 
 def add_message(conversation_id: str, sender_email: str, sender_name: str,
-                content: str, message_type: str = "TEXT") -> dict:
+                content: str, message_type: str = "TEXT",
+                attachment_url: Optional[str] = None,
+                file_name: Optional[str] = None,
+                file_type: Optional[str] = None,
+                file_size: Optional[int] = None) -> dict:
+    """
+    Persists a new message in messages table and optional attachment in message_attachments.
+    Updates conversation updated_at timestamp.
+    """
     now_iso = dt.now(timezone.utc).isoformat()
     msg_id = f"msg-{uuid.uuid4().hex[:12]}"
 
@@ -3568,8 +3828,32 @@ def add_message(conversation_id: str, sender_email: str, sender_name: str,
         "content": content,
         "created_at": now_iso,
         "updated_at": now_iso,
-        "deleted_at": None
+        "read_at": None,
+        "deleted_at": None,
+        "attachments": []
     }
+
+    if attachment_url:
+        att_id = f"att-{uuid.uuid4().hex[:12]}"
+        att_record = {
+            "id": att_id,
+            "message_id": msg_id,
+            "file_url": attachment_url,
+            "file_name": file_name or "attachment",
+            "file_type": file_type or "image/jpeg",
+            "file_size": file_size or 0,
+            "created_at": now_iso
+        }
+        msg_record["attachments"].append(att_record)
+
+        if msg_id not in MOCK_MESSAGE_ATTACHMENTS:
+            MOCK_MESSAGE_ATTACHMENTS[msg_id] = []
+        MOCK_MESSAGE_ATTACHMENTS[msg_id].append(att_record)
+
+        execute_query("""
+            INSERT INTO message_attachments (id, message_id, file_url, file_name, file_type, file_size, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (att_id, msg_id, attachment_url, file_name or "attachment", file_type or "image/jpeg", file_size or 0, now_iso))
 
     if conversation_id not in MOCK_MESSAGES:
         MOCK_MESSAGES[conversation_id] = []
@@ -3585,19 +3869,57 @@ def add_message(conversation_id: str, sender_email: str, sender_name: str,
 
     execute_query("UPDATE conversations SET updated_at = %s WHERE id = %s", (now_iso, conversation_id))
 
+    if sender_email and sender_email != "system":
+        execute_query("UPDATE conversation_members SET last_read_at = %s WHERE conversation_id = %s AND LOWER(user_email) = %s", (now_iso, conversation_id, sender_email.strip().lower()))
+
     return msg_record
 
 def mark_conversation_read(conversation_id: str, user_email: str) -> bool:
+    """
+    Marks all messages in conversation as read for the specified user.
+    """
     clean_user = (user_email or "").strip().lower()
+    clean_cid = (conversation_id or "").strip()
     now_iso = dt.now(timezone.utc).isoformat()
 
     execute_query("""
         UPDATE conversation_members
         SET last_read_at = %s
         WHERE conversation_id = %s AND LOWER(user_email) = %s
-    """, (now_iso, conversation_id, clean_user))
+    """, (now_iso, clean_cid, clean_user))
+
+    execute_query("""
+        UPDATE messages
+        SET read_at = %s
+        WHERE conversation_id = %s AND LOWER(sender_email) != %s AND read_at IS NULL
+    """, (now_iso, clean_cid, clean_user))
 
     return True
+
+def get_total_unread_messages_count(user_email: str) -> int:
+    """
+    Returns total unread customer-lender messages across all conversations for the user.
+    """
+    clean_user = (user_email or "").strip().lower()
+    try:
+        row = fetch_one("""
+            SELECT COUNT(m.id) as unread_count
+            FROM conversations c
+            JOIN conversation_members cm ON cm.conversation_id = c.id AND LOWER(cm.user_email) = %s
+            JOIN messages m ON m.conversation_id = c.id
+            WHERE (LOWER(c.customer_email) = %s OR LOWER(c.lender_email) = %s)
+              AND LOWER(m.sender_email) != %s
+              AND (cm.last_read_at IS NULL OR m.created_at > cm.last_read_at)
+              AND m.deleted_at IS NULL
+        """, (clean_user, clean_user, clean_user, clean_user))
+        if row and "unread_count" in row:
+            return int(row["unread_count"])
+    except Exception as e:
+        logger.warning(f"get_total_unread_messages_count DB error: {e}")
+
+    # Fallback to counting in-memory
+    convs = get_user_conversations(clean_user)
+    return sum(c.get("unreadCount", 0) for c in convs)
 
 
 

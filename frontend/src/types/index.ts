@@ -262,15 +262,27 @@ export interface BookingDeliveryResponse {
   };
 }
 
+export interface MessageAttachment {
+  id: string;
+  message_id: string;
+  file_url: string;
+  file_name?: string | null;
+  file_type: string;
+  file_size?: number;
+  created_at: string;
+}
+
 export interface RealtimeMessage {
   id: string;
   conversation_id: string;
   sender_email: string;
   sender_name: string;
-  message_type: "TEXT" | "IMAGE" | "SYSTEM";
+  message_type: "TEXT" | "IMAGE" | "FILE" | "SYSTEM";
   content: string;
   created_at: string;
   updated_at: string;
+  read_at?: string | null;
+  attachments?: MessageAttachment[];
 }
 
 export interface RealtimeConversation {
@@ -279,7 +291,13 @@ export interface RealtimeConversation {
   productId?: string | null;
   productTitle?: string;
   productImage?: string;
+  productPrice?: number;
+  productCategory?: string;
+  productDescription?: string;
   bookingStatus?: string;
+  bookingStartDate?: string;
+  bookingEndDate?: string;
+  bookingTotal?: number;
   deliveryId?: string | null;
   deliveryStatus?: DeliveryStatus;
   deliveryEtaMinutes?: number | null;
@@ -290,6 +308,7 @@ export interface RealtimeConversation {
     email: string;
     avatar?: string;
     phone?: string;
+    verified?: boolean;
     role: "customer" | "lender";
   };
   lastMessage?: string;

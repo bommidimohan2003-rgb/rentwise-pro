@@ -162,12 +162,14 @@ from database import (
     get_delivery_locations,
     confirm_delivery_receipt,
     get_or_create_booking_conversation,
+    get_or_create_product_conversation,
     get_conversation,
     get_user_conversations,
     get_conversation_detail,
     get_conversation_messages,
     add_message,
     mark_conversation_read,
+    get_total_unread_messages_count,
     estimate_delivery_eta_minutes
 )
 from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
@@ -4075,12 +4077,50 @@ def get_delivery_locations_endpoint(delivery_id: str, limit: int = Query(50, ge=
     return {"success": True, "locations": locations}
 
 # ==============================================================================
-# --- BOOKING-LINKED PERSISTENT CHAT & CONVERSATIONS API ---
+# --- CUSTOMER ↔ LENDER PERSISTENT CHAT & CONVERSATIONS API ---
 # ==============================================================================
+
+class CreateOrGetConversationSchema(BaseModel):
+    product_id: Optional[str] = None
+    booking_id: Optional[str] = None
+    initial_message: Optional[str] = None
 
 class SendChatMessageSchema(BaseModel):
     content: str
     message_type: Optional[str] = "TEXT"
+    attachment_url: Optional[str] = None
+    file_name: Optional[str] = None
+    file_type: Optional[str] = None
+    file_size: Optional[int] = None
+
+class MessageAttachmentUploadSchema(BaseModel):
+    file_data: str
+    file_name: str
+    file_type: str
+    file_size: Optional[int] = 0
+
+@app.post("/api/conversations")
+def create_or_get_conversation_endpoint(data: CreateOrGetConversationSchema, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_pid = (data.product_id or "").strip()
+    clean_bid = (data.booking_id or "").strip()
+
+    if not clean_pid and not clean_bid:
+        raise HTTPException(status_code=400, detail="Either product_id or booking_id must be provided.")
+
+    try:
+        if clean_bid:
+            conv = get_or_create_booking_conversation(clean_bid, clean_user)
+        else:
+            conv = get_or_create_product_conversation(clean_pid, clean_user, data.initial_message)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+    detail = get_conversation_detail(conv["id"], clean_user)
+    return {
+        "success": True,
+        "conversation": detail
+    }
 
 @app.get("/api/bookings/{booking_id}/conversation")
 def get_booking_conversation_endpoint(booking_id: str, current_user_email: str = Depends(get_current_user_email)):
@@ -4125,12 +4165,22 @@ def get_booking_conversation_endpoint(booking_id: str, current_user_email: str =
     }
 
 @app.get("/api/conversations")
-def get_conversations_endpoint(current_user_email: str = Depends(get_current_user_email)):
+def get_conversations_endpoint(search: Optional[str] = Query(None), current_user_email: str = Depends(get_current_user_email)):
     clean_user = current_user_email.strip().lower()
-    convs = get_user_conversations(clean_user)
+    convs = get_user_conversations(clean_user, search=search)
     return {
         "success": True,
         "conversations": convs
+    }
+
+@app.get("/api/conversations/unread-count")
+@app.get("/api/messages/unread-count")
+def get_conversations_unread_count_endpoint(current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    cnt = get_total_unread_messages_count(clean_user)
+    return {
+        "success": True,
+        "unreadCount": cnt
     }
 
 @app.get("/api/conversations/{conversation_id}")
@@ -4153,8 +4203,14 @@ def send_conversation_message_endpoint(conversation_id: str, data: SendChatMessa
     clean_cid = conversation_id.strip()
     clean_content = data.content.strip()
 
-    if not clean_content:
-        raise HTTPException(status_code=422, detail="Message content cannot be empty.")
+    # Rate limiting protection: 30 messages per 10s
+    key = f"msg_send_rl:{clean_user}"
+    is_locked, secs = record_failed_auth_attempt(key, max_attempts=30, lock_duration_secs=10)
+    if is_locked:
+        raise HTTPException(status_code=429, detail=f"You are sending messages too quickly. Please wait {secs}s.")
+
+    if not clean_content and not data.attachment_url:
+        raise HTTPException(status_code=422, detail="Message content or attachment is required.")
     if len(clean_content) > 5000:
         raise HTTPException(status_code=422, detail="Message content exceeds maximum allowed length of 5000 characters.")
 
@@ -4182,16 +4238,74 @@ def send_conversation_message_endpoint(conversation_id: str, data: SendChatMessa
         conversation_id=clean_cid,
         sender_email=clean_user,
         sender_name=sender_name,
-        content=clean_content,
-        message_type=data.message_type or "TEXT"
+        content=clean_content or ("Attached file" if data.attachment_url else ""),
+        message_type=data.message_type or ("IMAGE" if data.attachment_url and (data.file_type or "").startswith("image/") else "TEXT"),
+        attachment_url=data.attachment_url,
+        file_name=data.file_name,
+        file_type=data.file_type,
+        file_size=data.file_size
     )
 
     counterparty_email = conv.get("lender_email") if is_customer else conv.get("customer_email")
     if counterparty_email:
+        preview_text = clean_content[:100] + ("..." if len(clean_content) > 100 else "") if clean_content else "Sent an attachment"
         create_notification(
             email=counterparty_email,
             title=f"New Message from {sender_name}",
-            message=clean_content[:100] + ("..." if len(clean_content) > 100 else ""),
+            message=preview_text,
+            notif_type="message"
+        )
+
+    broadcast_chat_message(clean_cid, msg)
+
+    return {
+        "success": True,
+        "message": msg
+    }
+
+@app.post("/api/conversations/{conversation_id}/attachments")
+def upload_conversation_attachment_endpoint(conversation_id: str, data: MessageAttachmentUploadSchema, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    clean_cid = conversation_id.strip()
+
+    conv = get_conversation(clean_cid)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    cust_email = (conv.get("customer_email") or "").strip().lower()
+    lend_email = (conv.get("lender_email") or "").strip().lower()
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != cust_email and clean_user != lend_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Not authorized to upload attachments to this conversation.")
+
+    # Validate attachment size (max 5MB in base64 is ~7MB string)
+    if len(data.file_data) > 7 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Attachment size exceeds 5MB limit.")
+
+    sender_name = user_rec.get("full_name") or clean_user.split("@")[0]
+    msg_type = "IMAGE" if data.file_type.startswith("image/") else "FILE"
+    content_text = f"Shared {data.file_name}"
+
+    msg = add_message(
+        conversation_id=clean_cid,
+        sender_email=clean_user,
+        sender_name=sender_name,
+        content=content_text,
+        message_type=msg_type,
+        attachment_url=data.file_data,
+        file_name=data.file_name,
+        file_type=data.file_type,
+        file_size=data.file_size
+    )
+
+    counterparty_email = lend_email if clean_user == cust_email else cust_email
+    if counterparty_email:
+        create_notification(
+            email=counterparty_email,
+            title=f"New Attachment from {sender_name}",
+            message=content_text,
             notif_type="message"
         )
 

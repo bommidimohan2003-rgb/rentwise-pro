@@ -1674,17 +1674,59 @@ export const api = {
     return await res.json();
   },
 
+  async createOrGetConversation(
+    token: string,
+    payload: { productId?: string; bookingId?: string; initialMessage?: string },
+    signal?: AbortSignal,
+  ): Promise<{ success: boolean; conversation: RealtimeConversation }> {
+    const res = await this.fetchWithAuth(`${API_BASE}/api/conversations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        product_id: payload.productId,
+        booking_id: payload.bookingId,
+        initial_message: payload.initialMessage,
+      }),
+      signal,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Failed to initiate conversation"));
+    }
+    return await res.json();
+  },
+
   async getRealtimeConversations(
     token: string,
+    search?: string,
     signal?: AbortSignal,
   ): Promise<{ success: boolean; conversations: RealtimeConversation[] }> {
-    const res = await this.fetchWithAuth(`${API_BASE}/api/conversations`, {
+    const url = new URL(`${API_BASE}/api/conversations`);
+    if (search && search.trim()) {
+      url.searchParams.set("search", search.trim());
+    }
+    const res = await this.fetchWithAuth(url.toString(), {
       method: "GET",
       signal,
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to fetch conversations"));
+    }
+    return await res.json();
+  },
+
+  async getUnreadMessagesCount(
+    token: string,
+    signal?: AbortSignal,
+  ): Promise<{ success: boolean; unreadCount: number }> {
+    if (!token) return { success: true, unreadCount: 0 };
+    const res = await this.fetchWithAuth(`${API_BASE}/api/conversations/unread-count`, {
+      method: "GET",
+      signal,
+    });
+    if (!res.ok) {
+      return { success: false, unreadCount: 0 };
     }
     return await res.json();
   },
@@ -1713,18 +1755,54 @@ export const api = {
     conversationId: string,
     content: string,
     messageType: string = "TEXT",
+    attachmentUrl?: string,
+    fileName?: string,
+    fileType?: string,
+    fileSize?: number,
   ): Promise<{ success: boolean; message: RealtimeMessage }> {
     const res = await this.fetchWithAuth(
       `${API_BASE}/api/conversations/${conversationId}/messages`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, message_type: messageType }),
+        body: JSON.stringify({
+          content,
+          message_type: messageType,
+          attachment_url: attachmentUrl,
+          file_name: fileName,
+          file_type: fileType,
+          file_size: fileSize,
+        }),
       },
     );
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Unable to send your message. Please try again."));
+    }
+    return await res.json();
+  },
+
+  async uploadConversationAttachment(
+    token: string,
+    conversationId: string,
+    payload: { fileData: string; fileName: string; fileType: string; fileSize?: number },
+  ): Promise<{ success: boolean; message: RealtimeMessage }> {
+    const res = await this.fetchWithAuth(
+      `${API_BASE}/api/conversations/${conversationId}/attachments`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file_data: payload.fileData,
+          file_name: payload.fileName,
+          file_type: payload.fileType,
+          file_size: payload.fileSize || 0,
+        }),
+      },
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Unable to upload attachment. Please try again."));
     }
     return await res.json();
   },

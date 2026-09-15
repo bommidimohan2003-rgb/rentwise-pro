@@ -96,6 +96,41 @@ export default function ProductDetails() {
     (user.fullName === product.owner.name || user.email === product.owner.name),
   );
 
+  const [messagingLoading, setMessagingLoading] = useState(false);
+
+  const handleMessageLender = async () => {
+    if (!product) return;
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (!token || !user) {
+      toast.error("Please sign in to message the lender.");
+      navigate({ to: "/login", search: { redirect: `/product/${id}` } as any });
+      return;
+    }
+
+    if (isOwner) {
+      toast.info("You are the owner of this gear listing.");
+      return;
+    }
+
+    setMessagingLoading(true);
+    try {
+      const res = await api.createOrGetConversation(token, {
+        productId: product.id,
+      });
+      if (res.success && res.conversation) {
+        navigate({
+          to: "/messages",
+          search: { conversationId: res.conversation.id } as any,
+        });
+      }
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      toast.error(e.message || "Failed to start conversation with lender.");
+    } finally {
+      setMessagingLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!product) return;
     const currentId = product.id;
@@ -319,13 +354,14 @@ export default function ProductDetails() {
                   <Button
                     variant="outline"
                     size="sm"
+                    loading={messagingLoading}
                     leftIcon={
                       <MessageSquare className="h-3.5 w-3.5 text-foreground" />
                     }
-                    onClick={() => navigate({ to: "/messages" })}
+                    onClick={handleMessageLender}
                     className="font-bold text-xs border-border hover:border-primary"
                   >
-                    Message
+                    Message Lender
                   </Button>
                 </div>
               ) : (

@@ -9,10 +9,12 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useAuth();
+  const { unreadCount } = useUnreadMessages();
 
   const navItems = [
     {
@@ -20,30 +22,35 @@ export function MobileBottomNav() {
       label: "Home",
       icon: Home,
       exact: true,
+      badge: undefined,
     },
     {
       to: "/browse",
       label: "Explore",
       icon: Compass,
       exact: false,
+      badge: undefined,
     },
     {
       to: "/become-lender",
       label: "Lend",
       icon: PlusCircle,
       exact: false,
+      badge: undefined,
     },
     {
       to: "/dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
       exact: false,
+      badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : `${unreadCount}`) : undefined,
     },
     {
       to: user ? "/profile" : "/login",
       label: user ? "Account" : "Sign In",
       icon: user ? User : LogIn,
       exact: false,
+      badge: undefined,
     },
   ];
 
