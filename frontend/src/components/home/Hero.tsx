@@ -145,6 +145,8 @@ export function Hero() {
             <img
               src={activeGear.image}
               alt={activeGear.name}
+              fetchPriority="high"
+              loading="eager"
               className="w-full h-full object-cover sm:object-contain lg:object-cover opacity-85 sm:opacity-90 dark:opacity-60 filter contrast-125 saturate-135 brightness-[0.95] dark:brightness-95 drop-shadow-[0_15px_35px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition-all pointer-events-none"
             />
           </motion.div>

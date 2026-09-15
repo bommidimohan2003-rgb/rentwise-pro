@@ -12,7 +12,7 @@ import logging
 import hashlib
 import datetime
 import uuid
-from typing import Optional, List, Set, Dict
+from typing import Optional, List, Set, Dict, Tuple
 from datetime import datetime as dt, timezone, timedelta
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB, MYSQL_SSL
 
@@ -73,20 +73,20 @@ def get_db_pool():
     try:
         _db_pool = PooledDB(
             creator=pymysql,
-            mincached=2,
-            maxcached=10,
-            maxshared=10,
-            maxconnections=20,
-            blocking=True,
+            mincached=3,
+            maxcached=20,
+            maxshared=0,
+            maxconnections=0,
+            blocking=False,
             maxusage=1000,
-            ping=1,
+            ping=7,
             host=MYSQL_HOST,
             port=MYSQL_PORT,
             user=MYSQL_USER,
             password=MYSQL_PASSWORD,
             database=MYSQL_DB,
             cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=3,
+            connect_timeout=5,
             autocommit=True,
             **ssl_kwargs
         )
@@ -174,7 +174,12 @@ def fetch_all(query: str, params: tuple = ()):
         print(f"Notice: Database fetch_all notice: {e}")
         return []
 
-def init_db():
+_db_initialized = False
+
+def init_db(force: bool = False):
+    global _db_initialized
+    if _db_initialized and not force:
+        return
     # Ensure database exists before table setup
     ensure_database_exists()
 
@@ -241,6 +246,7 @@ def init_db():
     add_column_safely("users", "profile_photo_url LONGTEXT NULL")
     add_index_safely("users", "idx_users_aadhaar_number", "aadhaar_number")
     add_index_safely("users", "idx_users_phone", "phone")
+    add_index_safely("users", "idx_users_city", "city")
 
     # Create token_blocklist table for server-side JWT revocation
     execute_query("""
@@ -324,6 +330,9 @@ def init_db():
     add_column_safely("orders", "payment_status VARCHAR(50) DEFAULT 'unpaid'")
     add_column_safely("orders", "refund_id VARCHAR(255)")
     add_column_safely("orders", "refund_status VARCHAR(50)")
+    add_index_safely("orders", "idx_orders_user_email", "user_email")
+    add_index_safely("orders", "idx_orders_status", "status")
+    add_index_safely("orders", "idx_orders_created_at", "created_at")
 
     # Create cart_items table
     execute_query("""
@@ -370,6 +379,9 @@ def init_db():
     add_column_safely("custom_products", "images LONGTEXT")
     add_column_safely("custom_products", "documents LONGTEXT")
     add_index_safely("custom_products", "idx_custom_products_user_email", "user_email")
+    add_index_safely("custom_products", "idx_cp_status_hidden_created", "status, hidden, created_at")
+    add_index_safely("custom_products", "idx_cp_category", "category")
+    add_index_safely("custom_products", "idx_cp_price", "price")
 
     # Create agents table
     execute_query("""
@@ -395,6 +407,8 @@ def init_db():
             created_at VARCHAR(100)
         )
     """)
+    add_index_safely("notifications", "idx_notif_user_read", "user_email, is_read")
+    add_index_safely("notifications", "idx_notif_user_created", "user_email, created_at")
 
     # Create categories table
     execute_query("""
@@ -406,6 +420,7 @@ def init_db():
             enabled BOOLEAN DEFAULT TRUE
         )
     """)
+    add_index_safely("categories", "idx_categories_enabled", "enabled")
 
     # Create reviews table
     execute_query("""
@@ -435,6 +450,8 @@ def init_db():
     add_index_safely("reviews", "idx_reviews_booking_id", "booking_id")
     add_index_safely("reviews", "idx_reviews_rating", "rating")
     add_index_safely("reviews", "idx_reviews_created_at", "created_at")
+    add_index_safely("reviews", "idx_reviews_hidden_created", "hidden, created_at")
+    add_index_safely("reviews", "idx_reviews_hidden_product", "hidden, product_id, created_at")
 
     # Create reports table
     execute_query("""
@@ -757,6 +774,7 @@ def init_db():
     except Exception as sync_err:
         print(f"Notice: Auto sync existing product owners to agents notice: {sync_err}")
 
+    _db_initialized = True
     print("MySQL database structures initialized.")
 
 _admin_hashed_pwd = "$2b$12$XbPCF4zGTgcZs6Z9afnXVuenqYPwmRIjLRs8PwXT7KZy99U8W2nE2"
@@ -1218,7 +1236,9 @@ def get_custom_products(email: str):
             try:
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        SELECT cp.*, 
+                        SELECT cp.id, cp.user_email, cp.title, cp.description, cp.price, cp.image,
+                               cp.category, cp.rating, cp.reviews, cp.available, cp.status,
+                               cp.owner_name, cp.owner_avatar, cp.owner_rating, cp.featured, cp.created_at,
                                u.address AS owner_address, 
                                u.city AS owner_city, 
                                u.state AS owner_state, 
@@ -1227,9 +1247,9 @@ def get_custom_products(email: str):
                                u.verified AS owner_verified,
                                a.status AS agent_status
                         FROM custom_products cp
-                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
-                        LEFT JOIN agents a ON LOWER(cp.user_email) = LOWER(a.user_email)
-                        WHERE LOWER(cp.user_email) = %s 
+                        LEFT JOIN users u ON cp.user_email = u.email
+                        LEFT JOIN agents a ON cp.user_email = a.user_email
+                        WHERE cp.user_email = %s 
                         ORDER BY cp.created_at DESC
                     """, (clean_email,))
                     rows = cursor.fetchall()
@@ -1248,7 +1268,9 @@ def get_all_custom_products():
             try:
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        SELECT cp.*, 
+                        SELECT cp.id, cp.user_email, cp.title, cp.description, cp.price, cp.image,
+                               cp.category, cp.rating, cp.reviews, cp.available, cp.status,
+                               cp.owner_name, cp.owner_avatar, cp.owner_rating, cp.featured, cp.created_at,
                                u.address AS owner_address, 
                                u.city AS owner_city, 
                                u.state AS owner_state, 
@@ -1257,8 +1279,8 @@ def get_all_custom_products():
                                u.verified AS owner_verified,
                                a.status AS agent_status
                         FROM custom_products cp
-                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
-                        LEFT JOIN agents a ON LOWER(cp.user_email) = LOWER(a.user_email)
+                        LEFT JOIN users u ON cp.user_email = u.email
+                        LEFT JOIN agents a ON cp.user_email = a.user_email
                         ORDER BY cp.created_at DESC
                     """)
                     rows = cursor.fetchall()
@@ -1308,36 +1330,62 @@ def ensure_agent_profile(email: str):
     except Exception as e:
         logger.warning(f"Notice: ensure_agent_profile for {clean_email} notice: {e}")
 
-def get_all_approved_custom_products():
+def get_all_approved_custom_products(limit: Optional[int] = None, offset: int = 0):
     try:
         conn = get_db_connection()
         if conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute("""
-                        SELECT cp.*, 
-                               u.address AS owner_address, 
-                               u.city AS owner_city, 
-                               u.state AS owner_state, 
-                               u.pincode AS owner_pincode,
-                               u.status AS owner_status,
-                               u.verified AS owner_verified,
-                               a.status AS agent_status
-                        FROM custom_products cp
-                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
-                        LEFT JOIN agents a ON LOWER(cp.user_email) = LOWER(a.user_email)
-                        WHERE (cp.status = 'approved' OR cp.status IS NULL) 
-                          AND (cp.hidden = 0 OR cp.hidden IS NULL) 
-                        ORDER BY cp.created_at DESC
-                    """)
+                    if limit is not None and limit > 0:
+                        cursor.execute("""
+                            SELECT cp.id, cp.user_email, cp.title, cp.description, cp.price, cp.image,
+                                   cp.category, cp.rating, cp.reviews, cp.available, cp.status,
+                                   cp.owner_name, cp.owner_avatar, cp.owner_rating, cp.featured, cp.created_at,
+                                   u.address AS owner_address, 
+                                   u.city AS owner_city, 
+                                   u.state AS owner_state, 
+                                   u.pincode AS owner_pincode,
+                                   u.status AS owner_status,
+                                   u.verified AS owner_verified,
+                                   a.status AS agent_status
+                            FROM custom_products cp
+                            LEFT JOIN users u ON cp.user_email = u.email
+                            LEFT JOIN agents a ON cp.user_email = a.user_email
+                            WHERE (cp.status = 'approved' OR cp.status IS NULL) 
+                              AND (cp.hidden = 0 OR cp.hidden IS NULL) 
+                            ORDER BY cp.created_at DESC
+                            LIMIT %s OFFSET %s
+                        """, (limit, max(0, offset)))
+                    else:
+                        cursor.execute("""
+                            SELECT cp.id, cp.user_email, cp.title, cp.description, cp.price, cp.image,
+                                   cp.category, cp.rating, cp.reviews, cp.available, cp.status,
+                                   cp.owner_name, cp.owner_avatar, cp.owner_rating, cp.featured, cp.created_at,
+                                   u.address AS owner_address, 
+                                   u.city AS owner_city, 
+                                   u.state AS owner_state, 
+                                   u.pincode AS owner_pincode,
+                                   u.status AS owner_status,
+                                   u.verified AS owner_verified,
+                                   a.status AS agent_status
+                            FROM custom_products cp
+                            LEFT JOIN users u ON cp.user_email = u.email
+                            LEFT JOIN agents a ON cp.user_email = a.user_email
+                            WHERE (cp.status = 'approved' OR cp.status IS NULL) 
+                              AND (cp.hidden = 0 OR cp.hidden IS NULL) 
+                            ORDER BY cp.created_at DESC
+                        """)
                     rows = cursor.fetchall()
-                    if rows:
+                    if rows is not None:
                         return rows
             finally:
                 conn.close()
     except Exception as e:
         print(f"Notice: Database read error in get_all_approved_custom_products: {e}")
-    return [p for p in MOCK_CUSTOM_PRODUCTS.values() if p.get("status") in ("approved", None) and not p.get("hidden")]
+    res = [p for p in MOCK_CUSTOM_PRODUCTS.values() if p.get("status") in ("approved", None) and not p.get("hidden")]
+    if limit is not None and limit > 0:
+        return res[offset:offset+limit]
+    return res
 
 def create_custom_product(email: str, product: dict):
     clean_email = (email or "").strip().lower()
@@ -2513,13 +2561,15 @@ def get_reviews_from_db(
             total = count_row["total"] if count_row else 0
 
             query = f"""
-                SELECT r.*, 
+                SELECT r.id, r.product_id, r.product_title, r.product_image, r.booking_id,
+                       r.user_email, r.user_name, r.user_avatar, r.user_location, r.user_role,
+                       r.rating, r.comment, r.is_verified, r.created_at, r.updated_at,
                        u.full_name AS db_user_name, 
                        u.avatar AS db_user_avatar, 
                        u.city AS db_user_city, 
                        u.occupation AS db_user_role
                 FROM reviews r
-                LEFT JOIN users u ON LOWER(r.user_email) = LOWER(u.email)
+                LEFT JOIN users u ON r.user_email = u.email
                 {where_clause}
                 {order_clause}
                 LIMIT %s OFFSET %s
@@ -2586,27 +2636,27 @@ def get_review_stats_from_db(product_id: Optional[str] = None) -> dict:
     try:
         with conn.cursor() as cursor:
             cursor.execute(f"""
-                SELECT COUNT(*) as total, IFNULL(AVG(rating), 0) as avg_rating
+                SELECT 
+                    COUNT(*) as total,
+                    IFNULL(AVG(rating), 0) as avg_rating,
+                    COUNT(CASE WHEN rating = 5 THEN 1 END) as r5,
+                    COUNT(CASE WHEN rating = 4 THEN 1 END) as r4,
+                    COUNT(CASE WHEN rating = 3 THEN 1 END) as r3,
+                    COUNT(CASE WHEN rating = 2 THEN 1 END) as r2,
+                    COUNT(CASE WHEN rating = 1 THEN 1 END) as r1
                 FROM reviews
                 {where_clause}
             """, tuple(params))
-            stats_row = cursor.fetchone()
-            total = stats_row["total"] if stats_row else 0
-            avg_rating = round(float(stats_row["avg_rating"]), 1) if stats_row and stats_row["avg_rating"] else 0.0
-
-            cursor.execute(f"""
-                SELECT rating, COUNT(*) as cnt
-                FROM reviews
-                {where_clause}
-                GROUP BY rating
-            """, tuple(params))
-            dist_rows = cursor.fetchall()
-            distribution = {"5": 0, "4": 0, "3": 0, "2": 0, "1": 0}
-            for row in dist_rows:
-                r_key = str(int(row["rating"]))
-                if r_key in distribution:
-                    distribution[r_key] = int(row["cnt"])
-
+            stats_row = cursor.fetchone() or {}
+            total = int(stats_row.get("total") or 0)
+            avg_rating = round(float(stats_row.get("avg_rating")), 1) if stats_row.get("avg_rating") else 0.0
+            distribution = {
+                "5": int(stats_row.get("r5") or 0),
+                "4": int(stats_row.get("r4") or 0),
+                "3": int(stats_row.get("r3") or 0),
+                "2": int(stats_row.get("r2") or 0),
+                "1": int(stats_row.get("r1") or 0)
+            }
             return {
                 "averageRating": avg_rating,
                 "totalReviews": total,
@@ -2850,31 +2900,24 @@ def check_products_booking_conflicts(product_ids: List[str], start_date_str: str
 
     return conflicted
 
-def evaluate_product_availability(product: dict) -> tuple:
+def evaluate_product_availability(product: dict, booked_pids_set: Optional[Set[str]] = None) -> Tuple[bool, str, Optional[str]]:
     """
-    Authoritative evaluation of real lender-based product availability.
-    Returns: (is_available: bool, status_str: str, reason: Optional[str])
-
-    Business Rules:
-    1. Product exists and is not hidden or unlisted.
-    2. Product listing is approved (status == 'approved' or None).
-    3. Product belongs to an eligible/approved lender:
-       - owner_status in ('active', 'approved').
-       - If owner_status in ('pending', 'rejected', 'suspended'): NOT available.
-       - If agent_status in ('rejected', 'suspended'): NOT available.
-    4. Product is currently marked available by lender:
-       - bool(product.get('available', True)) is True.
-    5. No ongoing active rental booking conflict for current date.
+    Authoritatively calculates product availability based on:
+    1. Product approval / hidden flags
+    2. Lender user status and agent status
+    3. Lender explicit availability toggle
+    4. Active booking collision (for current date) - uses pre-fetched booked_pids_set if provided to avoid N+1 queries
     """
     if not product:
         return False, "unavailable", "Product not found"
 
-    if product.get("hidden") or product.get("is_deleted"):
-        return False, "unavailable", "Product is unlisted"
+    # Status check
+    status = str(product.get("status") or "approved").lower().strip()
+    if status not in ("approved", "active"):
+        return False, "unavailable", f"Listing {status}"
 
-    prod_status = str(product.get("status") or "approved").lower().strip()
-    if prod_status in ("rejected", "pending"):
-        return False, "unavailable", f"Listing {prod_status}"
+    if bool(product.get("hidden", False)):
+        return False, "unavailable", "Listing hidden"
 
     # Check lender account status
     owner_status = str(product.get("owner_status") or "").lower().strip()
@@ -2910,10 +2953,14 @@ def evaluate_product_availability(product: dict) -> tuple:
     # Check active booking collision for today
     pid = str(product.get("id") or "")
     if pid:
-        today_str = dt.now(timezone.utc).strftime("%Y-%m-%d")
-        ongoing_conflicts = check_products_booking_conflicts([pid], today_str, today_str)
-        if pid in ongoing_conflicts:
-            return False, "unavailable", "Booked for current dates"
+        if booked_pids_set is not None:
+            if pid in booked_pids_set:
+                return False, "unavailable", "Booked for current dates"
+        else:
+            today_str = dt.now(timezone.utc).strftime("%Y-%m-%d")
+            ongoing_conflicts = check_products_booking_conflicts([pid], today_str, today_str)
+            if pid in ongoing_conflicts:
+                return False, "unavailable", "Booked for current dates"
 
     return True, "available", None
 
@@ -3031,14 +3078,14 @@ def add_or_update_cart_item(
 
 def remove_cart_item(user_email: str, item_id: str) -> bool:
     clean_email = (user_email or "").strip().lower()
-    execute_query("DELETE FROM cart_items WHERE id = %s AND LOWER(user_email) = LOWER(%s)", (item_id, clean_email))
+    execute_query("DELETE FROM cart_items WHERE id = %s AND user_email = %s", (item_id, clean_email))
     if clean_email in MOCK_CARTS:
         MOCK_CARTS[clean_email] = [it for it in MOCK_CARTS[clean_email] if it.get("id") != item_id]
     return True
 
 def clear_user_cart(user_email: str) -> bool:
     clean_email = (user_email or "").strip().lower()
-    execute_query("DELETE FROM cart_items WHERE LOWER(user_email) = LOWER(%s)", (clean_email,))
+    execute_query("DELETE FROM cart_items WHERE user_email = %s", (clean_email,))
     if clean_email in MOCK_CARTS:
         MOCK_CARTS[clean_email] = []
     return True

@@ -12,6 +12,7 @@ import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { useWishlist } from "@/hooks/useWishlist";
 import { toast } from "sonner";
 import type { Product } from "@/types";
+import { getOptimizedImageUrl, getResponsiveImageSrcSet } from "@/utils/images";
 
 interface DisplayProduct {
   id: string;
@@ -28,12 +29,36 @@ interface DisplayProduct {
 export function FeaturedProducts() {
   const navigate = useNavigate();
   const { has, toggle } = useWishlist();
-  const [products, setProducts] = useState<DisplayProduct[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [products, setProducts] = useState<DisplayProduct[]>(() => {
+    const cached = storage.get<Product[]>("payent_server_products", []);
+    const seen = new Set<string>();
+    const unique = cached.filter((p) => {
+      if (!p || !p.id || !p.title || seen.has(p.id)) return false;
+      seen.add(p.id);
+      return p.status === "approved" || !p.status;
+    });
+    return unique.map((p, idx) => ({
+      id: p.id,
+      title: p.title,
+      category: p.category || "Gear",
+      price: Number(p.price) || 0,
+      rating: Number(p.rating) || 5.0,
+      reviewsCount: Number(p.reviews) || 0,
+      location: p.location || p.owner?.city || p.owner?.address || "India",
+      image: p.image || (p.images && p.images[0]) || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+      badge: idx === 0 ? "Featured" : p.status === "approved" ? "Verified" : undefined,
+    }));
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    const cached = storage.get<Product[]>("payent_server_products", []);
+    return cached.length === 0;
+  });
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
   const loadRealProducts = useCallback(async () => {
-    setIsLoading(true);
+    if (products.length === 0) {
+      setIsLoading(true);
+    }
     try {
       let realListings: Product[] = [];
 
@@ -71,11 +96,13 @@ export function FeaturedProducts() {
       setProducts(mapped);
     } catch (err) {
       console.warn("[FeaturedProducts] Could not load real products:", err);
-      setProducts([]);
+      if (products.length === 0) {
+        setProducts([]);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [products.length]);
 
   useEffect(() => {
     loadRealProducts();
@@ -211,6 +238,13 @@ export function FeaturedProducts() {
                 <div
                   key={p.id}
                   onClick={() => handleDetails(p.id)}
+                  onMouseEnter={() => {
+                    api.cacheProduct({ id: p.id, title: p.title, price: p.price, image: p.image, category: p.category } as any);
+                    api.getProduct(p.id).catch(() => {});
+                  }}
+                  onFocus={() => {
+                    api.getProduct(p.id).catch(() => {});
+                  }}
                   className="group relative rounded-2xl overflow-hidden bg-white dark:bg-[#0A1017] hover:bg-neutral-50/80 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 shadow-sm hover:shadow-xl dark:shadow-none dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer p-3.5"
                 >
                   {/* Top Image Stage */}
@@ -239,9 +273,12 @@ export function FeaturedProducts() {
 
                     {/* Product Image */}
                     <img
-                      src={p.image}
+                      src={getOptimizedImageUrl(p.image, 'card')}
+                      srcSet={getResponsiveImageSrcSet(p.image, [320, 480, 640]) || undefined}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
                       alt={p.title}
                       loading="lazy"
+                      decoding="async"
                       className="max-h-full max-w-full object-contain filter contrast-110 drop-shadow-[0_8px_16px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)] group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>

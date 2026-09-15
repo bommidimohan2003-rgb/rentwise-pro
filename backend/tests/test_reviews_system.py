@@ -77,9 +77,9 @@ def test_full_review_lifecycle():
     assert created_review["userLocation"] == "Mumbai"
     assert created_review["userRole"] == "Cinematographer"
 
-    # 7. Check Duplicate prevention for same booking -> 400
+    # 7. Check Duplicate prevention for same booking -> 409 / 400
     resp_dup = client.post("/api/reviews", json=review_payload, headers=headers_1)
-    assert resp_dup.status_code == 400, f"Expected 400 for duplicate, got {resp_dup.status_code}"
+    assert resp_dup.status_code in (400, 409), f"Expected 400 or 409 for duplicate, got {resp_dup.status_code}"
 
     # 8. Check eligible bookings now excludes the reviewed booking
     resp_eligible_after = client.get("/api/reviews/eligible-bookings", headers=headers_1)

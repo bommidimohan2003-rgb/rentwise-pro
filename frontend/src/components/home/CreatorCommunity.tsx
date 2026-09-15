@@ -9,8 +9,12 @@ export function CreatorCommunity() {
           {/* Background Cinematic Photo & Overlays */}
           <div className="absolute inset-0 z-0">
             <img
-              src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1600&q=85"
+              src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1000&q=75"
+              srcSet="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=480&q=70 480w, https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=800&q=75 800w, https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80 1200w"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1200px"
               alt="Creators community filming"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover object-right sm:object-center filter brightness-60 contrast-110"
             />
             {/* Dark gradient from left to allow readability */}

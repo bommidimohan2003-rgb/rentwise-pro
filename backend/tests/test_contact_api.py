@@ -1,6 +1,9 @@
 import unittest
 from fastapi.testclient import TestClient
-from backend.main import app
+try:
+    from backend.main import app
+except ImportError:
+    from main import app
 
 class TestContactApi(unittest.TestCase):
     def setUp(self):

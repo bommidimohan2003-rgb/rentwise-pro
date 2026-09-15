@@ -23,6 +23,7 @@ import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { api } from "@/utils/api";
 import { formatOwnerAddress } from "@/utils/formatters";
 import { CSSTiltCard } from "./CSSTiltCard";
+import { getOptimizedImageUrl, getResponsiveImageSrcSet } from "@/utils/images";
 
 import cameraImg from "@/assets/images/camera.png";
 import laptopImg from "@/assets/images/laptop.png";
@@ -118,8 +119,11 @@ export function ProductCard({
   const location = formatOwnerAddress(product);
 
   const handlePreload = () => {
-    if (product) {
+    if (product && product.id) {
       api.cacheProduct(product);
+      if (!product.isReference) {
+        api.getProduct(product.id).catch(() => {});
+      }
       if (imgSrc && typeof window !== "undefined") {
         const img = new Image();
         img.src = imgSrc;
@@ -148,13 +152,13 @@ export function ProductCard({
       });
       return;
     }
-    navigate({ to: "/product/$id", params: { id: product.id } });
+    navigate({ to: `/product/${product.id}` });
   };
 
   const isAvailable =
-    product.availability_status !== undefined
-      ? product.availability_status === "available"
-      : isDateAvailable ?? product.available !== false;
+    product.available !== false &&
+    isDateAvailable &&
+    product.availability_status !== "unavailable";
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -199,10 +203,13 @@ export function ProductCard({
         {/* Card Header & Media */}
         <div className="relative aspect-[16/11] sm:aspect-[4/3] w-full overflow-hidden bg-secondary/60 p-0 flex items-center justify-center border-b border-border/40">
           <img
-            src={imgSrc}
+            src={getOptimizedImageUrl(imgSrc, 'card')}
+            srcSet={getResponsiveImageSrcSet(imgSrc, [320, 480, 640]) || undefined}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
             alt={product.title}
             onError={() => setImgSrc(fallbackImg)}
-            loading="eager"
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-108"
           />
 

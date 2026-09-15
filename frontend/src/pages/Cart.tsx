@@ -13,6 +13,7 @@ import {
 import { MainLayout } from "@/layouts/MainLayout";
 import { useCart } from "@/hooks/useCart";
 import cameraFallback from "@/assets/images/camera.png";
+import { getOptimizedImageUrl } from "@/utils/images";
 
 export default function Cart() {
   const {
@@ -112,8 +113,10 @@ export default function Cart() {
                     <div className="flex items-center gap-4 min-w-0 flex-1">
                       {/* Thumbnail */}
                       <img
-                        src={item.image || cameraFallback}
+                        src={getOptimizedImageUrl(item.image || cameraFallback, 'thumb')}
                         alt={item.title}
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           e.currentTarget.src = cameraFallback;
                         }}

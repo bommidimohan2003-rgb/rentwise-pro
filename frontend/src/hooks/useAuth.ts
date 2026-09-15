@@ -3,75 +3,106 @@ import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { User } from "@/types";
 
+let _inFlightAuthPromise: Promise<User | null> | null = null;
+let _lastAuthFetchTime = 0;
+const AUTH_TTL_MS = 15000;
+
+async function fetchAuthProfile(token: string, cachedUser: User | null): Promise<User | null> {
+  const now = Date.now();
+  if (_inFlightAuthPromise) {
+    return _inFlightAuthPromise;
+  }
+  if (cachedUser && now - _lastAuthFetchTime < AUTH_TTL_MS) {
+    return cachedUser;
+  }
+
+  _inFlightAuthPromise = (async () => {
+    try {
+      const profile = await api.getMe(token);
+      if (!profile) return cachedUser;
+      const loggedUser: User = {
+        id: profile.email || profile.id || cachedUser?.id || token,
+        fullName:
+          profile.fullName ||
+          cachedUser?.fullName ||
+          profile.email?.split("@")[0] ||
+          "User",
+        email: profile.email || cachedUser?.email || "",
+        phone: profile.phone || cachedUser?.phone || "",
+        address: profile.address || cachedUser?.address || "",
+        city: profile.city || cachedUser?.city || "",
+        state: profile.state || cachedUser?.state || "",
+        country: profile.country || cachedUser?.country || "India",
+        pincode: profile.pincode || cachedUser?.pincode || "",
+        latitude: profile.latitude ?? cachedUser?.latitude ?? null,
+        longitude: profile.longitude ?? cachedUser?.longitude ?? null,
+        locationUpdatedAt: profile.locationUpdatedAt || cachedUser?.locationUpdatedAt || "",
+        occupation: profile.occupation || cachedUser?.occupation || "",
+        bio: profile.bio || cachedUser?.bio || "",
+        avatar: profile.avatar || profile.profilePhotoUrl || profile.profile_photo_url || cachedUser?.avatar,
+        profilePhotoUrl: profile.profilePhotoUrl || profile.profile_photo_url || cachedUser?.profilePhotoUrl || "",
+        role: profile.role || cachedUser?.role || "customer",
+        status: profile.status || cachedUser?.status || "active",
+        aadhaarMasked: profile.aadhaarMasked || profile.aadhaar_masked || cachedUser?.aadhaarMasked || "",
+        website: profile.website || cachedUser?.website || "",
+        upiId: profile.upiId || cachedUser?.upiId || "",
+      };
+      storage.set(STORAGE_KEYS.currentUser, loggedUser);
+      _lastAuthFetchTime = Date.now();
+      return loggedUser;
+    } catch (err: unknown) {
+      console.warn("[Auth] Session validation notice:", err);
+      const errorObj = err as { status?: number; message?: string };
+      const is401 =
+        errorObj?.status === 401 ||
+        (errorObj?.message &&
+          (errorObj.message.includes("401") ||
+            errorObj.message.includes("Invalid token") ||
+            errorObj.message.includes("expired")));
+      if (is401) {
+        storage.remove(STORAGE_KEYS.token);
+        storage.remove(STORAGE_KEYS.currentUser);
+        return null;
+      }
+      return cachedUser;
+    } finally {
+      _inFlightAuthPromise = null;
+    }
+  })();
+
+  return _inFlightAuthPromise;
+}
+
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    return storage.get<User | null>(STORAGE_KEYS.currentUser, null);
+  });
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const initAuth = async () => {
-      // 1. Hydrate cached user session
       const cachedUser = storage.get<User | null>(
         STORAGE_KEYS.currentUser,
         null,
       );
-      if (cachedUser) {
+      if (cachedUser && isMounted) {
         setUser(cachedUser);
         setReady(true);
       }
 
       const token = storage.get<string | null>(STORAGE_KEYS.token, null);
       if (token) {
-        try {
-          const profile = await api.getMe(token);
-          const loggedUser: User = {
-            id: profile.email || profile.id || cachedUser?.id || token,
-            fullName:
-              profile.fullName ||
-              cachedUser?.fullName ||
-              profile.email?.split("@")[0] ||
-              "User",
-            email: profile.email || cachedUser?.email || "",
-            phone: profile.phone || cachedUser?.phone || "",
-            address: profile.address || cachedUser?.address || "",
-            city: profile.city || cachedUser?.city || "",
-            state: profile.state || cachedUser?.state || "",
-            country: profile.country || cachedUser?.country || "India",
-            pincode: profile.pincode || cachedUser?.pincode || "",
-            latitude: profile.latitude ?? cachedUser?.latitude ?? null,
-            longitude: profile.longitude ?? cachedUser?.longitude ?? null,
-            locationUpdatedAt: profile.locationUpdatedAt || cachedUser?.locationUpdatedAt || "",
-            occupation: profile.occupation || cachedUser?.occupation || "",
-            bio: profile.bio || cachedUser?.bio || "",
-            avatar: profile.avatar || profile.profilePhotoUrl || profile.profile_photo_url || cachedUser?.avatar,
-            profilePhotoUrl: profile.profilePhotoUrl || profile.profile_photo_url || cachedUser?.profilePhotoUrl || "",
-            role: profile.role || cachedUser?.role || "customer",
-            status: profile.status || cachedUser?.status || "active",
-            aadhaarMasked: profile.aadhaarMasked || profile.aadhaar_masked || cachedUser?.aadhaarMasked || "",
-            website: profile.website || cachedUser?.website || "",
-            upiId: profile.upiId || cachedUser?.upiId || "",
-          };
-          storage.set(STORAGE_KEYS.currentUser, loggedUser);
-          setUser(loggedUser);
-        } catch (err: unknown) {
-          console.warn("[Auth] Session validation notice:", err);
-          const errorObj = err as { status?: number; message?: string };
-          // Only invalidate session if backend explicitly returned a 401 Unauthorized response
-          const is401 =
-            errorObj?.status === 401 ||
-            (errorObj?.message &&
-              (errorObj.message.includes("401") ||
-                errorObj.message.includes("Invalid token") ||
-                errorObj.message.includes("expired")));
-          if (is401) {
-            storage.remove(STORAGE_KEYS.token);
-            storage.remove(STORAGE_KEYS.currentUser);
-            setUser(null);
-          }
+        const synced = await fetchAuthProfile(token, cachedUser);
+        if (isMounted) {
+          setUser(synced);
         }
-      } else if (!cachedUser) {
+      } else if (!cachedUser && isMounted) {
         setUser(null);
       }
-      setReady(true);
+      if (isMounted) {
+        setReady(true);
+      }
     };
 
     initAuth();
@@ -80,11 +111,11 @@ export function useAuth() {
       setUser(storage.get<User | null>(STORAGE_KEYS.currentUser, null));
     };
 
-    const onSessionExpired = (e: Event) => {
-      const customEv = e as CustomEvent<{ reason?: string; loginPath?: string }>;
+    const onSessionExpired = () => {
       storage.remove(STORAGE_KEYS.token);
       storage.remove(STORAGE_KEYS.refreshToken);
       storage.remove(STORAGE_KEYS.currentUser);
+      _lastAuthFetchTime = 0;
       setUser(null);
     };
 
@@ -92,6 +123,7 @@ export function useAuth() {
     window.addEventListener("payent:storage_change", onStorage);
     window.addEventListener("payent-session-expired", onSessionExpired);
     return () => {
+      isMounted = false;
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("payent:storage_change", onStorage);
       window.removeEventListener("payent-session-expired", onSessionExpired);

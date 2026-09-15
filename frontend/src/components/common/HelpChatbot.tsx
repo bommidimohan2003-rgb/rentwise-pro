@@ -34,6 +34,7 @@ export function HelpChatbot() {
   }, []);
 
   useEffect(() => {
+    if (!isOpen || (productsList.length > 0 && categoriesList.length > 0)) return;
     let isMounted = true;
     Promise.all([api.getPublicProducts(), api.getPublicCategories()]).then(
       ([prods, cats]) => {
@@ -46,7 +47,7 @@ export function HelpChatbot() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isOpen, productsList.length, categoriesList.length]);
 
   useEffect(() => {
     if (messagesEndRef.current) {

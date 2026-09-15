@@ -48,9 +48,102 @@ function parseApiError(data: unknown, fallback: string): string {
   return fallback;
 }
 
+interface CacheEntry<T> {
+  timestamp: number;
+  data: T;
+  userEmail?: string | null;
+}
+
+const _inFlightRequests = new Map<string, Promise<unknown>>();
+const _clientCache = new Map<string, CacheEntry<unknown>>();
 const _productCache = new Map<string, Product>();
 
+async function getCachedOrFetch<T>(
+  key: string,
+  fetcher: () => Promise<T>,
+  options: {
+    ttlMs?: number;
+    userIsolated?: boolean;
+    staleWhileRevalidate?: boolean;
+    maxStaleMs?: number;
+  } = {}
+): Promise<T> {
+  const {
+    ttlMs = 30000,
+    userIsolated = false,
+    staleWhileRevalidate = true,
+    maxStaleMs = 300000,
+  } = options;
+
+  const currentUser = storage.get<{ email?: string } | null>(
+    STORAGE_KEYS.currentUser,
+    null,
+  );
+  const currentEmail = currentUser?.email?.toLowerCase().trim() || null;
+  const cacheKey = userIsolated ? `${key}:${currentEmail || "anon"}` : key;
+
+  const now = Date.now();
+  const cached = _clientCache.get(cacheKey) as CacheEntry<T> | undefined;
+
+  // 1. Fresh cache hit -> return immediately
+  if (cached && now - cached.timestamp < ttlMs) {
+    return cached.data;
+  }
+
+  const executeFetch = (): Promise<T> => {
+    if (_inFlightRequests.has(cacheKey)) {
+      return _inFlightRequests.get(cacheKey) as Promise<T>;
+    }
+    const promise = (async () => {
+      try {
+        const result = await fetcher();
+        _clientCache.set(cacheKey, {
+          timestamp: Date.now(),
+          data: result,
+          userEmail: userIsolated ? currentEmail : undefined,
+        });
+        return result;
+      } finally {
+        _inFlightRequests.delete(cacheKey);
+      }
+    })();
+    _inFlightRequests.set(cacheKey, promise as Promise<unknown>);
+    return promise;
+  };
+
+  // 2. Stale cache hit -> return stale data immediately, revalidate in background
+  if (cached && staleWhileRevalidate && now - cached.timestamp < maxStaleMs) {
+    executeFetch().catch((err) => {
+      console.debug(`[Cache Background Revalidate] ${cacheKey} notice:`, err);
+    });
+    return cached.data;
+  }
+
+  // 3. Cold cache or expired beyond maxStale -> await fresh data
+  return executeFetch();
+}
+
 export const api = {
+  invalidateCache(keyPrefix?: string) {
+    if (!keyPrefix) {
+      _clientCache.clear();
+      return;
+    }
+    for (const k of Array.from(_clientCache.keys())) {
+      if (k.startsWith(keyPrefix)) {
+        _clientCache.delete(k);
+      }
+    }
+  },
+
+  clearUserCache() {
+    for (const [k, v] of Array.from(_clientCache.entries())) {
+      if (v.userEmail || k.startsWith("user_")) {
+        _clientCache.delete(k);
+      }
+    }
+  },
+
   cacheProduct(product: Product) {
     if (product && product.id) {
       _productCache.set(product.id, product);
@@ -292,61 +385,67 @@ export const api = {
       };
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    return getCachedOrFetch<User | null>(
+      `auth_profile_token_${token.slice(-16)}`,
+      async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-    try {
-      const res = await fetch(`${API_BASE}/api/me`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
+        try {
+          const res = await fetch(`${API_BASE}/api/me`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
 
-      if (!res.ok) {
-        if (res.status === 401 && typeof window !== "undefined") {
-          const newToken = await this.refreshToken();
-          if (newToken) {
-            return this.getMe(newToken);
+          if (!res.ok) {
+            if (res.status === 401 && typeof window !== "undefined") {
+              const newToken = await this.refreshToken();
+              if (newToken) {
+                return this.getMe(newToken);
+              }
+              storage.remove(STORAGE_KEYS.token);
+              storage.remove(STORAGE_KEYS.refreshToken);
+              storage.remove(STORAGE_KEYS.currentUser);
+              localStorage.removeItem("payent:admin:token");
+              localStorage.removeItem("payent:admin:current_user");
+              if (!token.startsWith("google-offline-")) {
+                window.dispatchEvent(new CustomEvent("payent-session-expired"));
+              }
+            }
+            const data = await res.json().catch(() => ({}));
+            const error = new Error(data.detail || "Failed to fetch user profile.");
+            (error as Error & { status?: number }).status = res.status;
+            throw error;
           }
-          storage.remove(STORAGE_KEYS.token);
-          storage.remove(STORAGE_KEYS.refreshToken);
-          storage.remove(STORAGE_KEYS.currentUser);
-          localStorage.removeItem("payent:admin:token");
-          localStorage.removeItem("payent:admin:current_user");
-          if (!token.startsWith("google-offline-")) {
-            window.dispatchEvent(new CustomEvent("payent-session-expired"));
+          return await res.json();
+        } catch (err: unknown) {
+          clearTimeout(timeoutId);
+          const e = err as { name?: string; message?: string };
+          if (
+            e?.name === "AbortError" ||
+            e?.message?.includes("aborted") ||
+            e?.message?.includes("signal is aborted")
+          ) {
+            const cached = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
+            if (cached) return cached;
+            return {
+              id: token,
+              email: "user@payent.com",
+              fullName: "Verified User",
+              role: "customer",
+              status: "active",
+              verified: true,
+            };
           }
+          throw err;
         }
-        const data = await res.json().catch(() => ({}));
-        const error = new Error(data.detail || "Failed to fetch user profile.");
-        (error as Error & { status?: number }).status = res.status;
-        throw error;
-      }
-      return await res.json();
-    } catch (err: unknown) {
-      clearTimeout(timeoutId);
-      const e = err as { name?: string; message?: string };
-      if (
-        e?.name === "AbortError" ||
-        e?.message?.includes("aborted") ||
-        e?.message?.includes("signal is aborted")
-      ) {
-        const cached = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
-        if (cached) return cached;
-        return {
-          id: token,
-          email: "user@payent.com",
-          fullName: "Verified User",
-          role: "customer",
-          status: "active",
-          verified: true,
-        };
-      }
-      throw err;
-    }
+      },
+      { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
+    );
   },
 
   async updateProfile(token: string, profileData: Partial<User>) {
@@ -547,6 +646,7 @@ export const api = {
         body: JSON.stringify({ refresh_token: currentRefreshToken }),
       }).catch(() => {});
     } finally {
+      this.clearUserCache();
       storage.remove(STORAGE_KEYS.token);
       storage.remove(STORAGE_KEYS.refreshToken);
       storage.remove(STORAGE_KEYS.currentUser);
@@ -563,6 +663,7 @@ export const api = {
         credentials: "include",
       });
     } finally {
+      this.clearUserCache();
       storage.remove(STORAGE_KEYS.token);
       storage.remove(STORAGE_KEYS.refreshToken);
       storage.remove(STORAGE_KEYS.currentUser);
@@ -624,11 +725,17 @@ export const api = {
   },
 
   async getWishlist(token: string) {
-    const res = await this.fetchWithAuth(`${API_BASE}/api/wishlist`, {
-      method: "GET",
-    });
-    if (!res.ok) throw new Error("Failed to fetch wishlist");
-    return res.json() as Promise<string[]>;
+    return getCachedOrFetch<string[]>(
+      "user_wishlist",
+      async () => {
+        const res = await this.fetchWithAuth(`${API_BASE}/api/wishlist`, {
+          method: "GET",
+        });
+        if (!res.ok) throw new Error("Failed to fetch wishlist");
+        return res.json();
+      },
+      { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
+    );
   },
 
   async toggleWishlist(token: string, productId: string) {
@@ -640,54 +747,61 @@ export const api = {
       body: JSON.stringify({ product_id: productId }),
     });
     if (!res.ok) throw new Error("Failed to toggle wishlist item");
+    this.invalidateCache("user_wishlist");
     return res.json();
   },
 
   async getOrders(token: string) {
-    const res = await this.fetchWithAuth(`${API_BASE}/api/orders`, {
-      method: "GET",
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(
-        parseApiError(data, "Failed to retrieve order history from database."),
-      );
-    }
-    const data = await res.json();
-    const rawOrders = Array.isArray(data) ? data : [];
-    const normalized = rawOrders.map((o: Record<string, unknown>) => {
-      const pid = String(o.productId || o.product_id || "");
-      const title = String(o.productTitle || o.product_title || "Gear Rental");
-      const img = String(
-        o.productImage ||
-          o.product_image ||
-          "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
-      );
-      const start = String(o.startDate || o.start_date || "Today");
-      const end = String(o.endDate || o.end_date || "Tomorrow");
-      const created = String(
-        o.createdAt || o.created_at || new Date().toISOString(),
-      );
-      return {
-        id: String(o.id || ""),
-        productId: pid,
-        product_id: pid,
-        productTitle: title,
-        product_title: title,
-        productImage: img,
-        product_image: img,
-        startDate: start,
-        start_date: start,
-        endDate: end,
-        end_date: end,
-        total: Number(o.total || 0),
-        status: (o.status as Order["status"]) || "active",
-        createdAt: created,
-        created_at: created,
-      };
-    }) as Order[];
-    storage.set(STORAGE_KEYS.orders, normalized);
-    return normalized;
+    return getCachedOrFetch<Order[]>(
+      "user_orders",
+      async () => {
+        const res = await this.fetchWithAuth(`${API_BASE}/api/orders`, {
+          method: "GET",
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(
+            parseApiError(data, "Failed to retrieve order history from database."),
+          );
+        }
+        const data = await res.json();
+        const rawOrders = Array.isArray(data) ? data : [];
+        const normalized = rawOrders.map((o: Record<string, unknown>) => {
+          const pid = String(o.productId || o.product_id || "");
+          const title = String(o.productTitle || o.product_title || "Gear Rental");
+          const img = String(
+            o.productImage ||
+              o.product_image ||
+              "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+          );
+          const start = String(o.startDate || o.start_date || "Today");
+          const end = String(o.endDate || o.end_date || "Tomorrow");
+          const created = String(
+            o.createdAt || o.created_at || new Date().toISOString(),
+          );
+          return {
+            id: String(o.id || ""),
+            productId: pid,
+            product_id: pid,
+            productTitle: title,
+            product_title: title,
+            productImage: img,
+            product_image: img,
+            startDate: start,
+            start_date: start,
+            endDate: end,
+            end_date: end,
+            total: Number(o.total || 0),
+            status: (o.status as Order["status"]) || "active",
+            createdAt: created,
+            created_at: created,
+          };
+        }) as Order[];
+        storage.set(STORAGE_KEYS.orders, normalized);
+        return normalized;
+      },
+      { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
+    );
   },
 
   async getOrderDetails(token: string, orderId: string) {
@@ -773,6 +887,8 @@ export const api = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("Failed to create order");
+    this.invalidateCache("user_orders");
+    this.invalidateCache("public_stats");
     return res.json();
   },
 
@@ -803,70 +919,90 @@ export const api = {
         : o,
     );
     storage.set(STORAGE_KEYS.orders, updatedOrders);
+    this.invalidateCache("user_orders");
+    this.invalidateCache("public_stats");
     return res ? res.json() : { success: true };
   },
 
   async getCustomProducts(token: string) {
-    const res = await this.fetchWithAuth(`${API_BASE}/api/products/custom`, {
-      method: "GET",
-    });
-    if (!res.ok) throw new Error("Failed to fetch custom products");
-    return res.json();
-  },
-
-  async getPublicCustomProducts() {
-    let items: Product[] = [];
-    if (!API_BASE) {
-      items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-    } else {
-      try {
-        const res = await fetch(`${API_BASE}/api/products/custom/public`, {
+    return getCachedOrFetch<Product[]>(
+      "user_custom_products",
+      async () => {
+        const res = await this.fetchWithAuth(`${API_BASE}/api/products/custom`, {
           method: "GET",
         });
-        if (!res.ok) {
-          items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-        } else {
-          const json = await res.json();
-          if (Array.isArray(json)) {
-            items = json;
-          } else if (json && Array.isArray(json.data)) {
-            items = json.data;
-          } else if (json && Array.isArray(json.products)) {
-            items = json.products;
-          } else {
-            items = [];
-          }
-        }
-      } catch {
-        items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-      }
-    }
-    if (Array.isArray(items)) {
-      items.forEach((p) => {
-        if (p && p.id) {
-          if (!p.image || p.image.startsWith("/assets/camera-") || p.image.includes("404")) {
-            p.image = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80";
-          }
-          _productCache.set(p.id, p);
-        }
-      });
-    }
-    return items;
+        if (!res.ok) throw new Error("Failed to fetch custom products");
+        return res.json();
+      },
+      { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
+    );
   },
 
-  async getPublicProducts() {
+  async getPublicCustomProducts(): Promise<Product[]> {
+    return getCachedOrFetch<Product[]>(
+      "public_custom_products",
+      async () => {
+        let items: Product[] = [];
+        if (!API_BASE) {
+          items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+        } else {
+          try {
+            const res = await fetch(`${API_BASE}/api/products/custom/public`, {
+              method: "GET",
+            });
+            if (!res.ok) {
+              items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+            } else {
+              const json = await res.json();
+              if (Array.isArray(json)) {
+                items = json;
+              } else if (json && Array.isArray(json.data)) {
+                items = json.data;
+              } else if (json && Array.isArray(json.products)) {
+                items = json.products;
+              } else {
+                items = [];
+              }
+            }
+          } catch {
+            items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+          }
+        }
+        if (Array.isArray(items)) {
+          items.forEach((p) => {
+            if (p && p.id) {
+              if (!p.image || p.image.startsWith("/assets/camera-") || p.image.includes("404")) {
+                p.image = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80";
+              }
+              _productCache.set(p.id, p);
+            }
+          });
+        }
+        return items;
+      },
+      { ttlMs: 30000, staleWhileRevalidate: true }
+    );
+  },
+
+  async getPublicProducts(): Promise<Product[] | null> {
     return this.getPublicCustomProducts().catch(() => null);
   },
 
   async getPublicCategories() {
     if (!API_BASE) return null;
-    try {
-      const res = await fetch(`${API_BASE}/api/categories/public`);
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
+    return getCachedOrFetch(
+      "public_categories",
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/categories/public`);
+          if (!res.ok) return null;
+          return await res.json();
+        } catch {
+          return null;
+        }
+      },
+      { ttlMs: 60000, staleWhileRevalidate: true }
+    );
   },
 
   async createCustomProduct(token: string, productData: Product) {
@@ -878,6 +1014,10 @@ export const api = {
       body: JSON.stringify(productData),
     });
     if (!res.ok) throw new Error("Failed to create custom product");
+    this.invalidateCache("public_custom_products");
+    this.invalidateCache("public_categories");
+    this.invalidateCache("public_stats");
+    this.invalidateCache("user_custom_products");
     return res.json();
   },
 
@@ -899,15 +1039,26 @@ export const api = {
         errData.detail || "Failed to delete product from database",
       );
     }
+    this.invalidateCache("public_custom_products");
+    this.invalidateCache("public_categories");
+    this.invalidateCache("public_stats");
+    this.invalidateCache("user_custom_products");
+    this.invalidateCache(`product:${id}`);
     return res.json();
   },
 
   async getNotifications(token: string) {
-    const res = await this.fetchWithAuth(`${API_BASE}/api/notifications`, {
-      method: "GET",
-    });
-    if (!res.ok) throw new Error("Failed to fetch notifications");
-    return res.json();
+    return getCachedOrFetch(
+      "user_notifications",
+      async () => {
+        const res = await this.fetchWithAuth(`${API_BASE}/api/notifications`, {
+          method: "GET",
+        });
+        if (!res.ok) throw new Error("Failed to fetch notifications");
+        return res.json();
+      },
+      { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
+    );
   },
 
   async markNotificationsRead(token: string) {
@@ -915,6 +1066,7 @@ export const api = {
       method: "POST",
     });
     if (!res.ok) throw new Error("Failed to mark notifications as read");
+    this.invalidateCache("user_notifications");
     return res.json();
   },
 
@@ -954,37 +1106,35 @@ export const api = {
     });
   },
 
-  _statsCache: null as { timestamp: number; data: unknown } | null,
-
   async getPublicStats() {
-    const now = Date.now();
-    if (this._statsCache && now - this._statsCache.timestamp < 30000) {
-      return this._statsCache.data;
-    }
-    try {
-      const res = await fetch(`${API_BASE}/api/stats/public`);
-      if (res.ok) {
-        const data = await res.json();
-        this._statsCache = { timestamp: now, data };
-        return data;
-      }
-    } catch {
-      // Backend request failed; use actual local client datastore
-    }
+    return getCachedOrFetch(
+      "public_stats",
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/stats/public`);
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch {
+          // Backend request failed; use actual local client datastore
+        }
 
-    const customProds = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-    const orders = storage.get<Order[]>(STORAGE_KEYS.orders, []);
-    const user = storage.get<{ city?: string } | null>(
-      STORAGE_KEYS.currentUser,
-      null,
+        const customProds = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+        const orders = storage.get<Order[]>(STORAGE_KEYS.orders, []);
+        const user = storage.get<{ city?: string } | null>(
+          STORAGE_KEYS.currentUser,
+          null,
+        );
+
+        return {
+          activeListings: customProds.length,
+          totalRentals: orders.length,
+          happyLenders: user ? 1 : 0,
+          citiesCovered: user && user.city ? 1 : 0,
+        };
+      },
+      { ttlMs: 60000, staleWhileRevalidate: true }
     );
-
-    return {
-      activeListings: customProds.length,
-      totalRentals: orders.length,
-      happyLenders: user ? 1 : 0,
-      citiesCovered: user && user.city ? 1 : 0,
-    };
   },
 
   async submitContactForm(data: {
@@ -1022,14 +1172,20 @@ export const api = {
         has_data: false,
       };
     }
-    const res = await this.fetchWithAuth(`${API_BASE}/api/profile/stats`, {
-      method: "GET",
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(data, "Failed to fetch profile stats"));
-    }
-    return await res.json();
+    return getCachedOrFetch<UserProfileStats>(
+      "user_profile_stats",
+      async () => {
+        const res = await this.fetchWithAuth(`${API_BASE}/api/profile/stats`, {
+          method: "GET",
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(parseApiError(data, "Failed to fetch profile stats"));
+        }
+        return await res.json();
+      },
+      { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
+    );
   },
 
   async getMessages(token: string): Promise<Conversation[]> {
@@ -1110,6 +1266,9 @@ export const api = {
     );
     if (!res.ok)
       throw new Error("Failed to toggle custom product availability");
+    this.invalidateCache("public_custom_products");
+    this.invalidateCache("user_custom_products");
+    this.invalidateCache(`product:${productId}`);
     return res.json();
   },
 
@@ -1297,17 +1456,23 @@ export const api = {
 
   async getProductById(id: string): Promise<Product | null> {
     const cached = _productCache.get(id);
-    try {
-      const res = await fetch(`${API_BASE}/api/products/${id}`);
-      if (!res.ok) return cached || null;
-      const data: Product = await res.json();
-      if (data && data.id) {
-        _productCache.set(data.id, data);
-      }
-      return data;
-    } catch {
-      return cached || null;
-    }
+    return getCachedOrFetch<Product | null>(
+      `product:${id}`,
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/products/${id}`);
+          if (!res.ok) return cached || null;
+          const data: Product = await res.json();
+          if (data && data.id) {
+            _productCache.set(data.id, data);
+          }
+          return data;
+        } catch {
+          return cached || null;
+        }
+      },
+      { ttlMs: 30000, staleWhileRevalidate: true }
+    );
   },
 
   async getSupportTickets(token: string) {
@@ -1416,14 +1581,20 @@ export const api = {
         total: subtotal + tax,
       };
     }
-    const res = await this.fetchWithAuth(`${API_BASE}/api/cart`, {
-      method: "GET",
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(data, "Failed to load cart"));
-    }
-    return await res.json();
+    return getCachedOrFetch<CartResponse>(
+      "user_cart",
+      async () => {
+        const res = await this.fetchWithAuth(`${API_BASE}/api/cart`, {
+          method: "GET",
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(parseApiError(data, "Failed to load cart"));
+        }
+        return await res.json();
+      },
+      { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
+    );
   },
 
   async addToCart(
@@ -1431,6 +1602,7 @@ export const api = {
     startDate?: string,
     endDate?: string,
   ): Promise<{ success: boolean; message: string; item: CartItem }> {
+    this.invalidateCache("user_cart");
     if (!API_BASE) {
       const stored = storage.get<CartItem[]>("payent_offline_cart", []);
       const cached = _productCache.get(productId);
@@ -1468,12 +1640,14 @@ export const api = {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to add item to cart"));
     }
+    this.invalidateCache("user_cart");
     return await res.json();
   },
 
   async removeFromCart(
     itemId: string,
   ): Promise<{ success: boolean; message: string }> {
+    this.invalidateCache("user_cart");
     if (!API_BASE) {
       const stored = storage.get<CartItem[]>("payent_offline_cart", []);
       const filtered = stored.filter((i) => i.id !== itemId);
@@ -1487,10 +1661,12 @@ export const api = {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to remove item from cart"));
     }
+    this.invalidateCache("user_cart");
     return await res.json();
   },
 
   async clearCart(): Promise<{ success: boolean; message: string }> {
+    this.invalidateCache("user_cart");
     if (!API_BASE) {
       storage.set("payent_offline_cart", []);
       return { success: true, message: "Cart cleared" };
@@ -1502,6 +1678,7 @@ export const api = {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to clear cart"));
     }
+    this.invalidateCache("user_cart");
     return await res.json();
   },
 
@@ -1693,6 +1870,8 @@ export const api = {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to initiate conversation"));
     }
+    this.invalidateCache("user_conversations");
+    this.invalidateCache("user_unread_conversations_count");
     return await res.json();
   },
 
@@ -1701,19 +1880,31 @@ export const api = {
     search?: string,
     signal?: AbortSignal,
   ): Promise<{ success: boolean; conversations: RealtimeConversation[] }> {
-    const url = new URL(`${API_BASE}/api/conversations`);
+    const fetcher = async () => {
+      const url = new URL(`${API_BASE}/api/conversations`);
+      if (search && search.trim()) {
+        url.searchParams.set("search", search.trim());
+      }
+      const res = await this.fetchWithAuth(url.toString(), {
+        method: "GET",
+        signal,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(parseApiError(data, "Failed to fetch conversations"));
+      }
+      return await res.json();
+    };
+
     if (search && search.trim()) {
-      url.searchParams.set("search", search.trim());
+      return fetcher();
     }
-    const res = await this.fetchWithAuth(url.toString(), {
-      method: "GET",
-      signal,
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(data, "Failed to fetch conversations"));
-    }
-    return await res.json();
+
+    return getCachedOrFetch(
+      "user_conversations",
+      fetcher,
+      { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
+    );
   },
 
   async getUnreadMessagesCount(
@@ -1721,14 +1912,20 @@ export const api = {
     signal?: AbortSignal,
   ): Promise<{ success: boolean; unreadCount: number }> {
     if (!token) return { success: true, unreadCount: 0 };
-    const res = await this.fetchWithAuth(`${API_BASE}/api/conversations/unread-count`, {
-      method: "GET",
-      signal,
-    });
-    if (!res.ok) {
-      return { success: false, unreadCount: 0 };
-    }
-    return await res.json();
+    return getCachedOrFetch(
+      "user_unread_conversations_count",
+      async () => {
+        const res = await this.fetchWithAuth(`${API_BASE}/api/conversations/unread-count`, {
+          method: "GET",
+          signal,
+        });
+        if (!res.ok) {
+          return { success: false, unreadCount: 0 };
+        }
+        return await res.json();
+      },
+      { ttlMs: 10000, userIsolated: true, staleWhileRevalidate: true }
+    );
   },
 
   async getRealtimeConversationDetail(
@@ -1779,6 +1976,8 @@ export const api = {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Unable to send your message. Please try again."));
     }
+    this.invalidateCache("user_conversations");
+    this.invalidateCache("user_unread_conversations_count");
     return await res.json();
   },
 
@@ -1804,6 +2003,7 @@ export const api = {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Unable to upload attachment. Please try again."));
     }
+    this.invalidateCache("user_conversations");
     return await res.json();
   },
 
@@ -1820,6 +2020,8 @@ export const api = {
     if (!res.ok) {
       return { success: false };
     }
+    this.invalidateCache("user_conversations");
+    this.invalidateCache("user_unread_conversations_count");
     return await res.json();
   },
 };

@@ -9,6 +9,7 @@ import { api } from "@/utils/api";
 import type { Order } from "@/types";
 import { LoadingState, ErrorState, EmptyState } from "@/components/states";
 import { useNavigate } from "@tanstack/react-router";
+import { getOptimizedImageUrl } from "@/utils/images";
 
 export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -106,8 +107,10 @@ export default function Orders() {
                   className="grid grid-cols-1 md:grid-cols-[70px_1fr_130px_100px_110px_180px] gap-4 p-4 items-center border-b border-border last:border-0 hover:bg-secondary/15 transition-colors"
                 >
                   <img
-                    src={o.productImage || o.product_image || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"}
+                    src={getOptimizedImageUrl(o.productImage || o.product_image || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600", 'thumb')}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="h-14 w-14 rounded-xl object-cover border border-border"
                   />
                   <div>

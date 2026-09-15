@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Maximize2 } from "lucide-react";
+import { getOptimizedImageUrl, getResponsiveImageSrcSet } from "@/utils/images";
 
 interface PhotoDetailViewerProps {
   primaryImage: string;
@@ -85,8 +86,12 @@ export function PhotoDetailViewer({
       >
         {/* Real Product Photo */}
         <img
-          src={activeSrc}
+          src={getOptimizedImageUrl(activeSrc, 'detail')}
+          srcSet={getResponsiveImageSrcSet(activeSrc, [480, 768, 1024, 1200]) || undefined}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 800px"
           alt={productTitle}
+          fetchPriority="high"
+          decoding="async"
           className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
         />
 
@@ -114,8 +119,10 @@ export function PhotoDetailViewer({
               )}
             >
               <img
-                src={src}
+                src={getOptimizedImageUrl(src, 'thumb')}
                 alt={`Angle ${idx + 1}`}
+                loading="lazy"
+                decoding="async"
                 className="h-full w-full object-cover"
               />
             </button>

@@ -175,11 +175,18 @@ export default function Categories() {
   const [minRatingFilter, setMinRatingFilter] = useState<number>(0);
   const [availableOnlyFilter, setAvailableOnlyFilter] = useState<boolean>(false);
 
-  const [allProductsList, setAllProductsList] = useState<Product[]>([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
+  const [allProductsList, setAllProductsList] = useState<Product[]>(() => {
+    return storage.get<Product[]>("payent_server_products", []);
+  });
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(() => {
+    const cached = storage.get<Product[]>("payent_server_products", []);
+    return cached.length === 0;
+  });
   const [fetchError, setFetchError] = useState<boolean>(false);
 
-  const [liveCategories, setLiveCategories] = useState<Category[]>([]);
+  const [liveCategories, setLiveCategories] = useState<Category[]>(() => {
+    return storage.get<Category[]>("payent_live_categories", []);
+  });
   const [mlResults, setMlResults] = useState<Product[] | null>(null);
   const [didYouMean, setDidYouMean] = useState<string | null>(null);
   const [popularQueries] = useState<string[]>(popularTags);
@@ -199,24 +206,24 @@ export default function Categories() {
       detectedCity !== "All Cities",
   );
 
-  // Sync search keyword from URL
+  // Auto-close sort dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
+        setIsSortOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Sync search URL query with local state
   useEffect(() => {
     setLocalQ(search.q || "");
-    setCurrentPage(1);
   }, [search.q]);
 
-  // Sync brands from URL
+  // Reset page when category changes
   useEffect(() => {
-    if (search.brand) {
-      setSelectedBrands(search.brand.split(",").filter(Boolean));
-    }
-  }, [search.brand]);
-
-  // Track category
-  useEffect(() => {
-    if (activeCategory && activeCategory !== "all") {
-      tracker.browseCategory(activeCategory);
-    }
     setCurrentPage(1);
   }, [activeCategory]);
 
@@ -232,26 +239,28 @@ export default function Categories() {
 
   // Fetch real products from backend
   const fetchPublicProducts = useCallback(() => {
-    setIsLoadingProducts(true);
+    if (allProductsList.length === 0) {
+      setIsLoadingProducts(true);
+    }
     setFetchError(false);
     api
       .getPublicProducts()
       .then((serverProducts) => {
-        if (Array.isArray(serverProducts)) {
+        if (Array.isArray(serverProducts) && serverProducts.length > 0) {
           setAllProductsList(serverProducts);
           storage.set("payent_server_products", serverProducts);
-        } else {
-          setAllProductsList([]);
         }
       })
       .catch((err) => {
         console.warn("[Browse] Server products fetch notice:", err);
-        setFetchError(true);
+        if (allProductsList.length === 0) {
+          setFetchError(true);
+        }
       })
       .finally(() => {
         setIsLoadingProducts(false);
       });
-  }, []);
+  }, [allProductsList.length]);
 
   useEffect(() => {
     fetchPublicProducts();
@@ -271,6 +280,7 @@ export default function Categories() {
       .then((cats) => {
         if (Array.isArray(cats) && cats.length > 0) {
           setLiveCategories(cats);
+          storage.set("payent_live_categories", cats);
         }
       })
       .catch((err) =>

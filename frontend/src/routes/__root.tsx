@@ -206,18 +206,6 @@ function RootComponent() {
   };
 
   useEffect(() => {
-    // Fetch public products from database and save to storage
-    api
-      .getPublicCustomProducts()
-      .then((customProducts) => {
-        if (Array.isArray(customProducts) && customProducts.length > 0) {
-          storage.set("payent_server_products", customProducts);
-        }
-      })
-      .catch((err) =>
-        console.error("Failed to load public custom products:", err),
-      );
-
     // Global session expiration handler (silent redirect with NO popups/modals)
     const handleSessionExpired = (e: Event) => {
       const customEv = e as CustomEvent<{

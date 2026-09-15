@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, ChevronLeft, ChevronRight, Star, CheckCircle2, MessageSquareQuote, Sparkles } from "lucide-react";
 import { reviewsApi, type ReviewItem } from "@/services/api";
 import { formatRelativeTime } from "@/utils/formatters";
+import { getOptimizedImageUrl } from "@/utils/images";
 
 export function Testimonials() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -156,8 +157,10 @@ export function Testimonials() {
                     <div className="flex items-center gap-3">
                       {r.userAvatar ? (
                         <img
-                          src={r.userAvatar}
+                          src={getOptimizedImageUrl(r.userAvatar, 'thumb')}
                           alt={r.userName}
+                          loading="lazy"
+                          decoding="async"
                           className="h-10 w-10 rounded-xl object-cover border border-black/10 dark:border-white/10 bg-neutral-200 dark:bg-neutral-800 shrink-0"
                           onError={(e) => {
                             // Fallback to initials if image fails to load

@@ -28,6 +28,7 @@ import { STORAGE_KEYS, storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import type { Order, Product, Notification } from "@/types";
 import { Button } from "@/components/common/Button";
+import { getOptimizedImageUrl } from "@/utils/images";
 import { PayentLogoMark } from "@/components/common/LogoIcon";
 
 export default function Dashboard() {
@@ -35,12 +36,19 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { ids } = useWishlist();
 
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    return storage.get<Order[]>(STORAGE_KEYS.orders, []);
+  });
   const [myListings, setMyListings] = useState<Product[]>([]);
   const [alertsList, setAlertsList] = useState<Notification[]>([]);
-  const [publicProducts, setPublicProducts] = useState<Product[]>([]);
+  const [publicProducts, setPublicProducts] = useState<Product[]>(() => {
+    return storage.get<Product[]>("payent_server_products", []);
+  });
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
-  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(() => {
+    const cached = storage.get<Order[]>(STORAGE_KEYS.orders, []);
+    return cached.length === 0;
+  });
 
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
 
@@ -54,28 +62,32 @@ export default function Dashboard() {
       return;
     }
 
-    setLoadingOrders(true);
-    api
-      .getOrders(token)
-      .then((data) => setOrders(Array.isArray(data) ? data : []))
-      .catch((err) => console.warn("Failed to load orders:", err))
-      .finally(() => setLoadingOrders(false));
+    if (orders.length === 0) {
+      setLoadingOrders(true);
+    }
 
-    api
-      .getCustomProducts(token)
-      .then((data) => setMyListings(Array.isArray(data) ? data : []))
-      .catch((err) => console.warn("Failed to load listings:", err));
-
-    api
-      .getNotifications(token)
-      .then((data) => setAlertsList(Array.isArray(data) ? data : []))
-      .catch((err) => console.warn("Failed to load notifications:", err));
-
-    api
-      .getPublicProducts()
-      .then((items) => setPublicProducts(Array.isArray(items) ? items : []))
-      .catch(() => {});
-  }, [token]);
+    Promise.allSettled([
+      api.getOrders(token),
+      api.getCustomProducts(token),
+      api.getNotifications(token),
+      api.getPublicProducts(),
+    ]).then(([ordersRes, listingsRes, alertsRes, publicRes]) => {
+      if (ordersRes.status === "fulfilled" && Array.isArray(ordersRes.value)) {
+        setOrders(ordersRes.value);
+      }
+      if (listingsRes.status === "fulfilled" && Array.isArray(listingsRes.value)) {
+        setMyListings(listingsRes.value);
+      }
+      if (alertsRes.status === "fulfilled" && Array.isArray(alertsRes.value)) {
+        setAlertsList(alertsRes.value);
+      }
+      if (publicRes.status === "fulfilled" && Array.isArray(publicRes.value)) {
+        setPublicProducts(publicRes.value);
+      }
+    }).finally(() => {
+      setLoadingOrders(false);
+    });
+  }, [token, orders.length]);
 
   const handleCancelOrder = (orderId: string) => {
     if (!token) return;
@@ -327,12 +339,15 @@ export default function Dashboard() {
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
                         <img
-                          src={
+                          src={getOptimizedImageUrl(
                             o.productImage ||
                             o.product_image ||
-                            "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
-                          }
+                            "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+                            'thumb'
+                          )}
                           alt=""
+                          loading="lazy"
+                          decoding="async"
                           className="h-14 w-14 rounded-xl object-cover border border-black/10 dark:border-white/10 shrink-0"
                         />
                         <div className="min-w-0">
@@ -530,8 +545,10 @@ export default function Dashboard() {
                       className="flex items-center gap-3 p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors group"
                     >
                       <img
-                        src={item.image}
+                        src={getOptimizedImageUrl(item.image, 'thumb')}
                         alt={item.title}
+                        loading="lazy"
+                        decoding="async"
                         className="h-10 w-10 rounded-lg object-cover border border-black/5 dark:border-white/5"
                       />
                       <div className="min-w-0 flex-1">

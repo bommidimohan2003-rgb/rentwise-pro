@@ -10,6 +10,7 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 import datetime
+from datetime import datetime as dt, timezone
 import time
 import random
 import secrets
@@ -18,7 +19,7 @@ import json
 import asyncio
 import traceback
 import re
-from typing import Optional, List
+from typing import Optional, List, Set
 from dotenv import load_dotenv
 
 # Load env variables at application startup
@@ -27,6 +28,7 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, Header, Depends, Query, status, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, EmailStr, validator
 
 # Setup Structured Logger
@@ -236,6 +238,29 @@ app = FastAPI(
     docs_url="/docs" if not IS_PRODUCTION else None,
     redoc_url=None
 )
+
+# Enable GZip compression for payloads >= 500 bytes (reduces large JSON payloads by 85-90%)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+_cache_store = {}
+
+def get_cached(key: str, ttl_seconds: int, fetch_func):
+    now = time.time()
+    if key in _cache_store:
+        cached_time, cached_val = _cache_store[key]
+        if now - cached_time < ttl_seconds:
+            return cached_val
+    val = fetch_func()
+    _cache_store[key] = (now, val)
+    return val
+
+def invalidate_cache(key_prefix: str = None):
+    if not key_prefix:
+        _cache_store.clear()
+        return
+    keys_to_del = [k for k in _cache_store if k.startswith(key_prefix)]
+    for k in keys_to_del:
+        _cache_store.pop(k, None)
 
 # Custom Universal CORS & Security Headers Middleware
 @app.middleware("http")
@@ -2073,7 +2098,7 @@ def validate_cart_checkout_endpoint(email: str = Depends(get_current_user_email)
         "total": total
     }
 
-def format_product_dict(p: dict) -> dict:
+def format_product_dict(p: dict, is_summary: bool = False, booked_pids_set: Optional[Set[str]] = None) -> dict:
     owner_info = p.get("owner") if isinstance(p.get("owner"), dict) else {}
     owner_name = p.get("owner_name") or owner_info.get("name") or "Lender"
     owner_avatar = p.get("owner_avatar") or owner_info.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
@@ -2096,15 +2121,30 @@ def format_product_dict(p: dict) -> dict:
     else:
         location_str = "Location unavailable"
 
-    # Authoritative lender and product availability evaluation
-    is_avail, avail_status, reason = evaluate_product_availability(p)
+    # Authoritative lender and product availability evaluation (batched if set provided)
+    is_avail, avail_status, reason = evaluate_product_availability(p, booked_pids_set=booked_pids_set)
+
+    raw_img = str(p.get("image", "")).strip()
+    if is_summary and len(raw_img) > 1024 and (raw_img.startswith("data:") or ";base64," in raw_img):
+        # Heavy inline base64 image in summary/listing view: replace with category standard thumbnail URL
+        cat = str(p.get("category", "")).lower()
+        if "camera" in cat or "lens" in cat:
+            raw_img = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&q=75"
+        elif "laptop" in cat or "macbook" in cat or "pc" in cat:
+            raw_img = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&auto=format&q=75"
+        elif "drone" in cat:
+            raw_img = "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=600&auto=format&q=75"
+        elif "audio" in cat or "mic" in cat:
+            raw_img = "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&q=75"
+        else:
+            raw_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&q=75"
 
     return {
         "id": str(p.get("id", "")),
         "title": str(p.get("title", "")),
         "description": str(p.get("description", "")),
         "price": float(p.get("price", 0)),
-        "image": str(p.get("image", "")),
+        "image": raw_img,
         "category": str(p.get("category", "")),
         "rating": float(p.get("rating", 5.0)),
         "reviews": int(p.get("reviews", 0)),
@@ -2130,20 +2170,46 @@ def format_product_dict(p: dict) -> dict:
 @app.get("/api/products/custom")
 def fetch_user_listings(email: str = Depends(get_current_user_email)):
     listings = get_custom_products(email)
-    return [format_product_dict(p) for p in listings]
+    if not listings:
+        return []
+    pids = [str(p["id"]) for p in listings if p.get("id")]
+    today_str = dt.now(timezone.utc).strftime("%Y-%m-%d")
+    booked_set = set(check_products_booking_conflicts(pids, today_str, today_str)) if pids else set()
+    return [format_product_dict(p, is_summary=False, booked_pids_set=booked_set) for p in listings]
 
 @app.get("/api/products/custom/public")
-def fetch_public_listings():
-    listings = get_all_approved_custom_products()
-    return [format_product_dict(p) for p in listings]
+def fetch_public_listings(
+    response: Response,
+    limit: Optional[int] = Query(None, ge=1, le=100),
+    page: Optional[int] = Query(1, ge=1)
+):
+    response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
+    offset = (page - 1) * limit if limit is not None else 0
+    cache_key = f"public_custom_products:p{page}:l{limit}" if limit is not None else "public_custom_products"
+    def _load():
+        listings = get_all_approved_custom_products(limit=limit, offset=offset)
+        if not listings:
+            return []
+        pids = [str(p["id"]) for p in listings if p.get("id")]
+        today_str = dt.now(timezone.utc).strftime("%Y-%m-%d")
+        booked_set = set(check_products_booking_conflicts(pids, today_str, today_str)) if pids else set()
+        return [format_product_dict(p, is_summary=True, booked_pids_set=booked_set) for p in listings]
+    return get_cached(cache_key, 30, _load)
 
 @app.get("/api/products/custom/{id}")
 @app.get("/api/products/{id}")
-def fetch_product_by_id(id: str):
-    product = fetch_one_product(id)
-    if not product:
+def fetch_product_by_id(id: str, response: Response):
+    response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
+    def _load_prod():
+        product = fetch_one_product(id)
+        if not product:
+            return None
+        return format_product_dict(product)
+    
+    prod = get_cached(f"product:{id}", 30, _load_prod)
+    if not prod:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
-    return format_product_dict(product)
+    return prod
 
 class CreateSupportTicketSchema(BaseModel):
     subject: str
@@ -2404,28 +2470,9 @@ def submit_contact_inquiry(data: ContactInquirySchema):
             detail="Unable to send your message. Please try again."
         )
 
-_cache_store = {}
-
-def get_cached(key: str, ttl_seconds: int, fetch_func):
-    now = time.time()
-    if key in _cache_store:
-        cached_time, cached_val = _cache_store[key]
-        if now - cached_time < ttl_seconds:
-            return cached_val
-    val = fetch_func()
-    _cache_store[key] = (now, val)
-    return val
-
-def invalidate_cache(key_prefix: str = None):
-    if not key_prefix:
-        _cache_store.clear()
-        return
-    keys_to_del = [k for k in _cache_store if k.startswith(key_prefix)]
-    for k in keys_to_del:
-        _cache_store.pop(k, None)
-
 @app.get("/api/categories/public")
-def fetch_public_categories():
+def fetch_public_categories(response: Response):
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
     def _load_categories():
         conn = get_db_connection()
         if not conn:
@@ -2439,25 +2486,26 @@ def fetch_public_categories():
             ]
         try:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT id, name, icon, color, enabled FROM categories WHERE enabled = 1")
-                categories = cursor.fetchall()
-                
                 cursor.execute("""
-                    SELECT category, COUNT(*) as count 
-                    FROM custom_products 
-                    WHERE (hidden = 0 OR hidden IS NULL) 
-                    GROUP BY category
+                    SELECT c.id, c.name, c.icon, c.color, c.enabled,
+                           COALESCE(p.cnt, 0) AS count
+                    FROM categories c
+                    LEFT JOIN (
+                        SELECT category, COUNT(*) AS cnt 
+                        FROM custom_products 
+                        WHERE (hidden = 0 OR hidden IS NULL) AND (status = 'approved' OR status IS NULL)
+                        GROUP BY category
+                    ) p ON c.name = p.category OR c.id = p.category
+                    WHERE c.enabled = 1
                 """)
-                counts_map = {r["category"]: r["count"] for r in cursor.fetchall() if r.get("category")}
-                
+                rows = cursor.fetchall()
                 res = []
-                for r in categories:
-                    cnt = counts_map.get(r["name"], 0)
+                for r in rows:
                     res.append({
                         "id": r["id"],
                         "name": r["name"],
                         "icon": r["icon"] or "Laptop",
-                        "count": cnt,
+                        "count": int(r.get("count") or 0),
                         "color": r["color"] or "bg-secondary text-foreground",
                         "enabled": bool(r["enabled"])
                     })
@@ -2468,7 +2516,8 @@ def fetch_public_categories():
     return get_cached("public_categories", 60, _load_categories)
 
 @app.get("/api/stats/public")
-def fetch_public_stats():
+def fetch_public_stats(response: Response):
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
     def _load_stats():
         conn = get_db_connection()
         if not conn:
@@ -2480,22 +2529,19 @@ def fetch_public_stats():
             }
         try:
             with conn.cursor() as cursor:
-                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE (hidden = 0 OR hidden IS NULL)")
-                active_products = cursor.fetchone()["count"]
-
-                cursor.execute("SELECT COUNT(*) as count FROM orders WHERE status = 'completed' OR (status IS NOT NULL AND status != 'cancelled')")
-                total_rentals = cursor.fetchone()["count"]
-
-                cursor.execute("SELECT COUNT(DISTINCT user_email) as count FROM custom_products WHERE user_email IS NOT NULL AND user_email != ''")
-                happy_lenders = cursor.fetchone()["count"]
-
-                cursor.execute("SELECT COUNT(DISTINCT city) as count FROM users WHERE city IS NOT NULL AND city != ''")
-                cities = cursor.fetchone()["count"]
+                cursor.execute("""
+                    SELECT 
+                        (SELECT COUNT(*) FROM custom_products WHERE (hidden = 0 OR hidden IS NULL) AND (status = 'approved' OR status IS NULL)) AS activeListings,
+                        (SELECT COUNT(*) FROM orders WHERE status = 'completed' OR (status IS NOT NULL AND status != 'cancelled')) AS totalRentals,
+                        (SELECT COUNT(DISTINCT user_email) FROM custom_products WHERE user_email IS NOT NULL AND user_email != '') AS happyLenders,
+                        (SELECT COUNT(DISTINCT city) FROM users WHERE city IS NOT NULL AND city != '') AS citiesCovered
+                """)
+                row = cursor.fetchone() or {}
                 return {
-                    "activeListings": int(active_products or 0),
-                    "totalRentals": int(total_rentals or 0),
-                    "happyLenders": int(happy_lenders or 0),
-                    "citiesCovered": int(cities or 0)
+                    "activeListings": int(row.get("activeListings") or 0),
+                    "totalRentals": int(row.get("totalRentals") or 0),
+                    "happyLenders": int(row.get("happyLenders") or 0),
+                    "citiesCovered": int(row.get("citiesCovered") or 0)
                 }
         finally:
             conn.close()
@@ -2519,6 +2565,9 @@ def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_curre
     product_dict["available"] = False
     created = create_custom_product(email, product_dict)
     broadcast_admin_event("product.created", format_product_dict(created))
+    invalidate_cache("public_custom_products")
+    invalidate_cache("public_categories")
+    invalidate_cache("public_stats")
     return {"success": True, "product": format_product_dict(created), "message": "Product submitted successfully. Pending Admin approval."}
 
 def fetch_one_product(product_id: str):
@@ -2539,8 +2588,8 @@ def fetch_one_product(product_id: str):
                        u.verified AS owner_verified,
                        a.status AS agent_status
                 FROM custom_products cp
-                LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
-                LEFT JOIN agents a ON LOWER(cp.user_email) = LOWER(a.user_email)
+                LEFT JOIN users u ON cp.user_email = u.email
+                LEFT JOIN agents a ON cp.user_email = a.user_email
                 WHERE cp.id = %s
             """, (product_id,))
             return cursor.fetchone()
@@ -2592,6 +2641,10 @@ def remove_custom_listing(id: str, email: str = Depends(get_current_user_email))
 
     delete_custom_product(id, clean_email)
     logger.info(f"Listing {id} deleted successfully from MySQL database for user {clean_email}.")
+    invalidate_cache("public_custom_products")
+    invalidate_cache("public_categories")
+    invalidate_cache("public_stats")
+    invalidate_cache(f"product:{id}")
     return {"success": True, "message": "Listing deleted successfully from MySQL database."}
 
 @app.post("/api/products/custom/{id}/toggle-availability")
@@ -2618,6 +2671,10 @@ def toggle_listing_availability(id: str, email: str = Depends(get_current_user_e
         )
 
     new_status = toggle_custom_product_availability(id, clean_email)
+    invalidate_cache("public_custom_products")
+    invalidate_cache("public_categories")
+    invalidate_cache("public_stats")
+    invalidate_cache(f"product:{id}")
     return {"success": True, "available": new_status}
 
 @app.put("/api/products/custom/{id}")
@@ -2646,6 +2703,10 @@ def edit_custom_listing(id: str, data: UpdateCustomProductSchema, email: str = D
         
     patch = {k: v for k, v in data.dict().items() if v is not None}
     update_custom_product(id, clean_email, patch)
+    invalidate_cache("public_custom_products")
+    invalidate_cache("public_categories")
+    invalidate_cache("public_stats")
+    invalidate_cache(f"product:{id}")
     return {"success": True, "message": "Listing updated successfully."}
 
 # Admin check dependency
@@ -5599,6 +5660,10 @@ def admin_delete_product(id: str, current_admin: dict = Depends(check_admin_user
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted product {id}", "Inventory", "127.0.0.1"))
     
+    invalidate_cache("public_custom_products")
+    invalidate_cache("public_categories")
+    invalidate_cache("public_stats")
+    invalidate_cache(f"product:{id}")
     broadcast_admin_event("product.deleted", {"id": id})
     return {"success": True}
 
@@ -5616,6 +5681,10 @@ def admin_approve_product(id: str, current_admin: dict = Depends(check_admin_use
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Approved product {id}", "Inventory", "127.0.0.1"))
     
+    invalidate_cache("public_custom_products")
+    invalidate_cache("public_categories")
+    invalidate_cache("public_stats")
+    invalidate_cache(f"product:{id}")
     res_prod = admin_get_product(id, current_admin)
     broadcast_admin_event("product.updated", res_prod)
     return res_prod
@@ -5634,6 +5703,10 @@ def admin_reject_product(id: str, current_admin: dict = Depends(check_admin_user
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Rejected product {id}", "Inventory", "127.0.0.1"))
     
+    invalidate_cache("public_custom_products")
+    invalidate_cache("public_categories")
+    invalidate_cache("public_stats")
+    invalidate_cache(f"product:{id}")
     res_prod = admin_get_product(id, current_admin)
     broadcast_admin_event("product.updated", res_prod)
     return res_prod
@@ -5662,6 +5735,10 @@ def admin_toggle_feature_product(id: str, current_admin: dict = Depends(check_ad
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"{action_str} product {id}", "Inventory", "127.0.0.1"))
     
+    invalidate_cache("public_custom_products")
+    invalidate_cache("public_categories")
+    invalidate_cache("public_stats")
+    invalidate_cache(f"product:{id}")
     return admin_get_product(id, current_admin)
 
 @app.post("/api/admin/products/{id}/toggle-hide")
@@ -5688,6 +5765,10 @@ def admin_toggle_hide_product(id: str, current_admin: dict = Depends(check_admin
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"{action_str} product {id}", "Inventory", "127.0.0.1"))
     
+    invalidate_cache("public_custom_products")
+    invalidate_cache("public_categories")
+    invalidate_cache("public_stats")
+    invalidate_cache(f"product:{id}")
     return admin_get_product(id, current_admin)
 
 # Categories
@@ -6079,6 +6160,7 @@ class ReviewUpdateSchema(BaseModel):
 
 @app.get("/api/reviews")
 def list_public_reviews(
+    response: Response,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     sort: str = Query("newest"),
@@ -6087,19 +6169,27 @@ def list_public_reviews(
     verified_only: bool = Query(False)
 ):
     """Retrieve verified production customer reviews with server-side pagination, sorting, and filtering."""
-    return get_reviews_from_db(
-        page=page,
-        limit=limit,
-        sort=sort,
-        rating_filter=rating,
-        product_id=product_id,
-        verified_only=verified_only
+    response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
+    cache_key = f"public_reviews:{page}:{limit}:{sort}:{rating}:{product_id}:{verified_only}"
+    return get_cached(
+        cache_key,
+        30,
+        lambda: get_reviews_from_db(
+            page=page,
+            limit=limit,
+            sort=sort,
+            rating_filter=rating,
+            product_id=product_id,
+            verified_only=verified_only
+        )
     )
 
 @app.get("/api/reviews/stats")
-def get_review_statistics(product_id: Optional[str] = Query(None)):
+def get_review_statistics(response: Response, product_id: Optional[str] = Query(None)):
     """Retrieve dynamic aggregated review statistics (average rating, count, and 1-5 star distribution)."""
-    return get_review_stats_from_db(product_id=product_id)
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+    cache_key = f"public_reviews_stats:{product_id or 'all'}"
+    return get_cached(cache_key, 60, lambda: get_review_stats_from_db(product_id=product_id))
 
 @app.get("/api/reviews/eligible-bookings")
 def get_eligible_rental_bookings(current_user: dict = Depends(require_authenticated_user)):
@@ -6134,59 +6224,66 @@ def create_customer_review(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Specified booking was not found."
             )
-        order_email = (booking_record.get("user_email") or booking_record.get("userEmail") or "").strip().lower()
-        if order_email != user_email:
+        
+        booking_buyer = (booking_record.get("user_email") or booking_record.get("userEmail") or "").strip().lower()
+        if booking_buyer != user_email:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only submit reviews for bookings associated with your own account."
+                detail="You can only submit reviews for your own rental bookings."
             )
-        if booking_record.get("status") in ("cancelled", "refunded"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cancelled or refunded bookings are not eligible for review."
-            )
-        existing_booking_rev = fetch_one("SELECT id FROM reviews WHERE booking_id = %s", (bid,))
-        if existing_booking_rev:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A review has already been submitted for this booking."
-            )
+
         if not pid:
             pid = booking_record.get("product_id") or booking_record.get("productId")
-    else:
-        if not pid:
+
+        # Check duplicate by booking_id
+        existing_rev_by_booking = fetch_one("SELECT id FROM reviews WHERE booking_id = %s", (bid,))
+        if existing_rev_by_booking:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Either a valid booking ID or product ID must be provided."
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A review has already been submitted for this booking."
             )
-        eligible_list = get_user_eligible_bookings(user_email)
-        matching = [b for b in eligible_list if b.get("productId") == pid]
-        if not matching and current_user.get("role") != "admin":
+
+    if not pid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A valid productId or bookingId is required to submit a review."
+        )
+
+    if not bid:
+        # Check if user has an eligible completed/active order for this product
+        eligible_orders = fetch_all("""
+            SELECT id FROM orders 
+            WHERE LOWER(user_email) = %s AND product_id = %s AND status IN ('completed', 'confirmed', 'delivered', 'active')
+        """, (user_email, pid))
+        if not eligible_orders:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Review eligibility requires a completed rental booking for this gear on Payent."
+                detail="You must have an active or completed rental booking for this gear to leave a verified review."
             )
-        if matching:
-            bid = matching[0].get("bookingId")
-            booking_record = fetch_one("SELECT * FROM orders WHERE id = %s", (bid,))
 
-    # 2. Resolve Product metadata
+    # 2. Check duplicate review for same user & product
+    existing_user_rev = fetch_one("""
+        SELECT id FROM reviews 
+        WHERE LOWER(user_email) = %s AND product_id = %s
+    """, (user_email, pid))
+    if existing_user_rev:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You have already submitted a review for this product."
+        )
+
+    # Resolve product title/image for denormalization
     prod_title = "Tech Gear Rental"
-    prod_image = ""
-    if pid:
-        product_row = fetch_one_product(pid)
-        if product_row:
-            prod_title = product_row.get("title") or prod_title
-            prod_image = product_row.get("image") or ""
-    if not prod_image and booking_record:
-        prod_image = booking_record.get("product_image") or booking_record.get("productImage") or ""
-        if not prod_title or prod_title == "Tech Gear Rental":
-            prod_title = booking_record.get("product_title") or booking_record.get("productTitle") or prod_title
+    prod_image = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
+    target_product = fetch_one_product(pid)
+    if target_product:
+        prod_title = target_product.get("title") or prod_title
+        prod_image = target_product.get("image") or prod_image
 
     # 3. Create review record
+    rev_id = f"rev-{int(time.time() * 1000)}-{secrets.token_hex(4)}"
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    rev_id = f"rev-{uuid.uuid4()}"
-    user_name = current_user.get("full_name") or current_user["email"].split("@")[0]
+    user_name = current_user.get("full_name") or user_email.split("@")[0]
     user_avatar = current_user.get("avatar") or current_user.get("profile_photo_url") or f"https://ui-avatars.com/api/?name={user_name}&background=0D151D&color=fff"
     user_location = current_user.get("city") or ""
     user_role = current_user.get("occupation") or "Creator"
@@ -6231,8 +6328,11 @@ def create_customer_review(
         "comment": data.comment,
         "createdAt": now_str
     })
+    invalidate_cache("public_reviews")
+    invalidate_cache("public_reviews_stats")
     invalidate_cache("profile_stats")
     invalidate_cache("public_stats")
+    invalidate_cache(f"product:{pid}")
 
     return {
         "id": rev_id,
@@ -6283,8 +6383,12 @@ def update_customer_review(
         recalculate_product_ratings(pid)
 
     broadcast_admin_event("review.updated", {"id": id, "rating": new_rating})
+    invalidate_cache("public_reviews")
+    invalidate_cache("public_reviews_stats")
     invalidate_cache("profile_stats")
     invalidate_cache("public_stats")
+    if pid:
+        invalidate_cache(f"product:{pid}")
 
     updated = get_review_by_id(id)
     user_display = updated.get("user_name") or current_user.get("full_name") or user_email.split("@")[0]
@@ -6332,8 +6436,12 @@ def delete_customer_review(
         recalculate_product_ratings(pid)
 
     broadcast_admin_event("review.deleted", {"id": id})
+    invalidate_cache("public_reviews")
+    invalidate_cache("public_reviews_stats")
     invalidate_cache("profile_stats")
     invalidate_cache("public_stats")
+    if pid:
+        invalidate_cache(f"product:{pid}")
     return {"success": True, "message": "Review deleted successfully."}
 
 # Admin Reviews
@@ -6373,6 +6481,9 @@ def admin_delete_review(id: str, current_admin: dict = Depends(check_admin_user)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Deleted review {id}", "Reports", "127.0.0.1"))
     
+    invalidate_cache("public_reviews")
+    invalidate_cache("public_reviews_stats")
+    invalidate_cache("public_stats")
     return {"success": True}
 
 @app.post("/api/admin/reviews/{id}/toggle-hide")
@@ -6398,6 +6509,10 @@ def admin_toggle_hide_review(id: str, current_admin: dict = Depends(check_admin_
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"{action_str} review {id}", "Reports", "127.0.0.1"))
+    
+    invalidate_cache("public_reviews")
+    invalidate_cache("public_reviews_stats")
+    invalidate_cache("public_stats")
     
     # Get updated review
     conn = get_db_connection()

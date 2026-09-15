@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { reviewsApi, type ReviewItem } from "@/services/api";
 import { formatRelativeTime } from "@/utils/formatters";
+import { getOptimizedImageUrl } from "@/utils/images";
 
 export default function Reviews() {
   const queryClient = useQueryClient();
@@ -56,6 +57,7 @@ export default function Reviews() {
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["review-stats"],
     queryFn: () => reviewsApi.getStats(),
+    staleTime: 60000,
   });
 
   // 2. Fetch paginated reviews
@@ -69,6 +71,7 @@ export default function Reviews() {
         rating: ratingFilter,
         verified_only: verifiedOnly,
       }),
+    staleTime: 30000,
   });
 
   // 3. Fetch eligible bookings for review creation
@@ -462,8 +465,10 @@ export default function Reviews() {
                     <div className="flex items-center gap-3 min-w-0">
                       {r.userAvatar ? (
                         <img
-                          src={r.userAvatar}
+                          src={getOptimizedImageUrl(r.userAvatar, 'thumb')}
                           alt={r.userName}
+                          loading="lazy"
+                          decoding="async"
                           className="h-11 w-11 rounded-xl object-cover border border-black/10 dark:border-white/10 bg-neutral-200 dark:bg-neutral-800 shrink-0"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
@@ -516,8 +521,10 @@ export default function Reviews() {
                     <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-xs">
                       {r.productImage ? (
                         <img
-                          src={r.productImage}
+                          src={getOptimizedImageUrl(r.productImage, 'thumb')}
                           alt={r.productTitle}
+                          loading="lazy"
+                          decoding="async"
                           className="h-8 w-8 rounded-lg object-cover bg-neutral-200 dark:bg-neutral-800 shrink-0"
                         />
                       ) : (

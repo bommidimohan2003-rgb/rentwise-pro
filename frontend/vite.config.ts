@@ -18,6 +18,7 @@ export default defineConfig({
             if (id.includes("recharts")) return "vendor-charts";
             if (id.includes("framer-motion")) return "vendor-animation";
             if (id.includes("firebase")) return "vendor-firebase";
+            if (id.includes("leaflet")) return "vendor-leaflet";
             if (id.includes("@tanstack")) return "vendor-tanstack";
           }
         },
