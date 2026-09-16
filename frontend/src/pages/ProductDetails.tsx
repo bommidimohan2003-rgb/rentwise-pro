@@ -153,12 +153,18 @@ export default function ProductDetails() {
     };
   }, [product]);
 
-  if (productLoading) {
+  if (productLoading && !product) {
     return (
       <MainLayout>
-        <div className="mx-auto max-w-3xl px-4 md:px-6 py-24 text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-neutral-300 border-t-neutral-700" />
-          <p className="mt-4 text-neutral-500">Loading product…</p>
+        <div className="mx-auto max-w-7xl px-4 md:px-6 py-6 space-y-6">
+          <div className="grid lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-7 space-y-3">
+              <div className="aspect-[4/3] w-full rounded-3xl bg-secondary/50 animate-pulse border border-border/80" />
+            </div>
+            <div className="lg:col-span-5 space-y-4">
+              <div className="h-96 w-full rounded-2xl bg-secondary/50 animate-pulse border border-border/80 p-5 space-y-4" />
+            </div>
+          </div>
         </div>
       </MainLayout>
     );

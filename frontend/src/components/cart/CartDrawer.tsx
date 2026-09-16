@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useCart } from "@/hooks/useCart";
-import cameraFallback from "@/assets/images/camera.png";
+import cameraFallback from "@/assets/images/camera.webp";
 
 export function CartDrawer() {
   const {

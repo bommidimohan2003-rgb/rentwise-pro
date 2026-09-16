@@ -1,7 +1,19 @@
+import { lazy, Suspense } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import Analytics from "@/admin/pages/Analytics";
+
+const Analytics = lazy(() => import("@/admin/pages/Analytics"));
 
 export const Route = createFileRoute("/admin/analytics")({
-  component: Analytics,
+  component: () => (
+    <Suspense
+      fallback={
+        <div className="h-64 flex items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      }
+    >
+      <Analytics />
+    </Suspense>
+  ),
 });
 export default Route;

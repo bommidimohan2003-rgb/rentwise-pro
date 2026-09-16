@@ -12,10 +12,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import sonyA7FrontImg from "@/assets/images/sony_a7_front.png";
-import macbookFrontImg from "@/assets/images/macbook_front.png";
-import droneFrontImg from "@/assets/images/drone_front.png";
-import reClassic350Img from "@/assets/images/re_classic350.png";
+import sonyA7FrontImg from "@/assets/images/sony_a7_front.webp";
+import macbookFrontImg from "@/assets/images/macbook_front.webp";
+import droneFrontImg from "@/assets/images/drone_front.webp";
+import reClassic350Img from "@/assets/images/re_classic350.webp";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -100,6 +100,9 @@ export function AuthLayout({
               <img
                 src={currentGear.image}
                 alt={currentGear.title}
+                decoding="async"
+                width={800}
+                height={600}
                 className="w-full h-full object-cover object-center filter saturate-125 contrast-105"
               />
             </motion.div>

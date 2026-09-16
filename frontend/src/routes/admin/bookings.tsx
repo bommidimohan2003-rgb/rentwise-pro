@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import Bookings from "@/admin/pages/Bookings";
+import { lazy, Suspense } from "react";
+const Bookings = lazy(() => import("@/admin/pages/Bookings"));
+
 
 export const Route = createFileRoute("/admin/bookings")({
-  component: Bookings,
+  component: () => (
+    <Suspense fallback={<div className="h-64 flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
+      <Bookings />
+    </Suspense>
+  ),
 });
 export default Route;

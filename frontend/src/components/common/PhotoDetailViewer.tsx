@@ -92,6 +92,8 @@ export function PhotoDetailViewer({
           alt={productTitle}
           fetchPriority="high"
           decoding="async"
+          width={800}
+          height={600}
           className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
         />
 

@@ -25,13 +25,13 @@ import { formatOwnerAddress } from "@/utils/formatters";
 import { CSSTiltCard } from "./CSSTiltCard";
 import { getOptimizedImageUrl, getResponsiveImageSrcSet } from "@/utils/images";
 
-import cameraImg from "@/assets/images/camera.png";
-import laptopImg from "@/assets/images/laptop.png";
-import droneImg from "@/assets/images/drone.png";
-import bikeImg from "@/assets/images/bike.png";
-import toolImg from "@/assets/images/tool.png";
-import powerbankImg from "@/assets/images/powerbank.png";
-import reClassic350Img from "@/assets/images/re_classic350.png";
+import cameraImg from "@/assets/images/camera.webp";
+import laptopImg from "@/assets/images/laptop.webp";
+import droneImg from "@/assets/images/drone.webp";
+import bikeImg from "@/assets/images/bike.webp";
+import toolImg from "@/assets/images/tool.webp";
+import powerbankImg from "@/assets/images/powerbank.webp";
+import reClassic350Img from "@/assets/images/re_classic350.webp";
 
 const fallbackMap: Record<string, string> = {
   cameras: cameraImg,

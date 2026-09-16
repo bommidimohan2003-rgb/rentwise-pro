@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { useCart } from "@/hooks/useCart";
-import cameraFallback from "@/assets/images/camera.png";
+import cameraFallback from "@/assets/images/camera.webp";
 import { getOptimizedImageUrl } from "@/utils/images";
 
 export default function Cart() {

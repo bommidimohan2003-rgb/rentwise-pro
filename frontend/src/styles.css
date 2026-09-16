@@ -30,6 +30,10 @@
   --font-display: "Outfit", "Inter", sans-serif;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 :root {
   --radius: 0.9rem;
   /* Light Mode: Background pure white #FFFFFF, buttons charcoal #161616 with #FFFFFF text */

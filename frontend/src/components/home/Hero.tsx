@@ -12,12 +12,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useUserLocation } from "@/hooks/useUserLocation";
 
-import cameraImg from "@/assets/images/camera.png";
-import laptopImg from "@/assets/images/laptop.png";
-import bikeImg from "@/assets/images/re_classic350.png";
-import droneImg from "@/assets/images/drone.png";
-import toolImg from "@/assets/images/tool.png";
-import powerbankImg from "@/assets/images/powerbank.png";
+import cameraImg from "@/assets/images/camera.webp";
+import laptopImg from "@/assets/images/laptop.webp";
+import bikeImg from "@/assets/images/re_classic350.webp";
+import droneImg from "@/assets/images/drone.webp";
+import toolImg from "@/assets/images/tool.webp";
+import powerbankImg from "@/assets/images/powerbank.webp";
 
 const gearItems = [
   {
@@ -147,6 +147,9 @@ export function Hero() {
               alt={activeGear.name}
               fetchPriority="high"
               loading="eager"
+              decoding="async"
+              width={800}
+              height={600}
               className="w-full h-full object-cover sm:object-contain lg:object-cover opacity-85 sm:opacity-90 dark:opacity-60 filter contrast-125 saturate-135 brightness-[0.95] dark:brightness-95 drop-shadow-[0_15px_35px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition-all pointer-events-none"
             />
           </motion.div>
@@ -183,7 +186,7 @@ export function Hero() {
         </div>
 
         {/* Bottom Integrated Search Bar Module */}
-        <div className="mt-8 sm:mt-10 max-w-2xl mx-auto">
+        <div className="mt-8 sm:mt-10 max-w-2xl mx-auto min-h-[96px]">
           <form
             onSubmit={handleSearch}
             className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white dark:bg-[#081018] border border-black/10 dark:border-white/15 shadow-xl flex items-center gap-1.5 sm:gap-2 backdrop-blur-md"

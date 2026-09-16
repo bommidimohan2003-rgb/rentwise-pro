@@ -61,6 +61,11 @@ export function getOptimizedImageUrl(
     return url.replace('/image/upload/', `/image/upload/w_${width},q_${quality},f_auto/`);
   }
 
+  // Local asset WebP upgrade for legacy image paths
+  if (url.includes('/assets/') && (url.endsWith('.png') || url.endsWith('.jpg') || url.endsWith('.jpeg'))) {
+    return url.replace(/\.(png|jpe?g)$/i, '.webp');
+  }
+
   return url;
 }
 

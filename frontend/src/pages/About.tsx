@@ -19,7 +19,7 @@ import {
 import { MainLayout } from "@/layouts/MainLayout";
 import { api } from "@/utils/api";
 import { PayentLogoMark } from "@/components/common/LogoIcon";
-import heroFilmmakerImg from "@/assets/images/hero_filmmaker_rig.jpg";
+import heroFilmmakerImg from "@/assets/images/hero_filmmaker_rig.webp";
 
 interface PublicStats {
   activeListings: number;
@@ -218,6 +218,10 @@ export default function About() {
                   <img
                     src={heroFilmmakerImg}
                     alt="Creators filming on set"
+                    loading="lazy"
+                    decoding="async"
+                    width={600}
+                    height={240}
                     className="w-full h-full object-cover object-center filter contrast-110 brightness-95 group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />

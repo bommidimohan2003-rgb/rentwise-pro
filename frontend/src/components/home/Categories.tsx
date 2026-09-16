@@ -1,13 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 
-import cameraImg from "@/assets/images/camera.png";
-import droneImg from "@/assets/images/drone.png";
-import laptopImg from "@/assets/images/laptop.png";
-import bikeImg from "@/assets/images/bike.png";
-import reClassic350Img from "@/assets/images/re_classic350.png";
-import powerbankImg from "@/assets/images/powerbank.png";
-import toolImg from "@/assets/images/tool.png";
+import cameraImg from "@/assets/images/camera.webp";
+import droneImg from "@/assets/images/drone.webp";
+import laptopImg from "@/assets/images/laptop.webp";
+import bikeImg from "@/assets/images/bike.webp";
+import reClassic350Img from "@/assets/images/re_classic350.webp";
+import powerbankImg from "@/assets/images/powerbank.webp";
+import toolImg from "@/assets/images/tool.webp";
 
 interface CategoryItem {
   id: string;
@@ -110,6 +110,9 @@ export function Categories() {
                   src={cat.image}
                   alt={cat.name}
                   loading="lazy"
+                  decoding="async"
+                  width={160}
+                  height={160}
                   className="relative z-5 w-full h-full object-contain filter drop-shadow-md scale-105 group-hover:scale-112 transition-transform duration-300 ease-out"
                 />
               </div>
