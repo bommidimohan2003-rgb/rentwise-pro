@@ -39,6 +39,18 @@ MYSQL_SSL = os.getenv("MYSQL_SSL", "true").lower() in ("true", "1", "yes")
 # ENVIRONMENT Config
 ENV = os.getenv("ENV", os.getenv("ENVIRONMENT", "development")).lower()
 IS_PRODUCTION = ENV in ("production", "prod")
+ALLOW_PRODUCTION_TESTING = os.getenv("ALLOW_PRODUCTION_TESTING", "false").lower() in ("true", "1", "yes")
+
+def assert_testing_allowed():
+    """
+    Safeguard preventing test/seed scripts from running against live production
+    without explicit ALLOW_PRODUCTION_TESTING=true environment authorization.
+    """
+    if IS_PRODUCTION and not ALLOW_PRODUCTION_TESTING:
+        raise RuntimeError(
+            "FATAL DATA INTEGRITY SAFEGUARD: Test/seed scripts are blocked from running in ENV='production'. "
+            "To execute tests against dedicated environments, set ENV=testing or use an isolated test database."
+        )
 
 # Security & Secrets Audit
 DEFAULT_SECRET = "payent_super_secret_key_change_me_in_production"

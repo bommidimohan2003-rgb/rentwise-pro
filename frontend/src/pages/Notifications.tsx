@@ -7,45 +7,26 @@ import { api } from "@/utils/api";
 import { toast } from "sonner";
 import type { Notification } from "@/types";
 
-const seed: Notification[] = [
-  {
-    id: "n1",
-    title: "Booking confirmed",
-    message: "Your Camera rental starts tomorrow.",
-    type: "success",
-    read: false,
-    createdAt: "2h ago",
-  },
-  {
-    id: "n2",
-    title: "New message from Alex",
-    message: "Hey, are you around for pickup at 3pm?",
-    type: "info",
-    read: false,
-    createdAt: "5h ago",
-  },
-  {
-    id: "n3",
-    title: "Return reminder",
-    message: "Drone due back in 2 days.",
-    type: "warning",
-    read: true,
-    createdAt: "1d ago",
-  },
-];
-
 export default function Notifications() {
   const [list, setList] = useState<Notification[]>(() => {
-    return storage.get<Notification[]>(STORAGE_KEYS.notifications, seed);
+    return storage.get<Notification[]>(STORAGE_KEYS.notifications, []);
   });
+  const [loading, setLoading] = useState(true);
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     api
       .getNotifications(token)
-      .then(setList)
-      .catch((err) => console.error("Failed to load notifications:", err));
+      .then((data) => {
+        setList(data);
+        storage.set(STORAGE_KEYS.notifications, data);
+      })
+      .catch((err) => console.error("Failed to load notifications:", err))
+      .finally(() => setLoading(false));
   }, [token]);
 
   const markAll = () => {
@@ -53,7 +34,11 @@ export default function Notifications() {
     api
       .markNotificationsRead(token)
       .then(() => {
-        setList((prev) => prev.map((n) => ({ ...n, read: true })));
+        setList((prev) => {
+          const updated = prev.map((n) => ({ ...n, read: true }));
+          storage.set(STORAGE_KEYS.notifications, updated);
+          return updated;
+        });
         toast.success("All notifications marked as read!");
       })
       .catch((err) =>
@@ -68,39 +53,58 @@ export default function Notifications() {
           <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
             <Bell className="h-7 w-7" /> Notifications
           </h1>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Check className="h-4 w-4" />}
-            onClick={markAll}
-          >
-            Mark all read
-          </Button>
-        </div>
-        <div className="mt-8 space-y-3">
-          {list.map((n) => (
-            <div
-              key={n.id}
-              className={`card-premium p-5 flex gap-4 ${!n.read ? "border-primary/40" : ""}`}
+          {list.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Check className="h-4 w-4" />}
+              onClick={markAll}
             >
-              <div
-                className={`h-10 w-10 rounded-xl border grid place-items-center shrink-0 ${n.type === "success" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" : n.type === "warning" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" : "bg-secondary text-foreground border-border"}`}
-              >
-                <Bell className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{n.title}</h3>
-                  <span className="text-xs text-muted-foreground">
-                    {n.createdAt}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {n.message}
-                </p>
-              </div>
+              Mark all read
+            </Button>
+          )}
+        </div>
+
+        <div className="mt-8 space-y-3">
+          {list.length === 0 ? (
+            <div className="card-premium p-12 text-center text-muted-foreground">
+              <Bell className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+              <p className="font-semibold text-foreground">No notifications yet</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                You're all caught up! Updates regarding your gear rentals and messages will appear here.
+              </p>
             </div>
-          ))}
+          ) : (
+            list.map((n) => (
+              <div
+                key={n.id}
+                className={`card-premium p-5 flex gap-4 ${!n.read ? "border-primary/40" : ""}`}
+              >
+                <div
+                  className={`h-10 w-10 rounded-xl border grid place-items-center shrink-0 ${
+                    n.type === "success"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      : n.type === "warning"
+                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                      : "bg-secondary text-foreground border-border"
+                  }`}
+                >
+                  <Bell className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{n.title}</h3>
+                    <span className="text-xs text-muted-foreground">
+                      {n.createdAt}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {n.message}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
     </MainLayout>

@@ -192,5 +192,17 @@ class TestCustomerLenderMessaging(unittest.TestCase):
         self.assertTrue(res_contact.json()["success"])
         self.assertTrue(res_contact.json()["ticketId"].startswith("INQ-"))
 
+    def tearDown(self):
+        try:
+            execute_query("DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = %s))", (self.booking_id,))
+            execute_query("DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = %s)", (self.booking_id,))
+            execute_query("DELETE FROM conversation_members WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = %s)", (self.booking_id,))
+            execute_query("DELETE FROM conversations WHERE booking_id = %s", (self.booking_id,))
+            execute_query("DELETE FROM support_tickets WHERE user_email = 'david.partner@company.com'")
+            execute_query("DELETE FROM notifications WHERE user_email IN (%s, %s, %s)", (self.customer_email, self.lender_email, self.intruder_email))
+            execute_query("DELETE FROM user_events WHERE user_email IN (%s, %s, %s)", (self.customer_email, self.lender_email, self.intruder_email))
+        except Exception:
+            pass
+
 if __name__ == "__main__":
     unittest.main()

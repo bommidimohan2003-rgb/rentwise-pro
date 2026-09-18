@@ -73,6 +73,8 @@ class TestPhase9AuditMaster(unittest.TestCase):
             ON DUPLICATE KEY UPDATE status = 'active', verified = TRUE
         """, (cls.customer_email, "+919999999903", "Audit Customer Renter", "user", "active", True, datetime.datetime.now(datetime.timezone.utc).isoformat()))
 
+        cls.created_users = {cls.admin_email, cls.lender_email, cls.customer_email}
+
     # =========================================================================
     # 1. FULL CUSTOMER + LENDER END-TO-END JOURNEY
     # =========================================================================
@@ -87,6 +89,7 @@ class TestPhase9AuditMaster(unittest.TestCase):
         """
         # Step 1: New User Registration
         new_user_email = f"new_creator_{uuid.uuid4().hex[:8]}@test.com"
+        self.__class__.created_users.add(new_user_email)
         reg_payload = {
             "email": new_user_email,
             "password": "StrongPassword!2026",
@@ -318,6 +321,7 @@ class TestPhase9AuditMaster(unittest.TestCase):
         """, (double_book_pid, self.lender_email, "Double Book Lens", 1200, 1, "approved", datetime.datetime.now(datetime.timezone.utc).isoformat()))
 
         cust_b_email = f"competitor_cust_{uuid.uuid4().hex[:6]}@example.com"
+        self.__class__.created_users.add(cust_b_email)
         cust_b_token = create_access_token(data={"sub": cust_b_email, "role": "user"})
         cust_b_headers = {"Authorization": f"Bearer {cust_b_token}"}
         
@@ -562,5 +566,64 @@ class TestPhase9AuditMaster(unittest.TestCase):
         self.assertIn("x-request-id", r400.headers)
         self.assertEqual(r400.status_code, 400)
 
+    # =========================================================================
+    # 9. TEARDOWN: COMPLETE ISOLATION & ZERO RESIDUAL DATA GUARANTEE
+    # =========================================================================
+
+    @classmethod
+    def tearDownClass(cls):
+        """
+        Guaranteed teardown of all test users, custom products, orders, cart items,
+        conversations, messages, deliveries, reviews, payments, and notifications.
+        """
+        try:
+            # Query all test emails created in this suite
+            test_patterns = list(getattr(cls, 'created_users', set())) or [
+                cls.admin_email,
+                cls.lender_email,
+                cls.customer_email
+            ]
+            
+            # Find any related orders, products, conversations for these test users
+            for em in test_patterns:
+                execute_query("DELETE FROM delivery_location_updates WHERE delivery_id IN (SELECT id FROM deliveries WHERE booking_id IN (SELECT id FROM orders WHERE user_email = %s))", (em,))
+                execute_query("DELETE FROM deliveries WHERE booking_id IN (SELECT id FROM orders WHERE user_email = %s)", (em,))
+                execute_query("DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE customer_email = %s OR lender_email = %s))", (em, em))
+                execute_query("DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE customer_email = %s OR lender_email = %s)", (em, em))
+                execute_query("DELETE FROM conversation_members WHERE conversation_id IN (SELECT id FROM conversations WHERE customer_email = %s OR lender_email = %s)", (em, em))
+                execute_query("DELETE FROM conversations WHERE customer_email = %s OR lender_email = %s", (em, em))
+                execute_query("DELETE FROM reviews WHERE user_email = %s", (em,))
+                execute_query("DELETE FROM payments WHERE booking_id IN (SELECT id FROM orders WHERE user_email = %s)", (em,))
+                execute_query("DELETE FROM processed_payment_events WHERE order_id IN (SELECT id FROM orders WHERE user_email = %s)", (em,))
+                execute_query("DELETE FROM orders WHERE user_email = %s", (em,))
+                execute_query("DELETE FROM cart_items WHERE LOWER(user_email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM custom_products WHERE LOWER(user_email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM notifications WHERE LOWER(user_email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM user_events WHERE LOWER(user_email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM sessions WHERE LOWER(user_email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM token_blocklist WHERE LOWER(email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM agents WHERE LOWER(user_email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM users WHERE LOWER(email) = LOWER(%s)", (em,))
+
+            # Also clean up any dynamically registered new_creator_* or competitor_cust_*
+            execute_query("DELETE FROM delivery_location_updates WHERE delivery_id IN (SELECT id FROM deliveries WHERE booking_id IN (SELECT id FROM orders WHERE user_email LIKE %s OR user_email LIKE %s))", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM deliveries WHERE booking_id IN (SELECT id FROM orders WHERE user_email LIKE %s OR user_email LIKE %s)", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM messages WHERE sender_email LIKE %s OR sender_email LIKE %s)", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM messages WHERE sender_email LIKE %s OR sender_email LIKE %s", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM reviews WHERE user_email LIKE %s OR user_email LIKE %s", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM payments WHERE booking_id IN (SELECT id FROM orders WHERE user_email LIKE %s OR user_email LIKE %s)", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM processed_payment_events WHERE order_id IN (SELECT id FROM orders WHERE user_email LIKE %s OR user_email LIKE %s)", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM orders WHERE user_email LIKE %s OR user_email LIKE %s", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM cart_items WHERE user_email LIKE %s OR user_email LIKE %s", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM custom_products WHERE user_email LIKE %s OR user_email LIKE %s", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM notifications WHERE user_email LIKE %s OR user_email LIKE %s", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM user_events WHERE user_email LIKE %s OR user_email LIKE %s", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM users WHERE email LIKE %s OR email LIKE %s", ("new_creator_%", "competitor_cust_%"))
+            execute_query("DELETE FROM users WHERE email LIKE %s OR email LIKE %s OR email LIKE %s", ("audit_admin_%", "audit_lender_%", "audit_cust_%"))
+
+        except Exception as e:
+            print(f"Notice: Phase 9 tearDownClass encountered: {e}")
+
 if __name__ == "__main__":
     unittest.main()
+

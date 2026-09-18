@@ -112,5 +112,15 @@ class TestProfileStatsAndMessages(unittest.TestCase):
         self.assertTrue(data["success"])
         self.assertIn("ticketId", data)
 
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            execute_query("DELETE FROM support_tickets WHERE user_email = 'alex.tester@example.com'")
+            execute_query("DELETE FROM notifications WHERE user_email = 'stats_test_user@payent.com'")
+            execute_query("DELETE FROM user_events WHERE user_email = 'stats_test_user@payent.com'")
+            execute_query("DELETE FROM users WHERE email = 'stats_test_user@payent.com'")
+        except Exception:
+            pass
+
 if __name__ == "__main__":
     unittest.main()

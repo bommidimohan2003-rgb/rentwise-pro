@@ -467,7 +467,17 @@ class TestPhase7SecurityMaster(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         try:
-            for em in [cls.cust_a, cls.cust_b, cls.lender_a, cls.lender_b, cls.admin_user]:
+            test_emails = [cls.cust_a, cls.cust_b, cls.lender_a, cls.lender_b, cls.admin_user]
+            for em in test_emails:
+                execute_query("DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE customer_email = %s OR lender_email = %s))", (em, em))
+                execute_query("DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE customer_email = %s OR lender_email = %s)", (em, em))
+                execute_query("DELETE FROM conversation_members WHERE conversation_id IN (SELECT id FROM conversations WHERE customer_email = %s OR lender_email = %s)", (em, em))
+                execute_query("DELETE FROM conversations WHERE customer_email = %s OR lender_email = %s", (em, em))
+                execute_query("DELETE FROM notifications WHERE LOWER(user_email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM sessions WHERE LOWER(user_email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM token_blocklist WHERE LOWER(email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM user_events WHERE LOWER(user_email) = LOWER(%s)", (em,))
+                execute_query("DELETE FROM agents WHERE LOWER(user_email) = LOWER(%s)", (em,))
                 execute_query("DELETE FROM users WHERE LOWER(email) = LOWER(%s)", (em,))
             execute_query("DELETE FROM orders WHERE id IN (%s, %s)", (cls.order_a_id, cls.order_b_id))
             execute_query("DELETE FROM custom_products WHERE id IN (%s, %s)", (cls.prod_a_id, cls.prod_b_id))

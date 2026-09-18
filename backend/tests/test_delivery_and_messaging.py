@@ -184,5 +184,18 @@ class TestDeliveryAndMessaging(unittest.TestCase):
         )
         self.assertEqual(res_intruder_msg.status_code, 403)
 
+    def tearDown(self):
+        try:
+            execute_query("DELETE FROM delivery_location_updates WHERE delivery_id IN (SELECT id FROM deliveries WHERE booking_id = %s)", (self.booking_id,))
+            execute_query("DELETE FROM deliveries WHERE booking_id = %s", (self.booking_id,))
+            execute_query("DELETE FROM message_attachments WHERE message_id IN (SELECT id FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = %s))", (self.booking_id,))
+            execute_query("DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = %s)", (self.booking_id,))
+            execute_query("DELETE FROM conversation_members WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = %s)", (self.booking_id,))
+            execute_query("DELETE FROM conversations WHERE booking_id = %s", (self.booking_id,))
+            execute_query("DELETE FROM notifications WHERE user_email IN (%s, %s, %s)", (self.customer_email, self.lender_email, self.intruder_email))
+            execute_query("DELETE FROM user_events WHERE user_email IN (%s, %s, %s)", (self.customer_email, self.lender_email, self.intruder_email))
+        except Exception:
+            pass
+
 if __name__ == "__main__":
     unittest.main()

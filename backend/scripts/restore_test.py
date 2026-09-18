@@ -338,14 +338,16 @@ def run_backup_and_restore_audit() -> dict:
                 status_str = "PASS" if matched else "FAIL"
                 print(f"  -> Table '{tbl_name}': {restored_cnt}/{original_cnt} records [{status_str}]")
 
-        # 5. Clean up test tables
-        with conn.cursor() as cursor:
-            for test_tbl in created_test_tables:
-                cursor.execute(f"DROP TABLE IF EXISTS `{test_tbl}`")
-            conn.commit()
-            print(f"[CLEANUP OK] Dropped {len(created_test_tables)} test tables. Zero residual production impact.")
-
     finally:
+        # Guaranteed cleanup of test tables
+        try:
+            with conn.cursor() as cursor:
+                for test_tbl in created_test_tables:
+                    cursor.execute(f"DROP TABLE IF EXISTS `{test_tbl}`")
+                conn.commit()
+                print(f"[CLEANUP OK] Dropped {len(created_test_tables)} test tables. Zero residual production impact.")
+        except Exception as cleanup_err:
+            print(f"Notice: restore_test table cleanup encounter: {cleanup_err}")
         conn.close()
 
     status = "PASS" if all_match else "FAIL"

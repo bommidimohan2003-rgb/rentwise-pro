@@ -150,5 +150,12 @@ class TestRazorpayIntegration(unittest.TestCase):
         updated_second = get_order_by_razorpay_order_id(rzp_ord_id)
         self.assertEqual(updated_second.get("payment_status"), "paid")
 
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            execute_query("DELETE FROM orders WHERE id = 'ord_test_idempotent_1'")
+        except Exception:
+            pass
+
 if __name__ == "__main__":
     unittest.main()
