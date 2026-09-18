@@ -51,6 +51,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   } = useQuery<CartResponse>({
     queryKey: ["cart", user?.email || "guest"],
     queryFn: async () => {
+      if (!user) {
+        return { items: [], count: 0, subtotal: 0, tax: 0, total: 0 };
+      }
       try {
         return await api.getCart();
       } catch (err) {
@@ -58,7 +61,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return { items: [], count: 0, subtotal: 0, tax: 0, total: 0 };
       }
     },
-    staleTime: 1000 * 15,
+    enabled: !!user,
+    staleTime: 1000 * 30,
   });
 
   const cartItems = useMemo(() => cartData?.items || [], [cartData]);

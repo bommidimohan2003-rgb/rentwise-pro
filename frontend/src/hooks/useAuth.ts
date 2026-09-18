@@ -100,15 +100,6 @@ export function useAuth() {
       }
 
       if (token) {
-        // Trigger non-blocking background route prefetching
-        if (typeof window !== "undefined" && typeof (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback === "function") {
-          (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(() => {
-            api.prefetchAuthenticatedRoutes(token);
-          });
-        } else {
-          setTimeout(() => api.prefetchAuthenticatedRoutes(token), 100);
-        }
-
         const synced = await fetchAuthProfile(token, cachedUser);
         if (isMounted) {
           if (synced) {

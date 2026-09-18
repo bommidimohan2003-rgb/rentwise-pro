@@ -1692,11 +1692,13 @@ def toggle_custom_product_availability(product_id: str, email: str):
 
 # Token Revocation Helpers
 REVOKED_JTIS = set()
+VALID_JTIS: dict[str, float] = {}
 
 def revoke_token(jti: str, email: str, expires_at: int):
     if not jti:
         return
     REVOKED_JTIS.add(jti)
+    VALID_JTIS.pop(jti, None)
     created_at = dt.now(timezone.utc).isoformat()
     try:
         execute_query(
@@ -1715,11 +1717,19 @@ def is_token_revoked(jti: str) -> bool:
         return True
     if jti in REVOKED_JTIS:
         return True
+    now = time.time()
+    if jti in VALID_JTIS:
+        if now - VALID_JTIS[jti] < 30.0:
+            return False
     try:
         res = fetch_one("SELECT 1 FROM token_blocklist WHERE jti = %s", (jti,))
         if res:
             REVOKED_JTIS.add(jti)
+            VALID_JTIS.pop(jti, None)
             return True
+        else:
+            VALID_JTIS[jti] = now
+            return False
     except Exception as e:
         print(f"Warning: Database read error in is_token_revoked: {e}")
     return False
@@ -2465,20 +2475,28 @@ def get_valid_db_session(raw_refresh_token: str) -> Optional[dict]:
     finally:
         conn.close()
 
+REVOKED_SESSIONS: set[str] = set()
+VALID_SESSIONS: dict[str, float] = {}
+
 def update_session_activity(session_id: str):
     now_str = dt.now(timezone.utc).isoformat()
     execute_query("UPDATE sessions SET last_used_at = %s WHERE id = %s", (now_str, session_id))
 
 def revoke_db_session(session_id: str) -> bool:
+    if session_id:
+        REVOKED_SESSIONS.add(session_id)
+        VALID_SESSIONS.pop(session_id, None)
     now_str = dt.now(timezone.utc).isoformat()
     return execute_query("UPDATE sessions SET revoked_at = %s WHERE id = %s AND revoked_at IS NULL", (now_str, session_id))
 
 def revoke_db_session_by_token(raw_refresh_token: str) -> bool:
+    VALID_SESSIONS.clear()
     token_hash = hash_refresh_token(raw_refresh_token)
     now_str = dt.now(timezone.utc).isoformat()
     return execute_query("UPDATE sessions SET revoked_at = %s WHERE refresh_token_hash = %s AND revoked_at IS NULL", (now_str, token_hash))
 
 def revoke_all_user_sessions(user_email: str) -> bool:
+    VALID_SESSIONS.clear()
     clean_email = user_email.strip().lower()
     now_str = dt.now(timezone.utc).isoformat()
     return execute_query("UPDATE sessions SET revoked_at = %s WHERE LOWER(user_email) = LOWER(%s) AND revoked_at IS NULL", (now_str, clean_email))
@@ -2494,7 +2512,7 @@ def get_user_active_sessions(user_email: str) -> List[dict]:
             cursor.execute("""
                 SELECT id, device_name, ip_address, created_at, last_used_at, expires_at
                 FROM sessions
-                WHERE LOWER(user_email) = LOWER(%s) AND revoked_at IS NULL AND expires_at > %s
+                WHERE user_email = %s AND revoked_at IS NULL AND expires_at > %s
                 ORDER BY last_used_at DESC
             """, (clean_email, now_str))
             return cursor.fetchall()
@@ -2508,6 +2526,12 @@ def cleanup_expired_sessions() -> bool:
 def is_session_revoked(session_id: str) -> bool:
     if not session_id:
         return False
+    if session_id in REVOKED_SESSIONS:
+        return True
+    now = time.time()
+    if session_id in VALID_SESSIONS:
+        if now - VALID_SESSIONS[session_id] < 30.0:
+            return False
     conn = get_db_connection()
     if not conn:
         return False
@@ -2521,10 +2545,15 @@ def is_session_revoked(session_id: str) -> bool:
                 return False
             now_str = dt.now(timezone.utc).isoformat()
             if row.get("revoked_at") is not None:
+                REVOKED_SESSIONS.add(session_id)
+                VALID_SESSIONS.pop(session_id, None)
                 return True
             exp = row.get("expires_at")
             if exp and exp <= now_str:
+                REVOKED_SESSIONS.add(session_id)
+                VALID_SESSIONS.pop(session_id, None)
                 return True
+            VALID_SESSIONS[session_id] = now
             return False
     except Exception:
         return False
@@ -4005,7 +4034,8 @@ def get_conversation_messages(conversation_id: str, limit: int = 150) -> List[di
 def get_user_conversations(user_email: str, search: Optional[str] = None) -> List[dict]:
     """
     Fetches all conversations where user is customer or lender.
-    Supports search filtering and unread count aggregation.
+    Optimized: JOINs counterparty user profile data and batch-fetches last messages + unread counts
+    to eliminate N+1 query loops.
     """
     clean_user = (user_email or "").strip().lower()
     raw_convs = []
@@ -4019,12 +4049,16 @@ def get_user_conversations(user_email: str, search: Optional[str] = None) -> Lis
                    cp.price as product_price,
                    cp.category as product_category,
                    o.status as booking_status, o.start_date, o.end_date, o.total as booking_total,
-                   d.id as delivery_id, d.status as delivery_status, d.eta_minutes
+                   d.id as delivery_id, d.status as delivery_status, d.eta_minutes,
+                   u_cust.full_name as cust_full_name, u_cust.avatar as cust_avatar, u_cust.profile_photo_url as cust_photo_url, u_cust.verified as cust_verified,
+                   u_lend.full_name as lend_full_name, u_lend.avatar as lend_avatar, u_lend.profile_photo_url as lend_photo_url, u_lend.verified as lend_verified
             FROM conversations c
             LEFT JOIN conversation_members cm ON cm.conversation_id = c.id AND LOWER(cm.user_email) = %s
             LEFT JOIN orders o ON o.id = c.booking_id
             LEFT JOIN custom_products cp ON cp.id = c.product_id
             LEFT JOIN deliveries d ON d.booking_id = c.booking_id
+            LEFT JOIN users u_cust ON LOWER(u_cust.email) = LOWER(c.customer_email)
+            LEFT JOIN users u_lend ON LOWER(u_lend.email) = LOWER(c.lender_email)
             WHERE LOWER(c.customer_email) = %s OR LOWER(c.lender_email) = %s
             ORDER BY c.updated_at DESC
         """, (clean_user, clean_user, clean_user))
@@ -4037,6 +4071,45 @@ def get_user_conversations(user_email: str, search: Optional[str] = None) -> Lis
             if c.get("customer_email", "").lower() == clean_user or c.get("lender_email", "").lower() == clean_user
         ]
 
+    conv_ids = [c["id"] for c in raw_convs if c.get("id")]
+    last_msg_by_conv: dict[str, dict] = {}
+    unread_cnt_by_conv: dict[str, int] = {}
+    msg_cnt_by_conv: dict[str, int] = {}
+
+    if conv_ids:
+        try:
+            placeholders = ",".join(["%s"] * len(conv_ids))
+            # Batch fetch message count and unread count per conversation in 1 query
+            agg_rows = fetch_all(f"""
+                SELECT m.conversation_id,
+                       COUNT(m.id) as total_count,
+                       SUM(CASE WHEN LOWER(m.sender_email) != %s AND (cm.last_read_at IS NULL OR m.created_at > cm.last_read_at) THEN 1 ELSE 0 END) as unread_count
+                FROM messages m
+                LEFT JOIN conversation_members cm ON cm.conversation_id = m.conversation_id AND LOWER(cm.user_email) = %s
+                WHERE m.conversation_id IN ({placeholders}) AND m.deleted_at IS NULL
+                GROUP BY m.conversation_id
+            """, (clean_user, clean_user, *conv_ids))
+            for row in (agg_rows or []):
+                cid = row["conversation_id"]
+                unread_cnt_by_conv[cid] = int(row.get("unread_count") or 0)
+                msg_cnt_by_conv[cid] = int(row.get("total_count") or 0)
+
+            # Batch fetch latest message per conversation
+            last_rows = fetch_all(f"""
+                SELECT conversation_id, content, created_at, sender_email
+                FROM (
+                    SELECT conversation_id, content, created_at, sender_email,
+                           ROW_NUMBER() OVER (PARTITION BY conversation_id ORDER BY created_at DESC) as rn
+                    FROM messages
+                    WHERE conversation_id IN ({placeholders}) AND deleted_at IS NULL
+                ) ranked_msgs
+                WHERE rn = 1
+            """, tuple(conv_ids))
+            for row in (last_rows or []):
+                last_msg_by_conv[row["conversation_id"]] = row
+        except Exception as e:
+            logger.warning(f"Batch conversation metadata fetch notice: {e}")
+
     results = []
     clean_search = (search or "").strip().lower()
 
@@ -4044,20 +4117,34 @@ def get_user_conversations(user_email: str, search: Optional[str] = None) -> Lis
         cid = c["id"]
         is_customer = c.get("customer_email", "").lower() == clean_user
         counterparty_email = c.get("lender_email") if is_customer else c.get("customer_email")
-        counterparty_user = get_user(counterparty_email) or {}
-        counterparty_name = counterparty_user.get("full_name") or (counterparty_email.split("@")[0] if counterparty_email else "Partner")
-        counterparty_avatar = counterparty_user.get("avatar") or counterparty_user.get("profilePhotoUrl") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
-        counterparty_verified = counterparty_user.get("verified", True)
 
-        msgs = get_conversation_messages(cid)
-        last_msg = msgs[-1] if msgs else {}
+        # Resolve counterparty metadata from primary JOIN (fallback to cache if needed)
+        if is_customer:
+            counterparty_name = c.get("lend_full_name") or (counterparty_email.split("@")[0] if counterparty_email else "Partner")
+            counterparty_avatar = c.get("lend_avatar") or c.get("lend_photo_url") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
+            counterparty_verified = bool(c.get("lend_verified", True))
+        else:
+            counterparty_name = c.get("cust_full_name") or (counterparty_email.split("@")[0] if counterparty_email else "Partner")
+            counterparty_avatar = c.get("cust_avatar") or c.get("cust_photo_url") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
+            counterparty_verified = bool(c.get("cust_verified", True))
 
-        last_read_at = c.get("last_read_at") or "1970-01-01"
-        unread_cnt = sum(
-            1 for m in msgs
-            if m.get("sender_email", "").lower() != clean_user
-            and m.get("created_at", "") > last_read_at
-        )
+        last_msg = last_msg_by_conv.get(cid)
+        unread_cnt = unread_cnt_by_conv.get(cid, 0)
+        total_msgs = msg_cnt_by_conv.get(cid, 0)
+
+        # In-memory mock fallback if DB returned empty
+        if not last_msg and cid in MOCK_MESSAGES:
+            mock_m = [m for m in MOCK_MESSAGES[cid] if not m.get("deleted_at")]
+            last_msg = mock_m[-1] if mock_m else {}
+            last_read_at = c.get("last_read_at") or "1970-01-01"
+            unread_cnt = sum(
+                1 for m in mock_m
+                if m.get("sender_email", "").lower() != clean_user
+                and m.get("created_at", "") > last_read_at
+            )
+            total_msgs = len(mock_m)
+
+        last_msg = last_msg or {}
 
         item = {
             "id": cid,
@@ -4086,7 +4173,7 @@ def get_user_conversations(user_email: str, search: Optional[str] = None) -> Lis
             "lastMessageAt": last_msg.get("created_at") or c.get("updated_at"),
             "unread": unread_cnt > 0,
             "unreadCount": unread_cnt,
-            "messagesCount": len(msgs),
+            "messagesCount": total_msgs,
             "createdAt": c.get("created_at"),
             "updatedAt": c.get("updated_at")
         }

@@ -3376,35 +3376,7 @@ def fetch_lender_orders(email: str = Depends(get_current_user_email)):
 def fetch_notifications(email: str = Depends(get_current_user_email)):
     notifications = get_notifications(email)
     if not notifications:
-        demo_notifications = [
-            {
-                "id": "n1",
-                "title": "Booking confirmed",
-                "message": "Your Sony A7 IV rental starts tomorrow.",
-                "type": "success",
-                "read": False,
-                "createdAt": "2h ago"
-            },
-            {
-                "id": "n2",
-                "title": "New message from Alex",
-                "message": "Hey, are you around for pickup at 3pm?",
-                "type": "info",
-                "read": False,
-                "createdAt": "5h ago"
-            },
-            {
-                "id": "n3",
-                "title": "Return reminder",
-                "message": "DJI Mavic 3 due back in 2 days.",
-                "type": "warning",
-                "read": True,
-                "createdAt": "1d ago"
-            }
-        ]
-        for n in demo_notifications:
-            create_notification(email, n)
-        notifications = get_notifications(email)
+        return []
     
     result = []
     for n in notifications:
