@@ -150,6 +150,8 @@ from database import (
     recalculate_product_ratings,
     check_products_booking_conflicts,
     evaluate_product_availability,
+    evaluate_products_availability_batch,
+    get_products_batch,
     get_user_cart,
     add_or_update_cart_item,
     remove_cart_item,
@@ -172,7 +174,8 @@ from database import (
     add_message,
     mark_conversation_read,
     get_total_unread_messages_count,
-    estimate_delivery_eta_minutes
+    estimate_delivery_eta_minutes,
+    check_db_health
 )
 from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
 from search_ml import ml_search_engine
@@ -262,59 +265,114 @@ def invalidate_cache(key_prefix: str = None):
     for k in keys_to_del:
         _cache_store.pop(k, None)
 
-# Custom Universal CORS & Security Headers Middleware
+DEV_ORIGINS = {
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://localhost:8001",
+    "http://127.0.0.1:8001",
+    "http://testserver",
+}
+
+def is_origin_allowed(origin: Optional[str]) -> bool:
+    if not origin:
+        return False
+    if origin in ALLOWED_ORIGINS and origin != "*":
+        return True
+    if not IS_PRODUCTION and origin in DEV_ORIGINS:
+        return True
+    if origin.endswith(".vercel.app") or origin.endswith(".up.railway.app"):
+        return True
+    return False
+
+# Custom Universal CORS, Structured Access Logging & Security Headers Middleware
 @app.middleware("http")
 async def custom_cors_and_security_middleware(request: Request, call_next):
+    start_time = time.time()
+    req_id = request.headers.get("x-request-id") or f"req_{uuid.uuid4().hex[:12]}"
     origin = request.headers.get("origin")
+    allowed = is_origin_allowed(origin)
     
     # Immediately handle CORS OPTIONS preflight request
     if request.method == "OPTIONS":
         response = Response(status_code=204)
-        if origin:
+        if allowed and origin:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
             response.headers["Access-Control-Allow-Headers"] = request.headers.get("access-control-request-headers", "*")
             response.headers["Access-Control-Max-Age"] = "86400"
             response.headers["Vary"] = "Origin"
+        response.headers["X-Request-ID"] = req_id
         return response
 
     # Enforce request body size limit (max 10MB)
     content_length = request.headers.get("content-length")
     if content_length and int(content_length) > 10 * 1024 * 1024:
-        return Response(content=json.dumps({"detail": "Payload too large. Maximum allowed size is 10MB."}), status_code=413, media_type="application/json")
+        res = Response(content=json.dumps({"detail": "Payload too large. Maximum allowed size is 10MB."}), status_code=413, media_type="application/json")
+        res.headers["X-Request-ID"] = req_id
+        return res
 
     response = await call_next(request)
+    duration_ms = round((time.time() - start_time) * 1000, 2)
     
-    # Attach CORS headers to response
-    if origin:
+    # Structured Request Correlation Header
+    response.headers["X-Request-ID"] = req_id
+
+    # Attach CORS headers to response if origin is allowed
+    if allowed and origin:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Vary"] = "Origin"
 
+    # Defense-in-depth Security Headers
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(self), geolocation=(self), microphone=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://cdn.jsdelivr.net https://apis.google.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: blob: https://images.unsplash.com https://ui-avatars.com https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.razorpay.com; "
+        "connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:* wss://* https://*.razorpay.com https://api.pwnedpasswords.com https://*.googleapis.com; "
+        "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com;"
+    )
     if IS_PRODUCTION:
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+
+    # Structured access logging (excluding excessive heartbeat polling logs)
+    if not request.url.path.startswith("/api/health") and not request.url.path in ("/", "/health", "/healthz"):
+        logger.info(f"[{req_id}] {request.method} {request.url.path} -> {response.status_code} ({duration_ms}ms)")
+
     return response
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled Exception on {request.method} {request.url.path}: {exc}\n{traceback.format_exc()}")
-    origin = request.headers.get("origin", "*")
+    req_id = request.headers.get("x-request-id") or f"req_{uuid.uuid4().hex[:12]}"
+    logger.error(f"[{req_id}] Unhandled Exception on {request.method} {request.url.path}: {exc}\n{traceback.format_exc()}")
+    origin = request.headers.get("origin")
+    allowed = is_origin_allowed(origin)
+    headers = {
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
+        "Access-Control-Allow-Headers": "*",
+        "X-Request-ID": req_id
+    }
+    if allowed and origin:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    
+    # Sanitize 500 error messages to prevent internal SQL / stack traces from leaking
+    err_detail = "Internal Server Error. Please try again later." if IS_PRODUCTION else f"Internal Server Error: {str(exc)}"
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Internal Server Error: {str(exc)}"},
-        headers={
-            "Access-Control-Allow-Origin": origin if origin else "*",
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
-            "Access-Control-Allow-Headers": "*",
-        }
+        content={"detail": err_detail},
+        headers=headers
     )
 
 @app.get("/")
@@ -322,8 +380,37 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 @app.get("/healthz")
 def health_check():
+    """Universal health probe for platform orchestrators (Railway / Docker)."""
     return {
         "status": "ok",
+        "service": "Payent FastAPI Backend API",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+    }
+
+@app.get("/api/health/live")
+def liveness_check():
+    """Liveness probe: verifies the application runtime process is alive."""
+    return {
+        "status": "alive",
+        "service": "Payent FastAPI Backend API",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+    }
+
+@app.get("/api/health/ready")
+def readiness_check(response: Response):
+    """Readiness probe: verifies database connectivity and operational dependency state."""
+    is_ready, msg = check_db_health()
+    if is_ready:
+        return {
+            "status": "ready",
+            "database": "connected",
+            "service": "Payent FastAPI Backend API",
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        }
+    response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    return {
+        "status": "unhealthy",
+        "database": "disconnected",
         "service": "Payent FastAPI Backend API",
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
@@ -497,7 +584,6 @@ def check_verification(phone: str, code: str, email: str) -> bool:
 
     return False
 
-# Security Dependency
 def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
@@ -507,8 +593,8 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
     
     token = authorization.split(" ")[1]
 
-    # 1. Try Firebase Admin SDK verification first if initialized
-    if firebase_admin._apps:
+    # 1. Try Firebase Admin SDK cryptographic verification if initialized
+    if HAS_FIREBASE and firebase_admin and firebase_admin._apps:
         try:
             decoded_token = firebase_auth.verify_id_token(token)
             email = decoded_token.get("email")
@@ -517,33 +603,11 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
             picture = decoded_token.get("picture") or ""
             if email:
                 save_google_user(email=email, full_name=name, firebase_uid=uid, avatar=picture)
-                return email
+                return email.strip().lower()
         except Exception:
             pass
 
-    # 2. Decode Firebase ID token (ey...) unverified payload if Admin SDK service key is not configured locally
-    if token.startswith("ey"):
-        try:
-            unverified_payload = jwt.decode(token, options={"verify_signature": False})
-            email = unverified_payload.get("email")
-            uid = unverified_payload.get("user_id") or unverified_payload.get("sub") or ""
-            name = unverified_payload.get("name") or (email.split("@")[0] if email else "User")
-            picture = unverified_payload.get("picture") or ""
-            iss = unverified_payload.get("iss", "")
-            if email and (iss.startswith("https://securetoken.google.com/") or "firebase" in unverified_payload):
-                save_google_user(email=email, full_name=name, firebase_uid=uid, avatar=picture)
-                return email
-        except Exception:
-            pass
-
-    # 3. Support Firebase / Google mock/client token prefix fallback
-    if token.startswith("google-") or token.startswith("firebase-"):
-        payload = decode_access_token(token, expected_type="access")
-        if payload and "sub" in payload:
-            return payload["sub"]
-        return "demo.google@payent.com"
-
-    # 4. Fall back to backend JWT access token verification
+    # 2. Cryptographic JWT access token verification with pinned algorithm and strict signature check
     payload = decode_access_token(token, expected_type="access")
     if not payload or "sub" not in payload:
         raise HTTPException(
@@ -566,16 +630,17 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
             detail="Session has been revoked or expired."
         )
 
-    user = get_user(payload["sub"])
+    user_email = payload["sub"].strip().lower()
+    user = get_user(user_email)
     if not user:
-        return payload["sub"]
+        return user_email
     if user.get("status") == "suspended":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account suspended. Please contact support."
         )
 
-    return payload["sub"]
+    return user_email
 
 def get_optional_current_user_email(authorization: Optional[str] = Header(None)) -> Optional[str]:
     if not authorization or not authorization.startswith("Bearer "):
@@ -761,6 +826,7 @@ def register_verify(data: RegisterVerifySchema, request: Request):
     }
 
 @app.post("/api/login")
+@app.post("/api/auth/login")
 def login(data: LoginRequestSchema, request: Request, response: Response):
     clean_email = data.email.lower().strip()
     client_ip = request.client.host if request.client else "unknown"
@@ -1018,14 +1084,34 @@ def forgot_password_reset(data: ForgotPasswordResetSchema):
     
     phone = user.get("phone") if user and user.get("phone") else "+10000000000"
     
+    # Strictly verify the OTP code before allowing password reset
+    is_valid_otp = check_verification(phone, data.otp, clean_email)
+    if not is_valid_otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code."
+        )
+    
+    # Enforce password strength policy
+    is_valid_pw, pw_err = validate_password_strength(data.new_password)
+    if not is_valid_pw:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=pw_err
+        )
+    
     # Hash new password and update user account in datastore
     hashed = hash_password(data.new_password)
     update_user_password(clean_email, hashed)
     
-    # Clean up any cached verification tokens
+    # Invalidate all active user sessions upon password reset
+    revoke_all_user_sessions(clean_email)
+    
+    # Clean up single-use verification token
     delete_otp(clean_email)
     
-    return {"success": True, "message": "Password reset successful."}
+    logger.info(f"Password reset completed successfully for {clean_email}")
+    return {"success": True, "message": "Password reset successful. All previous active sessions have been revoked."}
 
 @app.post("/api/auth/create-admin", status_code=status.HTTP_201_CREATED)
 def create_admin(
@@ -1299,6 +1385,18 @@ def update_profile_photo_route(
         )
 
     clean_photo = photo_url.strip()
+
+    # Enforce safe URL / Data URI image format and 3MB size limit
+    if not (clean_photo.startswith("http://") or clean_photo.startswith("https://") or clean_photo.startswith("data:image/")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid image format. Must be an HTTP/HTTPS URL or base64 image data URI."
+        )
+    if len(clean_photo) > 4 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Profile photo exceeds maximum size limit (3MB)."
+        )
 
     # Ensure table columns support LONGTEXT for base64 photo storage
     try:
@@ -1601,40 +1699,10 @@ def toggle_wishlist_item(data: WishlistToggleSchema, email: str = Depends(get_cu
 def fetch_orders(email: str = Depends(get_current_user_email)):
     clean_email = email.strip().lower()
     orders = get_orders(clean_email)
-    # If empty, seed initial demo orders for the user
-    if not orders:
-        demo_orders = [
-            {
-                "id": f"o-{int(time.time() * 1000)}-1",
-                "productId": "p1",
-                "productTitle": "Sony Alpha 7 IV",
-                "productImage": "https://images.unsplash.com/photo-1610448721566-47369c768e70?auto=format&fit=crop&w=1200&q=80",
-                "startDate": "Mar 12",
-                "endDate": "Mar 18",
-                "total": 12000,
-                "status": "active",
-                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
-            },
-            {
-                "id": f"o-{int(time.time() * 1000)}-2",
-                "productId": "p2",
-                "productTitle": "DJI Mavic 3 Pro",
-                "productImage": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1200&q=80",
-                "startDate": "Mar 12",
-                "endDate": "Mar 18",
-                "total": 15000,
-                "status": "pending",
-                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
-            }
-        ]
-        for o in demo_orders:
-            execute_query("""
-                INSERT INTO orders (id, user_email, product_id, product_title, product_image, start_date, end_date, total, status, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (o["id"], clean_email, o["productId"], o["productTitle"], o["productImage"], o["startDate"], o["endDate"], o["total"], o["status"], o["created_at"]))
-        orders = get_orders(clean_email)
     
     result = []
+    if not orders:
+        return result
     for o in orders:
         if isinstance(o, dict):
             pid = str(o.get("product_id") or o.get("productId") or "")
@@ -1691,7 +1759,13 @@ def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
         "createdAt": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
     
-    create_order(clean_email, normalized_order)
+    try:
+        create_order(clean_email, normalized_order)
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(ve)
+        )
     user = get_user(clean_email)
     cust_name = user["full_name"] if (user and isinstance(user, dict) and "full_name" in user) else clean_email.split("@")[0]
     
@@ -1816,8 +1890,8 @@ class AddToCartSchema(BaseModel):
 
 @app.post("/api/products/availability/batch")
 def check_availability_batch(data: BatchAvailabilitySchema):
-    start_str = data.start_date
-    end_str = data.end_date
+    start_str = data.start_date.strip() if data.start_date else ""
+    end_str = data.end_date.strip() if data.end_date else ""
     pids = [str(pid).strip() for pid in data.product_ids if str(pid).strip()]
     
     start_dt = parse_date_safely(start_str)
@@ -1827,33 +1901,8 @@ def check_availability_batch(data: BatchAvailabilitySchema):
     if start_dt > end_dt:
         raise HTTPException(status_code=400, detail="start_date cannot be after end_date.")
 
-    # Single batch check for active booking conflicts
-    conflicted_pids = check_products_booking_conflicts(pids, start_str, end_str)
-
-    availability_map = {}
-    for pid in pids:
-        if pid in conflicted_pids:
-            availability_map[pid] = {
-                "status": "unavailable",
-                "is_available": False,
-                "reason": "Booked for selected dates"
-            }
-        else:
-            db_prod = fetch_one_product(pid)
-            if db_prod:
-                is_avail, avail_status, reason = evaluate_product_availability(db_prod)
-            elif pid in MOCK_CUSTOM_PRODUCTS:
-                is_avail, avail_status, reason = evaluate_product_availability(MOCK_CUSTOM_PRODUCTS[pid])
-            else:
-                is_avail = True
-                avail_status = "available"
-                reason = None
-
-            availability_map[pid] = {
-                "status": avail_status,
-                "is_available": is_avail,
-                "reason": reason
-            }
+    # High-performance 2-query batch resolution
+    availability_map = evaluate_products_availability_batch(pids, start_str, end_str)
 
     return {
         "start_date": start_str,
@@ -1874,36 +1923,16 @@ def check_single_product_availability(
     if start_dt > end_dt:
         raise HTTPException(status_code=400, detail="start_date cannot be after end_date.")
 
-    conflicted_pids = check_products_booking_conflicts([id], start_date, end_date)
-    if id in conflicted_pids:
-        return {
-            "product_id": id,
-            "start_date": start_date,
-            "end_date": end_date,
-            "is_available": False,
-            "status": "unavailable",
-            "reason": "Booked for selected dates"
-        }
-    
-    prod = fetch_one_product(id)
-    if prod:
-        is_avail, avail_status, reason = evaluate_product_availability(prod)
-        return {
-            "product_id": id,
-            "start_date": start_date,
-            "end_date": end_date,
-            "is_available": is_avail,
-            "status": avail_status,
-            "reason": reason
-        }
+    avail_map = evaluate_products_availability_batch([id], start_date, end_date)
+    info = avail_map.get(id, {"status": "available", "is_available": True, "reason": None})
 
     return {
         "product_id": id,
         "start_date": start_date,
         "end_date": end_date,
-        "is_available": True,
-        "status": "available",
-        "reason": None
+        "is_available": info.get("is_available", True),
+        "status": info.get("status", "available"),
+        "reason": info.get("reason")
     }
 
 # ============================================================
@@ -1915,6 +1944,23 @@ def get_cart_endpoint(email: str = Depends(get_current_user_email)):
     clean_email = email.strip().lower()
     raw_items = get_user_cart(clean_email)
     
+    if not raw_items:
+        return {
+            "items": [],
+            "count": 0,
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+        }
+
+    # Batch conflict check for all cart items in a single query
+    pids = [it.get("product_id") for it in raw_items if it.get("product_id")]
+    earliest_start = min((it.get("start_date") for it in raw_items if it.get("start_date")), default=None)
+    latest_end = max((it.get("end_date") for it in raw_items if it.get("end_date")), default=None)
+    conflicted_set = set()
+    if pids and earliest_start and latest_end:
+        conflicted_set = set(check_products_booking_conflicts(pids, earliest_start, latest_end))
+
     items = []
     subtotal = 0
     for it in raw_items:
@@ -1928,12 +1974,12 @@ def get_cart_endpoint(email: str = Depends(get_current_user_email)):
         daily_price = int(it.get("daily_price") or it.get("price") or 0)
         item_total = daily_price * days
         
-        conflicted = check_products_booking_conflicts([pid], start_d, end_d)
+        is_conflicted = pid in conflicted_set
         is_active = bool(it.get("is_product_active", True))
         
-        is_avail = (pid not in conflicted) and is_active
+        is_avail = (not is_conflicted) and is_active
         reason = None
-        if pid in conflicted:
+        if is_conflicted:
             reason = "Booked for selected dates"
         elif not is_active:
             reason = "Product currently unavailable"
@@ -1941,19 +1987,27 @@ def get_cart_endpoint(email: str = Depends(get_current_user_email)):
         enriched_item = {
             "id": it.get("id"),
             "user_email": clean_email,
+            "userEmail": clean_email,
             "product_id": pid,
+            "productId": pid,
             "title": it.get("title") or "Tech Gear",
             "price": daily_price,
             "daily_price": daily_price,
+            "dailyPrice": daily_price,
             "image": it.get("image") or "",
             "category": it.get("category") or "gear",
             "city": it.get("city") or "India",
             "start_date": start_d,
+            "startDate": start_d,
             "end_date": end_d,
+            "endDate": end_d,
             "days": days,
             "total_price": item_total,
+            "totalPrice": item_total,
             "is_available": is_avail,
+            "isAvailable": is_avail,
             "conflict_reason": reason,
+            "conflictReason": reason,
             "created_at": it.get("created_at") or "",
             "updated_at": it.get("updated_at") or ""
         }
@@ -2143,11 +2197,11 @@ def format_product_dict(p: dict, is_summary: bool = False, booked_pids_set: Opti
         "id": str(p.get("id", "")),
         "title": str(p.get("title", "")),
         "description": str(p.get("description", "")),
-        "price": float(p.get("price", 0)),
+        "price": float(p.get("price") if p.get("price") is not None else 0),
         "image": raw_img,
-        "category": str(p.get("category", "")),
-        "rating": float(p.get("rating", 5.0)),
-        "reviews": int(p.get("reviews", 0)),
+        "category": str(p.get("category") or ""),
+        "rating": float(p.get("rating") if p.get("rating") is not None else 5.0),
+        "reviews": int(p.get("reviews") if p.get("reviews") is not None else 0),
         "available": bool(is_avail),
         "availability_status": avail_status,
         "availability_reason": reason,
@@ -2622,7 +2676,7 @@ def remove_custom_listing(id: str, email: str = Depends(get_current_user_email))
     user_full_name = (user_rec.get("full_name") or "").strip().lower()
     user_role = (user_rec.get("role") or "").strip().lower()
     
-    is_admin = user_role == "admin" or clean_email == "bommidimohan2003@gmail.com"
+    is_admin = user_role in ("admin", "superadmin")
     is_owner = bool(
         (prod_user and prod_user == clean_email) or
         (owner_email and owner_email == clean_email) or
@@ -2720,271 +2774,7 @@ def check_admin_user(current_user_email: str = Depends(get_current_user_email)) 
     return user
 
 # ==============================================================================
-# --- REAL PRODUCT AVAILABILITY & BATCH CHECKING ENDPOINTS ---
-# ==============================================================================
 
-class BatchAvailabilityRequest(BaseModel):
-    start_date: str
-    end_date: str
-    product_ids: List[str]
-
-@app.post("/api/products/availability/batch")
-def batch_check_availability(payload: BatchAvailabilityRequest):
-    """
-    Batched date-aware availability check to eliminate N+1 frontend queries.
-    Cross-checks requested rental dates against active/confirmed bookings in MySQL `orders` table.
-    """
-    start_date = payload.start_date.strip()
-    end_date = payload.end_date.strip()
-    product_ids = [pid.strip() for pid in payload.product_ids if pid and pid.strip()]
-
-    if not product_ids:
-        return {"start_date": start_date, "end_date": end_date, "availability": {}}
-
-    conflicted_ids = check_products_booking_conflicts(product_ids, start_date, end_date)
-
-    availability_map = {}
-    for pid in product_ids:
-        if pid in conflicted_ids:
-            availability_map[pid] = {
-                "status": "unavailable",
-                "is_available": False,
-                "reason": "Booked for selected dates"
-            }
-        else:
-            prod = fetch_one("SELECT available FROM custom_products WHERE id = %s", (pid,))
-            if prod and prod.get("available") == 0:
-                availability_map[pid] = {
-                    "status": "unavailable",
-                    "is_available": False,
-                    "reason": "Listing currently paused by owner"
-                }
-            else:
-                availability_map[pid] = {
-                    "status": "available",
-                    "is_available": True,
-                    "reason": None
-                }
-
-    return {
-        "start_date": start_date,
-        "end_date": end_date,
-        "availability": availability_map
-    }
-
-@app.get("/api/products/{id}/availability")
-def single_product_availability(id: str, start_date: str, end_date: str):
-    """Check availability for a single product across a specific date range."""
-    conflicted = check_products_booking_conflicts([id], start_date, end_date)
-    is_conflicted = id in conflicted
-    prod = fetch_one("SELECT available FROM custom_products WHERE id = %s", (id,))
-    is_paused = prod and prod.get("available") == 0
-
-    if is_conflicted:
-        return {
-            "product_id": id,
-            "status": "unavailable",
-            "is_available": False,
-            "reason": "Booked for selected dates",
-            "start_date": start_date,
-            "end_date": end_date
-        }
-    elif is_paused:
-        return {
-            "product_id": id,
-            "status": "unavailable",
-            "is_available": False,
-            "reason": "Listing currently paused by owner",
-            "start_date": start_date,
-            "end_date": end_date
-        }
-    return {
-        "product_id": id,
-        "status": "available",
-        "is_available": True,
-        "reason": None,
-        "start_date": start_date,
-        "end_date": end_date
-    }
-
-# ==============================================================================
-# --- SHOPPING / RENTAL CART ENDPOINTS ---
-# ==============================================================================
-
-class AddToCartSchema(BaseModel):
-    product_id: str
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-
-@app.get("/api/cart")
-def fetch_user_cart(current_user_email: str = Depends(get_current_user_email)):
-    clean_email = current_user_email.strip().lower()
-    raw_items = get_user_cart(clean_email)
-
-    items = []
-    subtotal = 0
-
-    for item in raw_items:
-        pid = item["product_id"]
-        start_d = item["start_date"]
-        end_d = item["end_date"]
-        
-        try:
-            d1 = parse_date_safely(start_d)
-            d2 = parse_date_safely(end_d)
-            if d1 and d2 and d2 >= d1:
-                days = max(1, (d2 - d1).days)
-            else:
-                days = 1
-        except Exception:
-            days = 1
-
-        daily_price = int(item.get("price") or item.get("daily_price") or 0)
-        item_total = daily_price * days
-
-        conflicts = check_products_booking_conflicts([pid], start_d, end_d)
-        is_conflicted = pid in conflicts
-
-        item_resp = {
-            "id": item["id"],
-            "productId": pid,
-            "product_id": pid,
-            "title": item.get("title") or "Gear Rental",
-            "image": item.get("image") or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
-            "category": item.get("category") or "gear",
-            "city": item.get("city") or "India",
-            "startDate": start_d,
-            "start_date": start_d,
-            "endDate": end_d,
-            "end_date": end_d,
-            "days": days,
-            "dailyPrice": daily_price,
-            "daily_price": daily_price,
-            "totalPrice": item_total,
-            "total_price": item_total,
-            "isAvailable": not is_conflicted and item.get("is_product_active", True),
-            "is_available": not is_conflicted and item.get("is_product_active", True),
-            "conflictReason": "Booked for selected dates" if is_conflicted else None
-        }
-        items.append(item_resp)
-        subtotal += item_total
-
-    tax = int(subtotal * 0.08)
-    total = subtotal + tax
-
-    return {
-        "items": items,
-        "count": len(items),
-        "subtotal": subtotal,
-        "tax": tax,
-        "total": total
-    }
-
-@app.post("/api/cart")
-def add_item_to_cart(data: AddToCartSchema, current_user_email: str = Depends(get_current_user_email)):
-    clean_email = current_user_email.strip().lower()
-    pid = data.product_id.strip()
-    start_d = data.start_date.strip() if data.start_date else ""
-    end_d = data.end_date.strip() if data.end_date else ""
-    if not start_d or not end_d:
-        now_dt = dt.now(timezone.utc)
-        start_d = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        end_d = (now_dt + datetime.timedelta(days=4)).strftime("%Y-%m-%d")
-
-    product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (pid,))
-    if not product:
-        product = fetch_one("SELECT * FROM custom_products WHERE id LIKE %s", (f"%{pid}%",))
-    
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Gear with ID '{pid}' not found in catalog."
-        )
-
-    if product.get("available") == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This gear listing is currently paused by the owner."
-        )
-
-    d1 = parse_date_safely(start_d)
-    d2 = parse_date_safely(end_d)
-    if not d1 or not d2:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid rental date format. Please provide valid start and end dates."
-        )
-    if d1 > d2:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rental start date cannot be after end date."
-        )
-
-    days = max(1, (d2 - d1).days)
-    daily_price = int(product.get("price", 0))
-    total_price = daily_price * days
-
-    conflicts = check_products_booking_conflicts([pid], start_d, end_d)
-    if pid in conflicts:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This gear is already booked for the selected rental dates. Please choose different dates."
-        )
-
-    saved_item = add_or_update_cart_item(
-        user_email=clean_email,
-        product_id=pid,
-        start_date=start_d,
-        end_date=end_d,
-        days=days,
-        daily_price=daily_price,
-        total_price=total_price,
-        product_details=product
-    )
-
-    return {
-        "success": True,
-        "message": f"'{product.get('title')}' added to your rental cart.",
-        "item": saved_item
-    }
-
-@app.delete("/api/cart/{item_id}")
-def delete_cart_item(item_id: str, current_user_email: str = Depends(get_current_user_email)):
-    clean_email = current_user_email.strip().lower()
-    remove_cart_item(clean_email, item_id)
-    return {"success": True, "message": "Item removed from cart."}
-
-@app.delete("/api/cart")
-def clear_cart(current_user_email: str = Depends(get_current_user_email)):
-    clean_email = current_user_email.strip().lower()
-    clear_user_cart(clean_email)
-    return {"success": True, "message": "Cart cleared successfully."}
-
-@app.post("/api/cart/checkout")
-def validate_cart_before_checkout(current_user_email: str = Depends(get_current_user_email)):
-    clean_email = current_user_email.strip().lower()
-    raw_items = get_user_cart(clean_email)
-    if not raw_items:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Your cart is empty.")
-
-    conflicted_items = []
-    for item in raw_items:
-        conflicts = check_products_booking_conflicts([item["product_id"]], item["start_date"], item["end_date"])
-        if item["product_id"] in conflicts:
-            conflicted_items.append({
-                "product_id": item["product_id"],
-                "title": item.get("title", "Gear"),
-                "start_date": item["start_date"],
-                "end_date": item["end_date"]
-            })
-
-    if conflicted_items:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="One or more items in your cart are no longer available for your selected dates. Please adjust your dates or remove the items."
-        )
-
-    return {"success": True, "can_checkout": True, "item_count": len(raw_items)}
 
 # ==============================================================================
 # --- RAZORPAY BACKEND PAYMENT ENDPOINTS ---
@@ -3752,8 +3542,11 @@ class DeliveryStatusUpdateSchema(BaseModel):
     note: Optional[str] = None
 
 class DeliveryLocationUpdateSchema(BaseModel):
-    latitude: float
-    longitude: float
+    model_config = {"populate_by_name": True}
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
     heading: Optional[float] = None
     speed: Optional[float] = None
     accuracy: Optional[float] = None
@@ -3932,9 +3725,6 @@ def update_delivery_location_endpoint(delivery_id: str, data: DeliveryLocationUp
     if not delivery:
         raise HTTPException(status_code=404, detail="Delivery not found.")
 
-    if delivery.get("status") not in ("OUT_FOR_DELIVERY", "NEAR_DESTINATION"):
-        raise HTTPException(status_code=400, detail="Live location tracking is only permitted while delivery is active (OUT_FOR_DELIVERY or NEAR_DESTINATION).")
-
     order = None
     if delivery.get("booking_id"):
         try:
@@ -3961,13 +3751,21 @@ def update_delivery_location_endpoint(delivery_id: str, data: DeliveryLocationUp
     if clean_user != lender_email and not is_admin:
         raise HTTPException(status_code=403, detail="Forbidden. Only the lender can broadcast delivery location.")
 
-    if not (-90.0 <= data.latitude <= 90.0) or not (-180.0 <= data.longitude <= 180.0):
+    if delivery.get("status") not in ("OUT_FOR_DELIVERY", "NEAR_DESTINATION"):
+        raise HTTPException(status_code=400, detail="Live location tracking is only permitted while delivery is active (OUT_FOR_DELIVERY or NEAR_DESTINATION).")
+
+    lat_val = data.latitude if data.latitude is not None else data.lat
+    lng_val = data.longitude if data.longitude is not None else data.lng
+    if lat_val is None or lng_val is None:
+        raise HTTPException(status_code=422, detail="Latitude and Longitude coordinates are required.")
+
+    if not (-90.0 <= lat_val <= 90.0) or not (-180.0 <= lng_val <= 180.0):
         raise HTTPException(status_code=422, detail="Invalid GPS coordinates.")
 
     loc = add_delivery_location(
         clean_did,
-        latitude=data.latitude,
-        longitude=data.longitude,
+        latitude=lat_val,
+        longitude=lng_val,
         heading=data.heading,
         speed=data.speed,
         accuracy=data.accuracy
@@ -3975,8 +3773,8 @@ def update_delivery_location_endpoint(delivery_id: str, data: DeliveryLocationUp
 
     broadcast_delivery_update(clean_did, "delivery.location_updated", {
         "deliveryId": clean_did,
-        "latitude": data.latitude,
-        "longitude": data.longitude,
+        "latitude": lat_val,
+        "longitude": lng_val,
         "heading": data.heading,
         "speed": data.speed,
         "accuracy": data.accuracy,
@@ -4241,7 +4039,8 @@ def get_conversations_unread_count_endpoint(current_user_email: str = Depends(ge
     cnt = get_total_unread_messages_count(clean_user)
     return {
         "success": True,
-        "unreadCount": cnt
+        "unreadCount": cnt,
+        "unread_count": cnt
     }
 
 @app.get("/api/conversations/{conversation_id}")
@@ -4324,6 +4123,11 @@ def send_conversation_message_endpoint(conversation_id: str, data: SendChatMessa
         "message": msg
     }
 
+ALLOWED_ATTACHMENT_MIMES = {
+    "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
+    "application/pdf", "text/plain", "application/zip", "application/x-zip-compressed"
+}
+
 @app.post("/api/conversations/{conversation_id}/attachments")
 def upload_conversation_attachment_endpoint(conversation_id: str, data: MessageAttachmentUploadSchema, current_user_email: str = Depends(get_current_user_email)):
     clean_user = current_user_email.strip().lower()
@@ -4336,7 +4140,7 @@ def upload_conversation_attachment_endpoint(conversation_id: str, data: MessageA
     cust_email = (conv.get("customer_email") or "").strip().lower()
     lend_email = (conv.get("lender_email") or "").strip().lower()
     user_rec = get_user(clean_user) or {}
-    is_admin = user_rec.get("role") == "admin"
+    is_admin = user_rec.get("role") in ("admin", "superadmin")
 
     if clean_user != cust_email and clean_user != lend_email and not is_admin:
         raise HTTPException(status_code=403, detail="Forbidden. Not authorized to upload attachments to this conversation.")
@@ -4345,9 +4149,20 @@ def upload_conversation_attachment_endpoint(conversation_id: str, data: MessageA
     if len(data.file_data) > 7 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Attachment size exceeds 5MB limit.")
 
+    # Validate MIME type
+    clean_mime = (data.file_type or "").strip().lower()
+    if clean_mime not in ALLOWED_ATTACHMENT_MIMES and not clean_mime.startswith("image/"):
+        raise HTTPException(status_code=415, detail=f"Unsupported file type '{data.file_type}'. Allowed types: images, PDF, text, ZIP.")
+
+    # Sanitize file name to prevent path traversal
+    raw_filename = os.path.basename(data.file_name or "attachment")
+    sanitized_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', raw_filename)
+    if not sanitized_filename:
+        sanitized_filename = "attachment"
+
     sender_name = user_rec.get("full_name") or clean_user.split("@")[0]
-    msg_type = "IMAGE" if data.file_type.startswith("image/") else "FILE"
-    content_text = f"Shared {data.file_name}"
+    msg_type = "IMAGE" if clean_mime.startswith("image/") else "FILE"
+    content_text = f"Shared {sanitized_filename}"
 
     msg = add_message(
         conversation_id=clean_cid,
@@ -4356,8 +4171,8 @@ def upload_conversation_attachment_endpoint(conversation_id: str, data: MessageA
         content=content_text,
         message_type=msg_type,
         attachment_url=data.file_data,
-        file_name=data.file_name,
-        file_type=data.file_type,
+        file_name=sanitized_filename,
+        file_type=clean_mime,
         file_size=data.file_size
     )
 
@@ -4471,26 +4286,37 @@ class AdminRegisterSchema(BaseModel):
 @app.post("/api/admin/auth/register")
 def admin_register(data: AdminRegisterSchema):
     clean_email = data.email.lower().strip()
-    if data.admin_code and data.admin_code != ADMIN_SETUP_CODE:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid admin setup code.")
+    if not data.admin_code or data.admin_code != ADMIN_SETUP_CODE:
+        logger.warning(f"Unauthorized admin registration attempt for {clean_email}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Forbidden. Valid admin setup code is required to register or promote an administrator."
+        )
+
+    valid_pass, msg = validate_password_strength(data.password)
+    if not valid_pass:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
 
     existing = get_user(clean_email)
     if existing:
-        if verify_password(data.password, existing["password_hash"]) or data.admin_code == ADMIN_SETUP_CODE:
-            execute_query("UPDATE users SET role = 'admin' WHERE email = %s", (clean_email,))
-            # NOTE: Do NOT mutate MOCK_USERS here — role authority lives in MySQL only.
-            return {"success": True, "message": f"User {clean_email} upgraded to administrator role successfully."}
-        else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account already exists with different password.")
+        execute_query("UPDATE users SET role = 'admin', status = 'approved', verified = TRUE WHERE LOWER(email) = LOWER(%s)", (clean_email,))
+        if clean_email in MOCK_USERS:
+            MOCK_USERS[clean_email]["role"] = "admin"
+            MOCK_USERS[clean_email]["status"] = "approved"
+            MOCK_USERS[clean_email]["verified"] = True
+        logger.info(f"Existing user {clean_email} upgraded to administrator with valid setup code.")
+        return {"success": True, "message": f"User {clean_email} upgraded to administrator role successfully."}
 
     hashed = hash_password(data.password)
     create_user(
         email=clean_email,
-        phone=data.phone or "0000000000",
+        phone=data.phone or "+10000000000",
         password_hash=hashed,
         full_name=data.full_name or clean_email.split("@")[0],
-        role="admin"
+        role="admin",
+        status="approved"
     )
+    logger.info(f"New administrator account created for {clean_email}")
     return {"success": True, "message": f"Admin account for {clean_email} created successfully."}
 
 @app.post("/api/admin/auth/login")
@@ -5667,7 +5493,9 @@ def admin_delete_product(id: str, current_admin: dict = Depends(check_admin_user
     broadcast_admin_event("product.deleted", {"id": id})
     return {"success": True}
 
+@app.patch("/api/admin/products/{id}/approve")
 @app.post("/api/admin/products/{id}/approve")
+@app.put("/api/admin/products/{id}/approve")
 def admin_approve_product(id: str, current_admin: dict = Depends(check_admin_user)):
     execute_query("UPDATE custom_products SET status = 'approved', available = 1 WHERE id = %s", (id,))
     if id in MOCK_CUSTOM_PRODUCTS:
@@ -5689,7 +5517,9 @@ def admin_approve_product(id: str, current_admin: dict = Depends(check_admin_use
     broadcast_admin_event("product.updated", res_prod)
     return res_prod
 
+@app.patch("/api/admin/products/{id}/reject")
 @app.post("/api/admin/products/{id}/reject")
+@app.put("/api/admin/products/{id}/reject")
 def admin_reject_product(id: str, current_admin: dict = Depends(check_admin_user)):
     execute_query("UPDATE custom_products SET status = 'rejected', available = 0 WHERE id = %s", (id,))
     if id in MOCK_CUSTOM_PRODUCTS:
@@ -6166,11 +5996,13 @@ def list_public_reviews(
     sort: str = Query("newest"),
     rating: Optional[int] = Query(None, ge=1, le=5),
     product_id: Optional[str] = Query(None),
+    productId: Optional[str] = Query(None),
     verified_only: bool = Query(False)
 ):
     """Retrieve verified production customer reviews with server-side pagination, sorting, and filtering."""
+    target_pid = product_id or productId
     response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
-    cache_key = f"public_reviews:{page}:{limit}:{sort}:{rating}:{product_id}:{verified_only}"
+    cache_key = f"public_reviews:{page}:{limit}:{sort}:{rating}:{target_pid}:{verified_only}"
     return get_cached(
         cache_key,
         30,
@@ -6179,7 +6011,7 @@ def list_public_reviews(
             limit=limit,
             sort=sort,
             rating_filter=rating,
-            product_id=product_id,
+            product_id=target_pid,
             verified_only=verified_only
         )
     )
@@ -7344,209 +7176,6 @@ def get_search_stats():
     popular_queries = get_popular_search_queries(limit=6)
 
 
-# ----------------------------------------------------------------------
-# Real Admin API Endpoints
-# ----------------------------------------------------------------------
-
-@app.get("/api/admin/dashboard/stats")
-def get_admin_dashboard_stats():
-    """
-    GET /api/admin/dashboard/stats
-    Returns real metric aggregates from MySQL database tables.
-    """
-    today_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
-
-    total_users_res = fetch_one("SELECT COUNT(*) as cnt FROM users")
-    total_users = total_users_res["cnt"] if total_users_res else 0
-
-    total_products_res = fetch_one("SELECT COUNT(*) as cnt FROM custom_products")
-    total_products = total_products_res["cnt"] if total_products_res else 0
-
-    pending_products_res = fetch_one("SELECT COUNT(*) as cnt FROM custom_products WHERE status = 'pending'")
-    pending_products = pending_products_res["cnt"] if pending_products_res else 0
-
-    approved_products_res = fetch_one("SELECT COUNT(*) as cnt FROM custom_products WHERE status = 'approved'")
-    approved_products = approved_products_res["cnt"] if approved_products_res else 0
-
-    rejected_products_res = fetch_one("SELECT COUNT(*) as cnt FROM custom_products WHERE status = 'rejected'")
-    rejected_products = rejected_products_res["cnt"] if rejected_products_res else 0
-
-    total_categories_res = fetch_one("SELECT COUNT(*) as cnt FROM categories")
-    total_categories = total_categories_res["cnt"] if total_categories_res else 0
-
-    orders_today_res = fetch_one("SELECT COUNT(*) as cnt, COALESCE(SUM(total), 0) as rev FROM orders WHERE created_at LIKE %s", (f"{today_str}%",))
-    bookings_today = orders_today_res["cnt"] if orders_today_res else 0
-    revenue_today = int(orders_today_res["rev"]) if orders_today_res else 0
-
-    total_orders_res = fetch_one("SELECT COUNT(*) as cnt, COALESCE(SUM(total), 0) as rev FROM orders")
-    monthly_bookings = total_orders_res["cnt"] if total_orders_res else 0
-    monthly_revenue = int(total_orders_res["rev"]) if total_orders_res else 0
-
-    pending_reports_res = fetch_one("SELECT COUNT(*) as cnt FROM reports WHERE status = 'open'")
-    pending_reports = pending_reports_res["cnt"] if pending_reports_res else 0
-
-    unread_notifications_res = fetch_one("SELECT COUNT(*) as cnt FROM admin_notifications WHERE is_read = FALSE")
-    unread_notifications = unread_notifications_res["cnt"] if unread_notifications_res else 0
-
-    events_res = fetch_one("SELECT COUNT(*) as cnt FROM user_events")
-    total_events = events_res["cnt"] if events_res else 0
-    website_visitors = max(total_events, total_users)
-
-    return {
-        "totalUsers": total_users,
-        "totalAgents": 0,
-        "totalProducts": total_products,
-        "pendingProducts": pending_products,
-        "approvedProducts": approved_products,
-        "rejectedProducts": rejected_products,
-        "totalCategories": total_categories,
-        "bookingsToday": bookings_today,
-        "monthlyBookings": monthly_bookings,
-        "revenueToday": revenue_today,
-        "monthlyRevenue": monthly_revenue,
-        "pendingReports": pending_reports,
-        "unreadNotifications": unread_notifications,
-        "websiteVisitors": website_visitors,
-    }
-
-
-@app.get("/api/admin/dashboard/charts")
-def get_admin_dashboard_charts(days: int = 30):
-    """
-    GET /api/admin/dashboard/charts
-    Returns real monthly revenue, bookings, user growth, product growth, and category distribution from database.
-    """
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    current_month_idx = datetime.utcnow().month - 1
-    display_months = months[:current_month_idx + 1] if current_month_idx >= 0 else months
-
-    # Orders & Revenue chart
-    all_orders = fetch_all("SELECT total, created_at FROM orders") or []
-    monthly_rev_map = {m: 0 for m in display_months}
-    monthly_booking_map = {m: 0 for m in display_months}
-    for o in all_orders:
-        created = o.get("created_at") or ""
-        try:
-            m_idx = int(created.split("-")[1]) - 1
-            if 0 <= m_idx < len(months) and months[m_idx] in monthly_rev_map:
-                monthly_rev_map[months[m_idx]] += o.get("total", 0)
-                monthly_booking_map[months[m_idx]] += 1
-        except Exception:
-            pass
-
-    revenue_chart = [{"name": m, "revenue": monthly_rev_map[m]} for m in display_months]
-    booking_chart = [{"name": m, "bookings": monthly_booking_map[m]} for m in display_months]
-
-    # User growth
-    all_users = fetch_all("SELECT created_at FROM users") or []
-    monthly_users_map = {m: 0 for m in display_months}
-    for u in all_users:
-        created = u.get("created_at") or ""
-        try:
-            m_idx = int(created.split("-")[1]) - 1
-            if 0 <= m_idx < len(months) and months[m_idx] in monthly_users_map:
-                monthly_users_map[months[m_idx]] += 1
-        except Exception:
-            pass
-    
-    cumulative_users = 0
-    user_growth = []
-    for m in display_months:
-        cumulative_users += monthly_users_map[m]
-        user_growth.append({"name": m, "users": cumulative_users})
-
-    # Product growth & category distribution
-    all_prods = fetch_all("SELECT category, created_at FROM custom_products") or []
-    cat_dist_map = {}
-    monthly_prods_map = {m: 0 for m in display_months}
-    for p in all_prods:
-        cat = p.get("category") or "Other"
-        cat_dist_map[cat] = cat_dist_map.get(cat, 0) + 1
-        created = p.get("created_at") or ""
-        try:
-            m_idx = int(created.split("-")[1]) - 1
-            if 0 <= m_idx < len(months) and months[m_idx] in monthly_prods_map:
-                monthly_prods_map[months[m_idx]] += 1
-        except Exception:
-            pass
-
-    cumulative_prods = 0
-    product_growth = []
-    for m in display_months:
-        cumulative_prods += monthly_prods_map[m]
-        product_growth.append({"name": m, "products": cumulative_prods})
-
-    category_distribution = [{"name": k, "value": v} for k, v in cat_dist_map.items()] if cat_dist_map else [
-        {"name": "Cameras", "value": 0},
-        {"name": "Drones", "value": 0},
-        {"name": "Laptops", "value": 0},
-    ]
-
-    return {
-        "revenueChart": revenue_chart,
-        "bookingChart": booking_chart,
-        "userGrowth": user_growth,
-        "productGrowth": product_growth,
-        "categoryDistribution": category_distribution,
-        "topProducts": [],
-    }
-
-
-@app.get("/api/admin/dashboard/activities")
-def get_admin_dashboard_activities():
-    """
-    GET /api/admin/dashboard/activities
-    Returns real recent system activity logs.
-    """
-    logs = fetch_all("SELECT * FROM admin_logs ORDER BY timestamp DESC LIMIT 20") or []
-    result = []
-    for l in logs:
-        result.append({
-            "id": l.get("id"),
-            "timestamp": l.get("timestamp"),
-            "userName": l.get("user_name"),
-            "action": l.get("action"),
-            "module": l.get("module"),
-            "ipAddress": l.get("ip_address"),
-        })
-    return result
-
-
-@app.get("/api/admin/products")
-def get_admin_products():
-    """
-    GET /api/admin/products
-    Returns all real products in custom_products table.
-    """
-    prods = fetch_all("SELECT * FROM custom_products ORDER BY created_at DESC") or []
-    result = []
-    for p in prods:
-        result.append({
-            "id": p.get("id"),
-            "title": p.get("title"),
-            "description": p.get("description"),
-            "category": p.get("category"),
-            "price": p.get("price"),
-            "rating": p.get("rating", 5.0),
-            "reviewsCount": p.get("reviews_count", 0),
-            "available": bool(p.get("available", True)),
-            "status": p.get("status", "pending"),
-            "featured": bool(p.get("featured", False)),
-            "hidden": bool(p.get("hidden", False)),
-            "image": p.get("image", ""),
-            "images": [p.get("image", "")],
-            "documents": [],
-            "createdAt": p.get("created_at", ""),
-            "owner": {
-                "id": p.get("owner_id", p.get("owner_name", "User")),
-                "name": p.get("owner_name", "Lender"),
-                "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-                "rating": 4.9,
-                "email": p.get("owner_id", "lender@payent.com"),
-            }
-        })
-    return result
-
 # ---------------------------------------------------------------------------
 # Full-Stack React Frontend SPA Static File Handler
 # ---------------------------------------------------------------------------
@@ -7586,32 +7215,6 @@ async def serve_fullstack_spa(full_path: str = ""):
         </div></body></html>""",
         status_code=200
     )
-
-
-
-
-
-@app.get("/api/admin/users")
-def get_admin_users():
-    """
-    GET /api/admin/users
-    Returns all real users from users table.
-    """
-    users = fetch_all("SELECT * FROM users ORDER BY created_at DESC") or []
-    result = []
-    for u in users:
-        result.append({
-            "id": u.get("email"),
-            "fullName": u.get("full_name") or u.get("email", "").split("@")[0],
-            "email": u.get("email"),
-            "phone": u.get("phone") or "",
-            "role": u.get("role", "user"),
-            "status": u.get("status", "active"),
-            "verified": bool(u.get("verified", True)),
-            "avatar": u.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-            "createdAt": u.get("created_at") or "",
-        })
-    return result
 
 
 if __name__ == "__main__":

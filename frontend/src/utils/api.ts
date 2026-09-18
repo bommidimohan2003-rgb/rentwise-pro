@@ -1055,7 +1055,11 @@ export const api = {
           method: "GET",
         });
         if (!res.ok) throw new Error("Failed to fetch notifications");
-        return res.json();
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          storage.set(STORAGE_KEYS.notifications, data);
+        }
+        return data;
       },
       { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
     );
@@ -1893,7 +1897,11 @@ export const api = {
         const data = await res.json().catch(() => ({}));
         throw new Error(parseApiError(data, "Failed to fetch conversations"));
       }
-      return await res.json();
+      const result = await res.json();
+      if (result && Array.isArray(result.conversations) && !search) {
+        storage.set(STORAGE_KEYS.messages, result.conversations);
+      }
+      return result;
     };
 
     if (search && search.trim()) {
@@ -1905,6 +1913,21 @@ export const api = {
       fetcher,
       { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
     );
+  },
+
+  async prefetchAuthenticatedRoutes(token: string) {
+    if (!token || !API_BASE) return;
+    try {
+      Promise.allSettled([
+        this.getOrders(token),
+        this.getRealtimeConversations(token),
+        this.getUnreadMessagesCount(token),
+        this.getNotifications(token),
+        this.getCustomProducts(token),
+      ]).catch(() => {});
+    } catch {
+      /* ignore prefetch failures */
+    }
   },
 
   async getUnreadMessagesCount(

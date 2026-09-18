@@ -43,4 +43,5 @@ __pycache__/
 .vercel
 .playwright-mcp/
 scratch/
-
+backend/backups/*.json
+backend/backups/*.sql

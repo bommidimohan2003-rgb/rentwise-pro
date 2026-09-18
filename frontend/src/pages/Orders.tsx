@@ -12,8 +12,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { getOptimizedImageUrl } from "@/utils/images";
 
 export default function Orders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    return storage.get<Order[]>(STORAGE_KEYS.orders, []);
+  });
+  const [loading, setLoading] = useState(() => {
+    const cached = storage.get<Order[]>(STORAGE_KEYS.orders, []);
+    return cached.length === 0;
+  });
   const [error, setError] = useState<string | null>(null);
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(
     null,
@@ -26,7 +31,6 @@ export default function Orders() {
       setLoading(false);
       return;
     }
-    setLoading(true);
     setError(null);
     api
       .getOrders(token)

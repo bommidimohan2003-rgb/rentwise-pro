@@ -1,6 +1,7 @@
 import unittest
 import os
 import sys
+import uuid
 from datetime import datetime, timezone
 
 # Ensure backend directory is in sys.path
@@ -98,10 +99,10 @@ class TestSecurityFunctions(unittest.TestCase):
         create_user(email=user_a, phone="+919000000001", password_hash=hash_password("P@ss12345!"), full_name="User A")
         create_user(email=user_b, phone="+919000000002", password_hash=hash_password("P@ss12345!"), full_name="User B")
 
-        order_id = "idor-test-order-100"
+        order_id = f"idor-test-order-{uuid.uuid4().hex[:8]}"
         create_order(user_b, {
             "id": order_id,
-            "product_id": "p1",
+            "product_id": f"p_idor_{uuid.uuid4().hex[:6]}",
             "product_title": "Test Product",
             "product_image": "",
             "start_date": "2026-08-01",

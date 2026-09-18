@@ -52,8 +52,13 @@ export default function Profile() {
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "location" | "payout" | "security">("details");
 
-  const [stats, setStats] = useState<UserProfileStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(true);
+  const [stats, setStats] = useState<UserProfileStats | null>(() => {
+    return storage.get<UserProfileStats | null>("user_profile_stats", null);
+  });
+  const [loadingStats, setLoadingStats] = useState(() => {
+    const cached = storage.get<UserProfileStats | null>("user_profile_stats", null);
+    return !cached;
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -67,6 +72,7 @@ export default function Profile() {
       .then((data) => {
         if (isMounted && data) {
           setStats(data);
+          storage.set("user_profile_stats", data);
         }
       })
       .catch((err) => {
@@ -81,21 +87,27 @@ export default function Profile() {
     };
   }, [user?.email]);
 
-  const [form, setForm] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    occupation: "",
-    bio: "",
-    address: "",
-    city: "",
-    state: "",
-    country: "India",
-    pincode: "",
-    latitude: null as number | null,
-    longitude: null as number | null,
-    website: "",
-    upiId: "",
+  const [form, setForm] = useState(() => {
+    const cachedUser = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
+    return {
+      fullName: cachedUser?.fullName || user?.fullName || "",
+      email: cachedUser?.email || user?.email || "",
+      phone: cachedUser?.phone || user?.phone || "+91 98765 43210",
+      occupation: cachedUser?.occupation || user?.occupation || "Cinematographer & Drone Operator",
+      bio:
+        cachedUser?.bio ||
+        user?.bio ||
+        "Passionate filmmaker and aerial photographer. Renting out professional 4K cinema cameras, prime lenses, and workstation gear when off set.",
+      address: cachedUser?.address || user?.address || "",
+      city: cachedUser?.city || user?.city || "",
+      state: cachedUser?.state || user?.state || "",
+      country: cachedUser?.country || user?.country || "India",
+      pincode: cachedUser?.pincode || user?.pincode || "",
+      latitude: (cachedUser?.latitude ?? user?.latitude) ?? null,
+      longitude: (cachedUser?.longitude ?? user?.longitude) ?? null,
+      website: cachedUser?.website || user?.website || "https://creators.payent.in/arjun",
+      upiId: cachedUser?.upiId || user?.upiId || "arjun@upi",
+    };
   });
 
   const [detectingLocation, setDetectingLocation] = useState(false);

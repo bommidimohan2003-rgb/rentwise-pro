@@ -77,7 +77,13 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(() => {
     return storage.get<User | null>(STORAGE_KEYS.currentUser, null);
   });
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    const cached = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
+    // If token or cached user is present, auth is immediately ready on frame 0
+    return Boolean(token || cached);
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -86,22 +92,35 @@ export function useAuth() {
         STORAGE_KEYS.currentUser,
         null,
       );
+      const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+
       if (cachedUser && isMounted) {
         setUser(cachedUser);
         setReady(true);
       }
 
-      const token = storage.get<string | null>(STORAGE_KEYS.token, null);
       if (token) {
+        // Trigger non-blocking background route prefetching
+        if (typeof window !== "undefined" && typeof (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback === "function") {
+          (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(() => {
+            api.prefetchAuthenticatedRoutes(token);
+          });
+        } else {
+          setTimeout(() => api.prefetchAuthenticatedRoutes(token), 100);
+        }
+
         const synced = await fetchAuthProfile(token, cachedUser);
         if (isMounted) {
-          setUser(synced);
+          if (synced) {
+            setUser(synced);
+          }
+          setReady(true);
         }
-      } else if (!cachedUser && isMounted) {
-        setUser(null);
-      }
-      if (isMounted) {
-        setReady(true);
+      } else {
+        if (isMounted) {
+          if (!cachedUser) setUser(null);
+          setReady(true);
+        }
       }
     };
 

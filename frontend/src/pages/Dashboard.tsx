@@ -39,10 +39,14 @@ export default function Dashboard() {
   const [orders, setOrders] = useState<Order[]>(() => {
     return storage.get<Order[]>(STORAGE_KEYS.orders, []);
   });
-  const [myListings, setMyListings] = useState<Product[]>([]);
-  const [alertsList, setAlertsList] = useState<Notification[]>([]);
+  const [myListings, setMyListings] = useState<Product[]>(() => {
+    return storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+  });
+  const [alertsList, setAlertsList] = useState<Notification[]>(() => {
+    return storage.get<Notification[]>(STORAGE_KEYS.notifications, []);
+  });
   const [publicProducts, setPublicProducts] = useState<Product[]>(() => {
-    return storage.get<Product[]>("payent_server_products", []);
+    return storage.get<Product[]>("public_custom_products", []);
   });
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const [loadingOrders, setLoadingOrders] = useState(() => {
@@ -62,10 +66,7 @@ export default function Dashboard() {
       return;
     }
 
-    if (orders.length === 0) {
-      setLoadingOrders(true);
-    }
-
+    // Run independent dashboard requests concurrently
     Promise.allSettled([
       api.getOrders(token),
       api.getCustomProducts(token),
@@ -87,7 +88,7 @@ export default function Dashboard() {
     }).finally(() => {
       setLoadingOrders(false);
     });
-  }, [token, orders.length]);
+  }, [token]);
 
   const handleCancelOrder = (orderId: string) => {
     if (!token) return;

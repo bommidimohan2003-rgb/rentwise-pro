@@ -35,7 +35,9 @@ const seed: Notification[] = [
 ];
 
 export default function Notifications() {
-  const [list, setList] = useState<Notification[]>([]);
+  const [list, setList] = useState<Notification[]>(() => {
+    return storage.get<Notification[]>(STORAGE_KEYS.notifications, seed);
+  });
   const token = storage.get<string | null>(STORAGE_KEYS.token, null);
 
   useEffect(() => {
