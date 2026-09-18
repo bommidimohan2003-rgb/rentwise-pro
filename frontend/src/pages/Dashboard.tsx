@@ -29,7 +29,6 @@ import { api } from "@/utils/api";
 import type { Order, Product, Notification } from "@/types";
 import { Button } from "@/components/common/Button";
 import { getOptimizedImageUrl } from "@/utils/images";
-import { PayentLogoMark } from "@/components/common/LogoIcon";
 
 export default function Dashboard() {
   const { user, ready } = useAuth();

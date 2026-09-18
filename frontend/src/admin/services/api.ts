@@ -721,7 +721,7 @@ const INITIAL_CATEGORIES: AdminCategory[] = [
 
 const INITIAL_SETTINGS: AdminSettings = {
   websiteName: "Payent",
-  logoUrl: "/favicon.svg",
+  logoUrl: "/brand/payent-logo-icon.png",
   theme: "dark",
   contactEmail: "support@payent.com",
   contactPhone: "+1 (800) 555-GEAR",

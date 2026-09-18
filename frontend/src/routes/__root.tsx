@@ -105,7 +105,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             "Rent flagship tech gear from verified lenders in your city.",
         },
         { property: "og:type", content: "website" },
+        { property: "og:image", content: "/brand/payent-logo-og.png" },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: "/brand/payent-logo-og.png" },
       ],
       links: [
         { rel: "stylesheet", href: appCss },

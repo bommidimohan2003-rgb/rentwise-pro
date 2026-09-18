@@ -176,7 +176,7 @@ export default function ProductDetails() {
         <div className="mx-auto max-w-3xl px-4 md:px-6 py-24 text-center">
           <h1 className="text-2xl font-bold">Product not found</h1>
           <Button
-            className="mt-6 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200"
+            className="mt-6"
             onClick={() => navigate({ to: "/categories" })}
           >
             Browse marketplace
@@ -420,7 +420,7 @@ export default function ProductDetails() {
                           } as never,
                         })
                       }
-                      className="w-full bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full bg-[#161616] dark:bg-[#F2F0EA] hover:bg-[#292929] dark:hover:bg-[#FFFDF7] active:bg-[#0B0B0B] dark:active:bg-[#DDD9D0] text-white dark:text-[#0A0A0A] font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>List Your Gear</span>
                       <ArrowRight className="h-4 w-4" />
@@ -461,7 +461,7 @@ export default function ProductDetails() {
                         } as never,
                       });
                     }}
-                    className="w-full bg-black dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50 text-white dark:text-black font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full bg-[#161616] dark:bg-[#F2F0EA] hover:bg-[#292929] dark:hover:bg-[#FFFDF7] active:bg-[#0B0B0B] dark:active:bg-[#DDD9D0] disabled:opacity-50 text-white dark:text-[#0A0A0A] font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>
                       {product.available

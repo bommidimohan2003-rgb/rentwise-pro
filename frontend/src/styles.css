@@ -115,22 +115,50 @@ html {
   --input: rgba(255, 255, 255, 0.10);
   --ring: #F2F0EA;
 
-  /* Button Tokens - Dark Mode */
+  /* Button Tokens - Dark Mode - Refined Warm Cream Hierarchy */
   --btn-primary-bg: #F2F0EA;
   --btn-primary-text: #0A0A0A;
-  --btn-primary-hover: #FFFFFF;
-  --btn-primary-pressed: #DCD9D1;
+  --btn-primary-hover: #FFFDF7;
+  --btn-primary-pressed: #DDD9D0;
+
   --btn-secondary-bg: transparent;
-  --btn-secondary-text: #F3F3F3;
-  --btn-secondary-border: rgba(255, 255, 255, 0.22);
-  --btn-secondary-hover: rgba(255, 255, 255, 0.08);
-  --btn-secondary-pressed: rgba(255, 255, 255, 0.14);
+  --btn-secondary-text: #E8E4DA;
+  --btn-secondary-border: rgba(242, 240, 234, 0.35);
+  --btn-secondary-hover: rgba(242, 240, 234, 0.10);
+  --btn-secondary-pressed: rgba(242, 240, 234, 0.16);
+
   --btn-tertiary-bg: transparent;
-  --btn-tertiary-text: #BFC3C7;
-  --btn-tertiary-hover: rgba(255, 255, 255, 0.06);
+  --btn-tertiary-text: #CFC9BD;
+  --btn-tertiary-hover: rgba(242, 240, 234, 0.07);
+  --btn-tertiary-hover-text: #F2F0EA;
+  --btn-tertiary-pressed: rgba(242, 240, 234, 0.12);
+
+  --btn-outline-bg: transparent;
+  --btn-outline-border: #6F6A60;
+  --btn-outline-text: #DDD8CD;
+  --btn-outline-hover: #F0ECE3;
+  --btn-outline-hover-text: #111111;
+  --btn-outline-pressed: #DDD9D0;
+
   --btn-danger-bg: #FF1744;
   --btn-danger-text: #FFFFFF;
   --btn-danger-hover: #D50000;
+
+  /* Semantic Dark Button Color Tokens */
+  --dark-button-primary: #F2F0EA;
+  --dark-button-primary-hover: #FFFDF7;
+  --dark-button-primary-pressed: #DDD9D0;
+  --dark-button-secondary-border: rgba(242, 240, 234, 0.35);
+  --dark-button-secondary-text: #E8E4DA;
+  --dark-button-secondary-hover: rgba(242, 240, 234, 0.10);
+  --dark-button-secondary-pressed: rgba(242, 240, 234, 0.16);
+  --dark-button-tertiary-text: #CFC9BD;
+  --dark-button-tertiary-hover: rgba(242, 240, 234, 0.07);
+  --dark-button-tertiary-hover-text: #F2F0EA;
+  --dark-button-outline-border: #6F6A60;
+  --dark-button-outline-text: #DDD8CD;
+  --dark-button-outline-hover: #F0ECE3;
+  --dark-button-outline-hover-text: #111111;
 
   --payent-bg: #05090D;
   --payent-surface: #0D151D;
@@ -381,7 +409,7 @@ html {
     #F2F0EA 100%
   ) !important;
   color: #0A0A0A !important;
-  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(242, 240, 234, 0.4) !important;
   box-shadow:
     0 4px 14px -2px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.9) !important;
@@ -389,25 +417,25 @@ html {
 
 .dark .btn-gradient:hover,
 :where(.dark) .btn-gradient:hover {
-  background-color: #FFFFFF !important;
+  background-color: #FFFDF7 !important;
   background-image: linear-gradient(
     135deg,
-    #FFFFFF 0%,
-    #F5F3ED 100%
+    #FFFDF7 0%,
+    #FAF8F3 100%
   ) !important;
   color: #0A0A0A !important;
   box-shadow:
-    0 8px 22px -4px rgba(255, 255, 255, 0.15),
+    0 8px 22px -4px rgba(242, 240, 234, 0.15),
     inset 0 1px 0 0 rgba(255, 255, 255, 1) !important;
 }
 
 .dark .btn-gradient:active,
 :where(.dark) .btn-gradient:active {
-  background-color: #DCD9D1 !important;
+  background-color: #DDD9D0 !important;
   background-image: linear-gradient(
     135deg,
     #E4E1D9 0%,
-    #DCD9D1 100%
+    #DDD9D0 100%
   ) !important;
 }
 

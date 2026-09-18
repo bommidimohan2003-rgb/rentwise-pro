@@ -2,10 +2,17 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Camera,
-  Plane,
+  Film,
   Laptop,
+  Monitor,
+  Plane,
+  Navigation,
+  Headphones,
   Mic2,
   Sun,
+  Projector,
+  Gamepad2,
+  Glasses,
 } from "lucide-react";
 import { PayentLogoMark } from "@/components/common/LogoIcon";
 
@@ -14,20 +21,29 @@ interface AppPreloaderProps {
   forceShow?: boolean;
 }
 
-export function AppPreloader({ onComplete, forceShow = false }: AppPreloaderProps) {
+type PreloaderStage =
+  | "black"
+  | "entry"
+  | "converge"
+  | "transform"
+  | "wordmark"
+  | "exit";
+
+export function AppPreloader({
+  onComplete,
+  forceShow = false,
+}: AppPreloaderProps) {
   const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const shouldReduceMotion = useReducedMotion();
-
-  const [stage, setStage] = useState<
-    "enter" | "converge" | "compress" | "logo" | "wordmark" | "exit"
-  >("enter");
+  const [stage, setStage] = useState<PreloaderStage>("black");
 
   useEffect(() => {
     setMounted(true);
     let hasSeen = false;
     try {
-      hasSeen = !forceShow && Boolean(sessionStorage.getItem("payent:preloaded"));
+      hasSeen =
+        !forceShow && Boolean(sessionStorage.getItem("payent:preloaded"));
     } catch {
       hasSeen = false;
     }
@@ -41,71 +57,104 @@ export function AppPreloader({ onComplete, forceShow = false }: AppPreloaderProp
   }, [forceShow, onComplete]);
 
   useEffect(() => {
-    if (!isVisible) {
-      return;
-    }
+    if (!isVisible) return;
 
     if (shouldReduceMotion) {
-      const t = setTimeout(() => {
+      // Clean, minimal fade for reduced motion
+      const t1 = setTimeout(() => setStage("wordmark"), 150);
+      const t2 = setTimeout(() => {
         setIsVisible(false);
         try {
           sessionStorage.setItem("payent:preloaded", "true");
         } catch {}
         if (onComplete) onComplete();
-      }, 400);
-      return () => clearTimeout(t);
+      }, 750);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
     }
 
-    // Step 1: Converge toward center (0.4s)
-    const t1 = setTimeout(() => {
+    // STEP 1 — BLACK START (0.0s - 0.35s)
+    setStage("black");
+
+    // STEP 2 — SYMBOL ENTRY FROM 6 DIRECTIONS (0.35s - 1.25s)
+    const tEntry = setTimeout(() => {
+      setStage("entry");
+    }, 350);
+
+    // STEP 3 — SMOOTH CONVERGENCE (1.25s - 1.75s)
+    const tConverge = setTimeout(() => {
       setStage("converge");
-    }, 400);
+    }, 1250);
 
-    // Step 2: Compress into Green P logo (0.8s)
-    const t2 = setTimeout(() => {
-      setStage("logo");
-    }, 850);
+    // STEP 4 — TRANSFORMATION INTO GREEN PAYENT LOGO (1.75s - 2.20s)
+    const tTransform = setTimeout(() => {
+      setStage("transform");
+    }, 1750);
 
-    // Step 3: Reveal PAYENT wordmark & tagline (1.2s)
-    const t3 = setTimeout(() => {
+    // STEP 5 — FINAL PAYENT GREEN WORDMARK (2.20s - 2.65s)
+    const tWordmark = setTimeout(() => {
       setStage("wordmark");
-    }, 1200);
+    }, 2200);
 
-    // Step 4: Smooth exit fade (1.6s)
-    const t4 = setTimeout(() => {
+    // STEP 6 — SMOOTH APPLICATION REVEAL EXIT (2.65s - 2.95s)
+    const tExit = setTimeout(() => {
       setStage("exit");
-    }, 1550);
+    }, 2650);
 
-    const t5 = setTimeout(() => {
+    const tComplete = setTimeout(() => {
       setIsVisible(false);
       try {
         sessionStorage.setItem("payent:preloaded", "true");
-      } catch {
-        /* ignore */
-      }
+      } catch {}
       if (onComplete) onComplete();
-    }, 1850);
+    }, 2950);
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-      clearTimeout(t5);
+      clearTimeout(tEntry);
+      clearTimeout(tConverge);
+      clearTimeout(tTransform);
+      clearTimeout(tWordmark);
+      clearTimeout(tExit);
+      clearTimeout(tComplete);
     };
   }, [isVisible, shouldReduceMotion, onComplete]);
 
   if (!mounted || !isVisible) return null;
 
+  // Reduced motion view
+  if (shouldReduceMotion) {
+    return (
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div
+            key="payent-preloader-reduced"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: "easeInOut" }}
+            className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#000000] text-white select-none"
+          >
+            <div className="flex flex-col items-center justify-center gap-3">
+              <PayentLogoMark className="h-16 w-16" />
+              <span className="text-3xl font-sans font-black tracking-tight text-emerald-400">
+                PAYENT
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  const isEntry = stage !== "black";
   const isConverged =
     stage === "converge" ||
-    stage === "compress" ||
-    stage === "logo" ||
+    stage === "transform" ||
     stage === "wordmark" ||
     stage === "exit";
-
   const isLogoVisible =
-    stage === "logo" || stage === "wordmark" || stage === "exit";
+    stage === "transform" || stage === "wordmark" || stage === "exit";
   const isWordmarkVisible = stage === "wordmark" || stage === "exit";
 
   return (
@@ -115,139 +164,186 @@ export function AppPreloader({ onComplete, forceShow = false }: AppPreloaderProp
           key="payent-preloader"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.45, ease: "easeInOut" }}
-          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#05090D] text-white select-none overflow-hidden"
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#000000] text-white select-none overflow-hidden"
           style={{ willChange: "opacity" }}
         >
-          {/* Subtle Ambient Radial Glows */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-400/15 rounded-full blur-[90px] pointer-events-none" />
+          {/* Subtle Ambient Emerald Illumination on Brand Reveal */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isLogoVisible ? 0.35 : 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] sm:w-[500px] sm:h-[500px] bg-emerald-500/15 rounded-full blur-[110px] pointer-events-none"
+          />
 
-          {/* Quadrant Gear Symbols Stage */}
-          <div className="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
-            {/* Ambient Convergence Ring */}
+          {/* Central 6-Direction Stage */}
+          <div className="relative w-72 h-72 sm:w-96 sm:h-96 md:w-[420px] md:h-[420px] flex items-center justify-center">
+            {/* --- 1. TOP-LEFT: Cameras & Cinema --- */}
             <motion.div
-              initial={{ scale: 0.6, opacity: 0 }}
+              initial={{ x: -160, y: -140, opacity: 0, scale: 0.7 }}
               animate={{
-                scale: isConverged ? 1.05 : 0.8,
-                opacity: isLogoVisible ? 0 : 0.6,
-                rotate: 360,
+                x: isConverged ? 0 : isEntry ? -95 : -160,
+                y: isConverged ? 0 : isEntry ? -85 : -140,
+                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
+                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
               }}
               transition={{
-                rotate: { duration: 12, repeat: Infinity, ease: "linear" },
-                scale: { duration: 0.8, ease: "easeOut" },
-                opacity: { duration: 0.4 },
+                duration: isConverged ? 0.5 : 0.75,
+                ease: [0.16, 1, 0.3, 1],
+                delay: isConverged ? 0 : 0.04,
               }}
-              className="absolute inset-0 rounded-full border border-emerald-500/20 border-dashed pointer-events-none"
-            />
-
-            {/* --- QUADRANT 1: TOP-LEFT (Camera / Cinema / REC) --- */}
-            <motion.div
-              initial={{ x: -140, y: -140, opacity: 0, scale: 0.5 }}
-              animate={{
-                x: isConverged ? 0 : -90,
-                y: isConverged ? 0 : -90,
-                opacity: isLogoVisible ? 0 : 1,
-                scale: isLogoVisible ? 0.2 : 1,
-              }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/[0.04] border border-emerald-500/20 backdrop-blur-md text-emerald-400 shadow-[0_8px_24px_rgba(16,185,129,0.15)]"
+              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
             >
-              <Camera className="w-5 h-5 text-emerald-400" />
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[10px] font-mono font-bold tracking-widest text-white/90">
-                  4K REC
-                </span>
-              </div>
-            </motion.div>
-
-            {/* --- QUADRANT 2: TOP-RIGHT (Drone / Aerial Flight) --- */}
-            <motion.div
-              initial={{ x: 140, y: -140, opacity: 0, scale: 0.5 }}
-              animate={{
-                x: isConverged ? 0 : 90,
-                y: isConverged ? 0 : -90,
-                opacity: isLogoVisible ? 0 : 1,
-                scale: isLogoVisible ? 0.2 : 1,
-              }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.08 }}
-              className="absolute flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/[0.04] border border-emerald-500/20 backdrop-blur-md text-emerald-300 shadow-[0_8px_24px_rgba(16,185,129,0.15)]"
-            >
-              <Plane className="w-5 h-5 text-emerald-300" />
-              <span className="text-[10px] font-mono font-bold tracking-wider text-white/90">
-                AERIAL
+              <Camera className="w-4 h-4 text-white" />
+              <Film className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
+                CAMERAS
               </span>
             </motion.div>
 
-            {/* --- QUADRANT 3: BOTTOM-LEFT (Laptop / Creator Workstation) --- */}
+            {/* --- 2. TOP-CENTER: Workstations & Laptops --- */}
             <motion.div
-              initial={{ x: -140, y: 140, opacity: 0, scale: 0.5 }}
+              initial={{ x: 0, y: -160, opacity: 0, scale: 0.7 }}
               animate={{
-                x: isConverged ? 0 : -90,
-                y: isConverged ? 0 : 90,
-                opacity: isLogoVisible ? 0 : 1,
-                scale: isLogoVisible ? 0.2 : 1,
+                x: 0,
+                y: isConverged ? 0 : isEntry ? -115 : -160,
+                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
+                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
               }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.16 }}
-              className="absolute flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/[0.04] border border-emerald-500/20 backdrop-blur-md text-emerald-400 shadow-[0_8px_24px_rgba(16,185,129,0.15)]"
+              transition={{
+                duration: isConverged ? 0.5 : 0.75,
+                ease: [0.16, 1, 0.3, 1],
+                delay: isConverged ? 0 : 0.08,
+              }}
+              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
             >
-              <Laptop className="w-5 h-5 text-emerald-400" />
-              <span className="text-[10px] font-mono font-bold tracking-wider text-white/90">
+              <Laptop className="w-4 h-4 text-white" />
+              <Monitor className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
                 STUDIO
               </span>
             </motion.div>
 
-            {/* --- QUADRANT 4: BOTTOM-RIGHT (Audio / Studio Lighting) --- */}
+            {/* --- 3. TOP-RIGHT: Drones & Aerial Capture --- */}
             <motion.div
-              initial={{ x: 140, y: 140, opacity: 0, scale: 0.5 }}
+              initial={{ x: 160, y: -140, opacity: 0, scale: 0.7 }}
               animate={{
-                x: isConverged ? 0 : 90,
-                y: isConverged ? 0 : 90,
-                opacity: isLogoVisible ? 0 : 1,
-                scale: isLogoVisible ? 0.2 : 1,
+                x: isConverged ? 0 : isEntry ? 95 : 160,
+                y: isConverged ? 0 : isEntry ? -85 : -140,
+                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
+                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
               }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.24 }}
-              className="absolute flex items-center gap-1.5 p-2.5 rounded-2xl bg-white/[0.04] border border-emerald-500/20 backdrop-blur-md text-emerald-300 shadow-[0_8px_24px_rgba(16,185,129,0.15)]"
+              transition={{
+                duration: isConverged ? 0.5 : 0.75,
+                ease: [0.16, 1, 0.3, 1],
+                delay: isConverged ? 0 : 0.12,
+              }}
+              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
             >
-              <Mic2 className="w-4 h-4 text-emerald-300" />
-              <Sun className="w-4 h-4 text-amber-400" />
-              <span className="text-[10px] font-mono font-bold tracking-wider text-white/90">
-                SOUND
+              <Plane className="w-4 h-4 text-white" />
+              <Navigation className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
+                DRONES
               </span>
             </motion.div>
 
-            {/* --- CENTER: Green "P" Canonical Logo Mark --- */}
+            {/* --- 4. BOTTOM-LEFT: Audio & Microphones --- */}
             <motion.div
-              initial={{ scale: 0, opacity: 0, rotate: -30 }}
+              initial={{ x: -160, y: 140, opacity: 0, scale: 0.7 }}
+              animate={{
+                x: isConverged ? 0 : isEntry ? -95 : -160,
+                y: isConverged ? 0 : isEntry ? 85 : 140,
+                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
+                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
+              }}
+              transition={{
+                duration: isConverged ? 0.5 : 0.75,
+                ease: [0.16, 1, 0.3, 1],
+                delay: isConverged ? 0 : 0.16,
+              }}
+              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
+            >
+              <Headphones className="w-4 h-4 text-white" />
+              <Mic2 className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
+                AUDIO
+              </span>
+            </motion.div>
+
+            {/* --- 5. BOTTOM-CENTER: Lighting & Projection --- */}
+            <motion.div
+              initial={{ x: 0, y: 160, opacity: 0, scale: 0.7 }}
+              animate={{
+                x: 0,
+                y: isConverged ? 0 : isEntry ? 115 : 160,
+                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
+                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
+              }}
+              transition={{
+                duration: isConverged ? 0.5 : 0.75,
+                ease: [0.16, 1, 0.3, 1],
+                delay: isConverged ? 0 : 0.2,
+              }}
+              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
+            >
+              <Sun className="w-4 h-4 text-white" />
+              <Projector className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
+                LIGHTING
+              </span>
+            </motion.div>
+
+            {/* --- 6. BOTTOM-RIGHT: VR & Entertainment --- */}
+            <motion.div
+              initial={{ x: 160, y: 140, opacity: 0, scale: 0.7 }}
+              animate={{
+                x: isConverged ? 0 : isEntry ? 95 : 160,
+                y: isConverged ? 0 : isEntry ? 85 : 140,
+                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
+                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
+              }}
+              transition={{
+                duration: isConverged ? 0.5 : 0.75,
+                ease: [0.16, 1, 0.3, 1],
+                delay: isConverged ? 0 : 0.24,
+              }}
+              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
+            >
+              <Gamepad2 className="w-4 h-4 text-white" />
+              <Glasses className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
+                VR GEAR
+              </span>
+            </motion.div>
+
+            {/* --- CENTER TRANSFORMATION: Canonical Green PAYENT Logo --- */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0, rotate: -20 }}
               animate={{
                 scale: isLogoVisible ? 1 : 0,
                 opacity: isLogoVisible ? 1 : 0,
-                rotate: isLogoVisible ? 0 : -30,
+                rotate: isLogoVisible ? 0 : -20,
               }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-20 flex items-center justify-center drop-shadow-[0_0_35px_rgba(16,185,129,0.7)]"
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-20 flex items-center justify-center drop-shadow-[0_0_30px_rgba(16,185,129,0.7)]"
             >
               <PayentLogoMark className="h-16 w-16 sm:h-20 sm:w-20" />
             </motion.div>
           </div>
 
-          {/* Wordmark & Tagline Reveal */}
-          <div className="h-16 flex flex-col items-center justify-center mt-2 text-center">
+          {/* --- FINAL BRAND WORDMARK: Centered Green PAYENT Wordmark --- */}
+          <div className="h-12 flex items-center justify-center -mt-2">
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{
                 opacity: isWordmarkVisible ? 1 : 0,
-                y: isWordmarkVisible ? 0 : 10,
+                y: isWordmarkVisible ? 0 : 8,
               }}
-              transition={{ duration: 0.45, ease: "easeOut" }}
-              className="flex flex-col items-center"
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="flex items-center justify-center"
             >
-              <span className="text-2xl sm:text-3xl font-sans font-black tracking-tight text-white leading-none">
-                Payent
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-mono font-bold tracking-[0.25em] text-emerald-400 uppercase mt-2 leading-none">
-                Gear Rental for Creators
+              <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-emerald-400 drop-shadow-[0_2px_16px_rgba(16,185,129,0.5)]">
+                PAYENT
               </span>
             </motion.div>
           </div>

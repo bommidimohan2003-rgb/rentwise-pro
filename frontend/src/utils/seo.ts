@@ -3,7 +3,7 @@ export function getSeoMetadata({
   description,
   path = "",
   keywords = "rent tech, cameras, drones, laptops, consoles, tech rental",
-  image = "https://payent.com/og-image.jpg",
+  image = "https://payent.com/brand/payent-logo-og.png",
   type = "website",
 }: {
   title: string;

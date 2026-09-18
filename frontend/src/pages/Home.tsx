@@ -12,7 +12,7 @@ const orgSchema = {
   "@type": "Organization",
   name: "Payent",
   url: "https://payent.com",
-  logo: "https://payent.com/favicon-512.png",
+  logo: "https://payent.com/brand/payent-logo-512.png",
   sameAs: [
     "https://twitter.com/payent",
     "https://instagram.com/payent",

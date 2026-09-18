@@ -322,8 +322,8 @@ export default function Reviews() {
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 ratingFilter === undefined
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
-                  : "bg-neutral-100 dark:bg-[#0D151D] text-neutral-600 dark:text-[#A8B1BA] hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                  ? "bg-neutral-900 text-white dark:bg-[#F2F0EA] dark:text-[#0A0A0A]"
+                  : "bg-neutral-100 dark:bg-[#0D151D] text-neutral-600 dark:text-[#CFC9BD] hover:bg-neutral-200 dark:hover:bg-[rgba(242,240,234,0.07)]"
               }`}
             >
               All Stars
@@ -333,13 +333,13 @@ export default function Reviews() {
               <button
                 key={s}
                 onClick={() => {
-                  setRatingFilter(ratingFilter === s ? undefined : s);
+                  setRatingFilter(s);
                   setPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   ratingFilter === s
-                    ? "bg-[#FF1744] text-white"
-                    : "bg-neutral-100 dark:bg-[#0D151D] text-neutral-600 dark:text-[#A8B1BA] hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                    ? "bg-neutral-900 text-white dark:bg-[#F2F0EA] dark:text-[#0A0A0A]"
+                    : "bg-neutral-100 dark:bg-[#0D151D] text-neutral-600 dark:text-[#CFC9BD] hover:bg-neutral-200 dark:hover:bg-[rgba(242,240,234,0.07)]"
                 }`}
               >
                 <span>{s}</span>
@@ -415,7 +415,7 @@ export default function Reviews() {
             </p>
             <button
               onClick={() => queryClient.invalidateQueries({ queryKey: ["reviews"] })}
-              className="px-4 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-black text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#161616] text-[#FFFFFF] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] hover:bg-[#292929] dark:hover:bg-[#FFFDF7] text-xs font-bold transition-all cursor-pointer"
             >
               Try Again
             </button>
@@ -654,7 +654,7 @@ export default function Reviews() {
                   <Link
                     to="/"
                     onClick={() => setIsWriteModalOpen(false)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black text-xs font-bold"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#161616] text-[#FFFFFF] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] hover:bg-[#292929] dark:hover:bg-[#FFFDF7] text-xs font-bold transition-all"
                   >
                     <span>Browse Gear Catalog</span>
                   </Link>
@@ -744,7 +744,7 @@ export default function Reviews() {
                   <button
                     type="button"
                     onClick={() => setIsWriteModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-xs font-bold text-neutral-600 dark:text-[#A8B1BA] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl border border-black/10 dark:border-[rgba(242,240,234,0.35)] text-xs font-bold text-neutral-600 dark:text-[#E8E4DA] hover:bg-neutral-100 dark:hover:bg-[rgba(242,240,234,0.10)] transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -848,7 +848,7 @@ export default function Reviews() {
                 <button
                   type="button"
                   onClick={() => setEditingReview(null)}
-                  className="px-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-xs font-bold text-neutral-600 dark:text-[#A8B1BA] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-black/10 dark:border-[rgba(242,240,234,0.35)] text-xs font-bold text-neutral-600 dark:text-[#E8E4DA] hover:bg-neutral-100 dark:hover:bg-[rgba(242,240,234,0.10)] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -893,7 +893,7 @@ export default function Reviews() {
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 onClick={() => setDeletingReviewId(null)}
-                className="px-4 py-2 rounded-xl border border-black/10 dark:border-white/10 text-xs font-bold text-neutral-600 dark:text-[#A8B1BA] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-black/10 dark:border-[rgba(242,240,234,0.35)] text-xs font-bold text-neutral-600 dark:text-[#E8E4DA] hover:bg-neutral-100 dark:hover:bg-[rgba(242,240,234,0.10)] transition-colors cursor-pointer"
               >
                 Cancel
               </button>
