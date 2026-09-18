@@ -21,7 +21,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
         } else {
           navigate({ to: "/login" });
         }
-      } else if (user && user.status === "pending" && user.role !== "admin") {
+      } else if (user && (user.status === "pending" || user.status === "rejected" || user.status === "suspended") && user.role !== "admin") {
         const currentPath =
           typeof window !== "undefined" ? window.location.pathname : "";
         if (currentPath !== "/account-pending" && !currentPath.startsWith("/profile")) {

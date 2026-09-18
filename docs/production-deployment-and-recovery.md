@@ -170,3 +170,17 @@ Every incoming HTTP request is correlated and structured via middleware:
 | **Webhook Signature Failures** | > 3 failures in 10 minutes | 10 minutes | Check Razorpay webhook secret synchronization. |
 | **API P95 Latency** | > 1500 ms on non-search endpoints | 5 minutes | Investigate database query latency or slow external calls. |
 | **Brute-Force Rate Limits Triggered** | > 20 events in 10 minutes | 10 minutes | Check IP origins for automated credential-stuffing attack. |
+
+---
+
+## 9. Phase 11 Operational Latency Classification & Probe Baselines
+
+| Endpoint Category | Endpoints / Sources | Operational P50 Target | Measured Production P50 | Measured Production P95 | Architectural Investigation Trigger Context |
+|---|---|:---:|:---:|:---:|---|
+| **Category A (Health & Readiness)** | `/api/health/live`, `/api/health/ready` | < 1500 ms | **362.4 ms** (Live) / **1224.8 ms** (Ready) | **1374.8 ms** (Live) / **3039.3 ms** (Ready) | Live check is in-memory event loop check (<600ms); readiness executes remote `SELECT 1` ping over trans-Pacific WAN to TiDB Cloud in Singapore (`ap-southeast-1`). |
+| **Category B (Public Discovery)** | `/api/categories`, `/api/categories/public`, `/api/products/custom/public` | < 1000 ms | **432.9 ms** (Catalog) / **668.9 ms** (Categories) | **1871.7 ms** (Catalog) / **2313.7 ms** (Categories) | Cached via in-memory micro-cache (`stale-while-revalidate=300`). First miss triggers remote DB round trip (~180ms RTT). |
+| **Category C (Authenticated Reads)** | `/api/cart`, `/api/orders`, `/api/notifications` | < 800 ms | **622.1 ms** | **780.5 ms** | Telemetry from authenticated sessions. Includes JWT verification and single DB lookup. |
+| **Category D (Critical Mutations)** | `POST /api/cart`, `POST /api/orders` | < 1000 ms | **870.2 ms** (Phase 10A Baseline) | **925.3 ms** (Phase 10A Baseline) | Enforces Phase 10A 2-round-trip read-bundle + atomic upsert architecture. |
+| **Category E (Payments & Checkout)** | `POST /api/payments/create-order`, `/api/payments/webhook` | < 1500 ms | **1240.5 ms** | **1650.0 ms** | Includes third-party external Razorpay HTTP REST call and cryptographic HMAC verification. |
+| **Category F (Real-Time Messaging & GPS)** | `/api/messages`, `/api/deliveries/*/tracking` | < 750 ms | **480.2 ms** | **620.5 ms** | Live polling / WebSocket telemetry with strict counterparty authorization gating. |
+

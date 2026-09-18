@@ -97,6 +97,7 @@ from database import (
     mark_notifications_read,
     execute_query,
     get_db_connection,
+    invalidate_user_cache,
     delete_custom_product,
     toggle_custom_product_availability,
     update_custom_product,
@@ -152,6 +153,7 @@ from database import (
     evaluate_product_availability,
     evaluate_products_availability_batch,
     get_products_batch,
+    fetch_cart_validation_bundle,
     get_user_cart,
     add_or_update_cart_item,
     remove_cart_item,
@@ -175,7 +177,8 @@ from database import (
     mark_conversation_read,
     get_total_unread_messages_count,
     estimate_delivery_eta_minutes,
-    check_db_health
+    check_db_health,
+    mask_email_safely
 )
 from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
 from search_ml import ml_search_engine
@@ -634,10 +637,21 @@ def get_current_user_email(authorization: Optional[str] = Header(None)) -> str:
     user = get_user(user_email)
     if not user:
         return user_email
-    if user.get("status") == "suspended":
+    user_status = str(user.get("status") or "").lower().strip()
+    if user_status == "suspended":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account suspended. Please contact support."
+        )
+    if user_status == "deleted":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account has been deleted or deactivated."
+        )
+    if user_status == "rejected":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account application has been rejected. Please contact support."
         )
 
     return user_email
@@ -660,10 +674,59 @@ def require_authenticated_user(authorization: Optional[str] = Header(None)) -> d
             "role": "user",
             "status": "active"
         }
-    if user.get("status") == "suspended":
+    user_status = str(user.get("status") or "").lower().strip()
+    if user_status == "suspended":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account suspended. Please contact support."
+        )
+    if user_status == "deleted":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account has been deleted or deactivated."
+        )
+    if user_status == "rejected":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account application has been rejected. Please contact support."
+        )
+    return user
+
+def get_approved_user(current_email: str = Depends(get_current_user_email)) -> dict:
+    """
+    Enforces that only verified, active/approved users can perform protected
+    marketplace actions (Cart, Booking, Payment, Listing, Delivery).
+    """
+    clean_email = current_email.strip().lower()
+    user = get_user(clean_email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User account not found."
+        )
+    user_status = str(user.get("status") or "pending").lower().strip()
+    if user_status == "suspended":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended. Please contact support."
+        )
+    if user_status == "rejected":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account application has been rejected. Please contact support."
+        )
+    if user_status == "deleted":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account has been deleted or deactivated."
+        )
+    # Admin users bypass approval checks
+    if str(user.get("role", "")).lower() == "admin":
+        return user
+    if user_status not in ("active", "approved"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account approval pending. Your account must be approved by an administrator before accessing marketplace transactions."
         )
     return user
 
@@ -1237,8 +1300,9 @@ def get_auth_status(
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ")[1]
         try:
-            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-            clean_email = payload.get("sub")
+            payload = decode_access_token(token, expected_type="access")
+            if payload and "sub" in payload:
+                clean_email = payload.get("sub")
         except Exception:
             pass
     if not clean_email and email:
@@ -1542,6 +1606,7 @@ def update_user_profile_route(data: UserProfileUpdateSchema, current_user_email:
     if fields:
         params.append(clean_email)
         execute_query(f"UPDATE users SET {', '.join(fields)} WHERE LOWER(email) = LOWER(%s)", tuple(params))
+        invalidate_user_cache(clean_email)
         
         if clean_email in MOCK_USERS:
             if data.fullName is not None: MOCK_USERS[clean_email]["full_name"] = data.fullName
@@ -1633,6 +1698,7 @@ def change_user_password(data: ChangePasswordSchema, current_user_email: str = D
 
     new_hash = hash_password(data.new_password)
     execute_query("UPDATE users SET password_hash = %s WHERE LOWER(email) = LOWER(%s)", (new_hash, clean_email))
+    invalidate_user_cache(clean_email)
     if clean_email in MOCK_USERS:
         MOCK_USERS[clean_email]["password_hash"] = new_hash
 
@@ -1733,14 +1799,38 @@ def fetch_orders(email: str = Depends(get_current_user_email)):
     return result
 
 @app.post("/api/orders")
-def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
-    clean_email = email.strip().lower()
-    order_dict = data.dict()
+def add_order(data: OrderSchema, current_user: dict = Depends(get_approved_user)):
+    clean_email = current_user["email"].strip().lower()
+    order_dict = getattr(data, "model_dump", data.dict)()
     pid = data.productId or data.product_id or ""
     title = data.productTitle or data.product_title or "Gear Rental"
     img = data.productImage or data.product_image or "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
-    start = data.startDate or data.start_date or "Today"
-    end = data.endDate or data.end_date or "Tomorrow"
+    start = data.startDate or data.start_date or ""
+    end = data.endDate or data.end_date or ""
+
+    if not start or not end:
+        raise HTTPException(status_code=400, detail="startDate and endDate are required.")
+
+    s_dt = parse_date_safely(start)
+    e_dt = parse_date_safely(end)
+    if not s_dt or not e_dt:
+        raise HTTPException(status_code=400, detail="Invalid start_date or end_date format.")
+
+    today_dt = datetime.datetime.now(datetime.timezone.utc).date()
+    s_date = s_dt.date() if isinstance(s_dt, datetime.datetime) else s_dt
+    if s_date < today_dt:
+        raise HTTPException(status_code=400, detail="Rental start date cannot be in the past.")
+    if s_dt > e_dt:
+        raise HTTPException(status_code=400, detail="start_date cannot be after end_date.")
+
+    # Authoritative product existence & availability check
+    prod = fetch_one_product(pid)
+    if not prod:
+        raise HTTPException(status_code=404, detail="Product not found in catalog.")
+
+    is_avail, _, reason = evaluate_product_availability(prod)
+    if not is_avail:
+        raise HTTPException(status_code=400, detail=f"Product is currently unavailable: {reason}")
 
     normalized_order = {
         "id": data.id,
@@ -1766,8 +1856,26 @@ def add_order(data: OrderSchema, email: str = Depends(get_current_user_email)):
             status_code=status.HTTP_409_CONFLICT,
             detail=str(ve)
         )
-    user = get_user(clean_email)
+    user = current_user
     cust_name = user["full_name"] if (user and isinstance(user, dict) and "full_name" in user) else clean_email.split("@")[0]
+
+    # Notify customer
+    create_notification(
+        email=clean_email,
+        title="Booking Request Confirmed 🎉",
+        message=f"Your rental reservation for '{title}' (#{data.id}) has been created.",
+        notif_type="booking"
+    )
+
+    # Notify lender
+    lender_email = (prod.get("user_email") or "").strip().lower()
+    if lender_email and lender_email != clean_email:
+        create_notification(
+            email=lender_email,
+            title="New Rental Booking Received 📦",
+            message=f"New booking #{data.id} for '{title}' from {cust_name}.",
+            notif_type="booking"
+        )
     
     broadcast_admin_event("booking.created", {
         "id": data.id,
@@ -1873,6 +1981,132 @@ def get_order_details(id: str, email: str = Depends(get_current_user_email)):
         "user_email": order_owner,
         "userEmail": order_owner
     }
+
+# ============================================================
+# Order Return & Rental Completion Endpoints
+# ============================================================
+
+@app.post("/api/orders/{id}/return")
+def initiate_order_return(id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    order = fetch_one("SELECT * FROM orders WHERE id = %s", (id,))
+    if not order:
+        order = MOCK_ORDERS.get(id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found.")
+
+    cust_email = (order.get("user_email") or "").strip().lower()
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+    if clean_user != cust_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Only the renter or admin can initiate a return.")
+
+    status_val = str(order.get("status") or "").lower()
+    if status_val in ("cancelled", "refunded", "rejected"):
+        raise HTTPException(status_code=400, detail=f"Cannot initiate return on {status_val} booking.")
+    if status_val == "completed":
+        raise HTTPException(status_code=400, detail="Booking is already completed.")
+
+    execute_query("UPDATE orders SET status = 'return_initiated' WHERE id = %s", (id,))
+    if id in MOCK_ORDERS:
+        MOCK_ORDERS[id]["status"] = "return_initiated"
+
+    # Notify lender
+    pid = order.get("product_id") or ""
+    prod = fetch_one_product(pid) if pid else None
+    lender_email = (prod.get("user_email") if prod else "").strip().lower()
+    if lender_email:
+        create_notification(
+            email=lender_email,
+            title="Rental Return Initiated 🔄",
+            message=f"Customer has initiated gear return for booking #{id}.",
+            notif_type="booking"
+        )
+
+    broadcast_admin_event("booking.return_initiated", {"id": id, "status": "return_initiated"})
+    return {"success": True, "message": "Return initiated successfully.", "status": "return_initiated"}
+
+@app.post("/api/orders/{id}/return-confirm")
+def confirm_order_return(id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    order = fetch_one("SELECT * FROM orders WHERE id = %s", (id,))
+    if not order:
+        order = MOCK_ORDERS.get(id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found.")
+
+    pid = order.get("product_id") or ""
+    prod = fetch_one_product(pid) if pid else None
+    lender_email = (prod.get("user_email") if prod else "").strip().lower()
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != lender_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Only the lender or admin can confirm gear return receipt.")
+
+    status_val = str(order.get("status") or "").lower()
+    if status_val in ("cancelled", "refunded", "rejected"):
+        raise HTTPException(status_code=400, detail=f"Cannot confirm return on {status_val} booking.")
+    if status_val not in ("return_initiated", "active", "delivered"):
+        raise HTTPException(status_code=400, detail=f"Invalid booking state for return confirmation: {status_val}")
+
+    execute_query("UPDATE orders SET status = 'returned' WHERE id = %s", (id,))
+    if id in MOCK_ORDERS:
+        MOCK_ORDERS[id]["status"] = "returned"
+
+    # Notify customer
+    cust_email = (order.get("user_email") or "").strip().lower()
+    if cust_email:
+        create_notification(
+            email=cust_email,
+            title="Gear Return Confirmed ✅",
+            message=f"Lender has inspected and confirmed receipt of returned gear for booking #{id}.",
+            notif_type="booking"
+        )
+
+    broadcast_admin_event("booking.returned", {"id": id, "status": "returned"})
+    return {"success": True, "message": "Gear return confirmed successfully.", "status": "returned"}
+
+@app.post("/api/orders/{id}/complete")
+def complete_order_endpoint(id: str, current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
+    order = fetch_one("SELECT * FROM orders WHERE id = %s", (id,))
+    if not order:
+        order = MOCK_ORDERS.get(id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found.")
+
+    pid = order.get("product_id") or ""
+    prod = fetch_one_product(pid) if pid else None
+    lender_email = (prod.get("user_email") if prod else "").strip().lower()
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != lender_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Only the lender or admin can mark a rental as completed.")
+
+    status_val = str(order.get("status") or "").lower()
+    if status_val in ("cancelled", "refunded", "rejected"):
+        raise HTTPException(status_code=400, detail="Cannot complete a cancelled or refunded booking.")
+    if status_val not in ("returned", "active", "return_initiated"):
+        raise HTTPException(status_code=400, detail=f"Cannot prematurely complete booking in status '{status_val}'. Return must be completed first.")
+
+    execute_query("UPDATE orders SET status = 'completed' WHERE id = %s", (id,))
+    if id in MOCK_ORDERS:
+        MOCK_ORDERS[id]["status"] = "completed"
+
+    # Notify customer
+    cust_email = (order.get("user_email") or "").strip().lower()
+    if cust_email:
+        create_notification(
+            email=cust_email,
+            title="Rental Completed! 🌟",
+            message=f"Your rental #{id} is complete. You can now leave a verified review for this gear.",
+            notif_type="booking"
+        )
+
+    broadcast_admin_event("booking.completed", {"id": id, "status": "completed"})
+    return {"success": True, "message": "Booking marked as completed.", "status": "completed"}
 
 # ============================================================
 # Product Availability & Booking Conflict Endpoints
@@ -2031,8 +2265,8 @@ class AddToCartSchema(BaseModel):
     end_date: Optional[str] = None
 
 @app.post("/api/cart")
-def add_to_cart_endpoint(data: AddToCartSchema, email: str = Depends(get_current_user_email)):
-    clean_email = email.strip().lower()
+def add_to_cart_endpoint(data: AddToCartSchema, current_user: dict = Depends(get_approved_user)):
+    clean_email = current_user["email"].strip().lower()
     pid = data.product_id.strip()
     start_d = data.start_date.strip() if data.start_date else ""
     end_d = data.end_date.strip() if data.end_date else ""
@@ -2047,37 +2281,47 @@ def add_to_cart_endpoint(data: AddToCartSchema, email: str = Depends(get_current
     e_dt = parse_date_safely(end_d)
     if not s_dt or not e_dt:
         raise HTTPException(status_code=400, detail="Invalid start_date or end_date format.")
+    today_dt = datetime.datetime.now(datetime.timezone.utc).date()
+    s_date = s_dt.date() if isinstance(s_dt, datetime.datetime) else s_dt
+    if s_date < today_dt:
+        raise HTTPException(status_code=400, detail="Rental start date cannot be in the past.")
     if s_dt > e_dt:
         raise HTTPException(status_code=400, detail="start_date cannot be after end_date.")
 
-    # 1. Authoritative check: Product must actually exist in database
-    prod = fetch_one_product(pid)
-    if not prod:
+    # Phase 10A Optimized Round Trip 1: Consolidated Cart Validation Bundle
+    bundle = fetch_cart_validation_bundle(
+        product_id=pid,
+        user_email=clean_email,
+        start_date_str=start_d,
+        end_date_str=end_d
+    )
+    if not bundle or not bundle.get("product"):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="This product is no longer available."
         )
 
-    # 2. Authoritative check: Real lender & product availability
-    is_avail, avail_status, reason = evaluate_product_availability(prod)
+    # Check booking conflicts for selected rental dates
+    if bundle.get("conflict_count", 0) > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Product is already booked for the selected dates. This product is no longer available."
+        )
+
+    prod = bundle["product"]
+    # Authoritative in-memory availability evaluation (0 DB round trips)
+    is_avail, avail_status, reason = evaluate_product_availability(prod, booked_pids_set=set())
     if not is_avail:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This product is no longer available."
         )
 
-    # 3. Check booking conflicts for selected rental dates
-    conflicts = check_products_booking_conflicts([pid], start_d, end_d)
-    if pid in conflicts:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Product is already booked for the selected dates. This product is no longer available."
-        )
-
     days = max(1, (e_dt - s_dt).days)
     daily_price = int(prod.get("price") or 0)
     total_price = daily_price * days
 
+    # Phase 10A Optimized Round Trip 2: Atomic upsert with known cart item ID (no re-select)
     item = add_or_update_cart_item(
         user_email=clean_email,
         product_id=pid,
@@ -2086,7 +2330,8 @@ def add_to_cart_endpoint(data: AddToCartSchema, email: str = Depends(get_current
         days=days,
         daily_price=daily_price,
         total_price=total_price,
-        product_details=prod
+        product_details=prod,
+        existing_item_id=bundle.get("existing_cart_item_id")
     )
 
     return {
@@ -2108,8 +2353,8 @@ def clear_cart_endpoint(email: str = Depends(get_current_user_email)):
     return {"success": True, "message": "Cart cleared."}
 
 @app.post("/api/cart/checkout")
-def validate_cart_checkout_endpoint(email: str = Depends(get_current_user_email)):
-    clean_email = email.strip().lower()
+def validate_cart_checkout_endpoint(current_user: dict = Depends(get_approved_user)):
+    clean_email = current_user["email"].strip().lower()
     raw_items = get_user_cart(clean_email)
     if not raw_items:
         raise HTTPException(status_code=400, detail="Cart is empty.")
@@ -2152,9 +2397,9 @@ def validate_cart_checkout_endpoint(email: str = Depends(get_current_user_email)
         "total": total
     }
 
-def format_product_dict(p: dict, is_summary: bool = False, booked_pids_set: Optional[Set[str]] = None) -> dict:
+def format_product_dict(p: dict, is_summary: bool = False, booked_pids_set: Optional[Set[str]] = None, is_public: bool = False) -> dict:
     owner_info = p.get("owner") if isinstance(p.get("owner"), dict) else {}
-    owner_name = p.get("owner_name") or owner_info.get("name") or "Lender"
+    owner_name = p.get("owner_full_name") or p.get("owner_name") or owner_info.get("name") or "Lender"
     owner_avatar = p.get("owner_avatar") or owner_info.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
     owner_rating = float(p.get("owner_rating") or owner_info.get("rating") or 5.0)
     owner_email = str(p.get("user_email") or p.get("userEmail") or owner_info.get("email") or "").strip().lower()
@@ -2168,7 +2413,7 @@ def format_product_dict(p: dict, is_summary: bool = False, booked_pids_set: Opti
     loc_parts = [part for part in [city, state] if part]
     if loc_parts:
         location_str = ", ".join(loc_parts)
-    elif address:
+    elif address and not is_public:
         location_str = address
     elif p.get("location"):
         location_str = str(p["location"]).strip()
@@ -2209,13 +2454,13 @@ def format_product_dict(p: dict, is_summary: bool = False, booked_pids_set: Opti
         "location": location_str,
         "owner": {
             "name": owner_name,
-            "email": owner_email or None,
+            "email": None if is_public else (owner_email or None),
             "avatar": owner_avatar,
             "rating": owner_rating,
             "city": city or None,
             "state": state or None,
-            "address": address or None,
-            "pincode": pincode or None,
+            "address": None if is_public else (address or None),
+            "pincode": None if is_public else (pincode or None),
             "location": location_str,
             "status": owner_status
         }
@@ -2229,7 +2474,7 @@ def fetch_user_listings(email: str = Depends(get_current_user_email)):
     pids = [str(p["id"]) for p in listings if p.get("id")]
     today_str = dt.now(timezone.utc).strftime("%Y-%m-%d")
     booked_set = set(check_products_booking_conflicts(pids, today_str, today_str)) if pids else set()
-    return [format_product_dict(p, is_summary=False, booked_pids_set=booked_set) for p in listings]
+    return [format_product_dict(p, is_summary=False, booked_pids_set=booked_set, is_public=False) for p in listings]
 
 @app.get("/api/products/custom/public")
 def fetch_public_listings(
@@ -2247,7 +2492,7 @@ def fetch_public_listings(
         pids = [str(p["id"]) for p in listings if p.get("id")]
         today_str = dt.now(timezone.utc).strftime("%Y-%m-%d")
         booked_set = set(check_products_booking_conflicts(pids, today_str, today_str)) if pids else set()
-        return [format_product_dict(p, is_summary=True, booked_pids_set=booked_set) for p in listings]
+        return [format_product_dict(p, is_summary=True, booked_pids_set=booked_set, is_public=True) for p in listings]
     return get_cached(cache_key, 30, _load)
 
 @app.get("/api/products/custom/{id}")
@@ -2258,7 +2503,7 @@ def fetch_product_by_id(id: str, response: Response):
         product = fetch_one_product(id)
         if not product:
             return None
-        return format_product_dict(product)
+        return format_product_dict(product, is_public=True)
     
     prod = get_cached(f"product:{id}", 30, _load_prod)
     if not prod:
@@ -2524,6 +2769,7 @@ def submit_contact_inquiry(data: ContactInquirySchema):
             detail="Unable to send your message. Please try again."
         )
 
+@app.get("/api/categories")
 @app.get("/api/categories/public")
 def fetch_public_categories(response: Response):
     response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
@@ -2603,11 +2849,12 @@ def fetch_public_stats(response: Response):
     return get_cached("public_stats", 60, _load_stats)
 
 @app.post("/api/products/custom")
-def add_custom_listing(data: CustomProductSchema, email: str = Depends(get_current_user_email)):
-    product_dict = data.dict()
+def add_custom_listing(data: CustomProductSchema, current_user: dict = Depends(get_approved_user)):
+    email = current_user["email"].strip().lower()
+    product_dict = getattr(data, "model_dump", data.dict)()
     if not product_dict.get("id"):
         product_dict["id"] = f"p-custom-{int(time.time() * 1000)}"
-    user_rec = get_user(email) or {}
+    user_rec = current_user
     owner_info = product_dict.get("owner") if isinstance(product_dict.get("owner"), dict) else {}
     product_dict["owner"] = {
         "name": owner_info.get("name") or user_rec.get("full_name") or email.split("@")[0],
@@ -2755,7 +3002,7 @@ def edit_custom_listing(id: str, data: UpdateCustomProductSchema, email: str = D
             detail="Security Violation: You are not authorized to edit another user's product."
         )
         
-    patch = {k: v for k, v in data.dict().items() if v is not None}
+    patch = {k: v for k, v in getattr(data, "model_dump", data.dict)().items() if v is not None}
     update_custom_product(id, clean_email, patch)
     invalidate_cache("public_custom_products")
     invalidate_cache("public_categories")
@@ -2796,7 +3043,8 @@ class RefundPaymentSchema(BaseModel):
     reason: Optional[str] = None
 
 @app.post("/api/payments/create-order")
-def create_razorpay_order(data: CreateRazorpayOrderSchema, current_user_email: str = Depends(get_current_user_email)):
+def create_razorpay_order(data: CreateRazorpayOrderSchema, current_user: dict = Depends(get_approved_user)):
+    current_user_email = current_user["email"].strip().lower()
     product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (data.product_id,))
     if not product:
         # Check if product is in orders or default catalog ID format
@@ -3928,10 +4176,39 @@ def get_delivery_tracking_endpoint(delivery_id: str, current_user_email: str = D
 
 @app.get("/api/deliveries/{delivery_id}/locations")
 def get_delivery_locations_endpoint(delivery_id: str, limit: int = Query(50, ge=1, le=200), current_user_email: str = Depends(get_current_user_email)):
+    clean_user = current_user_email.strip().lower()
     clean_did = delivery_id.strip()
     delivery = get_delivery(clean_did)
     if not delivery:
         raise HTTPException(status_code=404, detail="Delivery not found.")
+
+    order = None
+    if delivery.get("booking_id"):
+        try:
+            order = fetch_one("SELECT * FROM orders WHERE id = %s", (delivery["booking_id"],))
+        except Exception:
+            pass
+        if not order:
+            order = MOCK_ORDERS.get(delivery["booking_id"])
+
+    customer_email = (order.get("user_email") if order else "").strip().lower()
+    product_id = order.get("product_id") if order else ""
+    product = None
+    if product_id:
+        try:
+            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (product_id,))
+        except Exception:
+            pass
+        if not product:
+            product = MOCK_CUSTOM_PRODUCTS.get(product_id, {})
+    lender_email = (product.get("user_email") if product else "").strip().lower()
+
+    user_rec = get_user(clean_user) or {}
+    is_admin = user_rec.get("role") == "admin"
+
+    if clean_user != customer_email and clean_user != lender_email and not is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden. Not authorized to view delivery locations.")
+
     locations = get_delivery_locations(clean_did, limit=limit)
     return {"success": True, "locations": locations}
 
@@ -4300,6 +4577,7 @@ def admin_register(data: AdminRegisterSchema):
     existing = get_user(clean_email)
     if existing:
         execute_query("UPDATE users SET role = 'admin', status = 'approved', verified = TRUE WHERE LOWER(email) = LOWER(%s)", (clean_email,))
+        invalidate_user_cache(clean_email)
         if clean_email in MOCK_USERS:
             MOCK_USERS[clean_email]["role"] = "admin"
             MOCK_USERS[clean_email]["status"] = "approved"
@@ -4984,6 +5262,8 @@ def admin_delete_user(id: str, current_admin: dict = Depends(check_admin_user)):
         raise HTTPException(status_code=404, detail="User not found")
         
     execute_query("DELETE FROM users WHERE email = %s", (id,))
+    invalidate_user_cache(id)
+    MOCK_USERS.pop(id.strip().lower(), None)
     
     # Log action
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -5002,6 +5282,7 @@ def admin_suspend_user(id: str, current_admin: dict = Depends(check_admin_user))
         raise HTTPException(status_code=404, detail="User not found")
         
     execute_query("UPDATE users SET status = 'suspended' WHERE email = %s", (id,))
+    invalidate_user_cache(id)
     
     # Log action
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -5009,6 +5290,14 @@ def admin_suspend_user(id: str, current_admin: dict = Depends(check_admin_user))
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Suspended user {id}", "Users", "127.0.0.1"))
+    
+    # Notify user
+    create_notification(
+        email=id,
+        title="Account Suspended ⚠️",
+        message="Your account has been suspended by administration. Please contact support.",
+        notif_type="system"
+    )
     
     updated = get_user(id)
     res_user = {
@@ -5032,6 +5321,7 @@ def admin_activate_user(id: str, current_admin: dict = Depends(check_admin_user)
         raise HTTPException(status_code=404, detail="User not found")
         
     execute_query("UPDATE users SET status = 'active' WHERE email = %s", (id,))
+    invalidate_user_cache(id)
     
     # Log action
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -5039,6 +5329,14 @@ def admin_activate_user(id: str, current_admin: dict = Depends(check_admin_user)
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Activated user {id}", "Users", "127.0.0.1"))
+    
+    # Notify user
+    create_notification(
+        email=id,
+        title="Account Reactivated ✅",
+        message="Your Payent account has been reactivated. You can now use all platform services.",
+        notif_type="system"
+    )
     
     updated = get_user(id)
     res_user = {
@@ -5094,6 +5392,7 @@ def admin_approve_user(id: str, current_admin: dict = Depends(check_admin_user))
         raise HTTPException(status_code=404, detail="User not found")
         
     execute_query("UPDATE users SET status = 'approved', verified = 1 WHERE email = %s", (id,))
+    invalidate_user_cache(id)
     
     # Audit log
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -5101,6 +5400,14 @@ def admin_approve_user(id: str, current_admin: dict = Depends(check_admin_user))
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Approved user account {id}", "Users", "127.0.0.1"))
+    
+    # Dispatch notification to the approved user
+    create_notification(
+        email=id,
+        title="Creator Account Approved! 🎉",
+        message="Your creator account has been approved by admin. You can now list gear and book rentals.",
+        notif_type="system"
+    )
     
     updated = get_user(id)
     res_user = {
@@ -5134,6 +5441,7 @@ def admin_reject_user(id: str, data: Optional[RejectUserSchema] = None, current_
         raise HTTPException(status_code=404, detail="User not found")
         
     execute_query("UPDATE users SET status = 'rejected' WHERE email = %s", (id,))
+    invalidate_user_cache(id)
     
     reason_txt = f" (Reason: {data.reason})" if data and data.reason else ""
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -5141,6 +5449,14 @@ def admin_reject_user(id: str, data: Optional[RejectUserSchema] = None, current_
         INSERT INTO admin_logs (id, timestamp, user_name, action, module, ip_address)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (f"l-{random.randint(100000, 999999)}", now_str, current_admin["full_name"], f"Rejected user account {id}{reason_txt}", "Users", "127.0.0.1"))
+    
+    # Dispatch notification to user
+    create_notification(
+        email=id,
+        title="Account Status Update",
+        message=f"Your account application could not be approved at this time.{reason_txt}",
+        notif_type="system"
+    )
     
     updated = get_user(id)
     res_user = {
@@ -6064,6 +6380,13 @@ def create_customer_review(
                 detail="You can only submit reviews for your own rental bookings."
             )
 
+        b_status = str(booking_record.get("status") or "").lower()
+        if b_status in ("cancelled", "rejected", "failed", "refunded"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot submit review on {b_status} rental booking."
+            )
+
         if not pid:
             pid = booking_record.get("product_id") or booking_record.get("productId")
 
@@ -6149,6 +6472,16 @@ def create_customer_review(
     if pid:
         recalculate_product_ratings(pid)
 
+    # Notify lender of incoming customer review
+    lender_email = (target_product.get("user_email") if target_product else "").strip().lower()
+    if lender_email and lender_email != user_email:
+        create_notification(
+            email=lender_email,
+            title="New Review Received ⭐",
+            message=f"{user_name} gave {data.rating} stars for '{prod_title}'.",
+            notif_type="booking"
+        )
+
     # 5. Broadcast real-time admin event
     broadcast_admin_event("review.created", {
         "id": rev_id,
@@ -6172,7 +6505,7 @@ def create_customer_review(
         "productTitle": prod_title,
         "productImage": prod_image,
         "bookingId": bid,
-        "userId": user_email,
+        "userId": mask_email_safely(user_email),
         "userName": user_name,
         "userAvatar": user_avatar,
         "userLocation": user_location,

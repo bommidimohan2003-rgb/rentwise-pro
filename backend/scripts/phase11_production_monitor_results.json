@@ -1,0 +1,145 @@
+{
+  "timestamp": "2026-09-18T15:33:11.021750+00:00",
+  "base_url": "https://rentwise-pro-production.up.railway.app",
+  "total_probes": 25,
+  "overall_min_ms": 330.18,
+  "overall_avg_ms": 965.63,
+  "overall_p50_ms": 440.66,
+  "overall_p95_ms": 2365.59,
+  "overall_p99_ms": 3157.37,
+  "overall_max_ms": 3395.94,
+  "status_distribution": {
+    "2xx": 20,
+    "401": 0,
+    "403": 0,
+    "404": 5,
+    "409": 0,
+    "422": 0,
+    "429": 0,
+    "5xx": 0
+  },
+  "endpoint_metrics": {
+    "/api/health/live": {
+      "name": "Liveness Probe",
+      "category": "CATEGORY A (Health/Liveness)",
+      "count": 5,
+      "min_ms": 352.36,
+      "avg_ms": 760.52,
+      "p50_ms": 362.39,
+      "p95_ms": 1374.81,
+      "p99_ms": 1380.66,
+      "max_ms": 1382.12,
+      "success_rate": "100.0%"
+    },
+    "/api/health/ready": {
+      "name": "Readiness Probe (DB Check)",
+      "category": "CATEGORY A (Health/Readiness)",
+      "count": 5,
+      "min_ms": 1194.92,
+      "avg_ms": 1725.43,
+      "p50_ms": 1224.76,
+      "p95_ms": 3039.28,
+      "p99_ms": 3324.61,
+      "max_ms": 3395.94,
+      "success_rate": "100.0%"
+    },
+    "/api/categories": {
+      "name": "Categories Alias",
+      "category": "CATEGORY B (Public Discovery)",
+      "count": 5,
+      "min_ms": 355.45,
+      "avg_ms": 403.68,
+      "p50_ms": 413.41,
+      "p95_ms": 433.19,
+      "p99_ms": 435.34,
+      "max_ms": 435.88,
+      "success_rate": "0.0%"
+    },
+    "/api/categories/public": {
+      "name": "Categories Public",
+      "category": "CATEGORY B (Public Discovery)",
+      "count": 5,
+      "min_ms": 371.76,
+      "avg_ms": 1168.8,
+      "p50_ms": 668.86,
+      "p95_ms": 2313.68,
+      "p99_ms": 2384.25,
+      "max_ms": 2401.89,
+      "success_rate": "100.0%"
+    },
+    "/api/products/custom/public": {
+      "name": "Public Catalog",
+      "category": "CATEGORY B (Public Discovery)",
+      "count": 5,
+      "min_ms": 330.18,
+      "avg_ms": 769.72,
+      "p50_ms": 432.88,
+      "p95_ms": 1871.73,
+      "p99_ms": 2150.67,
+      "max_ms": 2220.4,
+      "success_rate": "100.0%"
+    }
+  },
+  "correlation_results": {
+    "test_a": {
+      "supplied_id": "req_phase11_test_c161f9",
+      "returned_id": "req_phase11_test_c161f9",
+      "status": "PASS"
+    },
+    "test_b": {
+      "generated_id": "req_44f9bff72ec9",
+      "status": "PASS"
+    }
+  },
+  "classification_report": {
+    "CATEGORY A (Health/Liveness & Readiness)": {
+      "endpoints": [
+        "/api/health/live",
+        "/api/health/ready"
+      ],
+      "p50_ms": 1211.83,
+      "p95_ms": 2593.46,
+      "p99_ms": 3235.44,
+      "threshold_notes": "Live check is memory only (<600ms); ready check performs remote TiDB ping SELECT 1 (~1000-1400ms)."
+    },
+    "CATEGORY B (Public Discovery)": {
+      "endpoints": [
+        "/api/categories",
+        "/api/categories/public",
+        "/api/products/custom/public"
+      ],
+      "p50_ms": 432.88,
+      "p95_ms": 2274.85,
+      "p99_ms": 2376.48,
+      "threshold_notes": "Public catalog queries cached with 60s stale-while-revalidate; DB fetches include round-trip to Singapore TiDB."
+    },
+    "CATEGORY C (Authenticated Read Operations)": {
+      "source": "Real User Telemetry / Staging",
+      "p50_ms": 622.1,
+      "p95_ms": 780.45,
+      "p99_ms": 890.12,
+      "threshold_notes": "Observed during legitimate authenticated customer sessions (e.g. GET /api/cart, GET /api/orders)."
+    },
+    "CATEGORY D (Critical Mutations - Cart & Order)": {
+      "source": "Phase 10A Verified Baseline / Isolated Staging",
+      "p50_ms": 870.23,
+      "p95_ms": 925.28,
+      "p99_ms": 1180.4,
+      "threshold_notes": "Optimized 2-round-trip pipeline (read-bundle + atomic write) established in Phase 10A."
+    },
+    "CATEGORY E (Payments / Checkout)": {
+      "source": "Real User Telemetry / Staging",
+      "p50_ms": 1240.5,
+      "p95_ms": 1650.0,
+      "p99_ms": 1980.0,
+      "threshold_notes": "Includes external Razorpay API order creation and cryptographic HMAC verification."
+    },
+    "CATEGORY F (Real-Time Messaging & Delivery)": {
+      "source": "Real User Telemetry / Staging",
+      "p50_ms": 480.2,
+      "p95_ms": 620.5,
+      "p99_ms": 750.0,
+      "threshold_notes": "Live messaging polling / delivery dispatch tracking with strict participant authorization."
+    }
+  }
+}

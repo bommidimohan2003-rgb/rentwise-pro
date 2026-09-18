@@ -255,12 +255,15 @@ export function useAuth() {
     if (token) {
       await api.logout(token).catch(() => {});
     }
+    _lastAuthFetchTime = 0;
+    _inFlightAuthPromise = null;
     storage.remove(STORAGE_KEYS.token);
     storage.remove(STORAGE_KEYS.refreshToken);
     storage.remove(STORAGE_KEYS.currentUser);
     if (typeof window !== "undefined") {
       localStorage.removeItem("payent:admin:token");
       localStorage.removeItem("payent:admin:current_user");
+      window.dispatchEvent(new CustomEvent("payent:storage_change"));
     }
     setUser(null);
   }, []);
@@ -270,9 +273,16 @@ export function useAuth() {
     if (token) {
       await api.logoutAll(token).catch(() => {});
     }
+    _lastAuthFetchTime = 0;
+    _inFlightAuthPromise = null;
     storage.remove(STORAGE_KEYS.token);
     storage.remove(STORAGE_KEYS.refreshToken);
     storage.remove(STORAGE_KEYS.currentUser);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("payent:admin:token");
+      localStorage.removeItem("payent:admin:current_user");
+      window.dispatchEvent(new CustomEvent("payent:storage_change"));
+    }
     setUser(null);
   }, []);
 

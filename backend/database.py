@@ -80,7 +80,7 @@ def get_db_pool():
             maxconnections=0,
             blocking=False,
             maxusage=1000,
-            ping=7,
+            ping=1,  # ping on checkout from pool if connection was closed/dropped, NOT on every cursor/execute
             host=MYSQL_HOST,
             port=MYSQL_PORT,
             user=MYSQL_USER,
@@ -353,6 +353,7 @@ def init_db(force: bool = False):
     add_index_safely("orders", "idx_orders_user_email", "user_email")
     add_index_safely("orders", "idx_orders_status", "status")
     add_index_safely("orders", "idx_orders_created_at", "created_at")
+    add_index_safely("orders", "idx_orders_product_status", "product_id, status")
 
     # Create cart_items table
     execute_query("""
@@ -848,7 +849,7 @@ def get_user(email: str):
     now = time.time()
     if clean_email in _user_cache:
         t, cached = _user_cache[clean_email]
-        if now - t < 5.0:
+        if now - t < 30.0:
             return cached
     try:
         user = fetch_one("SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (clean_email,))
@@ -2534,6 +2535,19 @@ def is_session_revoked(session_id: str) -> bool:
 # Real Customer Reviews DB Helpers
 # ----------------------------------------------------------------------
 
+def mask_email_safely(email: Optional[str]) -> str:
+    """Mask user email address (e.g. j***e@example.com) for public privacy."""
+    if not email or "@" not in email:
+        return "creator_verified"
+    parts = email.split("@")
+    user_part = parts[0]
+    domain = parts[1]
+    if len(user_part) <= 2:
+        masked_user = user_part[0] + "***"
+    else:
+        masked_user = user_part[0] + "***" + user_part[-1]
+    return f"{masked_user}@{domain}"
+
 def get_reviews_from_db(
     page: int = 1,
     limit: int = 20,
@@ -2636,8 +2650,8 @@ def get_reviews_from_db(
                     "product_image": r.get("product_image"),
                     "bookingId": r.get("booking_id"),
                     "booking_id": r.get("booking_id"),
-                    "userId": r.get("user_email"),
-                    "user_id": r.get("user_email"),
+                    "userId": mask_email_safely(r.get("user_email")),
+                    "user_id": mask_email_safely(r.get("user_email")),
                     "userName": user_display,
                     "user_name": user_display,
                     "userAvatar": avatar_url,
@@ -2962,6 +2976,151 @@ def check_products_booking_conflicts(product_ids: List[str], start_date_str: str
 
     return conflicted
 
+def fetch_cart_validation_bundle(
+    product_id: str,
+    user_email: str,
+    start_date_str: str,
+    end_date_str: str
+) -> Optional[dict]:
+    """
+    Phase 10A High-Performance Cart Pipeline:
+    Consolidates Product Metadata, Owner & Agent Verification, Booking Overlap Conflict Checks,
+    and Current User Cart Status into ONE single remote database round trip.
+    Eliminates 3-4 sequential round trips.
+    """
+    clean_email = (user_email or "").strip().lower()
+    pid = (product_id or "").strip()
+    if not pid:
+        return None
+
+    req_start = parse_date_safely(start_date_str)
+    req_end = parse_date_safely(end_date_str)
+    if req_start and req_end and req_start > req_end:
+        req_start, req_end = req_end, req_start
+    
+    start_fmt = req_start.strftime("%Y-%m-%d") if req_start else start_date_str
+    end_fmt = req_end.strftime("%Y-%m-%d") if req_end else end_date_str
+
+    conn = get_db_connection()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                # Single round-trip consolidated projection with subqueries for conflicts & cart item
+                query = """
+                    SELECT 
+                        cp.id AS product_id,
+                        cp.user_email AS owner_email,
+                        cp.title,
+                        cp.price,
+                        cp.image,
+                        cp.category,
+                        cp.available,
+                        cp.status AS product_status,
+                        cp.hidden,
+                        u.address AS owner_address,
+                        u.city AS owner_city,
+                        u.state AS owner_state,
+                        u.pincode AS owner_pincode,
+                        u.status AS owner_status,
+                        u.verified AS owner_verified,
+                        a.status AS agent_status,
+                        (
+                            SELECT COUNT(*) 
+                            FROM orders o 
+                            WHERE o.product_id = cp.id 
+                              AND o.status NOT IN ('cancelled', 'refunded', 'rejected')
+                              AND o.start_date <= %s 
+                              AND o.end_date >= %s
+                        ) AS conflict_count,
+                        (
+                            SELECT ci.id 
+                            FROM cart_items ci 
+                            WHERE LOWER(ci.user_email) = LOWER(%s) 
+                              AND ci.product_id = cp.id 
+                            LIMIT 1
+                        ) AS existing_cart_item_id
+                    FROM custom_products cp
+                    LEFT JOIN users u ON cp.user_email = u.email
+                    LEFT JOIN agents a ON cp.user_email = a.user_email
+                    WHERE cp.id = %s
+                """
+                cursor.execute(query, (end_fmt, start_fmt, clean_email, pid))
+                row = cursor.fetchone()
+                if row:
+                    product_dict = {
+                        "id": row.get("product_id"),
+                        "user_email": row.get("owner_email"),
+                        "userEmail": row.get("owner_email"),
+                        "title": row.get("title"),
+                        "price": row.get("price"),
+                        "image": row.get("image"),
+                        "category": row.get("category"),
+                        "city": row.get("owner_city") or "India",
+                        "available": bool(row.get("available", 1)),
+                        "status": row.get("product_status") or "approved",
+                        "hidden": bool(row.get("hidden", 0)),
+                        "owner_address": row.get("owner_address"),
+                        "owner_city": row.get("owner_city"),
+                        "owner_state": row.get("owner_state"),
+                        "owner_pincode": row.get("owner_pincode"),
+                        "owner_status": row.get("owner_status") or "active",
+                        "owner_verified": bool(row.get("owner_verified", 0)),
+                        "agent_status": row.get("agent_status") or "active"
+                    }
+                    conflict_cnt = int(row.get("conflict_count") or 0)
+                    
+                    # Also check in-memory MOCK_ORDERS for testing/fallback
+                    if req_start and req_end:
+                        for order in MOCK_ORDERS.values():
+                            opid = str(order.get("product_id") or order.get("productId") or "")
+                            if opid == pid:
+                                st = str(order.get("status") or "active").lower()
+                                if st not in ('cancelled', 'refunded', 'rejected'):
+                                    os_dt = parse_date_safely(order.get("start_date") or order.get("startDate"))
+                                    oe_dt = parse_date_safely(order.get("end_date") or order.get("endDate"))
+                                    if os_dt and oe_dt and req_start <= oe_dt and req_end >= os_dt:
+                                        conflict_cnt += 1
+                                        
+                    return {
+                        "product": product_dict,
+                        "conflict_count": conflict_cnt,
+                        "existing_cart_item_id": row.get("existing_cart_item_id")
+                    }
+        except Exception as e:
+            logger.warning(f"Database error in fetch_cart_validation_bundle: {e}")
+        finally:
+            conn.close()
+
+    # Fallback to MOCK data structures if DB is offline or product only in MOCK
+    mock_prod = MOCK_CUSTOM_PRODUCTS.get(pid)
+    if not mock_prod:
+        return None
+        
+    conflict_cnt = 0
+    if req_start and req_end:
+        for order in MOCK_ORDERS.values():
+            opid = str(order.get("product_id") or order.get("productId") or "")
+            if opid == pid:
+                st = str(order.get("status") or "active").lower()
+                if st not in ('cancelled', 'refunded', 'rejected'):
+                    os_dt = parse_date_safely(order.get("start_date") or order.get("startDate"))
+                    oe_dt = parse_date_safely(order.get("end_date") or order.get("endDate"))
+                    if os_dt and oe_dt and req_start <= oe_dt and req_end >= os_dt:
+                        conflict_cnt += 1
+
+    existing_cid = None
+    if clean_email in MOCK_CARTS:
+        for ci in MOCK_CARTS[clean_email]:
+            if ci.get("product_id") == pid:
+                existing_cid = ci.get("id")
+                break
+
+    return {
+        "product": mock_prod,
+        "conflict_count": conflict_cnt,
+        "existing_cart_item_id": existing_cid
+    }
+
 def evaluate_product_availability(product: dict, booked_pids_set: Optional[Set[str]] = None) -> Tuple[bool, str, Optional[str]]:
     """
     Authoritatively calculates product availability based on:
@@ -2997,10 +3156,12 @@ def evaluate_product_availability(product: dict, booked_pids_set: Optional[Set[s
         u = get_user(owner_email)
         if u:
             owner_status = str(u.get("status") or "active").lower().strip()
+        else:
+            owner_status = "deleted"
 
-    # If owner account exists and is pending, rejected, or suspended => unavailable
-    if owner_status in ("pending", "rejected", "suspended"):
-        return False, "unavailable", f"Lender account {owner_status}"
+    # If owner account exists and is pending, rejected, suspended, or deleted => unavailable
+    if owner_status in ("pending", "rejected", "suspended", "deleted"):
+        return False, owner_status, f"Lender account {owner_status}"
 
     # Check agent profile status
     agent_status = str(product.get("agent_status") or "").lower().strip()
@@ -3180,11 +3341,12 @@ def add_or_update_cart_item(
     days: int,
     daily_price: int,
     total_price: int,
-    product_details: Optional[dict] = None
+    product_details: Optional[dict] = None,
+    existing_item_id: Optional[str] = None
 ) -> dict:
     clean_email = (user_email or "").strip().lower()
     now_iso = dt.now(timezone.utc).isoformat()
-    new_item_id = f"cart_{uuid.uuid4().hex[:12]}"
+    new_item_id = existing_item_id or f"cart_{uuid.uuid4().hex[:12]}"
     actual_item_id = new_item_id
 
     conn = get_db_connection()
@@ -3205,14 +3367,15 @@ def add_or_update_cart_item(
                     updated_at = VALUES(updated_at)
                 """, (new_item_id, clean_email, product_id, start_date, end_date, days, daily_price, total_price, now_iso, now_iso))
                 
-                # Fetch authoritative item id
-                cursor.execute(
-                    "SELECT id FROM cart_items WHERE LOWER(user_email) = LOWER(%s) AND product_id = %s",
-                    (clean_email, product_id)
-                )
-                row = cursor.fetchone()
-                if row and row.get("id"):
-                    actual_item_id = row["id"]
+                # Fetch authoritative item id only if not already known
+                if not existing_item_id:
+                    cursor.execute(
+                        "SELECT id FROM cart_items WHERE LOWER(user_email) = LOWER(%s) AND product_id = %s",
+                        (clean_email, product_id)
+                    )
+                    row = cursor.fetchone()
+                    if row and row.get("id"):
+                        actual_item_id = row["id"]
             conn.commit()
         except Exception as e:
             logger.warning(f"Database error in atomic add_or_update_cart_item: {e}")

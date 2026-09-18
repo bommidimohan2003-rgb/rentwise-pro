@@ -1,5 +1,6 @@
 const USER_SPECIFIC_KEYS = new Set([
   "payent:wishlist",
+  "payent:cart",
   "payent:notifications",
   "payent:messages",
   "payent:orders",
@@ -64,6 +65,7 @@ export const STORAGE_KEYS = {
   currentUser: "payent:currentUser",
   token: "payent:token",
   refreshToken: "payent:refreshToken",
+  cart: "payent:cart",
   wishlist: "payent:wishlist",
   notifications: "payent:notifications",
   messages: "payent:messages",
