@@ -22,6 +22,8 @@ from database import (
     MOCK_CARTS,
     MOCK_ORDERS,
     MOCK_CUSTOM_PRODUCTS,
+    MOCK_USERS,
+    invalidate_user_cache,
     execute_query
 )
 from auth import create_access_token
@@ -37,12 +39,22 @@ class TestCartAndAvailability(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
         self.test_user = f"test_cart_{uuid.uuid4().hex[:8]}@example.com"
+        MOCK_USERS[self.test_user] = {
+            "email": self.test_user,
+            "full_name": "Test Cart User",
+            "role": "user",
+            "status": "active",
+            "verified": True
+        }
+        invalidate_user_cache(self.test_user)
         self.token = create_access_token({"sub": self.test_user, "role": "user"})
         self.auth_headers = {"Authorization": f"Bearer {self.token}"}
         clear_user_cart(self.test_user)
 
     def tearDown(self):
         clear_user_cart(self.test_user)
+        MOCK_USERS.pop(self.test_user, None)
+        invalidate_user_cache(self.test_user)
 
     def test_date_conflict_overlap_logic(self):
         test_pid = f"prod_test_{uuid.uuid4().hex[:6]}"

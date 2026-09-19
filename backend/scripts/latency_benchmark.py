@@ -62,10 +62,17 @@ def run_latency_benchmark(samples_per_endpoint: int = 15) -> Dict[str, dict]:
     test_prod_id = f"prod_perf_{uuid.uuid4().hex[:8]}"
 
     try:
-        # Pre-seed a product if needed
+        # Pre-seed user and product
+        execute_query("""
+            INSERT INTO users (email, full_name, role, status, verified)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = 'active', verified = 1
+        """, (test_user, "Performance Test User", "user", "active", 1))
+
         execute_query("""
             INSERT INTO custom_products (id, user_email, title, price, available, status, category, created_at)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE status = 'approved', available = 1
         """, (test_prod_id, test_user, "Performance Test Camera", 1500, 1, "approved", "Cameras", datetime.datetime.now(datetime.timezone.utc).isoformat()))
 
         endpoints_to_benchmark = [
@@ -110,9 +117,27 @@ def run_latency_benchmark(samples_per_endpoint: int = 15) -> Dict[str, dict]:
                 "headers": headers
             },
             {
+                "name": "GET /api/wishlist (User Wishlist)",
+                "method": "GET",
+                "url": "/api/wishlist",
+                "headers": headers
+            },
+            {
                 "name": "GET /api/conversations (Active Conversations)",
                 "method": "GET",
                 "url": "/api/conversations",
+                "headers": headers
+            },
+            {
+                "name": "GET /api/conversations/unread-count (Unread Message Count)",
+                "method": "GET",
+                "url": "/api/conversations/unread-count",
+                "headers": headers
+            },
+            {
+                "name": "GET /api/auth/sessions (Active Sessions)",
+                "method": "GET",
+                "url": "/api/auth/sessions",
                 "headers": headers
             },
             {

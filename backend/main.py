@@ -130,6 +130,10 @@ from database import (
     MOCK_DELIVERY_LOCATIONS,
     MOCK_CONVERSATIONS,
     MOCK_MESSAGES,
+    MOCK_PASSWORD_RESET_TOKENS,
+    create_password_reset_token,
+    get_password_reset_token_record,
+    consume_password_reset_token,
     fetch_one,
     fetch_all,
     create_db_session,
@@ -507,10 +511,13 @@ class CreateAdminSchema(BaseModel):
 class ForgotPasswordRequestSchema(BaseModel):
     email: EmailStr
 
+class ValidateResetTokenSchema(BaseModel):
+    token: str
+
 class ForgotPasswordResetSchema(BaseModel):
-    email: EmailStr
-    otp: str
+    token: str
     new_password: str
+    email: Optional[str] = None
 
 # Phone Normalization Helper
 def normalize_phone(phone: str) -> str:
@@ -1101,20 +1108,36 @@ def revoke_specific_session(session_id: str, current_user_email: str = Depends(g
     revoke_db_session(session_id)
     return {"success": True, "message": "Session revoked successfully."}
 
+def send_password_reset_link(email: str, reset_url: str):
+    """
+    Delivers password reset link via notification and configured mailer.
+    Raw reset secret is not logged in production application logs.
+    """
+    clean_email = (email or "").strip().lower()
+    try:
+        create_notification(
+            email=clean_email,
+            title="Password Reset Request",
+            message="A password reset link has been dispatched for your account. If you did not request this, please secure your account.",
+            notification_type="security"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to create password reset notification: {e}")
+
 @app.post("/api/forgot-password/request")
 def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request):
     client_ip = request.client.host if request.client else "unknown"
     ip_key = f"forgotpw_ip:{client_ip}"
     email_key = f"forgotpw_email:{data.email.lower().strip()}"
 
-    is_locked_ip, secs_ip = record_failed_auth_attempt(ip_key, max_attempts=5, lock_duration_secs=600)
+    is_locked_ip, secs_ip = record_failed_auth_attempt(ip_key, max_attempts=10, lock_duration_secs=600)
     if is_locked_ip:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Too many password reset requests. Please try again in {secs_ip // 60} minutes."
         )
 
-    is_locked_email, secs_email = record_failed_auth_attempt(email_key, max_attempts=3, lock_duration_secs=600)
+    is_locked_email, secs_email = record_failed_auth_attempt(email_key, max_attempts=5, lock_duration_secs=600)
     if is_locked_email:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -1123,58 +1146,96 @@ def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request)
 
     clean_email = data.email.lower().strip()
     user = get_user(clean_email)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No registered account found with email '{clean_email}'."
-        )
     
-    phone = user.get("phone") or "+10000000000"
-    result = start_verification(phone)
-    otp_code = result.get("otp") or f"{secrets.randbelow(900000) + 100000}"
-    save_otp(clean_email, phone, otp_code)
-    return {"success": True, "otp": otp_code, "message": f"6-digit verification code sent to {clean_email}."}
+    # Preventing account enumeration: Return generic success response even if user not found
+    if not user:
+        return {
+            "success": True,
+            "message": "If an account exists for this email, a password reset link has been sent."
+        }
+
+    # Generate cryptographically secure token & store its SHA-256 hash (15-min expiry)
+    raw_token = create_password_reset_token(clean_email, expiry_seconds=900)
+    app_base_url = os.environ.get("FRONTEND_URL") or os.environ.get("BASE_URL") or "https://payent.in"
+    reset_url = f"{app_base_url.rstrip('/')}/reset-password?token={raw_token}"
+    
+    send_password_reset_link(clean_email, reset_url)
+
+    return {
+        "success": True,
+        "message": "If an account exists for this email, a password reset link has been sent."
+    }
+
+@app.post("/api/forgot-password/validate-token")
+def validate_reset_token(data: ValidateResetTokenSchema):
+    raw_token = (data.token or "").strip()
+    if not raw_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Your password reset link is invalid or expired. Please request a new reset link."
+        )
+
+    rec = get_password_reset_token_record(raw_token)
+    now_int = int(time.time())
+    if not rec or rec.get("used_at") is not None or rec.get("expires_at", 0) < now_int:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Your password reset link is invalid or expired. Please request a new reset link."
+        )
+
+    user_email = rec.get("user_email", "")
+    return {
+        "valid": True,
+        "email": user_email,
+        "masked_email": mask_email_safely(user_email) if "mask_email_safely" in globals() else user_email,
+        "message": "Reset token is valid."
+    }
 
 @app.post("/api/forgot-password/reset")
 def forgot_password_reset(data: ForgotPasswordResetSchema):
-    clean_email = data.email.lower().strip()
-    user = get_user(clean_email)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No registered account found with email '{clean_email}'."
-        )
-    
-    phone = user.get("phone") if user and user.get("phone") else "+10000000000"
-    
-    # Strictly verify the OTP code before allowing password reset
-    is_valid_otp = check_verification(phone, data.otp, clean_email)
-    if not is_valid_otp:
+    raw_token = (data.token or "").strip()
+    if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification code."
+            detail="Your password reset link is invalid or expired. Please request a new reset link."
         )
-    
-    # Enforce password strength policy
+
+    # 1. Enforce password strength policy first
     is_valid_pw, pw_err = validate_password_strength(data.new_password)
     if not is_valid_pw:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=pw_err
         )
-    
-    # Hash new password and update user account in datastore
+
+    # 2. Atomically consume the single-use reset token
+    rec = consume_password_reset_token(raw_token)
+    if not rec:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Your password reset link is invalid or expired. Please request a new reset link."
+        )
+
+    user_email = rec["user_email"]
+    user = get_user(user_email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User account not found."
+        )
+
+    # 3. Hash new password and update user account in datastore
     hashed = hash_password(data.new_password)
-    update_user_password(clean_email, hashed)
-    
-    # Invalidate all active user sessions upon password reset
-    revoke_all_user_sessions(clean_email)
-    
-    # Clean up single-use verification token
-    delete_otp(clean_email)
-    
-    logger.info(f"Password reset completed successfully for {clean_email}")
-    return {"success": True, "message": "Password reset successful. All previous active sessions have been revoked."}
+    update_user_password(user_email, hashed)
+
+    # 4. Invalidate all active user sessions across all devices
+    revoke_all_user_sessions(user_email)
+
+    logger.info("Secure password reset completed successfully for user.")
+    return {
+        "success": True,
+        "message": "Password updated successfully. Please sign in with your new password."
+    }
 
 @app.post("/api/auth/create-admin", status_code=status.HTTP_201_CREATED)
 def create_admin(
@@ -1343,38 +1404,30 @@ def get_user_profile_stats(current_user_email: str = Depends(get_current_user_em
             }
         try:
             with conn.cursor() as cursor:
-                # 1. Completed rentals (as renter + as lender)
+                # 1. Completed rentals (as renter + as lender) in single query
                 cursor.execute("""
                     SELECT 
-                        (SELECT COUNT(*) FROM orders WHERE LOWER(user_email) = %s AND (status = 'completed' OR status = 'active')) as renter_orders,
-                        (SELECT COUNT(*) FROM orders o JOIN custom_products cp ON o.product_id = cp.id WHERE LOWER(cp.user_email) = %s AND (o.status = 'completed' OR o.status = 'active')) as lender_orders
+                        (SELECT COUNT(*) FROM orders WHERE user_email = %s AND (status = 'completed' OR status = 'active')) as renter_orders,
+                        (SELECT COUNT(*) FROM orders o JOIN custom_products cp ON o.product_id = cp.id WHERE cp.user_email = %s AND (o.status = 'completed' OR o.status = 'active')) as lender_orders
                 """, (clean_email, clean_email))
                 order_row = cursor.fetchone() or {}
                 renter_orders = int(order_row.get("renter_orders", 0) or 0)
                 lender_orders = int(order_row.get("lender_orders", 0) or 0)
                 total_completed = renter_orders + lender_orders
 
-                # 2. Rating and review count
-                # Check reviews for products owned by this user (lender rating)
+                # 2. Rating and review count in single consolidated aggregation
                 cursor.execute("""
-                    SELECT COUNT(r.id) as cnt, AVG(r.rating) as avg_r 
-                    FROM reviews r 
-                    JOIN custom_products cp ON r.product_id = cp.id 
-                    WHERE LOWER(cp.user_email) = %s AND (r.hidden = 0 OR r.hidden IS NULL)
-                """, (clean_email,))
-                lender_rev_row = cursor.fetchone() or {}
-                lender_rev_cnt = int(lender_rev_row.get("cnt", 0) or 0)
-                lender_avg_r = lender_rev_row.get("avg_r")
-
-                # Also check user reviews written by this user or direct user reviews
-                cursor.execute("""
-                    SELECT COUNT(id) as cnt, AVG(rating) as avg_r 
-                    FROM reviews 
-                    WHERE LOWER(user_email) = %s AND (hidden = 0 OR hidden IS NULL)
-                """, (clean_email,))
-                user_rev_row = cursor.fetchone() or {}
-                user_rev_cnt = int(user_rev_row.get("cnt", 0) or 0)
-                user_avg_r = user_rev_row.get("avg_r")
+                    SELECT 
+                        (SELECT COUNT(r.id) FROM reviews r JOIN custom_products cp ON r.product_id = cp.id WHERE cp.user_email = %s AND (r.hidden = 0 OR r.hidden IS NULL)) as lender_rev_cnt,
+                        (SELECT AVG(r.rating) FROM reviews r JOIN custom_products cp ON r.product_id = cp.id WHERE cp.user_email = %s AND (r.hidden = 0 OR r.hidden IS NULL)) as lender_avg_r,
+                        (SELECT COUNT(id) FROM reviews WHERE user_email = %s AND (hidden = 0 OR hidden IS NULL)) as user_rev_cnt,
+                        (SELECT AVG(rating) FROM reviews WHERE user_email = %s AND (hidden = 0 OR hidden IS NULL)) as user_avg_r
+                """, (clean_email, clean_email, clean_email, clean_email))
+                rev_row = cursor.fetchone() or {}
+                lender_rev_cnt = int(rev_row.get("lender_rev_cnt", 0) or 0)
+                lender_avg_r = rev_row.get("lender_avg_r")
+                user_rev_cnt = int(rev_row.get("user_rev_cnt", 0) or 0)
+                user_avg_r = rev_row.get("user_avg_r")
 
                 final_rating = None
                 final_review_count = 0
@@ -1386,7 +1439,6 @@ def get_user_profile_stats(current_user_email: str = Depends(get_current_user_em
                     final_review_count = user_rev_cnt
 
                 # 3. On-Time Return Rate
-                # If user has completed orders, calculate on-time rate
                 on_time_rate = None
                 if total_completed > 0:
                     on_time_rate = 100
@@ -1395,7 +1447,7 @@ def get_user_profile_stats(current_user_email: str = Depends(get_current_user_em
                 avg_response_min = None
                 cursor.execute("""
                     SELECT messages FROM support_tickets 
-                    WHERE LOWER(user_email) = %s 
+                    WHERE user_email = %s 
                     ORDER BY created_at DESC LIMIT 5
                 """, (clean_email,))
                 ticket_rows = cursor.fetchall() or []

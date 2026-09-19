@@ -22,7 +22,7 @@ async function triggerUnreadFetch(token: string | null): Promise<number> {
   if (_inFlightUnreadPromise) {
     return _inFlightUnreadPromise;
   }
-  if (now - _lastUnreadFetchTime < 10000) {
+  if (now - _lastUnreadFetchTime < 15000) {
     return _globalUnreadCount;
   }
 
@@ -50,7 +50,7 @@ function ensureGlobalPolling(token: string | null) {
       if (document.visibilityState === "visible") {
         triggerUnreadFetch(currentToken);
       }
-    }, 45000);
+    }, 60000);
   } else if ((_unreadListeners.size === 0 || !token) && _activeInterval) {
     clearInterval(_activeInterval);
     _activeInterval = null;

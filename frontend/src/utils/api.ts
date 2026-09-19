@@ -311,20 +311,27 @@ export const api = {
       const data = await res.json().catch(() => ({}));
       throw new Error(parseApiError(data, "Failed to request password reset."));
     }
-    const data = await res.json();
-    if (data && data.otp) {
-      storage.set(STORAGE_KEYS.otp, data.otp);
-    } else {
-      storage.remove(STORAGE_KEYS.otp);
-    }
-    return data;
+    return res.json();
   },
 
-  async forgotPasswordReset(email: string, otp: string, new_password: string) {
+  async validateResetToken(token: string) {
+    const res = await fetch(`${API_BASE}/api/forgot-password/validate-token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Your password reset link is invalid or expired. Please request a new reset link."));
+    }
+    return res.json();
+  },
+
+  async forgotPasswordReset(token: string, new_password: string, email?: string) {
     const res = await fetch(`${API_BASE}/api/forgot-password/reset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, otp, new_password }),
+      body: JSON.stringify({ token, new_password, email }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -597,9 +604,16 @@ export const api = {
     options: RequestInit = {},
   ): Promise<Response> {
     const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    const refreshToken = storage.get<string | null>(STORAGE_KEYS.refreshToken, null);
     const headers = new Headers(options.headers || {});
     if (token && !headers.has("Authorization")) {
       headers.set("Authorization", `Bearer ${token}`);
+    } else if (!token && !headers.has("Authorization") && !refreshToken) {
+      // Unauthenticated request without token or refresh token - return fast 401 without WAN roundtrip
+      return new Response(JSON.stringify({ detail: "Unauthenticated" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
     }
     options.headers = headers;
 
@@ -725,13 +739,14 @@ export const api = {
   },
 
   async getWishlist(token: string) {
+    if (!token) return [];
     return getCachedOrFetch<string[]>(
       "user_wishlist",
       async () => {
         const res = await this.fetchWithAuth(`${API_BASE}/api/wishlist`, {
           method: "GET",
         });
-        if (!res.ok) throw new Error("Failed to fetch wishlist");
+        if (!res.ok) return [];
         return res.json();
       },
       { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
@@ -752,18 +767,14 @@ export const api = {
   },
 
   async getOrders(token: string) {
+    if (!token) return [];
     return getCachedOrFetch<Order[]>(
       "user_orders",
       async () => {
         const res = await this.fetchWithAuth(`${API_BASE}/api/orders`, {
           method: "GET",
         });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(
-            parseApiError(data, "Failed to retrieve order history from database."),
-          );
-        }
+        if (!res.ok) return [];
         const data = await res.json();
         const rawOrders = Array.isArray(data) ? data : [];
         const normalized = rawOrders.map((o: Record<string, unknown>) => {
@@ -925,13 +936,14 @@ export const api = {
   },
 
   async getCustomProducts(token: string) {
+    if (!token) return [];
     return getCachedOrFetch<Product[]>(
       "user_custom_products",
       async () => {
         const res = await this.fetchWithAuth(`${API_BASE}/api/products/custom`, {
           method: "GET",
         });
-        if (!res.ok) throw new Error("Failed to fetch custom products");
+        if (!res.ok) return [];
         return res.json();
       },
       { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
@@ -1048,13 +1060,14 @@ export const api = {
   },
 
   async getNotifications(token: string) {
+    if (!token) return [];
     return getCachedOrFetch(
       "user_notifications",
       async () => {
         const res = await this.fetchWithAuth(`${API_BASE}/api/notifications`, {
           method: "GET",
         });
-        if (!res.ok) throw new Error("Failed to fetch notifications");
+        if (!res.ok) return [];
         const data = await res.json();
         if (Array.isArray(data)) {
           storage.set(STORAGE_KEYS.notifications, data);
@@ -1884,6 +1897,7 @@ export const api = {
     search?: string,
     signal?: AbortSignal,
   ): Promise<{ success: boolean; conversations: RealtimeConversation[] }> {
+    if (!token) return { success: true, conversations: [] };
     const fetcher = async () => {
       const url = new URL(`${API_BASE}/api/conversations`);
       if (search && search.trim()) {
@@ -1894,8 +1908,7 @@ export const api = {
         signal,
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(parseApiError(data, "Failed to fetch conversations"));
+        return { success: false, conversations: [] };
       }
       const result = await res.json();
       if (result && Array.isArray(result.conversations) && !search) {
@@ -1947,7 +1960,7 @@ export const api = {
         }
         return await res.json();
       },
-      { ttlMs: 10000, userIsolated: true, staleWhileRevalidate: true }
+      { ttlMs: 15000, userIsolated: true, staleWhileRevalidate: true }
     );
   },
 

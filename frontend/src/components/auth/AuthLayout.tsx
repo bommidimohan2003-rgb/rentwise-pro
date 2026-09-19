@@ -19,7 +19,7 @@ import reClassic350Img from "@/assets/images/re_classic350.webp";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
-  mode: "login" | "register" | "forgot-password";
+  mode: "login" | "register" | "forgot-password" | "reset-password";
   title: string;
   subtitle: string;
 }
@@ -85,7 +85,7 @@ export function AuthLayout({
 
   return (
     <MainLayout>
-      <section className="relative min-h-[calc(100vh-70px)] flex items-center p-4 md:p-8 overflow-hidden bg-black">
+      <section className="relative min-h-[calc(100vh-70px)] flex items-center p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto bg-black">
         {/* CRYSTAL CLEAR HIGH-VISIBILITY FULL PAGE BACKGROUND IMAGE SLIDER */}
         <div className="absolute inset-0 w-full h-full z-0 overflow-hidden bg-black">
           <AnimatePresence mode="wait">
@@ -161,7 +161,7 @@ export function AuthLayout({
             )}
           >
             {/* Header Navigation Tabs: Sign In / Create Account */}
-            {mode !== "forgot-password" && (
+            {mode !== "forgot-password" && mode !== "reset-password" && (
               <div className="flex items-center rounded-2xl bg-secondary/80 p-1.5 border border-border/80">
                 <Link
                   to="/login"

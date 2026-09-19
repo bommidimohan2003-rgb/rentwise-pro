@@ -24,9 +24,6 @@ export function OTPVerification() {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(60);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const refs = useRef<Array<HTMLInputElement | null>>([]);
@@ -36,10 +33,7 @@ export function OTPVerification() {
     STORAGE_KEYS.pendingUser,
     null,
   );
-  const isResetFlow = !pendingUser;
-  const targetContact = isResetFlow
-    ? email || "your registered email"
-    : pendingUser?.email || email || "your email";
+  const targetContact = pendingUser?.email || email || "your email";
 
   // Timer countdown
   useEffect(() => {
@@ -67,25 +61,7 @@ export function OTPVerification() {
     setLoading(true);
 
     try {
-      if (isResetFlow) {
-        if (!newPassword) {
-          setLoading(false);
-          return setError("Enter a new password");
-        }
-        if (newPassword.length < 8) {
-          setLoading(false);
-          return setError("Password must be at least 8 characters");
-        }
-        if (newPassword !== confirmPassword) {
-          setLoading(false);
-          return setError("Passwords do not match");
-        }
-
-        await api.forgotPasswordReset(email, code, newPassword);
-        storage.remove(STORAGE_KEYS.otp);
-        storage.remove(STORAGE_KEYS.otpEmail);
-        toast.success("Password reset successful! Please log in.");
-      } else if (pendingUser) {
+      if (pendingUser) {
         const res = await api.registerVerify(
           pendingUser.email,
           pendingUser.phone,
@@ -109,8 +85,11 @@ export function OTPVerification() {
         storage.remove(STORAGE_KEYS.pendingUser);
         storage.remove(STORAGE_KEYS.otpEmail);
         toast.success(res?.message || "Registration successful! Please log in.");
+        navigate({ to: "/login" });
+      } else {
+        toast.error("No pending registration found. Please register or sign in.");
+        navigate({ to: "/login" });
       }
-      navigate({ to: "/login" });
     } catch (err) {
       const error = err as { message?: string };
       setError(error.message || "Verification failed");
@@ -122,9 +101,7 @@ export function OTPVerification() {
   const resend = async () => {
     setError(null);
     try {
-      if (isResetFlow) {
-        await api.forgotPasswordRequest(email);
-      } else if (pendingUser) {
+      if (pendingUser) {
         await api.registerRequest(pendingUser.email, pendingUser.phone);
       }
       setSeconds(60);
@@ -183,41 +160,6 @@ export function OTPVerification() {
           />
         ))}
       </div>
-
-      {isResetFlow && (
-        <div className="space-y-4 pt-2 border-t border-border">
-          <h3 className="font-semibold text-foreground text-sm">
-            Set your new password
-          </h3>
-          <Input
-            label="New Password"
-            type={showPw ? "text" : "password"}
-            placeholder="••••••••"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            rightAdornment={
-              <button
-                type="button"
-                onClick={() => setShowPw((v) => !v)}
-                className="p-1 text-muted-foreground hover:text-foreground"
-              >
-                {showPw ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            }
-          />
-          <Input
-            label="Confirm New Password"
-            type={showPw ? "text" : "password"}
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </div>
-      )}
 
       {error && <p className="text-sm text-destructive font-medium">{error}</p>}
 

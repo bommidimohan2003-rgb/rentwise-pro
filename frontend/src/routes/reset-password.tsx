@@ -2,13 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import ForgotPassword from "@/pages/ForgotPassword";
 import { getSeoMetadata } from "@/utils/seo";
 
-export const Route = createFileRoute("/forgot-password")({
+export const Route = createFileRoute("/reset-password")({
   head: () =>
     getSeoMetadata({
-      title: "Reset Password | Payent",
+      title: "Set New Password | Payent",
       description:
-        "Request a password reset link to recover access to your Payent account.",
-      path: "/forgot-password",
+        "Choose a new secure password for your Payent account.",
+      path: "/reset-password",
     }),
   validateSearch: (s: Record<string, unknown>) => ({
     token: (s.token as string) || undefined,

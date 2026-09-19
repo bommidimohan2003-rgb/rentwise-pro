@@ -13,6 +13,7 @@ import hashlib
 import datetime
 import uuid
 import time
+import secrets
 from typing import Optional, List, Set, Dict, Tuple
 from datetime import datetime as dt, timezone, timedelta
 from config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB, MYSQL_SSL
@@ -306,8 +307,9 @@ def init_db(force: bool = False):
     add_index_safely("sessions", "idx_sessions_user_email", "user_email")
     add_index_safely("sessions", "idx_sessions_token_hash", "refresh_token_hash")
     add_index_safely("sessions", "idx_sessions_expires_at", "expires_at")
+    add_index_safely("sessions", "idx_sessions_user_active", "user_email, revoked_at, expires_at")
 
-    # Create OTPs table
+    # Create OTPs table (preserved for user registration verification)
     execute_query("""
         CREATE TABLE IF NOT EXISTS otps (
             email VARCHAR(255) PRIMARY KEY,
@@ -317,6 +319,21 @@ def init_db(force: bool = False):
             created_at VARCHAR(100) NOT NULL
         )
     """)
+
+    # Create password_reset_tokens table for secure non-OTP reset link authorization
+    execute_query("""
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id VARCHAR(255) PRIMARY KEY,
+            user_email VARCHAR(255) NOT NULL,
+            token_hash VARCHAR(255) NOT NULL UNIQUE,
+            created_at INT NOT NULL,
+            expires_at INT NOT NULL,
+            used_at INT NULL
+        )
+    """)
+    add_index_safely("password_reset_tokens", "idx_prt_token_hash", "token_hash", unique=True)
+    add_index_safely("password_reset_tokens", "idx_prt_user_email", "user_email")
+    add_index_safely("password_reset_tokens", "idx_prt_expires_at", "expires_at")
 
     # Create wishlist table
     execute_query("""
@@ -354,6 +371,7 @@ def init_db(force: bool = False):
     add_index_safely("orders", "idx_orders_status", "status")
     add_index_safely("orders", "idx_orders_created_at", "created_at")
     add_index_safely("orders", "idx_orders_product_status", "product_id, status")
+    add_index_safely("orders", "idx_orders_user_created", "user_email, created_at")
 
     # Create cart_items table
     execute_query("""
@@ -404,6 +422,7 @@ def init_db(force: bool = False):
     add_index_safely("custom_products", "idx_cp_status_hidden_created", "status, hidden, created_at")
     add_index_safely("custom_products", "idx_cp_category", "category")
     add_index_safely("custom_products", "idx_cp_price", "price")
+    add_index_safely("custom_products", "idx_cp_user_created", "user_email, created_at")
 
     # Create agents table
     execute_query("""
@@ -474,6 +493,7 @@ def init_db(force: bool = False):
     add_index_safely("reviews", "idx_reviews_created_at", "created_at")
     add_index_safely("reviews", "idx_reviews_hidden_created", "hidden, created_at")
     add_index_safely("reviews", "idx_reviews_hidden_product", "hidden, product_id, created_at")
+    add_index_safely("reviews", "idx_reviews_user_hidden", "user_email, hidden, created_at")
 
     # Create reports table
     execute_query("""
@@ -722,6 +742,7 @@ def init_db(force: bool = False):
     add_column_safely("conversation_members", "created_at VARCHAR(100) NULL")
     add_index_safely("conversation_members", "idx_cm_conversation_id", "conversation_id")
     add_index_safely("conversation_members", "idx_cm_user_email", "user_email")
+    add_index_safely("conversation_members", "idx_cm_conv_user", "conversation_id, user_email")
 
     # Create messages table
     execute_query("""
@@ -744,6 +765,8 @@ def init_db(force: bool = False):
     add_index_safely("messages", "idx_messages_created_at", "created_at")
     add_index_safely("messages", "idx_messages_sender_email", "sender_email")
     add_index_safely("messages", "idx_messages_type", "message_type")
+    add_index_safely("messages", "idx_msg_conv_created", "conversation_id, created_at")
+    add_index_safely("messages", "idx_msg_conv_del_created", "conversation_id, deleted_at, created_at")
 
     # Create message_attachments table
     execute_query("""
@@ -833,6 +856,7 @@ MOCK_CONVERSATIONS = {}
 MOCK_CONVERSATION_MEMBERS = {}
 MOCK_MESSAGES = {}
 MOCK_MESSAGE_ATTACHMENTS = {}
+MOCK_PASSWORD_RESET_TOKENS = {}
 
 _user_cache = {}
 
@@ -852,7 +876,7 @@ def get_user(email: str):
         if now - t < 30.0:
             return cached
     try:
-        user = fetch_one("SELECT * FROM users WHERE LOWER(email) = LOWER(%s)", (clean_email,))
+        user = fetch_one("SELECT * FROM users WHERE email = %s", (clean_email,))
         if user:
             _user_cache[clean_email] = (now, user)
             return user
@@ -1133,6 +1157,118 @@ def delete_otp(email: str):
     except Exception as e:
         print(f"Notice: Database delete error in delete_otp: {e}")
 
+# Secure Non-OTP Password Reset Token Helpers
+def hash_reset_token(raw_token: str) -> str:
+    """Computes SHA-256 hash of raw reset token."""
+    if not raw_token:
+        return ""
+    return hashlib.sha256(raw_token.strip().encode("utf-8")).hexdigest()
+
+def create_password_reset_token(email: str, expiry_seconds: int = 900) -> str:
+    """
+    Generates a secure cryptographically random token, stores its SHA-256 hash in DB,
+    and returns the RAW token strictly for email/link delivery.
+    Raw token is never stored in DB or logged.
+    """
+    clean_email = (email or "").strip().lower()
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hash_reset_token(raw_token)
+    now_int = int(time.time())
+    expires_at = now_int + expiry_seconds
+    token_id = f"prt_{secrets.token_hex(12)}"
+
+    # Invalidate previous unused reset tokens for this user
+    try:
+        execute_query("UPDATE password_reset_tokens SET used_at = %s WHERE user_email = %s AND used_at IS NULL", (now_int, clean_email))
+    except Exception as e:
+        logger.warning(f"Error invalidating previous reset tokens: {e}")
+
+    for k, v in list(MOCK_PASSWORD_RESET_TOKENS.items()):
+        if v.get("user_email") == clean_email and v.get("used_at") is None:
+            v["used_at"] = now_int
+
+    # Save new token hash
+    record = {
+        "id": token_id,
+        "user_email": clean_email,
+        "token_hash": token_hash,
+        "created_at": now_int,
+        "expires_at": expires_at,
+        "used_at": None
+    }
+    MOCK_PASSWORD_RESET_TOKENS[token_hash] = record
+
+    try:
+        execute_query("""
+            INSERT INTO password_reset_tokens (id, user_email, token_hash, created_at, expires_at, used_at)
+            VALUES (%s, %s, %s, %s, %s, NULL)
+        """, (token_id, clean_email, token_hash, now_int, expires_at))
+    except Exception as e:
+        logger.warning(f"Notice: Database write error in create_password_reset_token: {e}")
+
+    return raw_token
+
+def get_password_reset_token_record(raw_token: str) -> Optional[dict]:
+    """Look up active password reset token record by raw token without consuming it."""
+    if not raw_token:
+        return None
+    token_hash = hash_reset_token(raw_token)
+    try:
+        rec = fetch_one("SELECT * FROM password_reset_tokens WHERE token_hash = %s", (token_hash,))
+        if rec:
+            return rec
+    except Exception as e:
+        logger.warning(f"Notice: Database read error in get_password_reset_token_record: {e}")
+
+    return MOCK_PASSWORD_RESET_TOKENS.get(token_hash)
+
+def consume_password_reset_token(raw_token: str) -> Optional[dict]:
+    """
+    Atomically consumes a reset token in a single UPDATE query with condition 'used_at IS NULL'
+    and expires_at >= now. Returns the matching record or None if invalid/expired/already used.
+    """
+    if not raw_token:
+        return None
+    token_hash = hash_reset_token(raw_token)
+    now_int = int(time.time())
+
+    # Check mock first if in-memory or DB fallback
+    mock_rec = MOCK_PASSWORD_RESET_TOKENS.get(token_hash)
+    if mock_rec:
+        if mock_rec.get("used_at") is not None or mock_rec.get("expires_at", 0) < now_int:
+            return None
+        mock_rec["used_at"] = now_int
+
+    conn = get_db_connection()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                # 1. Fetch matching active record
+                cursor.execute("""
+                    SELECT * FROM password_reset_tokens 
+                    WHERE token_hash = %s AND used_at IS NULL AND expires_at >= %s
+                """, (token_hash, now_int))
+                row = cursor.fetchone()
+                if not row:
+                    return None
+                
+                # 2. Atomically mark as consumed
+                cursor.execute("""
+                    UPDATE password_reset_tokens 
+                    SET used_at = %s 
+                    WHERE token_hash = %s AND used_at IS NULL
+                """, (now_int, token_hash))
+                conn.commit()
+                return row
+        except Exception as e:
+            logger.warning(f"Notice: Database error in consume_password_reset_token: {e}")
+            if conn:
+                conn.rollback()
+        finally:
+            conn.close()
+
+    return mock_rec
+
 # Wishlist CRUD
 def get_wishlist(email: str):
     clean_email = (email or "").strip().lower()
@@ -1182,7 +1318,15 @@ def get_orders(email: str):
         if conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM orders WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
+                    cursor.execute("""
+                        SELECT id, user_email, product_id, product_title, product_image,
+                               start_date, end_date, total, status, created_at,
+                               razorpay_order_id, razorpay_payment_id, payment_status, refund_id, refund_status
+                        FROM orders
+                        WHERE user_email = %s
+                        ORDER BY created_at DESC
+                        LIMIT 100
+                    """, (clean_email,))
                     rows = cursor.fetchall()
                     if rows:
                         return rows
@@ -1545,7 +1689,13 @@ def get_notifications(email: str):
         if conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM notifications WHERE user_email = %s ORDER BY created_at DESC", (clean_email,))
+                    cursor.execute("""
+                        SELECT id, user_email, title, message, type, is_read, created_at
+                        FROM notifications
+                        WHERE user_email = %s
+                        ORDER BY created_at DESC
+                        LIMIT 50
+                    """, (clean_email,))
                     rows = cursor.fetchall()
                     if rows:
                         return rows
@@ -3329,7 +3479,7 @@ def get_user_cart(user_email: str) -> List[dict]:
                            p.owner_name, p.available as product_available
                     FROM cart_items c
                     LEFT JOIN custom_products p ON c.product_id = p.id
-                    WHERE LOWER(c.user_email) = LOWER(%s)
+                    WHERE c.user_email = %s
                     ORDER BY c.created_at DESC
                 """, (clean_email,))
                 rows = cursor.fetchall()
@@ -4034,81 +4184,87 @@ def get_conversation_messages(conversation_id: str, limit: int = 150) -> List[di
 def get_user_conversations(user_email: str, search: Optional[str] = None) -> List[dict]:
     """
     Fetches all conversations where user is customer or lender.
-    Optimized: JOINs counterparty user profile data and batch-fetches last messages + unread counts
-    to eliminate N+1 query loops.
+    Optimized: Single connection checkout, indexed joins, and batch-fetches last messages + unread counts
+    without partition filesorts or unindexed LOWER() scans.
     """
     clean_user = (user_email or "").strip().lower()
+    if not clean_user:
+        return []
     raw_convs = []
 
-    try:
-        raw_convs = fetch_all("""
-            SELECT c.*, 
-                   cm.last_read_at,
-                   COALESCE(o.product_title, cp.title, 'Gear Rental') as product_title, 
-                   COALESCE(o.product_image, cp.image, 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600') as product_image, 
-                   cp.price as product_price,
-                   cp.category as product_category,
-                   o.status as booking_status, o.start_date, o.end_date, o.total as booking_total,
-                   d.id as delivery_id, d.status as delivery_status, d.eta_minutes,
-                   u_cust.full_name as cust_full_name, u_cust.avatar as cust_avatar, u_cust.profile_photo_url as cust_photo_url, u_cust.verified as cust_verified,
-                   u_lend.full_name as lend_full_name, u_lend.avatar as lend_avatar, u_lend.profile_photo_url as lend_photo_url, u_lend.verified as lend_verified
-            FROM conversations c
-            LEFT JOIN conversation_members cm ON cm.conversation_id = c.id AND LOWER(cm.user_email) = %s
-            LEFT JOIN orders o ON o.id = c.booking_id
-            LEFT JOIN custom_products cp ON cp.id = c.product_id
-            LEFT JOIN deliveries d ON d.booking_id = c.booking_id
-            LEFT JOIN users u_cust ON LOWER(u_cust.email) = LOWER(c.customer_email)
-            LEFT JOIN users u_lend ON LOWER(u_lend.email) = LOWER(c.lender_email)
-            WHERE LOWER(c.customer_email) = %s OR LOWER(c.lender_email) = %s
-            ORDER BY c.updated_at DESC
-        """, (clean_user, clean_user, clean_user))
-    except Exception as e:
-        logger.warning(f"get_user_conversations DB error: {e}")
+    last_msg_by_conv: dict[str, dict] = {}
+    unread_cnt_by_conv: dict[str, int] = {}
+    msg_cnt_by_conv: dict[str, int] = {}
+
+    conn = get_db_connection()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT c.*, 
+                           cm.last_read_at,
+                           COALESCE(o.product_title, cp.title, 'Gear Rental') as product_title, 
+                           COALESCE(o.product_image, cp.image, 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600') as product_image, 
+                           cp.price as product_price,
+                           cp.category as product_category,
+                           o.status as booking_status, o.start_date, o.end_date, o.total as booking_total,
+                           d.id as delivery_id, d.status as delivery_status, d.eta_minutes,
+                           u_cust.full_name as cust_full_name, u_cust.avatar as cust_avatar, u_cust.profile_photo_url as cust_photo_url, u_cust.verified as cust_verified,
+                           u_lend.full_name as lend_full_name, u_lend.avatar as lend_avatar, u_lend.profile_photo_url as lend_photo_url, u_lend.verified as lend_verified
+                    FROM conversations c
+                    LEFT JOIN conversation_members cm ON cm.conversation_id = c.id AND cm.user_email = %s
+                    LEFT JOIN orders o ON o.id = c.booking_id
+                    LEFT JOIN custom_products cp ON cp.id = c.product_id
+                    LEFT JOIN deliveries d ON d.booking_id = c.booking_id
+                    LEFT JOIN users u_cust ON u_cust.email = c.customer_email
+                    LEFT JOIN users u_lend ON u_lend.email = c.lender_email
+                    WHERE c.customer_email = %s OR c.lender_email = %s
+                    ORDER BY c.updated_at DESC
+                """, (clean_user, clean_user, clean_user))
+                raw_convs = cursor.fetchall() or []
+
+                conv_ids = [c["id"] for c in raw_convs if c.get("id")]
+
+                if conv_ids:
+                    placeholders = ",".join(["%s"] * len(conv_ids))
+                    # Batch fetch message count and unread count per conversation in 1 query
+                    cursor.execute(f"""
+                        SELECT m.conversation_id,
+                               COUNT(m.id) as total_count,
+                               SUM(CASE WHEN m.sender_email != %s AND (cm.last_read_at IS NULL OR m.created_at > cm.last_read_at) THEN 1 ELSE 0 END) as unread_count
+                        FROM messages m
+                        LEFT JOIN conversation_members cm ON cm.conversation_id = m.conversation_id AND cm.user_email = %s
+                        WHERE m.conversation_id IN ({placeholders}) AND m.deleted_at IS NULL
+                        GROUP BY m.conversation_id
+                    """, (clean_user, clean_user, *conv_ids))
+                    for row in (cursor.fetchall() or []):
+                        cid = row["conversation_id"]
+                        unread_cnt_by_conv[cid] = int(row.get("unread_count") or 0)
+                        msg_cnt_by_conv[cid] = int(row.get("total_count") or 0)
+
+                    # Batch fetch latest message per conversation via indexed MAX query
+                    cursor.execute(f"""
+                        SELECT m.conversation_id, m.content, m.created_at, m.sender_email
+                        FROM messages m
+                        INNER JOIN (
+                            SELECT conversation_id, MAX(created_at) as max_created
+                            FROM messages
+                            WHERE conversation_id IN ({placeholders}) AND deleted_at IS NULL
+                            GROUP BY conversation_id
+                        ) latest ON m.conversation_id = latest.conversation_id AND m.created_at = latest.max_created
+                    """, (*conv_ids,))
+                    for row in (cursor.fetchall() or []):
+                        last_msg_by_conv[row["conversation_id"]] = row
+        except Exception as e:
+            logger.warning(f"get_user_conversations DB error: {e}")
+        finally:
+            conn.close()
 
     if not raw_convs:
         raw_convs = [
             c for c in MOCK_CONVERSATIONS.values()
             if c.get("customer_email", "").lower() == clean_user or c.get("lender_email", "").lower() == clean_user
         ]
-
-    conv_ids = [c["id"] for c in raw_convs if c.get("id")]
-    last_msg_by_conv: dict[str, dict] = {}
-    unread_cnt_by_conv: dict[str, int] = {}
-    msg_cnt_by_conv: dict[str, int] = {}
-
-    if conv_ids:
-        try:
-            placeholders = ",".join(["%s"] * len(conv_ids))
-            # Batch fetch message count and unread count per conversation in 1 query
-            agg_rows = fetch_all(f"""
-                SELECT m.conversation_id,
-                       COUNT(m.id) as total_count,
-                       SUM(CASE WHEN LOWER(m.sender_email) != %s AND (cm.last_read_at IS NULL OR m.created_at > cm.last_read_at) THEN 1 ELSE 0 END) as unread_count
-                FROM messages m
-                LEFT JOIN conversation_members cm ON cm.conversation_id = m.conversation_id AND LOWER(cm.user_email) = %s
-                WHERE m.conversation_id IN ({placeholders}) AND m.deleted_at IS NULL
-                GROUP BY m.conversation_id
-            """, (clean_user, clean_user, *conv_ids))
-            for row in (agg_rows or []):
-                cid = row["conversation_id"]
-                unread_cnt_by_conv[cid] = int(row.get("unread_count") or 0)
-                msg_cnt_by_conv[cid] = int(row.get("total_count") or 0)
-
-            # Batch fetch latest message per conversation
-            last_rows = fetch_all(f"""
-                SELECT conversation_id, content, created_at, sender_email
-                FROM (
-                    SELECT conversation_id, content, created_at, sender_email,
-                           ROW_NUMBER() OVER (PARTITION BY conversation_id ORDER BY created_at DESC) as rn
-                    FROM messages
-                    WHERE conversation_id IN ({placeholders}) AND deleted_at IS NULL
-                ) ranked_msgs
-                WHERE rn = 1
-            """, tuple(conv_ids))
-            for row in (last_rows or []):
-                last_msg_by_conv[row["conversation_id"]] = row
-        except Exception as e:
-            logger.warning(f"Batch conversation metadata fetch notice: {e}")
 
     results = []
     clean_search = (search or "").strip().lower()
@@ -4159,8 +4315,8 @@ def get_user_conversations(user_email: str, search: Optional[str] = None) -> Lis
             "bookingEndDate": c.get("end_date"),
             "bookingTotal": c.get("booking_total"),
             "deliveryId": c.get("delivery_id"),
-            "deliveryStatus": c.get("delivery_status") or ("PENDING" if c.get("booking_id") else None),
-            "etaMinutes": c.get("eta_minutes"),
+            "deliveryStatus": c.get("delivery_status"),
+            "deliveryEtaMinutes": c.get("eta_minutes"),
             "isCustomer": is_customer,
             "counterparty": {
                 "name": counterparty_name,
@@ -4169,13 +4325,13 @@ def get_user_conversations(user_email: str, search: Optional[str] = None) -> Lis
                 "verified": counterparty_verified,
                 "role": "lender" if is_customer else "customer"
             },
-            "lastMessage": last_msg.get("content", ""),
-            "lastMessageAt": last_msg.get("created_at") or c.get("updated_at"),
-            "unread": unread_cnt > 0,
+            "lastMessage": last_msg.get("content") or "No messages yet",
+            "lastMessageTime": last_msg.get("created_at") or c.get("updated_at") or c.get("created_at"),
+            "lastMessageSender": last_msg.get("sender_email"),
             "unreadCount": unread_cnt,
-            "messagesCount": total_msgs,
-            "createdAt": c.get("created_at"),
-            "updatedAt": c.get("updated_at")
+            "totalMessages": total_msgs,
+            "updatedAt": c.get("updated_at") or c.get("created_at"),
+            "createdAt": c.get("created_at")
         }
 
         # Search filtering
@@ -4248,34 +4404,27 @@ def get_conversation_detail(conversation_id: str, current_user_email: str) -> Op
         delivery = get_delivery_by_booking(conv["booking_id"])
 
     product = None
-    pid = conv.get("product_id") or (order.get("product_id") if order else None)
-    if pid:
+    if conv.get("product_id"):
         try:
-            product = fetch_one("SELECT * FROM custom_products WHERE id = %s", (pid,))
+            prod_map = get_products_batch([str(conv["product_id"])])
+            product = prod_map.get(str(conv["product_id"]))
         except Exception:
-            pass
-        if not product:
-            product = MOCK_CUSTOM_PRODUCTS.get(pid)
-
-    product_title = (order.get("product_title") if order else None) or (product.get("title") if product else "Gear Rental")
-    product_image = (order.get("product_image") if order else None) or (product.get("image") if product else "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600")
-    product_price = (product.get("price") if product else None) or (order.get("price") if order else None)
+            product = None
 
     messages = get_conversation_messages(clean_cid)
 
     return {
         "id": conv["id"],
         "bookingId": conv.get("booking_id"),
-        "productId": pid,
-        "productTitle": product_title,
-        "productImage": product_image,
-        "productPrice": product_price,
-        "productCategory": product.get("category") if product else None,
-        "productDescription": product.get("description") if product else None,
+        "productId": conv.get("product_id"),
+        "productTitle": (product.get("title") if product else None) or (order.get("product_title") if order else "Tech Gear"),
+        "productImage": (product.get("image") if product else None) or (order.get("product_image") if order else "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"),
+        "productPrice": product.get("price") if product else (order.get("total") if order else None),
+        "productCategory": product.get("category") if product else "gear",
         "bookingStatus": order.get("status") if order else ("active" if conv.get("booking_id") else None),
         "bookingStartDate": order.get("start_date") if order else None,
         "bookingEndDate": order.get("end_date") if order else None,
-        "bookingTotal": order.get("total_price") if order else None,
+        "bookingTotal": order.get("total") if order else None,
         "deliveryId": delivery.get("id") if delivery else None,
         "deliveryStatus": delivery.get("status") if delivery else ("PENDING" if conv.get("booking_id") else None),
         "deliveryEtaMinutes": delivery.get("eta_minutes") if delivery else None,
@@ -4357,7 +4506,7 @@ def add_message(conversation_id: str, sender_email: str, sender_name: str,
     execute_query("UPDATE conversations SET updated_at = %s WHERE id = %s", (now_iso, conversation_id))
 
     if sender_email and sender_email != "system":
-        execute_query("UPDATE conversation_members SET last_read_at = %s WHERE conversation_id = %s AND LOWER(user_email) = %s", (now_iso, conversation_id, sender_email.strip().lower()))
+        execute_query("UPDATE conversation_members SET last_read_at = %s WHERE conversation_id = %s AND user_email = %s", (now_iso, conversation_id, sender_email.strip().lower()))
 
     return msg_record
 
@@ -4372,13 +4521,13 @@ def mark_conversation_read(conversation_id: str, user_email: str) -> bool:
     execute_query("""
         UPDATE conversation_members
         SET last_read_at = %s
-        WHERE conversation_id = %s AND LOWER(user_email) = %s
+        WHERE conversation_id = %s AND user_email = %s
     """, (now_iso, clean_cid, clean_user))
 
     execute_query("""
         UPDATE messages
         SET read_at = %s
-        WHERE conversation_id = %s AND LOWER(sender_email) != %s AND read_at IS NULL
+        WHERE conversation_id = %s AND sender_email != %s AND read_at IS NULL
     """, (now_iso, clean_cid, clean_user))
 
     return True
@@ -4388,18 +4537,20 @@ def get_total_unread_messages_count(user_email: str) -> int:
     Returns total unread customer-lender messages across all conversations for the user.
     """
     clean_user = (user_email or "").strip().lower()
+    if not clean_user:
+        return 0
     try:
         row = fetch_one("""
             SELECT COUNT(m.id) as unread_count
             FROM conversations c
-            JOIN conversation_members cm ON cm.conversation_id = c.id AND LOWER(cm.user_email) = %s
+            LEFT JOIN conversation_members cm ON cm.conversation_id = c.id AND cm.user_email = %s
             JOIN messages m ON m.conversation_id = c.id
-            WHERE (LOWER(c.customer_email) = %s OR LOWER(c.lender_email) = %s)
-              AND LOWER(m.sender_email) != %s
+            WHERE (c.customer_email = %s OR c.lender_email = %s)
+              AND m.sender_email != %s
               AND (cm.last_read_at IS NULL OR m.created_at > cm.last_read_at)
               AND m.deleted_at IS NULL
         """, (clean_user, clean_user, clean_user, clean_user))
-        if row and "unread_count" in row:
+        if row and "unread_count" in row and row["unread_count"] is not None:
             return int(row["unread_count"])
     except Exception as e:
         logger.warning(f"get_total_unread_messages_count DB error: {e}")
@@ -4407,10 +4558,4 @@ def get_total_unread_messages_count(user_email: str) -> int:
     # Fallback to counting in-memory
     convs = get_user_conversations(clean_user)
     return sum(c.get("unreadCount", 0) for c in convs)
-
-
-
-
-
-
 

@@ -1,6 +1,18 @@
-import React, { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { Mail, Lock, KeyRound, Eye, EyeOff, CheckCircle2, ArrowRight, RefreshCw, ShieldCheck } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation, Link } from "@tanstack/react-router";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  ArrowRight,
+  ShieldCheck,
+  AlertCircle,
+  KeyRound,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { toast } from "sonner";
@@ -8,250 +20,461 @@ import { api } from "@/utils/api";
 
 export function ForgotPassword() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [step, setStep] = useState<1 | 2>(1);
+  // Extract token from query search params (?token=XYZ)
+  const queryParams = new URLSearchParams(location.search);
+  const rawUrlToken = queryParams.get("token")?.trim() || "";
+
+  // Component state
+  const [token, setToken] = useState<string>(rawUrlToken);
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
+  const [isRequested, setIsRequested] = useState(false);
+
+  // Token validation state
+  const [isValidatingToken, setIsValidatingToken] = useState<boolean>(false);
+  const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
+  const [tokenEmail, setTokenEmail] = useState<string>("");
+  const [maskedEmail, setMaskedEmail] = useState<string>("");
+
+  // New password state
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [demoOtp, setDemoOtp] = useState<string | null>(null);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Loading & discrete error states (Step 15 requirement)
+  const [submitting, setSubmitting] = useState(false);
+  const [resetRequestError, setResetRequestError] = useState<string | null>(null);
+  const [resetTokenError, setResetTokenError] = useState<string | null>(null);
+  const [passwordValidationError, setPasswordValidationError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
-  // Step 1: Request Verification Code
-  const handleRequestOtp = async (e: React.FormEvent) => {
+  // Sync token from URL search parameter when location changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlToken = params.get("token")?.trim() || "";
+    setToken(urlToken);
+  }, [location.search]);
+
+  // Validate token with backend if token exists
+  useEffect(() => {
+    if (!token) {
+      setIsTokenValid(null);
+      setIsValidatingToken(false);
+      setResetTokenError(null);
+      return;
+    }
+
+    let isMounted = true;
+    setIsValidatingToken(true);
+    setResetTokenError(null);
+
+    api.validateResetToken(token)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res?.valid) {
+          setIsTokenValid(true);
+          setTokenEmail(res.email || "");
+          setMaskedEmail(res.masked_email || res.email || "");
+          setResetTokenError(null);
+        } else {
+          setIsTokenValid(false);
+          setResetTokenError(
+            "Your password reset link is invalid or expired. Please request a new reset link."
+          );
+        }
+      })
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        setIsTokenValid(false);
+        const msg = err instanceof Error ? err.message : String(err);
+        setResetTokenError(
+          msg ||
+            "Your password reset link is invalid or expired. Please request a new reset link."
+        );
+      })
+      .finally(() => {
+        if (isMounted) setIsValidatingToken(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
+
+  // Handle Step 4: Request Password Reset Link (No OTP)
+  const handleRequestResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
 
     if (!cleanEmail || !cleanEmail.includes("@")) {
-      setError("Please enter a valid email address.");
+      setResetRequestError("Please enter a valid email address.");
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    setSubmitting(true);
+    setResetRequestError(null);
 
     try {
       const res = await api.forgotPasswordRequest(cleanEmail);
-      if (res?.otp) {
-        setDemoOtp(res.otp);
-        setOtp(res.otp); // Pre-fill OTP if returned for demo/testing mode
-      }
-      toast.success(res?.message || `6-digit verification code sent to ${cleanEmail}.`);
-      setStep(2);
+      setIsRequested(true);
+      toast.success(
+        res?.message ||
+          "If an account exists for this email, a password reset link has been sent."
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "Failed to request password reset. Please check your email.");
-      toast.error(msg || "Failed to request password reset.");
+      setResetRequestError(
+        msg || "Failed to send reset link. Please try again later."
+      );
+      toast.error(msg || "Failed to send reset link.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  // Resend OTP Code
-  const handleResendOtp = async () => {
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) return;
-
-    setResending(true);
-    setError(null);
-
-    try {
-      const res = await api.forgotPasswordRequest(cleanEmail);
-      if (res?.otp) {
-        setDemoOtp(res.otp);
-        setOtp(res.otp);
-      }
-      toast.success(res?.message || `A new verification code has been sent.`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "Failed to resend code.");
-      toast.error(msg || "Failed to resend code.");
-    } finally {
-      setResending(false);
-    }
-  };
-
-  // Step 2: Verify Code and Reset Password
-  const handleResetPassword = async (e: React.FormEvent) => {
+  // Handle Step 8: Update Password with Secure Token (No OTP)
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanOtp = otp.trim();
+    setPasswordValidationError(null);
 
-    if (!cleanOtp) {
-      setError("Please enter the 6-digit verification code.");
+    if (!token) {
+      setResetTokenError(
+        "Your password reset link is invalid or expired. Please request a new reset link."
+      );
       return;
     }
 
     if (!newPassword) {
-      setError("Please enter a new password.");
+      setPasswordValidationError("Please enter a new password.");
       return;
     }
 
     if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters long.");
+      setPasswordValidationError("Password must be at least 8 characters long.");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
+      setPasswordValidationError("Passwords do not match.");
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    setSubmitting(true);
 
     try {
-      await api.forgotPasswordReset(cleanEmail, cleanOtp, newPassword);
+      await api.forgotPasswordReset(token, newPassword, tokenEmail || email);
+      setResetSuccess(true);
       toast.success("Password updated successfully! Please sign in with your new password.");
-      navigate({ to: "/login" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || "Failed to update password. Please check the verification code.");
+      if (
+        msg.toLowerCase().includes("invalid") ||
+        msg.toLowerCase().includes("expired") ||
+        msg.toLowerCase().includes("token")
+      ) {
+        setResetTokenError(
+          "Your password reset link is invalid or expired. Please request a new reset link."
+        );
+      } else {
+        setPasswordValidationError(msg || "Failed to update password.");
+      }
       toast.error(msg || "Failed to update password.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  if (step === 1) {
-    return (
-      <form onSubmit={handleRequestOtp} className="space-y-5">
-        <Input
-          label="Account Email"
-          type="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            setError(null);
-          }}
-          icon={<Mail className="h-4 w-4 text-muted-foreground" />}
-          required
-        />
+  // -------------------------------------------------------------
+  // VIEW 1: Token in URL -> Reset Password Screen (Step 6 / 7 / 8)
+  // -------------------------------------------------------------
+  if (token) {
+    // 1A. Validating Token Loading State
+    if (isValidatingToken) {
+      return (
+        <div className="py-8 text-center space-y-4">
+          <div className="inline-flex items-center justify-center p-3 rounded-full bg-primary/10 text-primary animate-spin">
+            <RotateCcw className="h-6 w-6" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">
+            Verifying secure reset link...
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Please wait while we validate your one-time security token.
+          </p>
+        </div>
+      );
+    }
 
-        {error && (
-          <div className="p-3 text-xs font-semibold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl">
-            {error}
+    // 1B. Invalid or Expired Token State (Step 7 & 12)
+    if (isTokenValid === false || resetTokenError) {
+      return (
+        <div className="space-y-5 py-2">
+          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold text-destructive">
+                Link Invalid or Expired
+              </h4>
+              <p className="text-xs text-destructive/90 leading-relaxed">
+                {resetTokenError ||
+                  "Your password reset link is invalid or expired. Please request a new reset link."}
+              </p>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            onClick={() => {
+              setToken("");
+              setIsTokenValid(null);
+              setResetTokenError(null);
+              navigate({ to: "/forgot-password", search: { token: "" } });
+            }}
+            className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl shadow-md cursor-pointer"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Request a New Reset Link
+          </Button>
+
+          <div className="text-center pt-2">
+            <Link
+              to="/login"
+              className="text-xs text-muted-foreground hover:text-foreground font-semibold inline-flex items-center gap-1"
+            >
+              Return to Sign In
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
+    // 1C. Successful Password Reset Confirmation
+    if (resetSuccess) {
+      return (
+        <div className="space-y-5 py-4 text-center">
+          <div className="inline-flex items-center justify-center p-4 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-lg font-black text-foreground">
+              Password Updated Successfully
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              Your password has been changed. All existing sessions have been signed out for security.
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={() => navigate({ to: "/login" })}
+            className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl shadow-md cursor-pointer"
+          >
+            Proceed to Sign In
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
+      );
+    }
+
+    // 1D. Active "Create a New Password" Form (Step 6)
+    return (
+      <form onSubmit={handleUpdatePassword} className="space-y-5">
+        {/* Token Account Context Badge */}
+        {(maskedEmail || tokenEmail) && (
+          <div className="flex items-center justify-between p-3 bg-muted/40 border border-border/50 rounded-xl text-xs">
+            <div className="flex items-center space-x-2 truncate">
+              <Mail className="h-4 w-4 text-primary shrink-0" />
+              <span className="font-semibold text-foreground truncate">
+                Account: {maskedEmail || tokenEmail}
+              </span>
+            </div>
+            <span className="px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-full shrink-0">
+              Verified Token
+            </span>
           </div>
         )}
 
+        {/* New Password Field (Masked by default with accessible toggle) */}
+        <div className="space-y-1.5">
+          <div className="relative">
+            <Input
+              label="New Password"
+              type={showNewPassword ? "text" : "password"}
+              placeholder="At least 8 characters"
+              value={newPassword}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                setPasswordValidationError(null);
+              }}
+              icon={<Lock className="h-4 w-4 text-muted-foreground" />}
+              autoComplete="new-password"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              aria-label={showNewPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-[38px] text-muted-foreground hover:text-foreground p-1 cursor-pointer transition-colors"
+            >
+              {showNewPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Confirm New Password Field (Masked by default with accessible toggle) */}
+        <div className="space-y-1.5">
+          <div className="relative">
+            <Input
+              label="Confirm New Password"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Re-enter your new password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setPasswordValidationError(null);
+              }}
+              icon={<Lock className="h-4 w-4 text-muted-foreground" />}
+              autoComplete="new-password"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-[38px] text-muted-foreground hover:text-foreground p-1 cursor-pointer transition-colors"
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Password Strength Requirements Helper */}
+        <div className="p-3 bg-secondary/40 border border-border/50 rounded-xl space-y-1.5 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1.5 font-bold text-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            <span>Password Requirements</span>
+          </div>
+          <ul className="list-disc list-inside space-y-0.5 pl-1">
+            <li className={newPassword.length >= 8 ? "text-emerald-500 font-semibold" : ""}>
+              Minimum 8 characters in length
+            </li>
+            <li className={newPassword && newPassword === confirmPassword ? "text-emerald-500 font-semibold" : ""}>
+              New password and confirm password must match
+            </li>
+          </ul>
+        </div>
+
+        {/* Password Validation Error Banner */}
+        {passwordValidationError && (
+          <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{passwordValidationError}</span>
+          </div>
+        )}
+
+        {/* Submit Button (Step 6 requirement: "Update Password & Sign In") */}
         <Button
           type="submit"
-          className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl shadow-md"
-          loading={loading}
+          className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl shadow-md cursor-pointer"
+          loading={submitting}
         >
-          <ArrowRight className="h-4 w-4 mr-2" />
-          Send Verification Code
+          <CheckCircle2 className="h-4 w-4 mr-2" />
+          Update Password & Sign In
         </Button>
       </form>
     );
   }
 
-  return (
-    <form onSubmit={handleResetPassword} className="space-y-5">
-      <div className="flex items-center justify-between p-3 bg-muted/40 border border-border/50 rounded-xl text-xs">
-        <div className="flex items-center space-x-2 truncate">
-          <Mail className="h-4 w-4 text-primary shrink-0" />
-          <span className="font-semibold text-foreground truncate">{email}</span>
+  // -------------------------------------------------------------
+  // VIEW 2: Request Reset Link Screen (Step 4)
+  // -------------------------------------------------------------
+  if (isRequested) {
+    return (
+      <div className="space-y-5 py-2">
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-start gap-3">
+          <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              Reset Link Dispatched
+            </h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              If an account exists for <strong className="text-foreground">{email}</strong>, a secure password reset link has been sent.
+            </p>
+            <p className="text-[11px] text-muted-foreground/80 italic pt-1">
+              The link expires in 15 minutes. Check your inbox and spam folders.
+            </p>
+          </div>
         </div>
-        <button
+
+        <Button
           type="button"
           onClick={() => {
-            setStep(1);
-            setError(null);
+            setIsRequested(false);
+            setEmail("");
+            setResetRequestError(null);
           }}
-          className="text-primary font-bold hover:underline shrink-0 ml-2 cursor-pointer"
+          variant="outline"
+          className="w-full font-bold py-3 rounded-xl cursor-pointer"
         >
-          Change
-        </button>
-      </div>
+          Send to a Different Email
+        </Button>
 
-      <div className="space-y-1.5">
-        <Input
-          label="Verification Code (OTP)"
-          type="text"
-          placeholder="Enter 6-digit code"
-          value={otp}
-          maxLength={10}
-          onChange={(e) => {
-            setOtp(e.target.value);
-            setError(null);
-          }}
-          icon={<KeyRound className="h-4 w-4 text-muted-foreground" />}
-          required
-        />
-        {demoOtp && (
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium px-1">
-            <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-            <span>Test/Demo Code: <strong>{demoOtp}</strong></span>
-          </div>
-        )}
+        <div className="text-center pt-1">
+          <Link
+            to="/login"
+            className="text-xs text-muted-foreground hover:text-foreground font-semibold inline-flex items-center gap-1"
+          >
+            Back to Sign In
+          </Link>
+        </div>
       </div>
+    );
+  }
 
-      <div className="relative">
-        <Input
-          label="New Password"
-          type={showPassword ? "text" : "password"}
-          placeholder="At least 8 characters"
-          value={newPassword}
-          onChange={(e) => {
-            setNewPassword(e.target.value);
-            setError(null);
-          }}
-          icon={<Lock className="h-4 w-4 text-muted-foreground" />}
-          required
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-[38px] text-muted-foreground hover:text-foreground cursor-pointer"
-        >
-          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-
+  return (
+    <form onSubmit={handleRequestResetLink} className="space-y-5">
       <Input
-        label="Confirm New Password"
-        type={showPassword ? "text" : "password"}
-        placeholder="Re-enter your new password"
-        value={confirmPassword}
+        label="Account Email"
+        type="email"
+        placeholder="you@example.com"
+        value={email}
         onChange={(e) => {
-          setConfirmPassword(e.target.value);
-          setError(null);
+          setEmail(e.target.value);
+          setResetRequestError(null);
         }}
-        icon={<Lock className="h-4 w-4 text-muted-foreground" />}
+        icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+        autoComplete="email"
         required
       />
 
-      {error && (
-        <div className="p-3 text-xs font-semibold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl">
-          {error}
+      {resetRequestError && (
+        <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{resetRequestError}</span>
         </div>
       )}
 
       <Button
         type="submit"
-        className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl shadow-md"
-        loading={loading}
+        className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl shadow-md cursor-pointer"
+        loading={submitting}
       >
-        <CheckCircle2 className="h-4 w-4 mr-2" />
-        Update Password & Sign In
+        <ArrowRight className="h-4 w-4 mr-2" />
+        Send Reset Link
       </Button>
 
-      <div className="text-center pt-1">
-        <button
-          type="button"
-          onClick={handleResendOtp}
-          disabled={resending}
-          className="text-xs text-muted-foreground hover:text-foreground font-medium inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw className={`h-3 w-3 ${resending ? "animate-spin" : ""}`} />
-          {resending ? "Resending code..." : "Didn't receive code? Resend Code"}
-        </button>
+      <div className="p-3 bg-secondary/40 border border-border/40 rounded-xl flex items-center gap-2 text-[11px] text-muted-foreground">
+        <Sparkles className="h-4 w-4 text-primary shrink-0" />
+        <span>We will email you a secure, single-use link to reset your password.</span>
       </div>
     </form>
   );

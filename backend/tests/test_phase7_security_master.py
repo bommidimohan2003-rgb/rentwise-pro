@@ -47,7 +47,8 @@ from database import (
     revoke_all_user_sessions,
     is_session_revoked,
     save_otp,
-    delete_otp
+    delete_otp,
+    create_password_reset_token
 )
 from auth import (
     validate_password_strength,
@@ -253,26 +254,26 @@ class TestPhase7SecurityMaster(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
 
     # ============================================================
-    # 3. PASSWORD RESET WITH STRICT OTP VERIFICATION
+    # 3. PASSWORD RESET WITH SECURE RESET TOKEN
     # ============================================================
-    def test_08_password_reset_requires_valid_otp(self):
-        """Verify /api/forgot-password/reset fails without valid OTP."""
+    def test_08_password_reset_requires_valid_token(self):
+        """Verify /api/forgot-password/reset fails without valid token."""
         res = client.post("/api/forgot-password/reset", json={
+            "token": "invalid_reset_token_999999",
             "email": self.cust_a,
-            "otp": "999999",  # Invalid OTP
             "new_password": "NewStrongP@ssword2026!"
         })
         self.assertEqual(res.status_code, 400)
-        self.assertIn("Invalid or expired verification code", res.json()["detail"])
+        self.assertIn("invalid or expired", res.json()["detail"])
 
-    def test_09_password_reset_succeeds_with_valid_otp(self):
-        """Verify password reset succeeds with valid OTP and invalidates prior sessions."""
-        # Save real OTP in DB
-        save_otp(self.cust_a, "+919100000001", "882341")
+    def test_09_password_reset_succeeds_with_valid_token(self):
+        """Verify password reset succeeds with valid token and invalidates prior sessions."""
+        # Generate secure reset token
+        raw_token = create_password_reset_token(self.cust_a, expiry_seconds=900)
 
         res = client.post("/api/forgot-password/reset", json={
+            "token": raw_token,
             "email": self.cust_a,
-            "otp": "882341",
             "new_password": "NewStrongP@ssword2026!"
         })
         self.assertEqual(res.status_code, 200)
