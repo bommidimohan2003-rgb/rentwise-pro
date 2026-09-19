@@ -99,3 +99,14 @@ if IS_PRODUCTION:
     if not RAZORPAY_WEBHOOK_SECRET:
         print("Warning: Production RAZORPAY_WEBHOOK_SECRET is missing. Register webhook secret in backend environment variables.")
 
+# SMTP & Email Delivery Config
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", os.getenv("SMTP_USERNAME", ""))
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", os.getenv("SMTP_PASS", ""))
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
+SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "false").lower() in ("true", "1", "yes")
+MAIL_FROM = os.getenv("MAIL_FROM", os.getenv("SMTP_FROM_EMAIL", "no-reply@payent.in"))
+MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "Payent Security")
+FRONTEND_URL = os.getenv("FRONTEND_URL", os.getenv("BASE_URL", "https://payent.in"))
+

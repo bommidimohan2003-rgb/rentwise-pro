@@ -19,8 +19,9 @@ import json
 import asyncio
 import traceback
 import re
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Tuple
 from dotenv import load_dotenv
+from email_service import send_email_smtp, build_password_reset_email_html, build_password_reset_email_text, is_smtp_configured
 
 # Load env variables at application startup
 load_dotenv()
@@ -1108,9 +1109,9 @@ def revoke_specific_session(session_id: str, current_user_email: str = Depends(g
     revoke_db_session(session_id)
     return {"success": True, "message": "Session revoked successfully."}
 
-def send_password_reset_link(email: str, reset_url: str):
+def send_password_reset_link(email: str, reset_url: str) -> Tuple[bool, Optional[str]]:
     """
-    Delivers password reset link via notification and configured mailer.
+    Delivers password reset link via in-app notification and configured SMTP mailer.
     Raw reset secret is not logged in production application logs.
     """
     clean_email = (email or "").strip().lower()
@@ -1123,6 +1124,18 @@ def send_password_reset_link(email: str, reset_url: str):
         )
     except Exception as e:
         logger.warning(f"Failed to create password reset notification: {e}")
+
+    if is_smtp_configured():
+        subject = "Reset Your Payent Password"
+        html = build_password_reset_email_html(reset_url)
+        text = build_password_reset_email_text(reset_url)
+        success, err = send_email_smtp(clean_email, subject, html, text)
+        if not success:
+            logger.warning(f"SMTP dispatch failed for {mask_email_safely(clean_email)}: {err}")
+        return success, err
+    else:
+        logger.info(f"Outbound SMTP unconfigured. In-app notification recorded for {mask_email_safely(clean_email)}.")
+        return True, None
 
 @app.post("/api/forgot-password/request")
 def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request):
@@ -1159,7 +1172,13 @@ def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request)
     app_base_url = os.environ.get("FRONTEND_URL") or os.environ.get("BASE_URL") or "https://payent.in"
     reset_url = f"{app_base_url.rstrip('/')}/reset-password?token={raw_token}"
     
-    send_password_reset_link(clean_email, reset_url)
+    sent_ok, send_err = send_password_reset_link(clean_email, reset_url)
+    if is_smtp_configured() and not sent_ok:
+        logger.error(f"Failed to dispatch password reset email to {mask_email_safely(clean_email)}: {send_err}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send the reset link at this time. Please try again later or contact support."
+        )
 
     return {
         "success": True,
