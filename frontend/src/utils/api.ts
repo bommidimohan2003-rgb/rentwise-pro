@@ -301,15 +301,15 @@ export const api = {
     }
   },
 
-  async forgotPasswordRequest(email: string) {
+  async forgotPasswordRequest(email: string, recovery_token?: string) {
     const res = await fetch(`${API_BASE}/api/forgot-password/request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, recovery_token }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(data, "Failed to request password reset."));
+      throw new Error(parseApiError(data, "Failed to verify account recovery."));
     }
     return res.json();
   },
@@ -322,7 +322,7 @@ export const api = {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(data, "Your password reset link is invalid or expired. Please request a new reset link."));
+      throw new Error(parseApiError(data, "Your password reset link is invalid or expired."));
     }
     return res.json();
   },
@@ -331,11 +331,11 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/forgot-password/reset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, new_password, email }),
+      body: JSON.stringify({ recovery_token: token, token, new_password, email }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(parseApiError(data, "Failed to reset password."));
+      throw new Error(parseApiError(data, "Unable to update your password. Please try again."));
     }
     return res.json();
   },

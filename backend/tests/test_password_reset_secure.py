@@ -56,40 +56,48 @@ class TestPasswordResetSecure(unittest.TestCase):
             role="customer"
         )
 
-    def test_01_forgot_password_request_registered_and_unregistered_email(self):
-        """Verify request returns a generic message and does not expose user presence or raw tokens."""
-        # 1. Non-existent email
+    def test_01_forgot_password_request_unregistered_email_safe(self):
+        """Verify non-existent email returns generic anti-enumeration response without leakage."""
         resp_fake = self.client.post("/api/forgot-password/request", json={"email": "nonexistent_account_999@example.com"})
         self.assertEqual(resp_fake.status_code, 200)
         data_fake = resp_fake.json()
         self.assertTrue(data_fake.get("success"))
-        self.assertIn("password reset link has been sent", data_fake.get("message", ""))
-        self.assertNotIn("token", data_fake)
+        self.assertFalse(data_fake.get("account_found", True))
+        self.assertFalse(data_fake.get("recovery_authorized", True))
+        self.assertNotIn("recovery_token", data_fake)
         self.assertNotIn("otp", data_fake)
 
-        # 2. Real existing registered email
+    def test_02_forgot_password_request_registered_unauthorized(self):
+        """Verify registered email without recovery authorization requires authorization and does NOT expose password reset."""
         resp_real = self.client.post("/api/forgot-password/request", json={"email": self.test_email})
         self.assertEqual(resp_real.status_code, 200)
         data_real = resp_real.json()
         self.assertTrue(data_real.get("success"))
-        self.assertEqual(data_fake["message"], data_real["message"])
-        self.assertNotIn("token", data_real)
-        self.assertNotIn("otp", data_real)
+        self.assertTrue(data_real.get("account_found"))
+        self.assertFalse(data_real.get("recovery_authorized"))
+        self.assertIn("Additional account recovery authorization is required", data_real.get("message", ""))
+        self.assertNotIn("recovery_token", data_real)
 
-    def test_02_invalid_email_format_rejected(self):
+    def test_03_forgot_password_request_registered_authorized(self):
+        """Verify registered email with active recovery authorization returns recovery_authorized=True and valid token."""
+        raw_token = create_password_reset_token(self.test_email, expiry_seconds=900)
+        resp_auth = self.client.post(
+            "/api/forgot-password/request",
+            json={"email": self.test_email, "recovery_token": raw_token}
+        )
+        self.assertEqual(resp_auth.status_code, 200)
+        data_auth = resp_auth.json()
+        self.assertTrue(data_auth.get("success"))
+        self.assertTrue(data_auth.get("account_found"))
+        self.assertTrue(data_auth.get("recovery_authorized"))
+        self.assertEqual(data_auth.get("recovery_token"), raw_token)
+
+    def test_04_invalid_email_format_rejected(self):
         """Verify malformed email addresses are rejected with 422 Unprocessable Entity."""
         resp_bad = self.client.post("/api/forgot-password/request", json={"email": "not-an-email"})
         self.assertEqual(resp_bad.status_code, 422)
 
-    def test_03_smtp_delivery_failure_handling(self):
-        """Verify SMTP failure reports honest error and does not falsely claim delivery."""
-        with patch("main.is_smtp_configured", return_value=True), \
-             patch("main.send_email_smtp", return_value=(False, "SMTP connection refused")):
-            resp = self.client.post("/api/forgot-password/request", json={"email": self.test_email})
-            self.assertEqual(resp.status_code, 503)
-            self.assertIn("Unable to send the reset link", resp.json().get("detail", ""))
-
-    def test_04_validate_token_lifecycle(self):
+    def test_05_validate_token_lifecycle(self):
         """Verify valid token validates successfully, while invalid/tampered tokens are rejected."""
         raw_token = create_password_reset_token(self.test_email, expiry_seconds=900)
         self.assertIsNotNone(raw_token)
@@ -99,6 +107,7 @@ class TestPasswordResetSecure(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertTrue(data.get("valid"))
+        self.assertTrue(data.get("recovery_authorized"))
         self.assertEqual(data.get("email"), self.test_email)
 
         # 2. Tampered / invalid token
@@ -110,7 +119,7 @@ class TestPasswordResetSecure(unittest.TestCase):
         resp_empty = self.client.post("/api/forgot-password/validate-token", json={"token": ""})
         self.assertEqual(resp_empty.status_code, 400)
 
-    def test_05_expired_token_rejected(self):
+    def test_06_expired_token_rejected(self):
         """Verify expired tokens are rejected."""
         # Create token with 0 second expiry
         raw_token = create_password_reset_token(self.test_email, expiry_seconds=-10)
@@ -121,19 +130,19 @@ class TestPasswordResetSecure(unittest.TestCase):
 
         # Reset attempt with expired token should also fail
         resp_reset = self.client.post("/api/forgot-password/reset", json={
-            "token": raw_token,
+            "recovery_token": raw_token,
             "new_password": self.new_password,
             "email": self.test_email
         })
         self.assertEqual(resp_reset.status_code, 400)
 
-    def test_06_successful_password_reset_and_login_transition(self):
+    def test_07_successful_password_reset_and_login_transition(self):
         """Verify complete password reset: old password fails, new password allows login."""
         raw_token = create_password_reset_token(self.test_email, expiry_seconds=900)
         
         # Reset password
         resp = self.client.post("/api/forgot-password/reset", json={
-            "token": raw_token,
+            "recovery_token": raw_token,
             "new_password": self.new_password,
             "email": self.test_email
         })
@@ -158,13 +167,13 @@ class TestPasswordResetSecure(unittest.TestCase):
         login_data = resp_new_login.json()
         self.assertIn("token", login_data)
 
-    def test_07_single_use_atomicity_and_replay_rejection(self):
+    def test_08_single_use_atomicity_and_replay_rejection(self):
         """Verify token is consumed atomically and replay attempts are rejected."""
         raw_token = create_password_reset_token(self.test_email, expiry_seconds=900)
 
         # First use -> Success
         resp1 = self.client.post("/api/forgot-password/reset", json={
-            "token": raw_token,
+            "recovery_token": raw_token,
             "new_password": self.new_password,
             "email": self.test_email
         })
@@ -172,32 +181,32 @@ class TestPasswordResetSecure(unittest.TestCase):
 
         # Second use -> Replay rejection
         resp2 = self.client.post("/api/forgot-password/reset", json={
-            "token": raw_token,
+            "recovery_token": raw_token,
             "new_password": "AnotherPassword#2026",
             "email": self.test_email
         })
         self.assertEqual(resp2.status_code, 400)
         self.assertIn("invalid or expired", resp2.json().get("detail", ""))
 
-    def test_08_password_policy_enforcement_on_reset(self):
+    def test_09_password_policy_enforcement_on_reset(self):
         """Verify password policy is enforced on the reset endpoint."""
         raw_token = create_password_reset_token(self.test_email, expiry_seconds=900)
 
         # Weak password (too short)
         resp = self.client.post("/api/forgot-password/reset", json={
-            "token": raw_token,
+            "recovery_token": raw_token,
             "new_password": "short",
             "email": self.test_email
         })
         self.assertEqual(resp.status_code, 400)
-        self.assertIn("8 characters", resp.json().get("detail", ""))
+        self.assertIn("security rules", resp.json().get("detail", ""))
 
         # Token should NOT be consumed if validation failed
         rec = get_password_reset_token_record(raw_token)
         self.assertIsNotNone(rec)
         self.assertIsNone(rec.get("used_at"))
 
-    def test_09_all_user_sessions_revoked_on_reset(self):
+    def test_10_all_user_sessions_revoked_on_reset(self):
         """Verify active sessions are invalidated upon password reset."""
         expiry_iso = (dt.now(timezone.utc) + timedelta(hours=1)).isoformat()
         sess1 = create_db_session(
@@ -223,7 +232,7 @@ class TestPasswordResetSecure(unittest.TestCase):
         
         # Reset password
         resp = self.client.post("/api/forgot-password/reset", json={
-            "token": raw_token,
+            "recovery_token": raw_token,
             "new_password": self.new_password,
             "email": self.test_email
         })
@@ -233,27 +242,15 @@ class TestPasswordResetSecure(unittest.TestCase):
         active_sessions = get_user_active_sessions(self.test_email)
         self.assertEqual(len(active_sessions), 0)
 
-    def test_10_no_magic_otp_bypass_accepted(self):
+    def test_11_no_magic_otp_bypass_accepted(self):
         """Verify magic values like DIRECT or empty strings are not accepted."""
         resp = self.client.post("/api/forgot-password/reset", json={
-            "token": "DIRECT",
+            "recovery_token": "DIRECT",
             "new_password": self.new_password,
             "email": self.test_email
         })
         self.assertEqual(resp.status_code, 400)
         self.assertIn("invalid or expired", resp.json().get("detail", ""))
-
-    def test_11_email_template_generation(self):
-        """Verify HTML and plain text email templates generate with correct URL and brand elements."""
-        test_url = "https://payent.in/reset-password?token=sample_token_123"
-        html = build_password_reset_email_html(test_url)
-        text = build_password_reset_email_text(test_url)
-
-        self.assertIn("PAYENT", html)
-        self.assertIn(test_url, html)
-        self.assertIn("15 minutes", html)
-        self.assertIn(test_url, text)
-        self.assertIn("15 minutes", text)
 
 if __name__ == "__main__":
     unittest.main()

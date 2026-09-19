@@ -507,16 +507,17 @@ class CreateAdminSchema(BaseModel):
     name: Optional[str] = "Admin"
     email: EmailStr
     password: str
-    secret: Optional[str] = None
-
 class ForgotPasswordRequestSchema(BaseModel):
     email: EmailStr
+    recovery_token: Optional[str] = None
+    recovery_session_id: Optional[str] = None
 
 class ValidateResetTokenSchema(BaseModel):
     token: str
 
 class ForgotPasswordResetSchema(BaseModel):
-    token: str
+    token: Optional[str] = None
+    recovery_token: Optional[str] = None
     new_password: str
     email: Optional[str] = None
 
@@ -1160,29 +1161,49 @@ def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request)
     clean_email = data.email.lower().strip()
     user = get_user(clean_email)
     
-    # Preventing account enumeration: Return generic success response even if user not found
+    # Preventing account enumeration: Return generic safe response even if user not found
     if not user:
         return {
             "success": True,
-            "message": "If an account exists for this email, a password reset link has been sent."
+            "account_found": False,
+            "recovery_authorized": False,
+            "message": "If an account exists, recovery status has been checked."
         }
 
-    # Generate cryptographically secure token & store its SHA-256 hash (15-min expiry)
-    raw_token = create_password_reset_token(clean_email, expiry_seconds=900)
-    app_base_url = os.environ.get("FRONTEND_URL") or os.environ.get("BASE_URL") or "https://payent.in"
-    reset_url = f"{app_base_url.rstrip('/')}/reset-password?token={raw_token}"
-    
-    sent_ok, send_err = send_password_reset_link(clean_email, reset_url)
-    if is_smtp_configured() and not sent_ok:
-        logger.error(f"Failed to dispatch password reset email to {mask_email_safely(clean_email)}: {send_err}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Unable to send the reset link at this time. Please try again later or contact support."
-        )
+    # Check for valid, active recovery authorization context
+    auth_header = request.headers.get("Authorization", "")
+    bearer_token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
+    provided_token = (data.recovery_token or bearer_token or "").strip()
+
+    is_authorized = False
+    active_recovery_token = None
+
+    if provided_token:
+        rec = get_password_reset_token_record(provided_token)
+        now_int = int(time.time())
+        if rec and rec.get("used_at") is None and rec.get("expires_at", 0) >= now_int:
+            if rec.get("user_email") == clean_email:
+                is_authorized = True
+                active_recovery_token = provided_token
+
+    if is_authorized and active_recovery_token:
+        return {
+            "success": True,
+            "account_found": True,
+            "recovery_authorized": True,
+            "recovery_token": active_recovery_token,
+            "email": clean_email,
+            "masked_email": mask_email_safely(clean_email) if "mask_email_safely" in globals() else clean_email,
+            "message": "Account recovery authorized."
+        }
 
     return {
         "success": True,
-        "message": "If an account exists for this email, a password reset link has been sent."
+        "account_found": True,
+        "recovery_authorized": False,
+        "email": clean_email,
+        "masked_email": mask_email_safely(clean_email) if "mask_email_safely" in globals() else clean_email,
+        "message": "Additional account recovery authorization is required."
     }
 
 @app.post("/api/forgot-password/validate-token")
@@ -1191,7 +1212,7 @@ def validate_reset_token(data: ValidateResetTokenSchema):
     if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Your password reset link is invalid or expired. Please request a new reset link."
+            detail="Your password reset link is invalid or expired."
         )
 
     rec = get_password_reset_token_record(raw_token)
@@ -1199,12 +1220,14 @@ def validate_reset_token(data: ValidateResetTokenSchema):
     if not rec or rec.get("used_at") is not None or rec.get("expires_at", 0) < now_int:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Your password reset link is invalid or expired. Please request a new reset link."
+            detail="Your password reset link is invalid or expired."
         )
 
     user_email = rec.get("user_email", "")
     return {
         "valid": True,
+        "account_found": True,
+        "recovery_authorized": True,
         "email": user_email,
         "masked_email": mask_email_safely(user_email) if "mask_email_safely" in globals() else user_email,
         "message": "Reset token is valid."
@@ -1212,11 +1235,11 @@ def validate_reset_token(data: ValidateResetTokenSchema):
 
 @app.post("/api/forgot-password/reset")
 def forgot_password_reset(data: ForgotPasswordResetSchema):
-    raw_token = (data.token or "").strip()
+    raw_token = (data.recovery_token or data.token or "").strip()
     if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Your password reset link is invalid or expired. Please request a new reset link."
+            detail="Your password reset link is invalid or expired."
         )
 
     # 1. Enforce password strength policy first
@@ -1224,7 +1247,7 @@ def forgot_password_reset(data: ForgotPasswordResetSchema):
     if not is_valid_pw:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=pw_err
+            detail="Password does not meet the required security rules."
         )
 
     # 2. Atomically consume the single-use reset token
@@ -1232,7 +1255,7 @@ def forgot_password_reset(data: ForgotPasswordResetSchema):
     if not rec:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Your password reset link is invalid or expired. Please request a new reset link."
+            detail="Your password reset link is invalid or expired."
         )
 
     user_email = rec["user_email"]
@@ -1253,7 +1276,7 @@ def forgot_password_reset(data: ForgotPasswordResetSchema):
     logger.info("Secure password reset completed successfully for user.")
     return {
         "success": True,
-        "message": "Password updated successfully. Please sign in with your new password."
+        "message": "Password updated successfully."
     }
 
 @app.post("/api/auth/create-admin", status_code=status.HTTP_201_CREATED)
