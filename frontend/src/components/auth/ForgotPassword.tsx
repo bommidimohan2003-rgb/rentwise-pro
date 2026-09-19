@@ -106,26 +106,23 @@ export function ForgotPassword() {
     try {
       const res = await api.forgotPasswordRequest(cleanEmail, recoveryToken || undefined);
 
-      if (res?.account_found && res?.recovery_authorized && res?.recovery_token) {
-        // Step 3: Account Exists + Recovery Authorized
+      if (res?.account_found && res?.recovery_token) {
+        // Step 2 & 3: Account Exists in Database -> Give Set New Password and Confirm fields
         setRecoveryToken(res.recovery_token);
         setMaskedEmail(res.masked_email || cleanEmail);
         setTokenEmail(res.email || cleanEmail);
         setStep("PASSWORD_ENTRY");
-      } else if (res?.account_found) {
-        // Step 3: Account Exists but Recovery Authorization Required
-        setMaskedEmail(res.masked_email || cleanEmail);
-        setRecoveryError("Additional account recovery authorization is required.");
-        setStep("RECOVERY_REQUIRED");
+        toast.success("Account found. Please set your new password.");
       } else {
-        // Anti-enumeration safe response
-        setRecoveryError("Additional account recovery authorization is required.");
-        setStep("RECOVERY_REQUIRED");
+        // Account does not exist in database
+        const errMsg = res?.message || "No account found with this email address.";
+        setEmailError(errMsg);
+        toast.error(errMsg);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setEmailError(msg || "Unable to verify account. Please try again.");
-      toast.error(msg || "Unable to verify account.");
+      setEmailError(msg || "Unable to check account. Please try again.");
+      toast.error(msg || "Unable to check account.");
     } finally {
       setSubmitting(false);
     }

@@ -57,40 +57,50 @@ class TestPasswordResetSecure(unittest.TestCase):
         )
 
     def test_01_forgot_password_request_unregistered_email_safe(self):
-        """Verify non-existent email returns generic anti-enumeration response without leakage."""
+        """Verify non-existent email returns clear account_found=False without token leakage."""
         resp_fake = self.client.post("/api/forgot-password/request", json={"email": "nonexistent_account_999@example.com"})
         self.assertEqual(resp_fake.status_code, 200)
         data_fake = resp_fake.json()
-        self.assertTrue(data_fake.get("success"))
-        self.assertFalse(data_fake.get("account_found", True))
-        self.assertFalse(data_fake.get("recovery_authorized", True))
+        self.assertFalse(data_fake.get("success"))
+        self.assertFalse(data_fake.get("account_found"))
         self.assertNotIn("recovery_token", data_fake)
         self.assertNotIn("otp", data_fake)
 
-    def test_02_forgot_password_request_registered_unauthorized(self):
-        """Verify registered email without recovery authorization requires authorization and does NOT expose password reset."""
+    def test_02_forgot_password_request_registered_email_issues_token(self):
+        """Verify registered email check in database immediately returns recovery_token for setting new password."""
         resp_real = self.client.post("/api/forgot-password/request", json={"email": self.test_email})
         self.assertEqual(resp_real.status_code, 200)
         data_real = resp_real.json()
         self.assertTrue(data_real.get("success"))
         self.assertTrue(data_real.get("account_found"))
-        self.assertFalse(data_real.get("recovery_authorized"))
-        self.assertIn("Additional account recovery authorization is required", data_real.get("message", ""))
-        self.assertNotIn("recovery_token", data_real)
+        self.assertTrue(data_real.get("recovery_authorized"))
+        self.assertIsNotNone(data_real.get("recovery_token"))
+        self.assertIn("Account verified", data_real.get("message", ""))
 
-    def test_03_forgot_password_request_registered_authorized(self):
-        """Verify registered email with active recovery authorization returns recovery_authorized=True and valid token."""
-        raw_token = create_password_reset_token(self.test_email, expiry_seconds=900)
-        resp_auth = self.client.post(
-            "/api/forgot-password/request",
-            json={"email": self.test_email, "recovery_token": raw_token}
-        )
-        self.assertEqual(resp_auth.status_code, 200)
-        data_auth = resp_auth.json()
-        self.assertTrue(data_auth.get("success"))
-        self.assertTrue(data_auth.get("account_found"))
-        self.assertTrue(data_auth.get("recovery_authorized"))
-        self.assertEqual(data_auth.get("recovery_token"), raw_token)
+    def test_03_forgot_password_full_cycle_without_email_wait(self):
+        """Verify 3-step seamless password reset: email check -> token -> reset -> login."""
+        # 1. Check email in DB
+        resp_req = self.client.post("/api/forgot-password/request", json={"email": self.test_email})
+        self.assertEqual(resp_req.status_code, 200)
+        rec_token = resp_req.json().get("recovery_token")
+        self.assertIsNotNone(rec_token)
+
+        # 2. Reset password
+        resp_reset = self.client.post("/api/forgot-password/reset", json={
+            "recovery_token": rec_token,
+            "new_password": self.new_password,
+            "email": self.test_email
+        })
+        self.assertEqual(resp_reset.status_code, 200)
+        self.assertTrue(resp_reset.json().get("success"))
+
+        # 3. Sign in with new password
+        resp_login = self.client.post("/api/auth/login", json={
+            "email": self.test_email,
+            "password": self.new_password
+        })
+        self.assertEqual(resp_login.status_code, 200)
+        self.assertIn("token", resp_login.json())
 
     def test_04_invalid_email_format_rejected(self):
         """Verify malformed email addresses are rejected with 422 Unprocessable Entity."""

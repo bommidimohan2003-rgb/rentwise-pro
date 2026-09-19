@@ -1161,49 +1161,25 @@ def forgot_password_request(data: ForgotPasswordRequestSchema, request: Request)
     clean_email = data.email.lower().strip()
     user = get_user(clean_email)
     
-    # Preventing account enumeration: Return generic safe response even if user not found
     if not user:
         return {
-            "success": True,
+            "success": False,
             "account_found": False,
             "recovery_authorized": False,
-            "message": "If an account exists, recovery status has been checked."
+            "message": "No account found with this email address."
         }
 
-    # Check for valid, active recovery authorization context
-    auth_header = request.headers.get("Authorization", "")
-    bearer_token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
-    provided_token = (data.recovery_token or bearer_token or "").strip()
-
-    is_authorized = False
-    active_recovery_token = None
-
-    if provided_token:
-        rec = get_password_reset_token_record(provided_token)
-        now_int = int(time.time())
-        if rec and rec.get("used_at") is None and rec.get("expires_at", 0) >= now_int:
-            if rec.get("user_email") == clean_email:
-                is_authorized = True
-                active_recovery_token = provided_token
-
-    if is_authorized and active_recovery_token:
-        return {
-            "success": True,
-            "account_found": True,
-            "recovery_authorized": True,
-            "recovery_token": active_recovery_token,
-            "email": clean_email,
-            "masked_email": mask_email_safely(clean_email) if "mask_email_safely" in globals() else clean_email,
-            "message": "Account recovery authorized."
-        }
-
+    # Account exists in database -> Issue secure single-use recovery token for immediate password update
+    active_recovery_token = create_password_reset_token(clean_email, expiry_seconds=900)
+    
     return {
         "success": True,
         "account_found": True,
-        "recovery_authorized": False,
+        "recovery_authorized": True,
+        "recovery_token": active_recovery_token,
         "email": clean_email,
         "masked_email": mask_email_safely(clean_email) if "mask_email_safely" in globals() else clean_email,
-        "message": "Additional account recovery authorization is required."
+        "message": "Account verified. Please set your new password."
     }
 
 @app.post("/api/forgot-password/validate-token")
