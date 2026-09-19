@@ -134,14 +134,14 @@ export function ForgotPassword() {
     }
   };
 
-  // Handle Step 8: Update Password with Secure Token (No OTP)
+  // Handle Step 6: Update Password with Secure Token (No OTP)
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordValidationError(null);
 
     if (!token) {
       setResetTokenError(
-        "Your password reset link is invalid or expired. Please request a new reset link."
+        "Your password reset link is invalid or expired."
       );
       return;
     }
@@ -151,8 +151,15 @@ export function ForgotPassword() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setPasswordValidationError("Password must be at least 8 characters long.");
+    // Password strength policy validation
+    const hasMinLen = newPassword.length >= 8;
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(newPassword);
+
+    if (!hasMinLen || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+      setPasswordValidationError("Password does not meet the required security rules.");
       return;
     }
 
@@ -166,7 +173,7 @@ export function ForgotPassword() {
     try {
       await api.forgotPasswordReset(token, newPassword, tokenEmail || email);
       setResetSuccess(true);
-      toast.success("Password updated successfully! Please sign in with your new password.");
+      toast.success("Password updated successfully.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (
@@ -175,8 +182,17 @@ export function ForgotPassword() {
         msg.toLowerCase().includes("token")
       ) {
         setResetTokenError(
-          "Your password reset link is invalid or expired. Please request a new reset link."
+          "Your password reset link is invalid or expired."
         );
+      } else if (
+        msg.toLowerCase().includes("character") ||
+        msg.toLowerCase().includes("uppercase") ||
+        msg.toLowerCase().includes("lowercase") ||
+        msg.toLowerCase().includes("special") ||
+        msg.toLowerCase().includes("security rules") ||
+        msg.toLowerCase().includes("strength")
+      ) {
+        setPasswordValidationError("Password does not meet the required security rules.");
       } else {
         setPasswordValidationError(msg || "Failed to update password.");
       }
@@ -187,7 +203,7 @@ export function ForgotPassword() {
   };
 
   // -------------------------------------------------------------
-  // VIEW 1: Token in URL -> Reset Password Screen (Step 6 / 7 / 8)
+  // VIEW 1: Token in URL -> Reset Password Screen (Step 4 / 5 / 6 / 7)
   // -------------------------------------------------------------
   if (token) {
     // 1A. Validating Token Loading State
@@ -198,16 +214,16 @@ export function ForgotPassword() {
             <RotateCcw className="h-6 w-6" />
           </div>
           <p className="text-sm font-semibold text-foreground">
-            Verifying secure reset link...
+            Verifying secure recovery authorization...
           </p>
           <p className="text-xs text-muted-foreground">
-            Please wait while we validate your one-time security token.
+            Please wait while we validate your security token.
           </p>
         </div>
       );
     }
 
-    // 1B. Invalid or Expired Token State (Step 7 & 12)
+    // 1B. Invalid or Expired Token State
     if (isTokenValid === false || resetTokenError) {
       return (
         <div className="space-y-5 py-2">
@@ -219,7 +235,7 @@ export function ForgotPassword() {
               </h4>
               <p className="text-xs text-destructive/90 leading-relaxed">
                 {resetTokenError ||
-                  "Your password reset link is invalid or expired. Please request a new reset link."}
+                  "Your password reset link is invalid or expired."}
               </p>
             </div>
           </div>
@@ -250,7 +266,7 @@ export function ForgotPassword() {
       );
     }
 
-    // 1C. Successful Password Reset Confirmation
+    // 1C. Successful Password Reset Confirmation (Step 7)
     if (resetSuccess) {
       return (
         <div className="space-y-5 py-4 text-center">
@@ -259,10 +275,10 @@ export function ForgotPassword() {
           </div>
           <div className="space-y-1.5">
             <h3 className="text-lg font-black text-foreground">
-              Password Updated Successfully
+              Password updated successfully.
             </h3>
             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-              Your password has been changed. All existing sessions have been signed out for security.
+              Your password has been changed. You can now sign in with your new password.
             </p>
           </div>
           <Button
@@ -270,14 +286,14 @@ export function ForgotPassword() {
             onClick={() => navigate({ to: "/login" })}
             className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl shadow-md cursor-pointer"
           >
-            Proceed to Sign In
+            Sign In
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
       );
     }
 
-    // 1D. Active "Create a New Password" Form (Step 6)
+    // 1D. Active "Create New Password" Form (Steps 4, 5, 6)
     return (
       <form onSubmit={handleUpdatePassword} className="space-y-5">
         {/* Token Account Context Badge */}
@@ -290,7 +306,7 @@ export function ForgotPassword() {
               </span>
             </div>
             <span className="px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-full shrink-0">
-              Verified Token
+              Recovery Authorized
             </span>
           </div>
         )}
@@ -301,7 +317,7 @@ export function ForgotPassword() {
             <Input
               label="New Password"
               type={showNewPassword ? "text" : "password"}
-              placeholder="At least 8 characters"
+              placeholder="Enter new password"
               value={newPassword}
               onChange={(e) => {
                 setNewPassword(e.target.value);
@@ -332,7 +348,7 @@ export function ForgotPassword() {
             <Input
               label="Confirm New Password"
               type={showConfirmPassword ? "text" : "password"}
-              placeholder="Re-enter your new password"
+              placeholder="Confirm new password"
               value={confirmPassword}
               onChange={(e) => {
                 setConfirmPassword(e.target.value);
@@ -367,6 +383,12 @@ export function ForgotPassword() {
             <li className={newPassword.length >= 8 ? "text-emerald-500 font-semibold" : ""}>
               Minimum 8 characters in length
             </li>
+            <li className={/[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword) ? "text-emerald-500 font-semibold" : ""}>
+              Must include uppercase and lowercase letters
+            </li>
+            <li className={/[0-9]/.test(newPassword) && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(newPassword) ? "text-emerald-500 font-semibold" : ""}>
+              Must include at least one number and special character
+            </li>
             <li className={newPassword && newPassword === confirmPassword ? "text-emerald-500 font-semibold" : ""}>
               New password and confirm password must match
             </li>
@@ -381,21 +403,21 @@ export function ForgotPassword() {
           </div>
         )}
 
-        {/* Submit Button (Step 6 requirement: "Update Password & Sign In") */}
+        {/* Submit Button (Step 6 requirement: "Update Password") */}
         <Button
           type="submit"
           className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl shadow-md cursor-pointer"
           loading={submitting}
         >
           <CheckCircle2 className="h-4 w-4 mr-2" />
-          Update Password & Sign In
+          Update Password
         </Button>
       </form>
     );
   }
 
   // -------------------------------------------------------------
-  // VIEW 2: Request Reset Link Screen (Step 4)
+  // VIEW 2: Request Reset Link Screen (Step 1, 2, 3)
   // -------------------------------------------------------------
   if (isRequested) {
     return (
@@ -404,10 +426,10 @@ export function ForgotPassword() {
           <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              Reset Link Dispatched
+              Check your email
             </h4>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              If an account exists for <strong className="text-foreground">{email}</strong>, a secure password reset link has been sent.
+              If an account exists for <strong className="text-foreground">{email}</strong>, a secure password reset link has been sent. Please check your inbox and click the link to continue.
             </p>
             <p className="text-[11px] text-muted-foreground/80 italic pt-1">
               The link expires in 15 minutes. Check your inbox and spam folders.
@@ -427,15 +449,6 @@ export function ForgotPassword() {
         >
           Send to a Different Email
         </Button>
-
-        <div className="text-center pt-1">
-          <Link
-            to="/login"
-            className="text-xs text-muted-foreground hover:text-foreground font-semibold inline-flex items-center gap-1"
-          >
-            Back to Sign In
-          </Link>
-        </div>
       </div>
     );
   }
@@ -443,7 +456,7 @@ export function ForgotPassword() {
   return (
     <form onSubmit={handleRequestResetLink} className="space-y-5">
       <Input
-        label="Account Email"
+        label="Email"
         type="email"
         placeholder="you@example.com"
         value={email}
@@ -468,13 +481,13 @@ export function ForgotPassword() {
         className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl shadow-md cursor-pointer"
         loading={submitting}
       >
-        <ArrowRight className="h-4 w-4 mr-2" />
-        Send Reset Link
+        Continue
+        <ArrowRight className="h-4 w-4 ml-2" />
       </Button>
 
       <div className="p-3 bg-secondary/40 border border-border/40 rounded-xl flex items-center gap-2 text-[11px] text-muted-foreground">
         <Sparkles className="h-4 w-4 text-primary shrink-0" />
-        <span>We will email you a secure, single-use link to reset your password.</span>
+        <span>We will email you a secure recovery link to verify ownership.</span>
       </div>
     </form>
   );

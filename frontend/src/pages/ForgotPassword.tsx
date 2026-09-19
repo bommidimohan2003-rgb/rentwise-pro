@@ -7,10 +7,10 @@ export default function ForgotPassword() {
   const queryParams = new URLSearchParams(location.search);
   const token = queryParams.get("token");
 
-  const title = token ? "Create a New Password" : "Reset Password";
+  const title = token ? "Create New Password" : "Reset Password";
   const subtitle = token
-    ? "Choose a strong password to secure your account."
-    : "Enter your registered email to receive a secure password reset link.";
+    ? "Enter your new password below to secure your account."
+    : "Enter your registered email to continue.";
 
   return (
     <AuthLayout
