@@ -7,16 +7,12 @@ import {
   ChevronRight,
   Star,
   MapPin,
-  ShieldCheck,
   Clock,
   Heart,
   RotateCcw,
   Check,
-  Maximize2,
-  Minimize2,
-  Sparkles,
   Tag,
-  User as UserIcon,
+  ExternalLink,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import type { Product } from "@/types";
@@ -81,16 +77,6 @@ function getProductBrand(product: Product): string | null {
   return null;
 }
 
-function getProductCondition(product: Product): string | null {
-  if ((product as unknown as { condition?: string }).condition) {
-    return (product as unknown as { condition: string }).condition;
-  }
-  if ((product as unknown as { condition_state?: string }).condition_state) {
-    return (product as unknown as { condition_state: string }).condition_state;
-  }
-  return null;
-}
-
 export interface BrowseSwipeDeckProps {
   products: Product[];
   className?: string;
@@ -103,11 +89,11 @@ export function BrowseSwipeDeck({
   onResetFilters,
 }: BrowseSwipeDeckProps) {
   const [queue, setQueue] = useState<Product[]>(() => products);
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [exitDirection, setExitDirection] = useState<"left" | "right" | null>(null);
   const [cycleIndex, setCycleIndex] = useState<number>(0);
   const [isAddingToCart, setIsAddingToCart] = useState<boolean>(false);
   const [justAddedToCart, setJustAddedToCart] = useState<boolean>(false);
+  const isDraggingRef = useRef<boolean>(false);
 
   const { addToCart } = useCart();
   const { has, toggle } = useWishlist();
@@ -117,7 +103,6 @@ export function BrowseSwipeDeck({
   // Reset queue when products array changes (due to filter or search)
   useEffect(() => {
     setQueue(products);
-    setIsExpanded(false);
     setCycleIndex(0);
   }, [products]);
 
@@ -164,7 +149,6 @@ export function BrowseSwipeDeck({
           return [...rest, first];
         });
         setExitDirection(null);
-        setIsExpanded(false);
         setCycleIndex((c) => c + 1);
         x.set(0);
       }, 200);
@@ -187,14 +171,15 @@ export function BrowseSwipeDeck({
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
         handleSwipe("right");
-      } else if (e.key === "Escape" && isExpanded) {
-        e.preventDefault();
-        setIsExpanded(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleSwipe, isExpanded]);
+  }, [handleSwipe]);
+
+  const handleDragStart = () => {
+    isDraggingRef.current = true;
+  };
 
   const handleDragEnd = (
     _: unknown,
@@ -214,14 +199,24 @@ export function BrowseSwipeDeck({
     ) {
       handleSwipe("left");
     }
+
+    // Small delay before clearing isDragging to prevent tap navigation on drag release
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 120);
   };
 
-  // Primary interaction 2: Click/Tap expands card
-  const handleCardTap = () => {
-    setIsExpanded((prev) => !prev);
+  // Primary Interaction: Click/Tap on the product card opens the new page showing all details
+  const handleCardClick = () => {
+    if (isDraggingRef.current) return;
+    if (!activeProduct) return;
+    navigate({
+      to: "/product/$id",
+      params: { id: activeProduct.id },
+    });
   };
 
-  // Primary Feature 4: Add to Cart with real backend confirmation
+  // Add to Cart with real backend confirmation and cart drawer open
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -247,17 +242,6 @@ export function BrowseSwipeDeck({
       setJustAddedToCart(true);
       setTimeout(() => setJustAddedToCart(false), 2400);
     }
-  };
-
-  // Primary Feature 5: All Details route navigation
-  const handleAllDetails = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (!activeProduct) return;
-    navigate({
-      to: "/product/$id",
-      params: { id: activeProduct.id },
-    });
   };
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
@@ -297,10 +281,8 @@ export function BrowseSwipeDeck({
   }
 
   const brand = getProductBrand(activeProduct);
-  const condition = getProductCondition(activeProduct);
   const location =
     activeProduct.location || formatOwnerAddress(activeProduct) || null;
-  const ownerName = activeProduct.owner?.name || null;
 
   return (
     <div
@@ -319,7 +301,7 @@ export function BrowseSwipeDeck({
             </span>
           </span>
           <span className="hidden sm:inline-block text-[11px] text-neutral-400 dark:text-[#697680]">
-            {isExpanded ? "Details active" : "Swipe to browse • Tap to expand"}
+            Swipe to browse • Tap card for all details
           </span>
         </div>
 
@@ -349,9 +331,9 @@ export function BrowseSwipeDeck({
       </div>
 
       {/* CARD STACK CONTAINER */}
-      <div className="relative w-full max-w-[360px] sm:max-w-[420px] lg:max-w-[460px] min-h-[460px] sm:min-h-[500px] flex items-center justify-center">
+      <div className="relative w-full max-w-[360px] sm:max-w-[420px] lg:max-w-[460px] min-h-[500px] flex items-center justify-center">
         {/* SUBTLE BACKGROUND STACK CARD 3 */}
-        {thirdProduct && !isExpanded && (
+        {thirdProduct && (
           <div
             className="absolute inset-x-5 sm:inset-x-6 top-6 bottom-0 rounded-[28px] bg-white/40 dark:bg-[#090F15]/40 border border-black/5 dark:border-white/5 pointer-events-none transition-all duration-300 shadow-sm overflow-hidden"
             style={{
@@ -375,7 +357,7 @@ export function BrowseSwipeDeck({
         )}
 
         {/* SUBTLE BACKGROUND STACK CARD 2 (NEXT CARD) */}
-        {nextProduct && !isExpanded && (
+        {nextProduct && (
           <div
             className="absolute inset-x-2.5 sm:inset-x-3 top-3 bottom-0 rounded-[28px] bg-white/80 dark:bg-[#0B121A]/80 border border-black/10 dark:border-white/10 pointer-events-none transition-all duration-300 shadow-md overflow-hidden"
             style={{
@@ -418,8 +400,10 @@ export function BrowseSwipeDeck({
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.8}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
-            onTap={handleCardTap}
+            onTap={handleCardClick}
+            onClick={handleCardClick}
             initial={{
               scale: 0.94,
               opacity: 0,
@@ -443,20 +427,19 @@ export function BrowseSwipeDeck({
             }}
             layout
             id="browse-primary-active-card"
-            className={cn(
-              "relative w-full rounded-[28px] bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/15 shadow-2xl overflow-hidden cursor-grab active:cursor-grabbing transition-shadow",
-              isExpanded && "cursor-default",
-            )}
+            role="button"
+            tabIndex={0}
+            aria-label={`View ${activeProduct.title} details`}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleCardClick();
+              }
+            }}
+            className="group relative w-full rounded-[28px] bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/15 shadow-2xl overflow-hidden cursor-pointer active:cursor-grabbing transition-all hover:shadow-3xl"
           >
-            {/* 1. MEDIA CONTAINER (IMAGE-FIRST FOCUS) */}
-            <div
-              className={cn(
-                "relative w-full bg-neutral-900 overflow-hidden transition-all duration-300",
-                isExpanded
-                  ? "aspect-[16/10] sm:aspect-[16/9]"
-                  : "aspect-[4/5] sm:aspect-[3/4]",
-              )}
-            >
+            {/* 1. MEDIA CONTAINER (HERO IMAGE) */}
+            <div className="relative w-full aspect-[4/3] bg-neutral-900 overflow-hidden">
               <img
                 src={getOptimizedImageUrl(activeImgSrc, "card")}
                 srcSet={
@@ -469,13 +452,13 @@ export function BrowseSwipeDeck({
                 draggable={false}
                 loading="eager"
                 decoding="async"
-                className="w-full h-full object-cover object-center pointer-events-none"
+                className="w-full h-full object-cover object-center pointer-events-none group-hover:scale-105 transition-transform duration-500 ease-out"
               />
 
-              {/* Ambient Cinematic Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent pointer-events-none" />
+              {/* Ambient Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
 
-              {/* Top Floating Controls: Wishlist & Expand/Collapse Toggle */}
+              {/* Top Floating Controls: Availability Badge & Wishlist Button */}
               <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-20 pointer-events-auto">
                 {/* Availability Badge */}
                 <div
@@ -495,207 +478,139 @@ export function BrowseSwipeDeck({
                   )}
                 </div>
 
-                {/* Right Action Icons: Wishlist & Expansion Toggle */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onPointerDownCapture={(e) => e.stopPropagation()}
-                    onClick={handleWishlistToggle}
-                    aria-label="Toggle Wishlist"
-                    className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white/90 hover:text-red-500 transition-colors shadow-md border border-white/20 flex items-center justify-center cursor-pointer"
-                  >
-                    <Heart
-                      className={cn(
-                        "h-4 w-4 transition-all",
-                        has(activeProduct.id) &&
-                          "fill-red-500 text-red-500 scale-110",
-                      )}
-                    />
-                  </button>
-
-                  <button
-                    type="button"
-                    onPointerDownCapture={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsExpanded((prev) => !prev);
-                    }}
-                    aria-label={isExpanded ? "Collapse card" : "Expand card"}
-                    title={isExpanded ? "Collapse to image" : "Expand real details"}
-                    id="browse-card-expand-toggle"
-                    className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white/90 hover:text-white transition-colors shadow-md border border-white/20 flex items-center justify-center cursor-pointer"
-                  >
-                    {isExpanded ? (
-                      <Minimize2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <Maximize2 className="h-3.5 w-3.5" />
+                {/* Right Action: Wishlist Toggle Button */}
+                <button
+                  type="button"
+                  onPointerDownCapture={(e) => e.stopPropagation()}
+                  onClick={handleWishlistToggle}
+                  aria-label="Toggle Wishlist"
+                  className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white/90 hover:text-red-500 transition-colors shadow-md border border-white/20 flex items-center justify-center cursor-pointer"
+                >
+                  <Heart
+                    className={cn(
+                      "h-4 w-4 transition-all",
+                      has(activeProduct.id) &&
+                        "fill-red-500 text-red-500 scale-110",
                     )}
-                  </button>
-                </div>
+                  />
+                </button>
               </div>
 
-              {/* Bottom Cue Overlay when in Default Image State */}
-              {!isExpanded && (
-                <div className="absolute bottom-4 inset-x-4 flex items-center justify-between text-white pointer-events-none">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15">
-                    <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Tap card to view details</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs font-mono font-bold bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 text-emerald-400">
-                    <span>Swipe</span>
-                    <ChevronRight className="h-3.5 w-3.5 text-white/70" />
-                  </div>
-                </div>
-              )}
+              {/* Image Footer Cue (Hover/Tap indication) */}
+              <div className="absolute bottom-3 left-3.5 right-3.5 flex items-center justify-between text-white/90 text-[11px] font-semibold pointer-events-none">
+                <span className="px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-md border border-white/10 uppercase tracking-wider text-[10px] text-emerald-400 font-bold">
+                  {activeProduct.category}
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-white/80 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10">
+                  <span>Swipe</span>
+                  <ChevronRight className="h-3 w-3 text-white/70" />
+                </span>
+              </div>
             </div>
 
-            {/* 2. EXPANDED DETAIL STATE (Smooth Reveal with Real Supported Backend Fields) */}
-            <AnimatePresence>
-              {isExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="p-5 sm:p-6 space-y-4 bg-white dark:bg-[#0D151D] border-t border-black/10 dark:border-white/10"
+            {/* 2. CARD BODY & REAL DETAILS SUMMARY */}
+            <div className="p-4 sm:p-5 space-y-3.5 bg-white dark:bg-[#0D151D] text-left">
+              {/* Brand & Category strip */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="inline-flex items-center gap-1 font-bold text-neutral-500 dark:text-neutral-400">
+                  <Tag className="h-3 w-3 text-emerald-500" />
+                  <span>{activeProduct.category}</span>
+                </span>
+                {brand && (
+                  <span className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 font-bold text-neutral-800 dark:text-[#E0E5EA] text-[11px]">
+                    {brand}
+                  </span>
+                )}
+              </div>
+
+              {/* Product Title */}
+              <div>
+                <h2
+                  id="active-product-card-title"
+                  className="text-base sm:text-lg font-black tracking-tight text-neutral-950 dark:text-white leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1"
                 >
-                  {/* Category & Brand Strip */}
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="inline-flex items-center gap-1 font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                      <Tag className="h-3 w-3" />
-                      {activeProduct.category}
+                  {activeProduct.title}
+                </h2>
+                {activeProduct.description && (
+                  <p className="mt-1 text-xs text-neutral-600 dark:text-[#8D98A3] line-clamp-2 leading-relaxed font-normal">
+                    {activeProduct.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Metadata Row: Rating & Location */}
+              <div className="flex items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300">
+                <div className="flex items-center gap-1">
+                  <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                  <span className="font-bold text-neutral-900 dark:text-white">
+                    {activeProduct.rating?.toFixed(1) || "5.0"}
+                  </span>
+                  <span className="text-[10px] text-neutral-400">
+                    ({activeProduct.reviews || 0})
+                  </span>
+                </div>
+                {location && (
+                  <div className="flex items-center gap-1 truncate text-[11px]">
+                    <MapPin className="h-3 w-3 text-emerald-500 shrink-0" />
+                    <span className="truncate">{location}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Price Banner & Add to Cart Action */}
+              <div className="pt-2 border-t border-black/5 dark:border-white/10 flex items-center justify-between gap-3">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 block">
+                    Daily Rate
+                  </span>
+                  <div className="text-lg font-black tracking-tight text-neutral-950 dark:text-white font-mono leading-none mt-0.5">
+                    ₹{activeProduct.price.toLocaleString("en-IN")}
+                    <span className="text-xs font-normal text-neutral-500 ml-0.5">
+                      /day
                     </span>
-                    {brand && (
-                      <span className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 font-bold text-neutral-800 dark:text-[#E0E5EA] text-[11px]">
-                        {brand}
-                      </span>
-                    )}
                   </div>
+                </div>
 
-                  {/* Product Title */}
-                  <div>
-                    <h2
-                      id="expanded-product-title"
-                      className="text-lg sm:text-xl font-black tracking-tight text-neutral-950 dark:text-white leading-snug"
-                    >
-                      {activeProduct.title}
-                    </h2>
-                    {activeProduct.description && (
-                      <p className="mt-1 text-xs text-neutral-600 dark:text-[#8D98A3] line-clamp-2 leading-relaxed">
-                        {activeProduct.description}
-                      </p>
-                    )}
-                  </div>
+                {/* ADD TO CART BUTTON (Stops propagation so user can add without navigating) */}
+                <button
+                  type="button"
+                  disabled={!isAvailable || isAddingToCart}
+                  onPointerDownCapture={(e) => e.stopPropagation()}
+                  onClick={handleAddToCart}
+                  id={`browse-add-to-cart-${activeProduct.id}`}
+                  className={cn(
+                    "h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer shrink-0",
+                    !isAvailable
+                      ? "bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/40 dark:border-white/5 opacity-80"
+                      : justAddedToCart
+                        ? "bg-emerald-600 text-white active:scale-98"
+                        : "bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] dark:active:bg-[#DCD9D1] active:scale-98",
+                  )}
+                >
+                  {isAddingToCart ? (
+                    <span>Adding...</span>
+                  ) : justAddedToCart ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Added to Cart</span>
+                    </>
+                  ) : !isAvailable ? (
+                    <span>Unavailable</span>
+                  ) : (
+                    <>
+                      <ShoppingBag className="h-3.5 w-3.5" />
+                      <span>Add to Cart</span>
+                    </>
+                  )}
+                </button>
+              </div>
 
-                  {/* Metadata Grid (Rating, Location, Condition, Lender) */}
-                  <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-black/5 dark:border-white/10 text-xs">
-                    {/* Rating */}
-                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
-                      <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500 shrink-0" />
-                      <div className="truncate">
-                        <span className="font-bold text-neutral-900 dark:text-white">
-                          {activeProduct.rating?.toFixed(1) || "5.0"}
-                        </span>
-                        <span className="text-[10px] text-neutral-400 ml-1">
-                          ({activeProduct.reviews || 0} rev)
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Location */}
-                    {location && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
-                        <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span className="text-neutral-700 dark:text-[#AAB3BC] font-medium truncate">
-                          {location}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Condition (Shown only if supported by backend) */}
-                    {condition && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
-                        <ShieldCheck className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                        <span className="text-neutral-700 dark:text-[#AAB3BC] font-medium truncate capitalize">
-                          {condition} Condition
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Lender / Owner */}
-                    {ownerName && (
-                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
-                        <UserIcon className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
-                        <span className="text-neutral-700 dark:text-[#AAB3BC] font-medium truncate">
-                          Lender: {ownerName}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Price Banner */}
-                  <div className="p-3 rounded-2xl bg-neutral-100 dark:bg-white/5 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-neutral-500 dark:text-[#8D98A3]">
-                      Rental Rate
-                    </span>
-                    <div className="text-base sm:text-lg font-black tracking-tight text-neutral-950 dark:text-white font-mono">
-                      ₹{activeProduct.price.toLocaleString("en-IN")}
-                      <span className="text-xs font-normal text-neutral-500 dark:text-[#8D98A3] ml-0.5">
-                        /day
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* ACTION BUTTONS (ADD TO CART & ALL DETAILS) */}
-                  <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
-                    {/* Primary: ADD TO CART */}
-                    <button
-                      type="button"
-                      disabled={!isAvailable || isAddingToCart}
-                      onPointerDownCapture={(e) => e.stopPropagation()}
-                      onClick={handleAddToCart}
-                      id={`expanded-add-to-cart-${activeProduct.id}`}
-                      className={cn(
-                        "w-full sm:flex-1 h-11 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer",
-                        !isAvailable
-                          ? "bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/40 dark:border-white/5 opacity-80"
-                          : justAddedToCart
-                            ? "bg-emerald-600 text-white active:scale-98"
-                            : "bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] dark:active:bg-[#DCD9D1] active:scale-98",
-                      )}
-                    >
-                      {isAddingToCart ? (
-                        <span>Adding...</span>
-                      ) : justAddedToCart ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          <span>Added to Cart</span>
-                        </>
-                      ) : !isAvailable ? (
-                        <span>Not Available</span>
-                      ) : (
-                        <>
-                          <ShoppingBag className="h-4 w-4" />
-                          <span>Add to Cart</span>
-                        </>
-                      )}
-                    </button>
-
-                    {/* Secondary: ALL DETAILS */}
-                    <button
-                      type="button"
-                      onPointerDownCapture={(e) => e.stopPropagation()}
-                      onClick={handleAllDetails}
-                      id={`expanded-all-details-${activeProduct.id}`}
-                      className="w-full sm:flex-1 h-11 rounded-2xl bg-transparent text-neutral-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/10 border border-black/15 dark:border-white/20 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
-                    >
-                      <span>All Details</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              {/* Tap Card Navigation Prompt */}
+              <div className="pt-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                <span>Click card to view all details & specs</span>
+                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -708,7 +623,6 @@ export function BrowseSwipeDeck({
               key={p.id}
               type="button"
               onClick={() => {
-                // Jump clicked product to the front of the queue
                 setQueue((prev) => {
                   const targetIdx = prev.findIndex((item) => item.id === p.id);
                   if (targetIdx <= 0) return prev;
@@ -718,7 +632,6 @@ export function BrowseSwipeDeck({
                     ...prev.slice(targetIdx + 1),
                   ];
                 });
-                setIsExpanded(false);
               }}
               title={p.title}
               className={cn(
@@ -741,7 +654,6 @@ export function BrowseSwipeDeck({
             type="button"
             onClick={() => {
               setQueue(products);
-              setIsExpanded(false);
               toast.info("Queue reset to initial order");
             }}
             title="Reset queue order"

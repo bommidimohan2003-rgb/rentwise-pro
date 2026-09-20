@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Info,
   Tag,
+  ShoppingBag,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
@@ -16,6 +17,7 @@ import { Button } from "@/components/common/Button";
 import { Rating } from "@/components/common/Rating";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { JsonLd } from "@/components/common/JsonLd";
@@ -29,13 +31,14 @@ import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { formatOwnerAddress } from "@/utils/formatters";
 import type { Product } from "@/types";
 
-
-
 export default function ProductDetails() {
   const { id } = useParams({ from: "/product/$id" });
   const navigate = useNavigate();
   const { has, toggle } = useWishlist();
   const { user } = useAuth();
+  const { addToCart, cartItems } = useCart();
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [justAddedToCart, setJustAddedToCart] = useState(false);
 
   // Instant cache lookup for zero-latency initial render
   const initialCachedProduct = api.getCachedProduct(id);
@@ -129,6 +132,45 @@ export default function ProductDetails() {
     } finally {
       setMessagingLoading(false);
     }
+  };
+
+  const isInCart = Boolean(
+    product && cartItems.some((item) => item.product_id === product.id),
+  );
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    if (!user) {
+      toast.info("Please log in to add items to your rental cart.");
+      navigate({ to: "/login", search: { redirect: `/product/${id}` } as any });
+      return;
+    }
+    if (!product.available) {
+      toast.error("This gear item is currently unavailable.");
+      return;
+    }
+    setIsAddingToCart(true);
+    const success = await addToCart(product.id);
+    setIsAddingToCart(false);
+    if (success) {
+      setJustAddedToCart(true);
+      setTimeout(() => setJustAddedToCart(false), 3000);
+    }
+  };
+
+  const handleRentNow = () => {
+    if (!product) return;
+    if (!user) {
+      toast.error("Please log in to book this item.");
+      navigate({ to: "/login", search: { redirect: `/product/${id}` } as any });
+      return;
+    }
+    navigate({
+      to: "/checkout",
+      search: {
+        id: product.id,
+      } as never,
+    });
   };
 
   useEffect(() => {
@@ -445,33 +487,72 @@ export default function ProductDetails() {
                     </p>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    disabled={!product.available}
-                    onClick={() => {
-                      if (!user) {
-                        toast.error("Please log in to book this item.");
-                        navigate({ to: "/login" });
-                        return;
-                      }
-                      navigate({
-                        to: "/checkout",
-                        search: {
-                          id: product.id,
-                        } as never,
-                      });
-                    }}
-                    className="w-full bg-[#161616] dark:bg-[#F2F0EA] hover:bg-[#292929] dark:hover:bg-[#FFFDF7] active:bg-[#0B0B0B] dark:active:bg-[#DDD9D0] disabled:opacity-50 text-white dark:text-[#0A0A0A] font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>
-                      {product.available
-                        ? "Rent Now - Confirm Booking"
-                        : product.status === "pending"
-                          ? "Pending Admin Approval"
-                          : "Currently Booked"}
-                    </span>
-                    {product.available && <ArrowRight className="h-4 w-4" />}
-                  </button>
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                      {/* ADD TO CART BUTTON */}
+                      <button
+                        type="button"
+                        disabled={!product.available || isAddingToCart}
+                        onClick={handleAddToCart}
+                        id="product-details-add-to-cart-btn"
+                        className={cn(
+                          "w-full sm:flex-1 h-12 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer",
+                          !product.available
+                            ? "bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/40 dark:border-white/5 opacity-80"
+                            : justAddedToCart
+                              ? "bg-emerald-600 text-white"
+                              : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white border border-black/10 dark:border-white/15 active:scale-98",
+                        )}
+                      >
+                        {isAddingToCart ? (
+                          <span>Adding...</span>
+                        ) : justAddedToCart ? (
+                          <>
+                            <Check className="h-4 w-4 text-white" />
+                            <span>Added to Cart!</span>
+                          </>
+                        ) : !product.available ? (
+                          <span>Unavailable</span>
+                        ) : (
+                          <>
+                            <ShoppingBag className="h-4 w-4" />
+                            <span>Add to Cart</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* RENT NOW BUTTON */}
+                      <button
+                        type="button"
+                        disabled={!product.available}
+                        onClick={handleRentNow}
+                        id="product-details-rent-now-btn"
+                        className="w-full sm:flex-1 h-12 bg-[#161616] dark:bg-[#F2F0EA] hover:bg-[#292929] dark:hover:bg-[#FFFDF7] active:bg-[#0B0B0B] dark:active:bg-[#DDD9D0] disabled:opacity-50 text-white dark:text-[#0A0A0A] font-bold text-xs sm:text-sm rounded-2xl shadow-lg transition-all duration-200 active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>
+                          {product.available
+                            ? "Rent Now"
+                            : product.status === "pending"
+                              ? "Pending Admin Approval"
+                              : "Currently Booked"}
+                        </span>
+                        {product.available && <ArrowRight className="h-4 w-4" />}
+                      </button>
+                    </div>
+
+                    {/* Quick navigation link to Cart page */}
+                    {(isInCart || justAddedToCart) && (
+                      <button
+                        type="button"
+                        onClick={() => navigate({ to: "/cart" })}
+                        id="product-details-view-cart-link"
+                        className="w-full flex items-center justify-center gap-1.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                      >
+                        <span>✓ Gear in your rental cart — View Cart Page & Proceed to Checkout</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 
