@@ -34,9 +34,10 @@ export const apiKeysService = {
         total: number;
         page: number;
         limit: number;
-      }>(`/api/admin/api-keys?${query.toString()}`);
+      }>(`/api-keys?${query.toString()}`);
       return res.data;
-    } catch {
+    } catch (err) {
+      console.warn("[apiKeysService] getApiKeys fallback / error:", err);
       return {
         items: [],
         total: 0,
@@ -53,7 +54,7 @@ export const apiKeysService = {
     expires_at?: string;
   }): Promise<APIKeyCreateResult> {
     const res = await adminApi.post<APIKeyCreateResult>(
-      "/api/admin/api-keys",
+      "/api-keys",
       data,
     );
     return res.data;
@@ -70,7 +71,7 @@ export const apiKeysService = {
     },
   ) {
     const res = await adminApi.put<{ success: boolean; apiKey: AdminAPIKey }>(
-      `/api/admin/api-keys/${id}`,
+      `/api-keys/${id}`,
       data,
     );
     return res;
@@ -78,7 +79,7 @@ export const apiKeysService = {
 
   async deleteApiKey(id: string) {
     const res = await adminApi.delete<{ success: boolean; message: string }>(
-      `/api/admin/api-keys/${id}`,
+      `/api-keys/${id}`,
     );
     return res;
   },

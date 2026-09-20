@@ -766,3 +766,27 @@ Sampling conducted with 15 iterations per endpoint against remote TiDB Cloud dat
    - Rental dates are preserved strictly in the checkout/booking flow and not duplicated on browse or product details.
 6. **Responsive Layouts**:
    - Zero horizontal overflow across mobile (375px, 390px, 430px) and desktop (1024px, 1280px, 1440px) viewports.
+
+---
+
+## 13. Admin API Keys & Gear Approvals Moderation Hardening
+
+**Date**: September 20, 2026  
+**Status**: Verified & Integrated
+
+### 1. Admin API Keys Endpoint Crash Fix
+- **Backend Import Bug**: `backend/main.py` invoked `get_api_keys_db`, `create_api_key_db`, `get_api_key_by_id_db`, `update_api_key_db`, `delete_api_key_db`, `get_api_key_by_hash_db`, `touch_api_key_last_used_db`, and `random` which were implemented in `backend/database.py` but omitted from imports. This caused a `NameError: name 'get_api_keys_db' is not defined` crash on any request to `GET /api/admin/api-keys`.
+- **Resolution**: Added full import set in `backend/main.py` and `import random` in `backend/database.py`.
+- **Frontend URL Path Harmonization**: In `frontend/src/admin/services/apiKeys.ts`, requests previously specified `/api/admin/api-keys`, which combined with `adminApi`'s base URL `${API_BASE}/api/admin` to produce a duplicated `/api/admin/api/admin/api-keys` 404 path. Updated service calls to relative `/api-keys` paths.
+- **Defensive Route Aliases**: Added `@app.get("/api/admin/api/admin/api-keys")` (and matching POST, PUT, DELETE aliases) in `backend/main.py` so both URL path variants resolve without 404.
+- **Offline Mock Interceptor**: Added `/api-keys` GET, POST, PUT, and DELETE handlers in `frontend/src/admin/services/api.ts` for consistent offline demo mode resilience.
+- **Verification**: Verified full API key CRUD lifecycle (Create ➔ Read ➔ Read via Alias ➔ Update ➔ Delete ➔ Verify zero dangles) with HTTP 200 OK.
+
+### 2. Pending Gear Approvals Moderation Verification
+- **Status Clarification**: The Admin Dashboard truthfully showed `0 Awaiting Admin Approval` because all pre-existing records in MySQL `custom_products` had `status = 'approved'`.
+- **Moderation Queue Lifecycle Verified**:
+  1. When a user submits gear via `POST /api/products/custom`, it enters `custom_products` with `status = 'pending'` and `available = False`.
+  2. The Admin Dashboard reflects `1 Awaiting Admin Approval` via `notificationsService.getDashboardStats()` and `productsService.getProducts()`.
+  3. The card renders with real photo, category, title, daily price, lender identity, and verified avatar.
+  4. Clicking `[ Approve ]` executes `POST /api/admin/products/{id}/approve`, updating the database to `status = 'approved'` and `available = True`, logging the action to `admin_logs`, and updating the counter back to `0 Awaiting Admin Approval`.
+

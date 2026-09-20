@@ -2031,6 +2031,94 @@ adminApi.interceptors.response.use(
           return { status: 200, data: logs, headers: {}, config };
         }
 
+        // API KEYS ENDPOINTS
+        if (url.startsWith("/api-keys") && method === "GET") {
+          const keys = getDB<any[]>("api_keys", []);
+          return {
+            status: 200,
+            data: {
+              items: keys,
+              total: keys.length,
+              page: 1,
+              limit: 25,
+            },
+            headers: {},
+            config,
+          };
+        }
+
+        if (url === "/api-keys" && method === "POST") {
+          const body = JSON.parse(config.data || "{}");
+          const keys = getDB<any[]>("api_keys", []);
+          const id = `ak_${Date.now()}_${Math.floor(Math.random() * 900 + 100)}`;
+          const randomToken = Math.random().toString(36).substring(2, 10);
+          const fullSecret = `rw_live_${randomToken}${Math.random().toString(36).substring(2, 15)}`;
+          const newKey = {
+            id,
+            name: body.name || "API Key",
+            key_prefix: `rw_live_${randomToken.substring(0, 4)}`,
+            user_email: "admin@payent.com",
+            scopes: Array.isArray(body.scopes) ? body.scopes.join(",") : "read",
+            rate_limit: body.rate_limit || 100,
+            is_active: true,
+            expires_at: body.expires_at || null,
+            last_used_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          keys.unshift(newKey);
+          setDB("api_keys", keys);
+          return {
+            status: 200,
+            data: {
+              success: true,
+              apiKey: newKey,
+              secretKey: fullSecret,
+              message: "API key generated successfully.",
+            },
+            headers: {},
+            config,
+          };
+        }
+
+        if (url.startsWith("/api-keys/") && method === "PUT") {
+          const id = url.split("/")[2];
+          const patch = JSON.parse(config.data || "{}");
+          const keys = getDB<any[]>("api_keys", []);
+          const idx = keys.findIndex((k) => k.id === id);
+          if (idx !== -1) {
+            keys[idx] = {
+              ...keys[idx],
+              ...patch,
+              scopes: Array.isArray(patch.scopes) ? patch.scopes.join(",") : keys[idx].scopes,
+              updated_at: new Date().toISOString(),
+            };
+            setDB("api_keys", keys);
+            return {
+              status: 200,
+              data: { success: true, apiKey: keys[idx] },
+              headers: {},
+              config,
+            };
+          }
+          return Promise.reject({
+            response: { status: 404, data: { message: "API key not found" } },
+          });
+        }
+
+        if (url.startsWith("/api-keys/") && method === "DELETE") {
+          const id = url.split("/")[2];
+          const keys = getDB<any[]>("api_keys", []);
+          const filtered = keys.filter((k) => k.id !== id);
+          setDB("api_keys", filtered);
+          return {
+            status: 200,
+            data: { success: true, message: "API key deleted" },
+            headers: {},
+            config,
+          };
+        }
+
         // Fallback
         return Promise.reject({
           response: {

@@ -183,7 +183,15 @@ from database import (
     get_total_unread_messages_count,
     estimate_delivery_eta_minutes,
     check_db_health,
-    mask_email_safely
+    mask_email_safely,
+    get_api_keys_db,
+    get_api_key_by_id_db,
+    get_api_key_by_hash_db,
+    create_api_key_db,
+    update_api_key_db,
+    delete_api_key_db,
+    touch_api_key_last_used_db,
+    MOCK_API_KEYS
 )
 from recommendations_ml import check_data_sufficiency, compute_and_save_item_similarities
 from search_ml import ml_search_engine
@@ -4986,6 +4994,7 @@ def require_api_key(required_scopes: Optional[list[str]] = None):
     return _dependency
 
 @app.get("/api/admin/api-keys")
+@app.get("/api/admin/api/admin/api-keys")
 def admin_get_api_keys(
     page: int = Query(1, ge=1),
     limit: int = Query(25, ge=1, le=100),
@@ -4995,6 +5004,7 @@ def admin_get_api_keys(
     return get_api_keys_db(page=page, limit=limit, search=q)
 
 @app.post("/api/admin/api-keys")
+@app.post("/api/admin/api/admin/api-keys")
 def admin_create_api_key(data: APIKeyCreateSchema, current_admin: dict = Depends(check_admin_user)):
     if not data.name or not data.name.strip():
         raise HTTPException(status_code=400, detail="API Key name is required.")
@@ -5024,6 +5034,7 @@ def admin_create_api_key(data: APIKeyCreateSchema, current_admin: dict = Depends
     }
 
 @app.get("/api/admin/api-keys/{key_id}")
+@app.get("/api/admin/api/admin/api-keys/{key_id}")
 def admin_get_api_key(key_id: str, current_admin: dict = Depends(check_admin_user)):
     item = get_api_key_by_id_db(key_id)
     if not item:
@@ -5031,6 +5042,7 @@ def admin_get_api_key(key_id: str, current_admin: dict = Depends(check_admin_use
     return item
 
 @app.put("/api/admin/api-keys/{key_id}")
+@app.put("/api/admin/api/admin/api-keys/{key_id}")
 def admin_update_api_key(key_id: str, data: APIKeyUpdateSchema, current_admin: dict = Depends(check_admin_user)):
     item = get_api_key_by_id_db(key_id)
     if not item:
@@ -5053,6 +5065,7 @@ def admin_update_api_key(key_id: str, data: APIKeyUpdateSchema, current_admin: d
     return {"success": True, "apiKey": updated}
 
 @app.delete("/api/admin/api-keys/{key_id}")
+@app.delete("/api/admin/api/admin/api-keys/{key_id}")
 def admin_delete_api_key(key_id: str, current_admin: dict = Depends(check_admin_user)):
     item = get_api_key_by_id_db(key_id)
     if not item:
