@@ -790,3 +790,34 @@ Sampling conducted with 15 iterations per endpoint against remote TiDB Cloud dat
   3. The card renders with real photo, category, title, daily price, lender identity, and verified avatar.
   4. Clicking `[ Approve ]` executes `POST /api/admin/products/{id}/approve`, updating the database to `status = 'approved'` and `available = True`, logging the action to `admin_logs`, and updating the counter back to `0 Awaiting Admin Approval`.
 
+---
+
+## 14. Payent Ultra-Smooth Product Card Swipe Physics Rework
+
+**Date**: September 20, 2026  
+**Status**: Verified & Integrated
+
+### 1. Architectural & Gesture Overhaul
+- **Real-Time Finger & Mouse Follow**:
+  - The active card tracks pointer movements 1:1 on GPU-accelerated `translate3d(x, 0, 0)` with zero lag.
+  - Avoided layout reflows (`top`, `left`, `width`, `height`); purely compositor-friendly `transform` and `opacity`.
+- **Restrained Subtle Rotation**:
+  - Proportional rotation bound to `[-6°, 6°]` via `useTransform(x, [-320, 320], [-6, 6])`, keeping cards stable and premium.
+- **Micro-Scale Drag Feedback**:
+  - Added subtle drag scale adjustment `scale(0.985 → 1.0)`.
+- **Linked Continuous Stack Depth (Continuous Next-Card Transition)**:
+  - Stacked card 2 dynamically rises (`translateY: 12px → 0px`) and scales up (`0.96 → 1.0`) in real-time as card 1 is dragged away.
+  - Stacked card 3 subtly scales up toward card 2's position (`0.91 → 0.96`).
+- **Velocity & Distance Thresholds**:
+  - Fast flick (> 400px/s) triggers a swipe even on short displacements (~35–45px).
+  - Slow drag requires exceeding ~22% of card width (~80px).
+- **Spring-Like Settling**:
+  - Failed swipes spring back smoothly using a high-damping physics curve (`stiffness: 420, damping: 28, mass: 0.8`) with zero mechanical snapping or bounce.
+- **Vertical Scroll Protection**:
+  - Declared `touch-action: pan-y` on card element.
+  - Evaluates dominant axis within the first 8px of movement; dominant vertical gestures allow native browser page scrolling and suppress card horizontal drag.
+  - Vertical drags strictly suppress tap-click navigation, preventing accidental product detail page openings.
+- **Preloading**:
+  - Automatically preloads the next 1–2 product images using `getOptimizedImageUrl` to prevent white flashes or image reload flicker.
+
+
