@@ -4,15 +4,12 @@ import {
   Compass,
   PlusCircle,
   LayoutDashboard,
-  User,
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user } = useAuth();
   const { unreadCount } = useUnreadMessages();
   const shouldReduceMotion = useReducedMotion();
 
@@ -45,21 +42,14 @@ export function MobileBottomNav() {
       exact: false,
       badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : `${unreadCount}`) : undefined,
     },
-    {
-      to: user ? "/profile" : "/login",
-      label: "Profile",
-      icon: User,
-      exact: false,
-      badge: undefined,
-    },
   ];
 
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[420px] z-50 lg:hidden pointer-events-auto select-none"
+      className="fixed bottom-[calc(0.85rem+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[calc(100%-2rem)] max-w-[360px] z-50 lg:hidden pointer-events-auto select-none"
     >
-      <div className="relative bg-white/75 dark:bg-[#05090D]/80 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.12] shadow-[0_8px_30px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.7),0_0_24px_rgba(0,0,0,0.5)] rounded-2xl p-1 flex items-center justify-around">
+      <div className="relative bg-white/80 dark:bg-[#070C12]/85 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-[0_16px_36px_-8px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[0_20px_48px_-10px_rgba(0,0,0,0.85),0_0_24px_rgba(16,185,129,0.06),inset_0_1px_0_rgba(255,255,255,0.12)] rounded-full p-1.5 flex items-center justify-between gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           let isActive = false;
@@ -82,14 +72,6 @@ export function MobileBottomNav() {
               pathname.startsWith("/messages") ||
               pathname.startsWith("/notifications") ||
               pathname.startsWith("/settings");
-          } else if (item.label === "Profile") {
-            isActive =
-              pathname.startsWith("/profile") ||
-              pathname.startsWith("/login") ||
-              pathname.startsWith("/register") ||
-              pathname.startsWith("/forgot-password") ||
-              pathname.startsWith("/reset-password") ||
-              pathname.startsWith("/account-pending");
           } else {
             isActive = pathname.startsWith(item.to);
           }
@@ -101,12 +83,12 @@ export function MobileBottomNav() {
               title={item.label}
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
-              className="group relative flex flex-1 flex-col items-center justify-center min-h-[48px] py-1.5 px-1 rounded-xl transition-colors duration-150 cursor-pointer"
+              className="group relative flex flex-1 flex-col items-center justify-center min-h-[46px] py-1 px-2 rounded-full transition-all duration-200 cursor-pointer"
             >
               {isActive && (
                 <motion.div
                   layoutId="mobileNavActiveDockPill"
-                  className="absolute inset-0 bg-neutral-900/[0.06] dark:bg-white/[0.09] border border-neutral-900/[0.08] dark:border-white/[0.14] rounded-xl -z-10 shadow-sm"
+                  className="absolute inset-0 bg-neutral-900/[0.08] dark:bg-white/[0.10] border border-neutral-900/[0.08] dark:border-white/[0.14] rounded-full -z-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
                   transition={
                     shouldReduceMotion
                       ? { duration: 0 }
@@ -116,28 +98,30 @@ export function MobileBottomNav() {
               )}
 
               <motion.div
-                whileTap={shouldReduceMotion ? undefined : { scale: 0.92 }}
+                whileTap={shouldReduceMotion ? undefined : { scale: 0.90 }}
+                animate={isActive ? { scale: 1.02 } : { scale: 1 }}
+                transition={{ duration: 0.15 }}
                 className="relative flex flex-col items-center justify-center"
               >
                 <div className="relative flex items-center justify-center">
                   <Icon
-                    className={`h-5 w-5 transition-colors duration-150 ${
+                    className={`h-[19px] w-[19px] transition-all duration-200 ${
                       isActive
-                        ? "text-emerald-600 dark:text-emerald-400 stroke-[2.2]"
+                        ? "text-emerald-600 dark:text-emerald-400 stroke-[2.3] drop-shadow-[0_0_8px_rgba(16,185,129,0.35)]"
                         : "text-neutral-500 dark:text-neutral-400 stroke-[1.8] group-hover:text-neutral-800 dark:group-hover:text-neutral-200"
                     }`}
                   />
                   {item.badge && (
-                    <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-[14px] rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shadow-sm">
+                    <span className="absolute -top-1 -right-2.5 px-1 min-w-[14px] h-[14px] rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shadow-sm animate-pulse">
                       {item.badge}
                     </span>
                   )}
                 </div>
 
                 <span
-                  className={`text-[10px] tracking-tight mt-0.5 leading-none transition-colors duration-150 ${
+                  className={`text-[9.5px] tracking-tight mt-0.5 leading-none transition-colors duration-150 ${
                     isActive
-                      ? "text-emerald-700 dark:text-emerald-400 font-semibold"
+                      ? "text-emerald-700 dark:text-emerald-400 font-bold"
                       : "text-neutral-500 dark:text-neutral-400 font-medium group-hover:text-neutral-800 dark:group-hover:text-neutral-200"
                   }`}
                 >
@@ -147,7 +131,7 @@ export function MobileBottomNav() {
                 {isActive && (
                   <motion.span
                     layoutId="mobileNavActiveDot"
-                    className="absolute -bottom-1 h-0.5 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400"
+                    className="absolute -bottom-1 h-0.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_4px_rgba(16,185,129,0.8)]"
                     transition={
                       shouldReduceMotion
                         ? { duration: 0 }
