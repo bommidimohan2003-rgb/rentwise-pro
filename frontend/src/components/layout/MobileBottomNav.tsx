@@ -4,10 +4,9 @@ import {
   Compass,
   PlusCircle,
   LayoutDashboard,
-  LogIn,
   User,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
@@ -15,6 +14,7 @@ export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useAuth();
   const { unreadCount } = useUnreadMessages();
+  const shouldReduceMotion = useReducedMotion();
 
   const navItems = [
     {
@@ -47,16 +47,19 @@ export function MobileBottomNav() {
     },
     {
       to: user ? "/profile" : "/login",
-      label: user ? "Account" : "Sign In",
-      icon: user ? User : LogIn,
+      label: "Profile",
+      icon: User,
       exact: false,
       badge: undefined,
     },
   ];
 
   return (
-    <nav className="fixed bottom-3 inset-x-0 mx-auto w-[94%] max-w-[420px] z-50 lg:hidden pointer-events-auto">
-      <div className="bg-white/95 dark:bg-[#0A1017]/95 backdrop-blur-2xl border border-black/8 dark:border-white/12 shadow-[0_12px_36px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8)] rounded-2xl p-1.5 flex items-center justify-around">
+    <nav
+      aria-label="Mobile Navigation"
+      className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[420px] z-50 lg:hidden pointer-events-auto select-none"
+    >
+      <div className="relative bg-white/75 dark:bg-[#05090D]/80 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.12] shadow-[0_8px_30px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.7),0_0_24px_rgba(0,0,0,0.5)] rounded-2xl p-1 flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;
           let isActive = false;
@@ -66,18 +69,27 @@ export function MobileBottomNav() {
           } else if (item.to === "/browse") {
             isActive =
               pathname.startsWith("/browse") ||
-              pathname.startsWith("/categories");
+              pathname.startsWith("/categories") ||
+              pathname.startsWith("/product");
+          } else if (item.to === "/become-lender") {
+            isActive =
+              pathname.startsWith("/become-lender") ||
+              pathname.startsWith("/lender-portal");
           } else if (item.label === "Dashboard") {
             isActive =
               pathname.startsWith("/dashboard") ||
-              pathname === "/orders" ||
-              pathname === "/lender-portal" ||
-              pathname === "/settings";
-          } else if (item.label === "Sign In" || item.label === "Account") {
+              pathname.startsWith("/orders") ||
+              pathname.startsWith("/messages") ||
+              pathname.startsWith("/notifications") ||
+              pathname.startsWith("/settings");
+          } else if (item.label === "Profile") {
             isActive =
-              pathname === "/login" ||
-              pathname === "/register" ||
-              pathname === "/profile";
+              pathname.startsWith("/profile") ||
+              pathname.startsWith("/login") ||
+              pathname.startsWith("/register") ||
+              pathname.startsWith("/forgot-password") ||
+              pathname.startsWith("/reset-password") ||
+              pathname.startsWith("/account-pending");
           } else {
             isActive = pathname.startsWith(item.to);
           }
@@ -88,44 +100,61 @@ export function MobileBottomNav() {
               to={item.to}
               title={item.label}
               aria-label={item.label}
-              className="relative flex flex-1 flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 select-none cursor-pointer"
+              aria-current={isActive ? "page" : undefined}
+              className="group relative flex flex-1 flex-col items-center justify-center min-h-[48px] py-1.5 px-1 rounded-xl transition-colors duration-150 cursor-pointer"
             >
               {isActive && (
                 <motion.div
-                  layoutId="mobileNavActivePill"
-                  className="absolute inset-0 bg-[#FF1744]/10 dark:bg-[#FF1744]/15 border border-[#FF1744]/25 rounded-xl -z-10"
-                  transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                  layoutId="mobileNavActiveDockPill"
+                  className="absolute inset-0 bg-neutral-900/[0.06] dark:bg-white/[0.09] border border-neutral-900/[0.08] dark:border-white/[0.14] rounded-xl -z-10 shadow-sm"
+                  transition={
+                    shouldReduceMotion
+                      ? { duration: 0 }
+                      : { type: "spring", stiffness: 420, damping: 32, mass: 0.8 }
+                  }
                 />
               )}
 
               <motion.div
-                whileTap={{ scale: 0.88 }}
+                whileTap={shouldReduceMotion ? undefined : { scale: 0.92 }}
                 className="relative flex flex-col items-center justify-center"
               >
-                <div className="relative">
+                <div className="relative flex items-center justify-center">
                   <Icon
-                    className={`h-5 w-5 transition-colors ${
+                    className={`h-5 w-5 transition-colors duration-150 ${
                       isActive
-                        ? "text-[#FF1744] stroke-[2.4]"
-                        : "text-neutral-500 dark:text-[#8B98A5] stroke-[1.8]"
+                        ? "text-emerald-600 dark:text-emerald-400 stroke-[2.2]"
+                        : "text-neutral-500 dark:text-neutral-400 stroke-[1.8] group-hover:text-neutral-800 dark:group-hover:text-neutral-200"
                     }`}
                   />
                   {item.badge && (
-                    <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-[14px] rounded-full bg-[#FF1744] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                    <span className="absolute -top-1 -right-2 px-1 min-w-[14px] h-[14px] rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shadow-sm">
                       {item.badge}
                     </span>
                   )}
                 </div>
 
                 <span
-                  className={`text-[10px] font-semibold mt-0.5 leading-none transition-colors ${
+                  className={`text-[10px] tracking-tight mt-0.5 leading-none transition-colors duration-150 ${
                     isActive
-                      ? "text-[#FF1744]"
-                      : "text-neutral-500 dark:text-[#8B98A5]"
+                      ? "text-emerald-700 dark:text-emerald-400 font-semibold"
+                      : "text-neutral-500 dark:text-neutral-400 font-medium group-hover:text-neutral-800 dark:group-hover:text-neutral-200"
                   }`}
                 >
                   {item.label}
                 </span>
+
+                {isActive && (
+                  <motion.span
+                    layoutId="mobileNavActiveDot"
+                    className="absolute -bottom-1 h-0.5 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400"
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0 }
+                        : { type: "spring", stiffness: 420, damping: 32, mass: 0.8 }
+                    }
+                  />
+                )}
               </motion.div>
             </Link>
           );
