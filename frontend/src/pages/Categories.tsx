@@ -23,9 +23,11 @@ import {
   RotateCcw,
   Tag,
   Filter,
+  LayoutGrid,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
+import { BrowseSwipeDeck } from "@/components/browse/BrowseSwipeDeck";
 import { advancedSearch, isProductInLocation } from "@/utils/searchEngine";
 import { searchWithML } from "@/utils/smartSearch";
 import type { Product, Category } from "@/types";
@@ -160,6 +162,7 @@ export default function Categories() {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState<"swipe" | "grid">("swipe");
 
   // Advanced Filter States
   const [filterSearch, setFilterSearch] = useState("");
@@ -908,6 +911,40 @@ export default function Categories() {
               )}
             </button>
 
+            {/* View Mode Switcher: Swipe Deck (Primary Default) vs Grid View */}
+            <div className="flex items-center p-0.5 rounded-xl border border-black/15 dark:border-white/20 bg-white dark:bg-[#0D151D]">
+              <button
+                type="button"
+                onClick={() => setViewMode("swipe")}
+                id="view-mode-swipe-btn"
+                title="Primary Swipe Experience"
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                  viewMode === "swipe"
+                    ? "bg-[#161616] text-[#FFFFFF] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] shadow-xs"
+                    : "text-neutral-600 dark:text-[#AAB3BC] hover:text-neutral-900 dark:hover:text-white",
+                )}
+              >
+                <Layers className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Swipe Deck</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                id="view-mode-grid-btn"
+                title="Grid Catalog View"
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                  viewMode === "grid"
+                    ? "bg-[#161616] text-[#FFFFFF] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] shadow-xs"
+                    : "text-neutral-600 dark:text-[#AAB3BC] hover:text-neutral-900 dark:hover:text-white",
+                )}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
+            </div>
+
             {/* Sort Dropdown */}
             <div className="relative" ref={sortRef}>
               <button
@@ -1284,7 +1321,7 @@ export default function Categories() {
             )}
 
             {/* EMPTY RESULTS STATE */}
-            {!isLoadingProducts && paginatedProducts.length === 0 && (
+            {!isLoadingProducts && filteredProducts.length === 0 && (
               <div className="text-center py-16 px-4 rounded-3xl border border-dashed border-black/10 dark:border-white/10 bg-black/[0.01] dark:bg-white/[0.01]">
                 <div className="h-12 w-12 rounded-2xl bg-neutral-100 dark:bg-white/5 mx-auto grid place-items-center text-neutral-400 mb-3">
                   <Camera className="h-6 w-6" />
@@ -1305,38 +1342,47 @@ export default function Categories() {
               </div>
             )}
 
-            {/* PRODUCT GRID */}
-            {!isLoadingProducts && paginatedProducts.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {paginatedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+            {/* PRIMARY INTERACTION: SWIPE DECK EXPERIENCE */}
+            {!isLoadingProducts && filteredProducts.length > 0 && viewMode === "swipe" && (
+              <BrowseSwipeDeck
+                products={filteredProducts}
+                onResetFilters={handleResetFilters}
+              />
             )}
 
-            {/* PAGINATION */}
-            {!isLoadingProducts && totalPages > 1 && (
-              <div className="mt-10 flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3.5 py-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0D151D] text-xs font-bold text-neutral-700 dark:text-neutral-300 disabled:opacity-40"
-                >
-                  Previous
-                </button>
-                <span className="text-xs font-mono font-bold text-neutral-500 px-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-3.5 py-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0D151D] text-xs font-bold text-neutral-700 dark:text-neutral-300 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
+            {/* ALTERNATIVE INTERACTION: CLASSIC GRID */}
+            {!isLoadingProducts && filteredProducts.length > 0 && viewMode === "grid" && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {paginatedProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="mt-10 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3.5 py-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0D151D] text-xs font-bold text-neutral-700 dark:text-neutral-300 disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-xs font-mono font-bold text-neutral-500 px-2">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3.5 py-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0D151D] text-xs font-bold text-neutral-700 dark:text-neutral-300 disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </main>
         </div>
