@@ -1,27 +1,20 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import {
-  ShoppingBag,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Star,
-  MapPin,
   Clock,
   Heart,
   RotateCcw,
-  Check,
   Tag,
-  ExternalLink,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import type { Product } from "@/types";
 import { useWishlist } from "@/hooks/useWishlist";
-import { useCart } from "@/hooks/useCart";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatOwnerAddress } from "@/utils/formatters";
 import { getOptimizedImageUrl, getResponsiveImageSrcSet } from "@/utils/images";
 
 import cameraImg from "@/assets/images/camera.webp";
@@ -91,13 +84,9 @@ export function BrowseSwipeDeck({
   const [queue, setQueue] = useState<Product[]>(() => products);
   const [exitDirection, setExitDirection] = useState<"left" | "right" | null>(null);
   const [cycleIndex, setCycleIndex] = useState<number>(0);
-  const [isAddingToCart, setIsAddingToCart] = useState<boolean>(false);
-  const [justAddedToCart, setJustAddedToCart] = useState<boolean>(false);
   const isDraggingRef = useRef<boolean>(false);
 
-  const { addToCart } = useCart();
   const { has, toggle } = useWishlist();
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   // Reset queue when products array changes (due to filter or search)
@@ -141,7 +130,7 @@ export function BrowseSwipeDeck({
 
       setExitDirection(direction);
 
-      // Perform queue rotation after exit animation completes
+      // Perform queue rotation after exit animation completes: A -> B -> C -> D -> E -> A
       setTimeout(() => {
         setQueue((prevQueue) => {
           if (prevQueue.length <= 1) return prevQueue;
@@ -206,7 +195,7 @@ export function BrowseSwipeDeck({
     }, 120);
   };
 
-  // Primary Interaction: Click/Tap on the product card opens the new page showing all details
+  // Primary Interaction: Click/Tap on the product card navigates directly to the real product details page
   const handleCardClick = () => {
     if (isDraggingRef.current) return;
     if (!activeProduct) return;
@@ -214,34 +203,6 @@ export function BrowseSwipeDeck({
       to: "/product/$id",
       params: { id: activeProduct.id },
     });
-  };
-
-  // Add to Cart with real backend confirmation and cart drawer open
-  const handleAddToCart = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-
-    if (!activeProduct) return;
-
-    if (!user) {
-      toast.info("Please log in to add items to your rental cart.");
-      navigate({ to: "/login" });
-      return;
-    }
-
-    if (!isAvailable) {
-      toast.error("This product is currently not available for rental.");
-      return;
-    }
-
-    setIsAddingToCart(true);
-    const success = await addToCart(activeProduct.id);
-    setIsAddingToCart(false);
-
-    if (success) {
-      setJustAddedToCart(true);
-      setTimeout(() => setJustAddedToCart(false), 2400);
-    }
   };
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
@@ -281,8 +242,6 @@ export function BrowseSwipeDeck({
   }
 
   const brand = getProductBrand(activeProduct);
-  const location =
-    activeProduct.location || formatOwnerAddress(activeProduct) || null;
 
   return (
     <div
@@ -292,7 +251,7 @@ export function BrowseSwipeDeck({
       )}
     >
       {/* Top Deck Header: Queue Counter & Swipe Controls */}
-      <div className="w-full max-w-[430px] sm:max-w-[480px] lg:max-w-[500px] flex items-center justify-between mb-4 px-2">
+      <div className="w-full max-w-[430px] sm:max-w-[480px] lg:max-w-[500px] flex items-center justify-between mb-3 px-2">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs font-mono font-bold text-neutral-800 dark:text-[#E0E5EA] border border-black/5 dark:border-white/10">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -301,7 +260,7 @@ export function BrowseSwipeDeck({
             </span>
           </span>
           <span className="hidden sm:inline-block text-[11px] text-neutral-400 dark:text-[#697680]">
-            Swipe to browse • Tap card for all details
+            Swipe to browse • Tap card for full details
           </span>
         </div>
 
@@ -330,8 +289,8 @@ export function BrowseSwipeDeck({
         </div>
       </div>
 
-      {/* CARD STACK CONTAINER */}
-      <div className="relative w-full max-w-[360px] sm:max-w-[420px] lg:max-w-[460px] min-h-[500px] flex items-center justify-center">
+      {/* CARD STACK CONTAINER — IMAGE-FIRST PRESENTATION */}
+      <div className="relative w-full max-w-[360px] sm:max-w-[420px] lg:max-w-[460px] min-h-[460px] sm:min-h-[500px] flex items-center justify-center">
         {/* SUBTLE BACKGROUND STACK CARD 3 */}
         {thirdProduct && (
           <div
@@ -377,8 +336,8 @@ export function BrowseSwipeDeck({
               aria-hidden="true"
               className="w-full h-full object-cover opacity-70"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/80 text-xs font-bold">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/90 text-xs font-bold">
               <span className="truncate">{nextProduct.title}</span>
               <span className="font-mono text-emerald-400">
                 ₹{nextProduct.price.toLocaleString("en-IN")}/d
@@ -387,7 +346,7 @@ export function BrowseSwipeDeck({
           </div>
         )}
 
-        {/* PRIMARY ACTIVE CARD */}
+        {/* PRIMARY ACTIVE IMAGE-FIRST CARD */}
         <AnimatePresence mode="popLayout">
           <motion.div
             key={`${activeProduct.id}-${cycleIndex}`}
@@ -436,179 +395,107 @@ export function BrowseSwipeDeck({
                 handleCardClick();
               }
             }}
-            className="group relative w-full rounded-[28px] bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/15 shadow-2xl overflow-hidden cursor-pointer active:cursor-grabbing transition-all hover:shadow-3xl"
+            className="group relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-[28px] bg-neutral-900 border border-black/10 dark:border-white/15 shadow-2xl overflow-hidden cursor-pointer active:cursor-grabbing transition-all hover:shadow-3xl"
           >
-            {/* 1. MEDIA CONTAINER (HERO IMAGE) */}
-            <div className="relative w-full aspect-[4/3] bg-neutral-900 overflow-hidden">
-              <img
-                src={getOptimizedImageUrl(activeImgSrc, "card")}
-                srcSet={
-                  getResponsiveImageSrcSet(activeImgSrc, [360, 480, 640]) ||
-                  undefined
-                }
-                sizes="(max-width: 640px) 90vw, 460px"
-                alt={activeProduct.title}
-                onError={() => setActiveImgSrc(activeFallback)}
-                draggable={false}
-                loading="eager"
-                decoding="async"
-                className="w-full h-full object-cover object-center pointer-events-none group-hover:scale-105 transition-transform duration-500 ease-out"
-              />
+            {/* REAL HERO PRODUCT IMAGE (Fills card) */}
+            <img
+              src={getOptimizedImageUrl(activeImgSrc, "card")}
+              srcSet={
+                getResponsiveImageSrcSet(activeImgSrc, [360, 480, 640]) ||
+                undefined
+              }
+              sizes="(max-width: 640px) 90vw, 460px"
+              alt={activeProduct.title}
+              onError={() => setActiveImgSrc(activeFallback)}
+              draggable={false}
+              loading="eager"
+              decoding="async"
+              className="w-full h-full object-cover object-center pointer-events-none group-hover:scale-105 transition-transform duration-500 ease-out"
+            />
 
-              {/* Ambient Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
+            {/* Ambient Cinematic Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent pointer-events-none" />
 
-              {/* Top Floating Controls: Availability Badge & Wishlist Button */}
-              <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-20 pointer-events-auto">
-                {/* Availability Badge */}
-                <div
-                  onPointerDownCapture={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {isAvailable ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 dark:bg-black/75 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-emerald-400 border border-emerald-500/30 shadow-md">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>Available</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-neutral-300 border border-white/10 shadow-md">
-                      <Clock className="h-3 w-3 text-neutral-400" />
-                      <span>Not Available</span>
-                    </span>
+            {/* TOP CONTROLS: Real Availability & Wishlist */}
+            <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-auto">
+              {/* Availability Badge */}
+              <div
+                onPointerDownCapture={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {isAvailable ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 dark:bg-black/75 backdrop-blur-md px-3 py-1 text-xs font-bold text-emerald-400 border border-emerald-500/30 shadow-md">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Available</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-md px-3 py-1 text-xs font-bold text-neutral-300 border border-white/10 shadow-md">
+                    <Clock className="h-3 w-3 text-neutral-400" />
+                    <span>Not Available</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Wishlist Toggle Button */}
+              <button
+                type="button"
+                onPointerDownCapture={(e) => e.stopPropagation()}
+                onClick={handleWishlistToggle}
+                aria-label="Toggle Wishlist"
+                className="h-9 w-9 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white/90 hover:text-red-500 transition-colors shadow-md border border-white/20 flex items-center justify-center cursor-pointer"
+              >
+                <Heart
+                  className={cn(
+                    "h-4 w-4 transition-all",
+                    has(activeProduct.id) &&
+                      "fill-red-500 text-red-500 scale-110",
                   )}
-                </div>
-
-                {/* Right Action: Wishlist Toggle Button */}
-                <button
-                  type="button"
-                  onPointerDownCapture={(e) => e.stopPropagation()}
-                  onClick={handleWishlistToggle}
-                  aria-label="Toggle Wishlist"
-                  className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white/90 hover:text-red-500 transition-colors shadow-md border border-white/20 flex items-center justify-center cursor-pointer"
-                >
-                  <Heart
-                    className={cn(
-                      "h-4 w-4 transition-all",
-                      has(activeProduct.id) &&
-                        "fill-red-500 text-red-500 scale-110",
-                    )}
-                  />
-                </button>
-              </div>
-
-              {/* Image Footer Cue (Hover/Tap indication) */}
-              <div className="absolute bottom-3 left-3.5 right-3.5 flex items-center justify-between text-white/90 text-[11px] font-semibold pointer-events-none">
-                <span className="px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-md border border-white/10 uppercase tracking-wider text-[10px] text-emerald-400 font-bold">
-                  {activeProduct.category}
-                </span>
-                <span className="flex items-center gap-1 text-[11px] text-white/80 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10">
-                  <span>Swipe</span>
-                  <ChevronRight className="h-3 w-3 text-white/70" />
-                </span>
-              </div>
+                />
+              </button>
             </div>
 
-            {/* 2. CARD BODY & REAL DETAILS SUMMARY */}
-            <div className="p-4 sm:p-5 space-y-3.5 bg-white dark:bg-[#0D151D] text-left">
-              {/* Brand & Category strip */}
-              <div className="flex items-center justify-between text-xs">
-                <span className="inline-flex items-center gap-1 font-bold text-neutral-500 dark:text-neutral-400">
-                  <Tag className="h-3 w-3 text-emerald-500" />
+            {/* BOTTOM IMAGE OVERLAY: Clean Minimal Header (Discover -> Swipe -> Select) */}
+            <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 space-y-2 pointer-events-none text-left">
+              {/* Category & Brand Pill */}
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-bold uppercase tracking-wider border border-white/15">
+                  <Tag className="h-3 w-3 text-emerald-400" />
                   <span>{activeProduct.category}</span>
                 </span>
                 {brand && (
-                  <span className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 font-bold text-neutral-800 dark:text-[#E0E5EA] text-[11px]">
+                  <span className="px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-white/90 text-[11px] font-bold border border-white/10">
                     {brand}
                   </span>
                 )}
               </div>
 
               {/* Product Title */}
-              <div>
-                <h2
-                  id="active-product-card-title"
-                  className="text-base sm:text-lg font-black tracking-tight text-neutral-950 dark:text-white leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1"
-                >
-                  {activeProduct.title}
-                </h2>
-                {activeProduct.description && (
-                  <p className="mt-1 text-xs text-neutral-600 dark:text-[#8D98A3] line-clamp-2 leading-relaxed font-normal">
-                    {activeProduct.description}
-                  </p>
-                )}
-              </div>
+              <h2
+                id="active-product-card-title"
+                className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight drop-shadow-md line-clamp-2"
+              >
+                {activeProduct.title}
+              </h2>
 
-              {/* Metadata Row: Rating & Location */}
-              <div className="flex items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300">
-                <div className="flex items-center gap-1">
-                  <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                  <span className="font-bold text-neutral-900 dark:text-white">
-                    {activeProduct.rating?.toFixed(1) || "5.0"}
-                  </span>
-                  <span className="text-[10px] text-neutral-400">
-                    ({activeProduct.reviews || 0})
-                  </span>
-                </div>
-                {location && (
-                  <div className="flex items-center gap-1 truncate text-[11px]">
-                    <MapPin className="h-3 w-3 text-emerald-500 shrink-0" />
-                    <span className="truncate">{location}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Price Banner & Add to Cart Action */}
-              <div className="pt-2 border-t border-black/5 dark:border-white/10 flex items-center justify-between gap-3">
+              {/* Price & Swipe/Tap Navigation Cue */}
+              <div className="pt-1 flex items-center justify-between text-white">
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 block">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-white/70 block">
                     Daily Rate
                   </span>
-                  <div className="text-lg font-black tracking-tight text-neutral-950 dark:text-white font-mono leading-none mt-0.5">
+                  <div className="text-xl sm:text-2xl font-black tracking-tight font-mono leading-none mt-0.5 text-white">
                     ₹{activeProduct.price.toLocaleString("en-IN")}
-                    <span className="text-xs font-normal text-neutral-500 ml-0.5">
+                    <span className="text-xs font-normal text-white/70 ml-0.5">
                       /day
                     </span>
                   </div>
                 </div>
 
-                {/* ADD TO CART BUTTON (Stops propagation so user can add without navigating) */}
-                <button
-                  type="button"
-                  disabled={!isAvailable || isAddingToCart}
-                  onPointerDownCapture={(e) => e.stopPropagation()}
-                  onClick={handleAddToCart}
-                  id={`browse-add-to-cart-${activeProduct.id}`}
-                  className={cn(
-                    "h-10 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer shrink-0",
-                    !isAvailable
-                      ? "bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/40 dark:border-white/5 opacity-80"
-                      : justAddedToCart
-                        ? "bg-emerald-600 text-white active:scale-98"
-                        : "bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] dark:active:bg-[#DCD9D1] active:scale-98",
-                  )}
-                >
-                  {isAddingToCart ? (
-                    <span>Adding...</span>
-                  ) : justAddedToCart ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      <span>Added to Cart</span>
-                    </>
-                  ) : !isAvailable ? (
-                    <span>Unavailable</span>
-                  ) : (
-                    <>
-                      <ShoppingBag className="h-3.5 w-3.5" />
-                      <span>Add to Cart</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Tap Card Navigation Prompt */}
-              <div className="pt-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-neutral-500 dark:text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                <span>Click card to view all details & specs</span>
-                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                {/* Click / Tap Prompt: DISCOVER -> SWIPE -> SELECT */}
+                <div className="flex items-center gap-1.5 text-xs font-bold bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-3.5 py-2 rounded-full border border-white/25 shadow-md">
+                  <span>Select Gear</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
               </div>
             </div>
           </motion.div>

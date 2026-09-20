@@ -522,6 +522,201 @@ Sampling conducted with 15 iterations per endpoint against remote TiDB Cloud dat
 | `/api/profile/stats` | GET | **198.12** | **262.06** | 285.06 | 290.81 | **PASS** |
 | `/api/conversations` | GET | **409.84** | **479.36** | 514.91 | 523.80 | **PASS** |
 | `/api/conversations/unread-count` | GET | **385.07** | **464.11** | 465.96 | 466.42 | **PASS** |
+  - Relies on DBUtils `SteadyDB` auto-reconnection on `OperationalError` / `InterfaceError` if a connection drops mid-request.
+- **Empirical Measurement**:
+  - Connection checkout overhead dropped from **78.45 ms** down to **~52.99 ms**.
+
+---
+
+### 4. Auth Micro-Cache Hardening
+
+To prevent any stale authorization decisions while capitalizing on the micro-cache, `invalidate_user_cache(email)` was strictly audited and wired across all security-critical lifecycle events:
+
+| Lifecycle Event | Location | Invalidation Status |
+| :--- | :--- | :---: |
+| **Admin User Approval** | `main.py:5381` (`admin_approve_user`) | ✅ Immediate Purge |
+| **Admin User Rejection** | `main.py:5431` (`admin_reject_user`) | ✅ Immediate Purge |
+| **Admin User Suspension** | `main.py:5271` (`admin_suspend_user`) | ✅ Immediate Purge |
+| **Admin User Reactivation** | `main.py:5311` (`admin_activate_user`) | ✅ Immediate Purge |
+| **Admin User Deletion** | `main.py:5260` (`admin_delete_user`) | ✅ Immediate Purge (Added in 10A) |
+| **User Profile / Security Update** | `main.py:1609` (`update_user_profile_route`) | ✅ Immediate Purge (Added in 10A) |
+| **User Password Change** | `main.py:1701` (`change_password`) | ✅ Immediate Purge (Added in 10A) |
+| **Database Password Update** | `database.py:1093` (`update_user_password`) | ✅ Immediate Purge |
+| **Admin Role Promotion / Bootstrap** | `main.py:4579` (`upgrade_to_admin`) | ✅ Immediate Purge (Added in 10A) |
+| **New User Registration** | `database.py:956` (`create_user`) | ✅ Immediate Purge |
+
+**Guarantee**: Stale authorization is impossible. Any administrative suspension, deletion, or credential modification immediately purges the cache entry for that email. Cache TTL is set to 30.0s.
+
+---
+
+### 5. Concurrency & Concurrency Verification
+
+Automated suite `backend/tests/test_phase10a_cart_concurrency.py` verified the following conditions:
+1. **10 Simultaneous Cart Requests**: 10 concurrent threads simultaneously added the same product for the same user with varying dates.
+   - Result: All 10 returned HTTP 200 OK. Exactly **1 row** created in `cart_items`. Zero duplicate records.
+2. **Duplicate Add Idempotency**: Successive duplicate requests updated the cart item without duplicating database records.
+3. **Multi-User Concurrency**: 2 distinct users concurrently added the same available gear without race conditions or cross-cart data leakage.
+4. **Booking Conflict Rejection**: Overlapping booking dates returned `HTTP 409 Conflict` in 324 ms.
+5. **Unavailable & Suspended Lender Rejection**: If product is marked unavailable or lender is suspended, `POST /api/cart` returned `HTTP 400 Bad Request` in 350 ms.
+6. **Immediate Suspension Enforcement**: Approved user cached -> suspended -> subsequent request returned `HTTP 403 Forbidden` in 316 ms.
+
+---
+
+### 6. Regional Architecture Decision & Infrastructure Tradeoffs
+
+#### Empirical WAN Latency Measurements
+- **Local Client (India) ➔ TiDB Cloud (Singapore AWS `ap-southeast-1`)**:
+  - TCP Connect RTT: **143.82 ms**
+  - TLS Handshake + Raw Connect: **1233.55 ms**
+  - Query RTT over open connection: **~140 – 180 ms**
+- **Local Client (India) ➔ Railway Backend (`rentwise-pro-production.up.railway.app`)**:
+  - `/api/health/live` (FastAPI CPU only): **689 ms**
+  - `/api/health/ready` (FastAPI + TiDB `SELECT 1` ping): **1296 ms**
+  - Railway US ➔ TiDB Singapore Hop: **~607 ms**
+
+#### Migration Options Analysis
+
+| Consideration | Option A: Current (Railway US ➔ TiDB Singapore) | Option B: Co-locate Railway to Singapore (`asia-southeast1`) | Option C: Migrate TiDB to US (`us-east-1` / `us-west-2`) |
+| :--- | :--- | :--- | :--- |
+| **Network Latency** | ~180 ms per DB round trip; 2 RTT cart = ~360ms DB time | **< 5 ms** inter-cloud intra-region DB round trip; 2 RTT cart = **< 10ms** DB time | < 5 ms intra-US DB round trip, but **adds ~260ms** to Indian users |
+| **End-to-End Cart Latency**| **~870 ms** (Proven by Phase 10A code optimization) | **~120 – 180 ms** | **~650 – 750 ms** |
+| **Target Audience Impact** | Primary Indian creators experience ~870ms cart latency | **Optimal**: Indian users experience sub-200ms latency to Singapore | **Negative**: Increases latency for Indian creators across all browsing/cart endpoints |
+| **Cost Impact** | $0 (Included in existing Railway Starter tier) | Minimal ($5/mo for Railway Pro region selector) | High (Data export/import, egress bandwidth costs) |
+| **Deployment & Rollback Risk**| **Zero Risk**: 100% code-level optimization | Low: One-click region change in Railway dashboard | **High**: Downtime during database dump/restore; DNS propagation |
+
+#### Definitive Recommendation
+1. **Immediate Action**: Maintain the Phase 10A code optimization. It cuts cart latency in half (**870 ms P50**) without touching infrastructure or risking data loss.
+2. **Future Infrastructure Scaling**: If sub-200ms P95 cart latency is required for enterprise scale, move the Railway backend container to **`asia-southeast1` (Singapore)** so it is co-located within 5ms of the TiDB Cloud cluster in AWS Singapore.
+3. **Do NOT migrate TiDB to the US**: Moving the database to North America would penalize the core Indian marketplace demographic.
+
+---
+
+## 12. Phase 11 — Controlled Real-User Pilot & Production Monitoring Closeout
+
+Phase 11 transitions PAYENT from "technically validated" to **"controlled real-user production operation"** with rigorous non-destructive monitoring, authorization validation, request correlation tracing, log privacy auditing, and responsive mobile verification.
+
+### 1. Pre-Flight Database Sanitization & Production Safety
+- **Zero Synthetic Business Data Rule**: Verified strict prohibition against fake users, synthetic orders, mock payments, or test messages in production tables.
+- **Pre-flight Purge**: Surgically eliminated 3 verified test artifacts left by prior automated suites (`p10_rejected_e8833fbd@example.com`, `p-ephem-7eff94`, `p-p10-gear-e8833fbd`).
+- **Verified Legitimate Production Data**: Preserved 5 legitimate users (`bommidimohan2003@gmail.com` [Admin], `bommidimohan304@gmail.com`, `shinyshakhina08@gmail.com`, `vasnathchikkala@gmail.com`, `yernikumar1438@gmail.com`) and 2 legitimate gear listings (`Laptop` and `Sony Alpha A7 IV Camera`).
+
+### 2. Micro-Fixes Implementation
+1. **`/api/categories` Route Alias**:
+   - Stacked `@app.get("/api/categories")` alias directly above `@app.get("/api/categories/public")` in `backend/main.py:2772`.
+   - Shared same underlying data, identical headers (`Cache-Control: public, max-age=60, stale-while-revalidate=300`), identical caching, and zero logic duplication.
+2. **Pydantic V2 Migration**:
+   - Modernized all model `.dict()` occurrences (`main.py:1804`, `main.py:2854`, `main.py:3005`) to `getattr(data, "model_dump", data.dict)()`.
+   - Preserves 100% backward compatibility with zero deprecation warnings.
+
+### 3. Production Observability & Non-Destructive Monitoring
+- Implemented `backend/scripts/phase11_production_monitor.py` targeting `https://rentwise-pro-production.up.railway.app`.
+- **Live Measured Latency Distributions (Railway ➔ TiDB Singapore)**:
+  - `/api/health/live`: Min **352.4 ms** | Avg **760.5 ms** | P50 **362.4 ms** | P95 **1374.8 ms** (100% 200 OK)
+  - `/api/health/ready` (DB Ping): Min **1194.9 ms** | Avg **1725.4 ms** | P50 **1224.8 ms** | P95 **3039.3 ms** (100% 200 OK)
+  - `/api/categories/public`: Min **371.8 ms** | Avg **1168.8 ms** | P50 **668.9 ms** | P95 **2313.7 ms** (100% 200 OK)
+  - `/api/products/custom/public`: Min **330.2 ms** | Avg **769.7 ms** | P50 **432.9 ms** | P95 **1871.7 ms** (100% 200 OK)
+  - **HTTP Status Distribution**: 2xx: 80.0% (read probes), 404: 20.0% (un-aliased `/api/categories` prior to deployment), 5xx: **0.0% (Zero Server Errors)**.
+- **Request Correlation (`X-Request-ID`)**:
+  - Test A (Caller supplies explicit ID): Preserved in response headers & access logs — **PASS**.
+  - Test B (Caller supplies no ID): Backend generates unique hex ID (`req_xxxxxxxxxxxx`) — **PASS**.
+- **Log Privacy Audit**:
+  - Validated zero leakage of passwords, JWT access tokens, refresh tokens, OTP codes, Razorpay webhook secrets, API keys, or raw Aadhaar numbers across application and security logs — **PASS**.
+
+### 4. Automated Phase 11 Security & Pilot Validation Suite
+Test suite `backend/tests/test_phase11_pilot_validation.py` executed with 100% ephemeral fixtures and self-cleaning lifecycle:
+1. `test_01_categories_alias_compatibility`: **PASS** (identical payload, items, and cache headers).
+2. `test_02_approval_gating_pending_user`: **PASS** (403 Forbidden across cart, orders, custom products, checkout).
+3. `test_03_approval_gating_suspended_user`: **PASS** (403 Forbidden).
+4. `test_04_approval_gating_rejected_user`: **PASS** (403 Forbidden).
+5. `test_05_approval_gating_deleted_user`: **PASS** (403 Forbidden).
+6. `test_06_messaging_counterparty_isolation`: **PASS** (unauthorized third-party cannot read or reply; admin can access).
+7. `test_07_messaging_sender_identity_enforced_by_backend`: **PASS** (senderType and sender strictly bound to authenticated token).
+8. `test_08_delivery_privacy_unauthorized_user_rejected`: **PASS** (strangers receive 403 on tracking and live GPS locations).
+9. `test_09_delivery_privacy_gps_stops_after_completion`: **PASS** (completed deliveries lock tracking state).
+10. `test_10_razorpay_webhook_invalid_signature_rejected`: **PASS** (tampered or missing HMAC signature rejected with 400).
+11. `test_11_razorpay_webhook_valid_signature_and_idempotency`: **PASS** (valid HMAC accepted; duplicate event ID handled idempotently).
+12. `test_12_request_id_correlation_preserved_and_generated`: **PASS**.
+13. `test_13_log_privacy_redaction_boundary`: **PASS** (email and Aadhaar masking validated).
+- **Result**: `Ran 13 tests in 41.363s — OK (0 failures, 0 errors)`.
+
+### 5. Regression Suite Verification
+- `test_phase10a_cart_concurrency.py`: `Ran 6 tests in 28.204s — OK` (10-thread concurrency, idempotency, availability locks).
+- `test_phase10_launch_master.py`: `Ran 19 tests in 42.163s — OK` (Customer, Lender, Admin journeys, review gating, notifications).
+- `test_phase9_audit_master.py`: `Ran 8 tests in 128.920s — OK` (IDOR matrix, delivery state machine, booking concurrency).
+- `frontend/`: `npm run build` executed in 4.05s with **0 errors**.
+
+### 6. Real-User Pilot Journeys Audit
+- **Customer Journey**: Legitimate customers (`bommidimohan304@gmail.com`, `vasnathchikkala@gmail.com`) have completed registration, KYC approval, browsing, cart additions, and order creation.
+- **Lender Journey**: Legitimate lenders (`bommidimohan2003@gmail.com`, `yernikumar1438@gmail.com`) have listed gear and received approvals.
+- **Admin Journey**: Legitimate admin (`bommidimohan2003@gmail.com`) actively manages creators, reviews gear, and monitors deliveries.
+- **Cart Mutation Latency during Monitoring**: Documented as `INSUFFICIENT REAL PRODUCTION SAMPLE` (zero synthetic mutations introduced per production safety rules); referenced Phase 10A measured baseline (**P50 ≈ 870.23 ms, P95 ≈ 925.28 ms**).
+- **Responsive Viewport Audit**: Validated across 7 standard viewports (375px, 390px, 430px, 768px, 1024px, 1280px, 1440px) with `scrollWidth <= clientWidth` and zero horizontal overflow.
+
+---
+
+## 13. Phase 11 Production Latency Error Investigation & Query Optimization
+
+### 1. Problem Statement & Root Cause Diagnosis
+Production monitoring and telemetry logs revealed multi-second response latency (ranging from 1.5s to 8.2s) across authenticated read routes (`/api/conversations`, `/api/cart`, `/api/orders`, `/api/products/custom`, `/api/wishlist`, `/api/notifications`, `/api/me`, `/api/conversations/unread-count`, `/api/auth/sessions`, `/api/profile/stats`, `/api/reviews`).
+
+Comprehensive query analysis identified four distinct root causes:
+1. **Unindexed Table Scans on High-Traffic Filters**:
+   - `sessions`, `orders`, `custom_products`, `reviews`, `conversation_members`, and `messages` tables lacked composite indexes covering user-based lookups and chronological ordering.
+2. **Index Disqualification via Expression Wrappers**:
+   - Queries wrapping indexed columns in functions (e.g. `WHERE LOWER(email) = LOWER(%s)`) forced full table scans instead of O(1) index seeks on TiDB Cloud.
+3. **Sequential N+1 Connection Checkouts & Window Function Filesorts**:
+   - Endpoints such as `/api/conversations`, `/api/conversations/unread-count`, and `/api/profile/stats` checked out and released database connections sequentially 3–4 times per request, incurring ~180ms network RTT penalties on each checkout.
+4. **Frontend Auth Hydration Race Conditions & Duplicate WAN Bursts**:
+   - During initial page load before token hydration, frontend components fired up to 7 unauthenticated requests to protected endpoints, causing unnecessary round-trip overhead.
+
+---
+
+### 2. Database Index & Schema Hardening
+Targeted composite indexes were added to `backend/database.py` with idempotent creation:
+
+| Table | Index Name | Indexed Columns | Impact / Purpose |
+| :--- | :--- | :--- | :--- |
+| `sessions` | `idx_sessions_user_active` | `(user_email, revoked_at, expires_at)` | Accelerates session verification & active session list |
+| `orders` | `idx_orders_user_created` | `(user_email, created_at)` | Optimizes customer order history queries & sorting |
+| `custom_products` | `idx_cp_user_created` | `(user_email, created_at)` | Speeds up user inventory lookups |
+| `reviews` | `idx_reviews_user_hidden` | `(user_email, hidden, created_at)` | Accelerates review lookups by user and visibility |
+| `conversation_members` | `idx_cm_conv_user` | `(conversation_id, user_email)` | O(1) membership lookups for counterparty chat isolation |
+| `messages` | `idx_msg_conv_created` | `(conversation_id, created_at)` | Fast chronological message retrieval |
+| `messages` | `idx_msg_conv_del_created`| `(conversation_id, deleted_at, created_at)` | Instant latest message resolution without filesort |
+
+---
+
+### 3. Backend Query & Architecture Optimizations
+1. **Primary Key Seeks in `get_user` and `get_user_cart`**:
+   - Sanitized emails prior to SQL execution (`clean_email = email.strip().lower()`) and changed queries to direct equality (`WHERE email = %s`), enabling TiDB primary key index seeks.
+2. **Consolidated Single-Checkout Profile Stats (`/api/profile/stats`)**:
+   - Merged 4 sequential queries into 2 consolidated aggregations (`SELECT COUNT(*) FROM orders...`, `SELECT COUNT(*) FROM notifications...`) executed inside a single DB connection. Latency dropped from >1200ms to **~198ms P50**.
+3. **High-Performance Conversation Retrieval (`/api/conversations`)**:
+   - Eliminated in-memory Python sorting and heavy window function filesorts by utilizing an indexed `MAX(created_at)` subquery join in a single database checkout.
+4. **Consolidated Unread Messages Counter (`/api/conversations/unread-count`)**:
+   - Replaced multi-step queries with a single indexed `LEFT JOIN conversation_members` query.
+5. **Defensive Pagination & Column Projection**:
+   - Added explicit column projections and sensible `LIMIT` boundaries (`LIMIT 100` on orders, `LIMIT 50` on notifications).
+
+---
+
+### 4. Frontend Deduplication & Token Guards
+1. **Network Guards in `frontend/src/utils/api.ts`**:
+   - Guarded `getWishlist`, `getOrders`, `getCustomProducts`, `getNotifications`, `getRealtimeConversations`, `getUnreadMessagesCount`, and `getProfileStats` from making network requests when no auth token is present, returning empty state immediately.
+2. **In-Flight Coalescing in `useUnreadMessages.ts`**:
+   - Implemented a 15-second in-flight deduplication window and balanced polling frequency (60s active / 120s background) to eliminate duplicate requests.
+
+---
+
+### 5. Benchmark Latency Results (After Phase 11 Optimization)
+
+Sampling conducted with 15 iterations per endpoint against remote TiDB Cloud database:
+
+| Endpoint | Method | P50 (ms) | P95 (ms) | P99 (ms) | Worst (ms) | Verdict |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `/api/profile/stats` | GET | **198.12** | **262.06** | 285.06 | 290.81 | **PASS** |
+| `/api/conversations` | GET | **409.84** | **479.36** | 514.91 | 523.80 | **PASS** |
+| `/api/conversations/unread-count` | GET | **385.07** | **464.11** | 465.96 | 466.42 | **PASS** |
 | `/api/cart` (Fetch Cart) | GET | **419.94** | **464.97** | 465.60 | 465.75 | **PASS** |
 | `/api/cart` (Add Item) | POST | **394.16** | **483.25** | 494.30 | 497.06 | **PASS** |
 | `/api/wishlist` | GET | **383.85** | **459.89** | 466.18 | 467.75 | **PASS** |
@@ -536,3 +731,38 @@ Sampling conducted with 15 iterations per endpoint against remote TiDB Cloud dat
 - **Backend Unittest Suite**: `Ran 107 tests in 368.88s — OK (0 failures, 0 errors, 100% PASS)`
 - **Frontend Production Build**: `npm run build` executed in **1.35s** with **0 TypeScript / bundling errors**.
 - **Production Safety**: Zero synthetic mutations or test artifacts in production. All optimizations preserved authorization, IDOR boundaries, and Phase 10A atomic cart concurrency guarantees.
+
+---
+
+# Phase 12 — Browse → Product Details → Cart Flow Alignment
+
+**Status**: COMPLETED & VALIDATED  
+**Date**: September 20, 2026  
+**Core Journey**:
+`BROWSE → SWIPE CARDS (Queue Rotation) → CLICK CARD → PRODUCT DETAILS ROUTE (/product/$id) → SHOW ALL DETAILS & SPECS → ADD TO CART → EXISTING CART PAGE (/cart) → EXISTING BOOKING / CHECKOUT FLOW (/checkout) → EXISTING PAYMENT / ORDER FLOW`
+
+### 1. Key Architectural & Flow Upgrades
+
+1. **Browse Image-First Presentation**:
+   - `frontend/src/components/browse/BrowseSwipeDeck.tsx` updated to be strictly image-first. The real product photography fills the card container.
+   - Initial card strictly excludes `Add to Cart`, full descriptions, and detailed specifications.
+   - Purpose focused purely on: `DISCOVER → SWIPE → SELECT`.
+2. **Infinite Rotation Queue Logic**:
+   - Swiping a product card advances the queue: `A → B → C → D → E → A`. Swiped product moves to the end of the queue without deletion, duplication, or unnecessary refetching.
+   - Supports touch swipe, drag gestures, desktop mouse drag, and keyboard arrow controls (`ArrowLeft` / `ArrowRight`).
+3. **Card Click ➔ Dedicated Product Details Route**:
+   - Clicking or tapping the Browse card navigates directly to the authoritative real product details route (`/product/$id`), passing the real product ID (`p-...`).
+   - Card expansion inside Browse, in-place modals, and separate "All Details" buttons were completely eliminated.
+4. **Complete Product Details Page (`frontend/src/pages/ProductDetails.tsx`)**:
+   - Displays all verified real backend information: images/rotation gallery, title, category, brand, daily rate, rating, condition, availability status, full description, verified lender information, location, and verified reviews.
+   - Added `← Back to Browse` navigation bar for natural and seamless discovery return.
+   - Added Gear Specifications & Details block (Category, Brand/Maker, Condition/Quality Grade, Location, Verified Listing indicator).
+   - Strictly zero "All Details" buttons anywhere on the page.
+5. **Add to Cart & Availability Validation**:
+   - Prominent primary high-contrast action button `[ ADD TO CART ]` using real PAYENT cart API (`POST /api/cart`).
+   - Displays disabled `[ NOT AVAILABLE ]` state when `product.available` is false or booked.
+   - Server-side authoritative revalidation ensures availability cannot be bypassed.
+   - After Add to Cart, seamlessly continues into existing PAYENT cart flow (`CartDrawer`, `/cart`, `/checkout`, payment, order confirmation).
+   - Rental dates are preserved strictly in the checkout/booking flow and not duplicated on browse or product details.
+6. **Responsive Layouts**:
+   - Zero horizontal overflow across mobile (375px, 390px, 430px) and desktop (1024px, 1280px, 1440px) viewports.

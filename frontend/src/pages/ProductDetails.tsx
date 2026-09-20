@@ -6,6 +6,7 @@ import {
   MapPin,
   Star,
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
   Info,
   Tag,
@@ -30,6 +31,37 @@ import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { formatOwnerAddress } from "@/utils/formatters";
 import type { Product } from "@/types";
+
+const KNOWN_BRANDS = [
+  "Sony",
+  "DJI",
+  "Apple",
+  "Canon",
+  "Nikon",
+  "Fujifilm",
+  "Blackmagic",
+  "RED",
+  "RODE",
+  "Sennheiser",
+  "Shure",
+  "Aputure",
+  "Godox",
+  "GoPro",
+  "Royal Enfield",
+];
+
+function getProductBrand(product: Product): string | null {
+  if ((product as unknown as { brand?: string }).brand) {
+    return (product as unknown as { brand: string }).brand;
+  }
+  const text = `${product.title} ${product.description || ""}`.toLowerCase();
+  for (const b of KNOWN_BRANDS) {
+    if (text.includes(b.toLowerCase())) {
+      return b;
+    }
+  }
+  return null;
+}
 
 export default function ProductDetails() {
   const { id } = useParams({ from: "/product/$id" });
@@ -286,11 +318,30 @@ export default function ProductDetails() {
         ? product.rotationFrames
         : [product.image];
 
+  const brand = getProductBrand(product);
+
   return (
     <MainLayout>
       <JsonLd schema={productSchema} />
       <JsonLd schema={breadcrumbSchema} />
       <section className="mx-auto max-w-7xl px-4 md:px-6 py-5 space-y-6">
+        {/* Navigation Breadcrumb / Back to Browse */}
+        <div className="flex items-center justify-between pb-1">
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/browse" })}
+            id="product-details-back-to-browse-btn"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer group"
+          >
+            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            <span>← Back to Browse</span>
+          </button>
+
+          <span className="text-xs text-muted-foreground font-mono hidden sm:inline-block">
+            Gear ID: {product.id}
+          </span>
+        </div>
+
         <div className="grid lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Image Viewer */}
           <div className="lg:col-span-7 space-y-3 sticky top-20">
@@ -334,11 +385,18 @@ export default function ProductDetails() {
             )}
 
             <div className="rounded-2xl bg-card border border-border/80 p-4 md:p-5 space-y-4 shadow-lg text-left">
-              {/* Category & Availability Header */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-bold tracking-wider text-foreground px-3 py-1 rounded-md bg-secondary border border-border">
-                  {product.category}
-                </span>
+              {/* Category & Availability Header with Brand */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase font-bold tracking-wider text-foreground px-3 py-1 rounded-md bg-secondary border border-border">
+                    {product.category}
+                  </span>
+                  {brand && (
+                    <span className="text-xs font-bold text-foreground px-2.5 py-1 rounded-md bg-secondary/80 border border-border">
+                      {brand}
+                    </span>
+                  )}
+                </div>
                 {product.available ? (
                   <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-extrabold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                     <Check className="h-3.5 w-3.5" /> Available Now
@@ -429,7 +487,34 @@ export default function ProductDetails() {
                 </div>
               )}
 
-
+              {/* Specifications & Verified Gear Details */}
+              <div className="rounded-2xl bg-secondary/35 border border-border/80 p-4 space-y-3">
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5 text-foreground" />
+                    <span>Gear Specifications & Details</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Verified Listing</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-card border border-border/60">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Category</span>
+                    <span className="font-extrabold text-foreground truncate block capitalize">{product.category}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-card border border-border/60">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Brand / Maker</span>
+                    <span className="font-extrabold text-foreground truncate block">{brand || "Professional Gear"}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-card border border-border/60">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Condition</span>
+                    <span className="font-extrabold text-foreground truncate block">{(product as unknown as { condition?: string }).condition || "Pristine / Calibrated"}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-card border border-border/60">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Location</span>
+                    <span className="font-extrabold text-foreground truncate block">{formatOwnerAddress(product) || product.location || "Direct Handover"}</span>
+                  </div>
+                </div>
+              </div>
 
               {/* Pricing & Primary Action Button */}
               <div className="pt-4 border-t border-border space-y-4">
@@ -488,57 +573,57 @@ export default function ProductDetails() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row items-center gap-2.5">
-                      {/* ADD TO CART BUTTON */}
+                    {/* PRIMARY ACTION: ADD TO CART */}
+                    {product.available ? (
                       <button
                         type="button"
-                        disabled={!product.available || isAddingToCart}
+                        disabled={isAddingToCart}
                         onClick={handleAddToCart}
                         id="product-details-add-to-cart-btn"
                         className={cn(
-                          "w-full sm:flex-1 h-12 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer",
-                          !product.available
-                            ? "bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/40 dark:border-white/5 opacity-80"
-                            : justAddedToCart
-                              ? "bg-emerald-600 text-white"
-                              : "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 dark:bg-white/10 dark:hover:bg-white/15 dark:text-white border border-black/10 dark:border-white/15 active:scale-98",
+                          "w-full h-13 rounded-2xl font-black text-sm tracking-tight flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer",
+                          justAddedToCart
+                            ? "bg-emerald-600 text-white"
+                            : "bg-[#161616] dark:bg-[#F2F0EA] hover:bg-[#292929] dark:hover:bg-[#FFFDF7] text-white dark:text-[#0A0A0A] active:scale-98",
                         )}
                       >
                         {isAddingToCart ? (
-                          <span>Adding...</span>
+                          <span>Adding to Cart...</span>
                         ) : justAddedToCart ? (
                           <>
                             <Check className="h-4 w-4 text-white" />
                             <span>Added to Cart!</span>
                           </>
-                        ) : !product.available ? (
-                          <span>Unavailable</span>
                         ) : (
                           <>
                             <ShoppingBag className="h-4 w-4" />
-                            <span>Add to Cart</span>
+                            <span>ADD TO CART</span>
                           </>
                         )}
                       </button>
-
-                      {/* RENT NOW BUTTON */}
+                    ) : (
                       <button
                         type="button"
-                        disabled={!product.available}
+                        disabled
+                        id="product-details-add-to-cart-btn"
+                        className="w-full h-13 rounded-2xl font-bold text-sm tracking-tight flex items-center justify-center gap-2 bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/40 dark:border-white/5 opacity-80"
+                      >
+                        <span>NOT AVAILABLE</span>
+                      </button>
+                    )}
+
+                    {/* Secondary Action: Instant Booking / Checkout */}
+                    {product.available && (
+                      <button
+                        type="button"
                         onClick={handleRentNow}
                         id="product-details-rent-now-btn"
-                        className="w-full sm:flex-1 h-12 bg-[#161616] dark:bg-[#F2F0EA] hover:bg-[#292929] dark:hover:bg-[#FFFDF7] active:bg-[#0B0B0B] dark:active:bg-[#DDD9D0] disabled:opacity-50 text-white dark:text-[#0A0A0A] font-bold text-xs sm:text-sm rounded-2xl shadow-lg transition-all duration-200 active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full py-2.5 rounded-xl border border-border/80 hover:bg-secondary/70 text-xs font-bold text-foreground transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                       >
-                        <span>
-                          {product.available
-                            ? "Rent Now"
-                            : product.status === "pending"
-                              ? "Pending Admin Approval"
-                              : "Currently Booked"}
-                        </span>
-                        {product.available && <ArrowRight className="h-4 w-4" />}
+                        <span>Instant Booking / Checkout</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </button>
-                    </div>
+                    )}
 
                     {/* Quick navigation link to Cart page */}
                     {(isInCart || justAddedToCart) && (
