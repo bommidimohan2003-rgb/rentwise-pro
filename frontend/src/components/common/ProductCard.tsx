@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Heart,
   MapPin,
@@ -54,24 +54,28 @@ export function ProductCard({
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
-  const primaryImg =
-    product.image ||
-    (Array.isArray(product.images) && product.images.length > 0
-      ? product.images[0]
-      : "");
+  const primaryImg = useMemo(() => {
+    if (product.image && typeof product.image === "string" && product.image.trim()) {
+      return product.image.trim();
+    }
+    if (
+      Array.isArray(product.images) &&
+      product.images.length > 0 &&
+      typeof product.images[0] === "string" &&
+      product.images[0].trim()
+    ) {
+      return product.images[0].trim();
+    }
+    return "";
+  }, [product.image, product.images]);
 
   const [imgSrc, setImgSrc] = useState<string>(primaryImg);
   const [imgFailed, setImgFailed] = useState<boolean>(false);
 
   useEffect(() => {
-    const nextPrimary =
-      product.image ||
-      (Array.isArray(product.images) && product.images.length > 0
-        ? product.images[0]
-        : "");
-    setImgSrc(nextPrimary);
+    setImgSrc(primaryImg);
     setImgFailed(false);
-  }, [product.image, product.images]);
+  }, [primaryImg]);
 
   const ownerName = (
     product.owner?.name ||
@@ -195,11 +199,18 @@ export function ProductCard({
         <div className="absolute inset-0 w-full h-full overflow-hidden bg-neutral-900 pointer-events-none">
           {imgSrc && !imgFailed ? (
             <img
-              src={getOptimizedImageUrl(imgSrc, "card")}
+              src={getOptimizedImageUrl(imgSrc, "card") || imgSrc}
               srcSet={getResponsiveImageSrcSet(imgSrc, [320, 480, 640]) || undefined}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
               alt={product.title}
-              onError={() => setImgFailed(true)}
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (imgSrc && target.src !== imgSrc) {
+                  target.src = imgSrc;
+                } else {
+                  setImgFailed(true);
+                }
+              }}
               loading="lazy"
               decoding="async"
               className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108 pointer-events-none"

@@ -25,9 +25,11 @@ export function getOptimizedImageUrl(
     return '';
   }
 
-  // If it's a data URL or blob, return as is
-  if (url.startsWith('data:') || url.startsWith('blob:')) {
-    return url;
+  const cleanUrl = url.trim();
+
+  // If it's a data URL, blob, or already local path, return as is
+  if (cleanUrl.startsWith('data:') || cleanUrl.startsWith('blob:') || cleanUrl.startsWith('/')) {
+    return cleanUrl;
   }
 
   const { width, quality } =

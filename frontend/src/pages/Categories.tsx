@@ -266,6 +266,7 @@ export default function Categories() {
   }, [allProductsList.length]);
 
   useEffect(() => {
+    api.invalidateCache("public_custom_products");
     fetchPublicProducts();
     window.addEventListener("payent_products_updated", fetchPublicProducts);
     return () => {

@@ -410,10 +410,12 @@ export function BrowseSwipeDeck({
           >
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <img
-                src={getOptimizedImageUrl(
-                  getProductPrimaryImage(thirdProduct),
-                  "card",
-                )}
+                src={
+                  getOptimizedImageUrl(
+                    getProductPrimaryImage(thirdProduct),
+                    "card",
+                  ) || getProductPrimaryImage(thirdProduct)
+                }
                 alt=""
                 aria-hidden="true"
                 className="w-full h-full object-cover opacity-40 blur-[1px]"
@@ -438,10 +440,12 @@ export function BrowseSwipeDeck({
             {getProductPrimaryImage(nextProduct) ? (
               <div className="absolute inset-0 w-full h-full overflow-hidden">
                 <img
-                  src={getOptimizedImageUrl(
-                    getProductPrimaryImage(nextProduct),
-                    "card",
-                  )}
+                  src={
+                    getOptimizedImageUrl(
+                      getProductPrimaryImage(nextProduct),
+                      "card",
+                    ) || getProductPrimaryImage(nextProduct)
+                  }
                   alt=""
                   aria-hidden="true"
                   className="w-full h-full object-cover opacity-70"
@@ -502,15 +506,18 @@ export function BrowseSwipeDeck({
             <div className="absolute inset-0 w-full h-full overflow-hidden bg-neutral-900">
               <img
                 key={activeProduct.id}
-                src={getOptimizedImageUrl(displayImage, "card")}
+                src={getOptimizedImageUrl(displayImage, "card") || displayImage}
                 srcSet={
                   getResponsiveImageSrcSet(displayImage, [320, 480, 640]) ||
                   undefined
                 }
                 sizes="(max-width: 640px) 85vw, 340px"
                 alt={activeProduct.title}
-                onError={() => {
-                  if (activeProduct?.id) {
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (displayImage && target.src !== displayImage) {
+                    target.src = displayImage;
+                  } else if (activeProduct?.id) {
                     setImageErrorMap((prev) => ({ ...prev, [activeProduct.id]: true }));
                   }
                 }}

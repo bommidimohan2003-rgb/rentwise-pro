@@ -88,7 +88,18 @@ export const storage = {
   set<T>(key: string, value: T) {
     if (typeof window === "undefined") return;
     const namespaced = getNamespacedKey(key);
-    window.localStorage.setItem(namespaced, JSON.stringify(value));
+    try {
+      window.localStorage.setItem(namespaced, JSON.stringify(value));
+    } catch (e) {
+      console.warn(`[Storage] Failed to persist key "${key}" to localStorage (quota exceeded or storage blocked):`, e);
+      // Clean up stale non-essential caches if quota was reached
+      try {
+        window.localStorage.removeItem("payent_server_products");
+        window.localStorage.removeItem("payent:cache:public_custom_products");
+      } catch {
+        /* ignore */
+      }
+    }
     window.dispatchEvent(
       new CustomEvent("payent:storage_change", {
         detail: { key: namespaced, originalKey: key, value },
