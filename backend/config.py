@@ -109,4 +109,5 @@ SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "false").lower() in ("true", "1", "yes"
 MAIL_FROM = os.getenv("MAIL_FROM", os.getenv("SMTP_FROM_EMAIL", "no-reply@payent.in"))
 MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "Payent Security")
 FRONTEND_URL = os.getenv("FRONTEND_URL", os.getenv("BASE_URL", "https://payent.in"))
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", os.getenv("VITE_GOOGLE_CLIENT_ID", ""))
 

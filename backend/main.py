@@ -216,6 +216,7 @@ from config import (
     ALLOWED_ORIGINS,
     IS_PRODUCTION,
     ALLOW_PRODUCTION_TESTING,
+    GOOGLE_CLIENT_ID,
     RAZORPAY_KEY_ID,
     RAZORPAY_KEY_SECRET,
     RAZORPAY_WEBHOOK_SECRET
@@ -456,7 +457,7 @@ class GoogleUserSyncSchema(BaseModel):
 def verify_google_identity_token(id_token: str, expected_email: str) -> dict:
     """
     Validate Google ID token with Google's OAuth2 Tokeninfo API or Firebase Auth.
-    Ensures cryptographic signature, non-expiration, matching email, and verified email status.
+    Ensures cryptographic signature, non-expiration, valid issuer/audience, matching email, and verified email status.
     """
     if not id_token or not id_token.strip():
         raise HTTPException(
@@ -471,7 +472,13 @@ def verify_google_identity_token(id_token: str, expected_email: str) -> dict:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Mock Google tokens are blocked in production."
             )
-        return {"email": expected_email.lower(), "email_verified": True, "name": "Test User"}
+        return {
+            "email": expected_email.lower().strip(),
+            "email_verified": True,
+            "name": "Test User",
+            "sub": "mock-google-sub-123",
+            "iss": "https://accounts.google.com"
+        }
 
     try:
         url = f"https://oauth2.googleapis.com/tokeninfo?id_token={urllib.parse.quote(id_token)}"
@@ -480,9 +487,41 @@ def verify_google_identity_token(id_token: str, expected_email: str) -> dict:
             if response.status != 200:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired Google token.")
             body = json.loads(response.read().decode("utf-8"))
+            
+            # 1. Verify Issuer
+            iss = body.get("iss", "")
+            if iss not in ("accounts.google.com", "https://accounts.google.com"):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token issuer. Google identity required."
+                )
+
+            # 2. Verify Audience if configured
+            if GOOGLE_CLIENT_ID and body.get("aud") != GOOGLE_CLIENT_ID:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Google token audience mismatch."
+                )
+
+            # 3. Verify Expiration
+            exp = int(body.get("exp", 0))
+            if exp and exp < int(time.time()):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Google ID token has expired."
+                )
+
+            # 4. Verify Subject and Verified Email
+            token_sub = body.get("sub")
             token_email = (body.get("email") or "").strip().lower()
             is_verified = body.get("email_verified") in (True, "true", "True", "1", 1)
             
+            if not token_sub:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Missing subject identifier in Google credential."
+                )
+
             if not token_email or token_email != expected_email.strip().lower():
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -505,30 +544,32 @@ def verify_google_identity_token(id_token: str, expected_email: str) -> dict:
 
 @app.post("/api/auth/google-sync")
 def sync_google_user_to_mysql(data: GoogleUserSyncSchema):
-    # Verify cryptographic ID token
-    verify_google_identity_token(data.id_token or "", data.email)
+    # Verify cryptographic ID token and extract verified claims
+    verified_claims = verify_google_identity_token(data.id_token or "", data.email)
+    verified_email = (verified_claims.get("email") or data.email).strip().lower()
 
-    name = data.fullName or data.full_name or ""
+    name = data.fullName or data.full_name or verified_claims.get("name") or verified_email.split("@")[0]
+    
     # Enforce safe role: default to user, never allow arbitrary admin elevation from frontend
     role = "user"
-    existing_user = get_user(data.email)
+    existing_user = get_user(verified_email)
     if existing_user and existing_user.get("role"):
         role = existing_user["role"]
 
     user_record = save_google_user(
-        email=data.email,
+        email=verified_email,
         full_name=name,
-        firebase_uid=data.id_token or "",
+        firebase_uid=verified_claims.get("sub") or data.id_token or "",
         phone=data.phone or "",
-        avatar=data.avatar or "",
+        avatar=verified_claims.get("picture") or data.avatar or "",
         address=data.address or "",
         city=data.city or "",
         pincode=data.pincode or "",
         role=role
     )
     from auth import create_access_token
-    token = create_access_token({"sub": data.email, "role": user_record.get("role", role)})
-    logger.info(f"Successfully verified and synced Google user: {data.email}")
+    token = create_access_token({"sub": verified_email, "role": user_record.get("role", role)})
+    logger.info(f"Successfully verified and synced Google user: {verified_email}")
     return {"status": "ok", "success": True, "token": token, "user": user_record}
 
 class OTPRequestSchema(BaseModel):
@@ -5052,7 +5093,6 @@ def require_api_key(required_scopes: Optional[list[str]] = None):
     return _dependency
 
 @app.get("/api/admin/api-keys")
-@app.get("/api/admin/api/admin/api-keys")
 def admin_get_api_keys(
     page: int = Query(1, ge=1),
     limit: int = Query(25, ge=1, le=100),
@@ -5062,7 +5102,6 @@ def admin_get_api_keys(
     return get_api_keys_db(page=page, limit=limit, search=q)
 
 @app.post("/api/admin/api-keys")
-@app.post("/api/admin/api/admin/api-keys")
 def admin_create_api_key(data: APIKeyCreateSchema, current_admin: dict = Depends(check_admin_user)):
     if not data.name or not data.name.strip():
         raise HTTPException(status_code=400, detail="API Key name is required.")
@@ -5092,7 +5131,6 @@ def admin_create_api_key(data: APIKeyCreateSchema, current_admin: dict = Depends
     }
 
 @app.get("/api/admin/api-keys/{key_id}")
-@app.get("/api/admin/api/admin/api-keys/{key_id}")
 def admin_get_api_key(key_id: str, current_admin: dict = Depends(check_admin_user)):
     item = get_api_key_by_id_db(key_id)
     if not item:
@@ -5100,7 +5138,6 @@ def admin_get_api_key(key_id: str, current_admin: dict = Depends(check_admin_use
     return item
 
 @app.put("/api/admin/api-keys/{key_id}")
-@app.put("/api/admin/api/admin/api-keys/{key_id}")
 def admin_update_api_key(key_id: str, data: APIKeyUpdateSchema, current_admin: dict = Depends(check_admin_user)):
     item = get_api_key_by_id_db(key_id)
     if not item:
@@ -5123,7 +5160,6 @@ def admin_update_api_key(key_id: str, data: APIKeyUpdateSchema, current_admin: d
     return {"success": True, "apiKey": updated}
 
 @app.delete("/api/admin/api-keys/{key_id}")
-@app.delete("/api/admin/api/admin/api-keys/{key_id}")
 def admin_delete_api_key(key_id: str, current_admin: dict = Depends(check_admin_user)):
     item = get_api_key_by_id_db(key_id)
     if not item:
