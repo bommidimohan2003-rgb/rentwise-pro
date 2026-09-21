@@ -6,6 +6,55 @@ const USER_SPECIFIC_KEYS = new Set([
   "payent:orders",
 ]);
 
+export const PAYENT_CACHE_VERSION = "v6_real_catalog";
+
+export function resetPayentCache(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const keysToRemove = [
+      "payent_server_products",
+      "payent_cached_catalog",
+      "payent_live_categories",
+      "payent:cache:public_custom_products",
+      "payent:cache:public_categories",
+      "payent:cache:public_stats",
+      "payent_custom_products",
+      "payent:customProducts",
+      "payent:theme_backup",
+    ];
+    for (const k of keysToRemove) {
+      window.localStorage.removeItem(k);
+    }
+    for (let i = window.localStorage.length - 1; i >= 0; i--) {
+      const key = window.localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith("payent:cache:") ||
+          key.startsWith("payent_server_") ||
+          key.startsWith("payent_cached_") ||
+          key.startsWith("product:"))
+      ) {
+        window.localStorage.removeItem(key);
+      }
+    }
+    window.localStorage.setItem("payent:cache_version", PAYENT_CACHE_VERSION);
+  } catch {
+    /* ignore storage errors */
+  }
+}
+
+// Auto-purge stale cache if cache version mismatch
+if (typeof window !== "undefined") {
+  try {
+    const currentVersion = window.localStorage.getItem("payent:cache_version");
+    if (currentVersion !== PAYENT_CACHE_VERSION) {
+      resetPayentCache();
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function getNamespacedKey(key: string): string {
   if (typeof window === "undefined") return key;
   if (USER_SPECIFIC_KEYS.has(key)) {

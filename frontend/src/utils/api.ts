@@ -1,4 +1,4 @@
-import { storage, STORAGE_KEYS } from "./storage";
+import { storage, STORAGE_KEYS, resetPayentCache } from "./storage";
 import type {
   Order,
   Product,
@@ -144,15 +144,83 @@ export const api = {
     }
   },
 
-  cacheProduct(product: Product) {
+  cacheProduct(product: Product): void {
     if (product && product.id) {
-      _productCache.set(product.id, product);
+      const key = String(product.id);
+      _productCache.set(key, product);
     }
   },
 
   getCachedProduct(id: string): Product | null {
     if (!id) return null;
-    return _productCache.get(id) || null;
+    const key = String(id);
+    const inMem = _productCache.get(key);
+    if (inMem) return inMem;
+    const fromStorage = storage.get<Product[]>("payent_server_products", []);
+    if (Array.isArray(fromStorage)) {
+      const found = fromStorage.find(
+        (p) => String(p?.id).toLowerCase() === key.toLowerCase() || String(p?.id) === key
+      );
+      if (found) {
+        _productCache.set(key, found);
+        return found;
+      }
+    }
+    return null;
+  },
+
+  async getProductById(id: string): Promise<Product | null> {
+    if (!id) return null;
+    const key = String(id);
+    const cached = this.getCachedProduct(key);
+    if (cached) return cached;
+
+    if (API_BASE) {
+      try {
+        const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(key)}`);
+        if (res.ok) {
+          const product = await res.json();
+          if (product && product.id) {
+            if (!product.image && Array.isArray(product.images) && product.images.length > 0) {
+              product.image = product.images[0];
+            }
+            this.cacheProduct(product);
+            return product;
+          }
+        }
+      } catch (err) {
+        console.debug(`[API] getProductById direct lookup notice for ${key}:`, err);
+      }
+    }
+
+    // Fallback: search in public custom products
+    try {
+      const publicProducts = await this.getPublicProducts();
+      if (Array.isArray(publicProducts)) {
+        const match = publicProducts.find(
+          (p) => String(p?.id).toLowerCase() === key.toLowerCase() || String(p?.id) === key
+        );
+        if (match) {
+          this.cacheProduct(match);
+          return match;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
+    return null;
+  },
+
+  async getProduct(id: string): Promise<Product | null> {
+    return this.getProductById(id);
+  },
+
+  resetCache(): void {
+    _clientCache.clear();
+    _productCache.clear();
+    _inFlightRequests.clear();
+    resetPayentCache();
   },
   async registerRequest(email: string, phone: string) {
     try {
@@ -889,16 +957,12 @@ export const api = {
       "public_custom_products",
       async () => {
         let items: Product[] = [];
-        if (!API_BASE) {
-          items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-        } else {
+        if (API_BASE) {
           try {
             const res = await fetch(`${API_BASE}/api/products/custom/public`, {
               method: "GET",
             });
-            if (!res.ok) {
-              items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
-            } else {
+            if (res.ok) {
               const json = await res.json();
               if (Array.isArray(json)) {
                 items = json;
@@ -909,9 +973,11 @@ export const api = {
               } else {
                 items = [];
               }
+            } else {
+              items = [];
             }
           } catch {
-            items = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
+            items = [];
           }
         }
         if (Array.isArray(items)) {
@@ -920,9 +986,10 @@ export const api = {
               if (!p.image && Array.isArray(p.images) && p.images.length > 0) {
                 p.image = p.images[0];
               }
-              _productCache.set(p.id, p);
+              _productCache.set(String(p.id), p);
             }
           });
+          storage.set("payent_server_products", items);
         }
         return items;
       },

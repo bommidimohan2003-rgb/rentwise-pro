@@ -249,7 +249,7 @@ export default function Categories() {
     api
       .getPublicProducts()
       .then((serverProducts) => {
-        if (Array.isArray(serverProducts) && serverProducts.length > 0) {
+        if (Array.isArray(serverProducts)) {
           setAllProductsList(serverProducts);
           storage.set("payent_server_products", serverProducts);
         }

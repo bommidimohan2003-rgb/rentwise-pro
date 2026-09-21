@@ -16,6 +16,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getOptimizedImageUrl, getResponsiveImageSrcSet } from "@/utils/images";
+import { api } from "@/utils/api";
 
 const KNOWN_BRANDS = [
   "Sony",
@@ -343,6 +344,7 @@ export function BrowseSwipeDeck({
       return;
     }
     if (!activeProduct) return;
+    api.cacheProduct(activeProduct);
     navigate({
       to: "/product/$id",
       params: { id: activeProduct.id },

@@ -101,7 +101,30 @@ export default function ProductDetails() {
         try {
           const items = await api.getPublicProducts();
           if (Array.isArray(items)) {
-            found = items.find((p: Product) => p.id === id) || null;
+            const targetKey = String(id).toLowerCase();
+            found =
+              items.find(
+                (p: Product) =>
+                  String(p.id).toLowerCase() === targetKey ||
+                  String(p.id) === String(id)
+              ) || null;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      if (!found) {
+        try {
+          const localItems = storage.get<Product[]>("payent_server_products", []);
+          if (Array.isArray(localItems)) {
+            const targetKey = String(id).toLowerCase();
+            found =
+              localItems.find(
+                (p: Product) =>
+                  String(p.id).toLowerCase() === targetKey ||
+                  String(p.id) === String(id)
+              ) || null;
           }
         } catch {
           /* ignore */
@@ -112,6 +135,8 @@ export default function ProductDetails() {
         if (found) {
           setProduct(found);
           api.cacheProduct(found);
+        } else if (!cached) {
+          setProduct(null);
         }
         setProductLoading(false);
       }

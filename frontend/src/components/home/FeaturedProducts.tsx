@@ -65,13 +65,11 @@ export function FeaturedProducts() {
 
       // 1. Fetch real products from backend public listings
       const serverProds = await api.getPublicProducts();
-      if (Array.isArray(serverProds) && serverProds.length > 0) {
+      if (Array.isArray(serverProds)) {
         realListings = serverProds;
       } else {
-        // 2. Fetch real lender listings from local custom products and server cache
-        const localCustom = storage.get<Product[]>(STORAGE_KEYS.customProducts, []);
         const cachedServer = storage.get<Product[]>("payent_server_products", []);
-        realListings = [...localCustom, ...cachedServer];
+        realListings = cachedServer;
       }
 
       // Deduplicate by ID and only accept real approved items (no fake hardcoded items)

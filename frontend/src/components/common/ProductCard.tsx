@@ -112,9 +112,6 @@ export function ProductCard({
   const handlePreload = () => {
     if (product && product.id) {
       api.cacheProduct(product);
-      if (!product.isReference) {
-        api.getProduct(product.id).catch(() => {});
-      }
       if (imgSrc && typeof window !== "undefined") {
         const img = new Image();
         img.src = imgSrc;
@@ -124,6 +121,9 @@ export function ProductCard({
 
   const handleCardClick = () => {
     handlePreload();
+    if (product && product.id) {
+      api.cacheProduct(product);
+    }
     if (product.isReference) {
       if (!user) {
         toast.error("Please log in to list your gear.");
