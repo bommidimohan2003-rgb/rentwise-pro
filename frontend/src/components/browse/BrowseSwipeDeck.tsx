@@ -115,12 +115,7 @@ export function BrowseSwipeDeck({
 
   const [imageErrorMap, setImageErrorMap] = useState<Record<string, boolean>>({});
 
-  const activeCatKey = (activeProduct?.category || "").toLowerCase().trim();
-  const activeFallback = fallbackMap[activeCatKey] || cameraImg;
-  const displayImage =
-    activeProduct && imageErrorMap[activeProduct.id]
-      ? activeFallback
-      : getProductPrimaryImage(activeProduct);
+  const displayImage = activeProduct ? getProductPrimaryImage(activeProduct) : "";
 
   // Motion values for real-time physics tracking on the active card
   const x = useMotionValue(0);

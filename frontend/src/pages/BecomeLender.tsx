@@ -39,66 +39,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { CameraCaptureModal } from "@/components/lender/CameraCaptureModal";
 
-import cameraImg from "@/assets/images/camera.webp";
-import laptopImg from "@/assets/images/laptop.webp";
-import droneImg from "@/assets/images/drone.webp";
-import bikeImg from "@/assets/images/bike.webp";
-import toolImg from "@/assets/images/tool.webp";
-import powerbankImg from "@/assets/images/powerbank.webp";
-
-const CATEGORIES = [
-  {
-    id: "cameras",
-    label: "Cameras",
-    icon: Camera,
-    avgPrice: 850,
-    image: cameraImg,
-  },
-  {
-    id: "laptops",
-    label: "Laptops",
-    icon: Laptop,
-    avgPrice: 1200,
-    image: laptopImg,
-  },
-  {
-    id: "drones",
-    label: "Drones",
-    icon: Zap,
-    avgPrice: 1500,
-    image: droneImg,
-  },
-  {
-    id: "bikes",
-    label: "Bikes & Rides",
-    icon: Bike,
-    avgPrice: 450,
-    image: bikeImg,
-  },
-  {
-    id: "tools",
-    label: "Tools & Power",
-    icon: Wrench,
-    avgPrice: 500,
-    image: toolImg,
-  },
-  {
-    id: "powerbanks",
-    label: "Power Banks",
-    icon: BatteryCharging,
-    avgPrice: 250,
-    image: powerbankImg,
-  },
-  {
-    id: "audio",
-    label: "Audio & VR",
-    icon: Headphones,
-    avgPrice: 650,
-    image:
-      "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80",
-  },
-];
-
 const perks = [
   {
     icon: IndianRupee,

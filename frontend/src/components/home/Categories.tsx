@@ -1,67 +1,95 @@
+import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
+import {
+  ArrowRight,
+  Camera,
+  Laptop,
+  Plane,
+  Bike,
+  Hammer,
+  Zap,
+  Mic,
+  Package,
+  Layers,
+} from "lucide-react";
+import { api } from "@/utils/api";
+import type { Category } from "@/types";
 
-import cameraImg from "@/assets/images/camera.webp";
-import droneImg from "@/assets/images/drone.webp";
-import laptopImg from "@/assets/images/laptop.webp";
-import bikeImg from "@/assets/images/bike.webp";
-import reClassic350Img from "@/assets/images/re_classic350.webp";
-import powerbankImg from "@/assets/images/powerbank.webp";
-import toolImg from "@/assets/images/tool.webp";
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  camera: Camera,
+  cameras: Camera,
+  laptop: Laptop,
+  laptops: Laptop,
+  plane: Plane,
+  drone: Plane,
+  drones: Plane,
+  bike: Bike,
+  bikes: Bike,
+  cycles: Bike,
+  hammer: Hammer,
+  tool: Hammer,
+  tools: Hammer,
+  zap: Zap,
+  powerbank: Zap,
+  powerbanks: Zap,
+  mic: Mic,
+  audio: Mic,
+  sound: Mic,
+  all: Layers,
+};
 
-interface CategoryItem {
-  id: string;
-  name: string;
-  desc: string;
-  image: string;
+function getCategoryIcon(iconName?: string, id?: string): React.ComponentType<{ className?: string }> {
+  const key = (iconName || id || "").toLowerCase().trim();
+  return iconMap[key] || Package;
 }
 
-const categoriesList: CategoryItem[] = [
-  {
-    id: "cameras",
-    name: "Cameras",
-    desc: "DSLRs & Cinema",
-    image: cameraImg,
-  },
-  {
-    id: "laptops",
-    name: "Laptops",
-    desc: "MacBooks & PCs",
-    image: laptopImg,
-  },
-  {
-    id: "drones",
-    name: "Drones",
-    desc: "Aerial 4K Rigs",
-    image: droneImg,
-  },
-  {
-    id: "cycles",
-    name: "Cycles",
-    desc: "E-Bikes & Mountain",
-    image: bikeImg,
-  },
-  {
-    id: "bikes",
-    name: "Bikes",
-    desc: "Classic 350 & Tourers",
-    image: reClassic350Img,
-  },
-  {
-    id: "powerbanks",
-    name: "Powerbanks",
-    desc: "Power Stations",
-    image: powerbankImg,
-  },
-  {
-    id: "tools",
-    name: "Drilling Machines",
-    desc: "Cordless Drills",
-    image: toolImg,
-  },
-];
-
 export function Categories() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCategories() {
+      try {
+        const data = await api.getPublicCategories();
+        if (isMounted) {
+          if (Array.isArray(data) && data.length > 0) {
+            setCategories(data);
+          } else {
+            // Default active category structure if API returns empty
+            setCategories([
+              { id: "cameras", name: "Cameras", icon: "Camera", count: 0, color: "bg-blue-100 text-blue-800" },
+              { id: "laptops", name: "Laptops", icon: "Laptop", count: 0, color: "bg-purple-100 text-purple-800" },
+              { id: "drones", name: "Drones", icon: "Plane", count: 0, color: "bg-emerald-100 text-emerald-800" },
+              { id: "bikes", name: "Bikes & Rides", icon: "Bike", count: 0, color: "bg-amber-100 text-amber-800" },
+              { id: "tools", name: "Tools", icon: "Hammer", count: 0, color: "bg-red-100 text-red-800" },
+              { id: "powerbanks", name: "Power Banks", icon: "Zap", count: 0, color: "bg-slate-100 text-slate-800" },
+            ]);
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setCategories([
+            { id: "cameras", name: "Cameras", icon: "Camera", count: 0, color: "bg-blue-100 text-blue-800" },
+            { id: "laptops", name: "Laptops", icon: "Laptop", count: 0, color: "bg-purple-100 text-purple-800" },
+            { id: "drones", name: "Drones", icon: "Plane", count: 0, color: "bg-emerald-100 text-emerald-800" },
+            { id: "bikes", name: "Bikes & Rides", icon: "Bike", count: 0, color: "bg-amber-100 text-amber-800" },
+            { id: "tools", name: "Tools", icon: "Hammer", count: 0, color: "bg-red-100 text-red-800" },
+            { id: "powerbanks", name: "Power Banks", icon: "Zap", count: 0, color: "bg-slate-100 text-slate-800" },
+          ]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+    loadCategories();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <section className="relative overflow-hidden bg-white dark:bg-[#05090D] py-10 sm:py-14 text-neutral-900 dark:text-white border-b border-black/5 dark:border-white/10 transition-colors duration-300">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -89,45 +117,45 @@ export function Categories() {
         </div>
 
         {/* Responsive Categories Showcase Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-2.5 sm:gap-3 lg:gap-3.5">
-          {categoriesList.map((cat) => (
-            <Link
-              key={cat.id}
-              to="/categories"
-              search={{ cat: cat.id }}
-              className="group relative rounded-2xl p-2.5 flex flex-col justify-between overflow-hidden bg-neutral-50/90 dark:bg-[#0A1017] hover:bg-neutral-100/90 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 shadow-xs hover:shadow-md dark:shadow-none transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-            >
-              {/* Product Media Showcase Box — Enlarged & Prominently Fitted */}
-              <div className="relative w-full h-34 sm:h-36 md:h-40 rounded-xl overflow-hidden bg-gradient-to-b from-neutral-100/90 via-neutral-100/40 to-transparent dark:from-white/[0.05] dark:via-white/[0.02] dark:to-transparent p-1 sm:p-1.5 flex items-center justify-center">
-                {/* Subtle radial glow on hover */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.06)_0%,transparent_70%)] dark:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-3.5">
+          {categories.map((cat) => {
+            const IconComp = getCategoryIcon(cat.icon, cat.id);
+            return (
+              <Link
+                key={cat.id}
+                to="/categories"
+                search={{ cat: cat.id }}
+                className="group relative rounded-2xl p-4 flex flex-col justify-between overflow-hidden bg-neutral-50/90 dark:bg-[#0A1017] hover:bg-neutral-100/90 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 shadow-xs hover:shadow-md dark:shadow-none transition-all duration-300 hover:-translate-y-1 cursor-pointer min-h-[140px]"
+              >
+                {/* Category Icon / Media Stage */}
+                <div className="relative w-full h-20 rounded-xl overflow-hidden bg-gradient-to-b from-neutral-100/90 via-neutral-100/40 to-transparent dark:from-white/[0.05] dark:via-white/[0.02] dark:to-transparent flex items-center justify-center">
+                  {cat.image ? (
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-300 ease-out"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-2xl bg-primary/10 dark:bg-white/10 text-primary dark:text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform duration-300">
+                      <IconComp className="h-6 w-6" />
+                    </div>
+                  )}
+                </div>
 
-                {/* Soft floor shadow under gear */}
-                <div className="absolute bottom-1 w-24 sm:w-28 h-2.5 bg-black/10 dark:bg-black/50 rounded-[100%] blur-xs group-hover:w-32 transition-all duration-300" />
-
-                {/* Main Product Image — Prominently Enlarged and Fitted */}
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  loading="lazy"
-                  decoding="async"
-                  width={160}
-                  height={160}
-                  className="relative z-5 w-full h-full object-contain filter drop-shadow-md scale-105 group-hover:scale-112 transition-transform duration-300 ease-out"
-                />
-              </div>
-
-              {/* Card Footer: Category Name & Subtitle */}
-              <div className="pt-2.5 pb-0.5 px-0.5 text-left">
-                <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white group-hover:text-primary dark:group-hover:text-neutral-200 transition-colors leading-tight">
-                  {cat.name}
-                </h3>
-                <p className="text-[10px] sm:text-[11px] text-neutral-500 dark:text-[#7A8794] mt-0.5 line-clamp-1">
-                  {cat.desc}
-                </p>
-              </div>
-            </Link>
-          ))}
+                {/* Card Footer: Category Name & Count */}
+                <div className="pt-2 text-left">
+                  <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white group-hover:text-primary dark:group-hover:text-neutral-200 transition-colors leading-tight">
+                    {cat.name}
+                  </h3>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-500 dark:text-[#7A8794] mt-0.5">
+                    {cat.count > 0 ? `${cat.count} listings` : "Verified Gear"}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

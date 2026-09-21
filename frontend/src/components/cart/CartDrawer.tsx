@@ -6,10 +6,10 @@ import {
   Trash2,
   ArrowRight,
   ShieldCheck,
+  Package,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useCart } from "@/hooks/useCart";
-import cameraFallback from "@/assets/images/camera.webp";
 
 export function CartDrawer() {
   const {
@@ -140,14 +140,17 @@ export function CartDrawer() {
                   >
                     <div className="flex gap-3">
                       {/* Product Thumbnail */}
-                      <img
-                        src={item.image || cameraFallback}
-                        alt={item.title}
-                        onError={(e) => {
-                          e.currentTarget.src = cameraFallback;
-                        }}
-                        className="h-16 w-16 shrink-0 rounded-lg object-cover border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-neutral-800"
-                      />
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="h-16 w-16 shrink-0 rounded-lg object-cover border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-neutral-800"
+                        />
+                      ) : (
+                        <div className="h-16 w-16 shrink-0 rounded-lg border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400">
+                          <Package className="h-6 w-6 opacity-40" />
+                        </div>
+                      )}
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">

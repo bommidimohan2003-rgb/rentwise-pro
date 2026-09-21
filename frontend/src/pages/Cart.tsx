@@ -9,10 +9,10 @@ import {
   Truck,
   CheckCircle2,
   Calendar,
+  Package,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { useCart } from "@/hooks/useCart";
-import cameraFallback from "@/assets/images/camera.webp";
 import { getOptimizedImageUrl } from "@/utils/images";
 
 export default function Cart() {
@@ -112,16 +112,19 @@ export default function Cart() {
                   >
                     <div className="flex items-center gap-4 min-w-0 flex-1">
                       {/* Thumbnail */}
-                      <img
-                        src={getOptimizedImageUrl(item.image || cameraFallback, 'thumb')}
-                        alt={item.title}
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => {
-                          e.currentTarget.src = cameraFallback;
-                        }}
-                        className="h-20 w-20 shrink-0 rounded-xl object-cover border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-neutral-800"
-                      />
+                      {item.image ? (
+                        <img
+                          src={getOptimizedImageUrl(item.image, 'thumb')}
+                          alt={item.title}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-20 w-20 shrink-0 rounded-xl object-cover border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-neutral-800"
+                        />
+                      ) : (
+                        <div className="h-20 w-20 shrink-0 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-400">
+                          <Package className="h-8 w-8 opacity-40" />
+                        </div>
+                      )}
 
                       {/* Product Details */}
                       <div className="min-w-0 flex-1">
