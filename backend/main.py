@@ -19,6 +19,8 @@ import json
 import asyncio
 import traceback
 import re
+import urllib.request
+import urllib.parse
 from typing import Optional, List, Set, Tuple
 from dotenv import load_dotenv
 from email_service import send_email_smtp, build_password_reset_email_html, build_password_reset_email_text, is_smtp_configured
@@ -3131,13 +3133,22 @@ def edit_custom_listing(id: str, data: UpdateCustomProductSchema, email: str = D
     invalidate_cache(f"product:{id}")
     return {"success": True, "message": "Listing updated successfully."}
 
-# Admin check dependency
+# Admin check dependencies
 def check_admin_user(current_user_email: str = Depends(get_current_user_email)) -> dict:
     user = get_user(current_user_email)
-    if not user or user["role"] != "admin":
+    if not user or str(user.get("role", "")).lower() not in ("admin", "superadmin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden. Admin access required."
+        )
+    return user
+
+def check_superadmin_user(current_user_email: str = Depends(get_current_user_email)) -> dict:
+    user = get_user(current_user_email)
+    if not user or str(user.get("role", "")).lower() != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden. Superadmin access required."
         )
     return user
 
@@ -4610,7 +4621,7 @@ async def admin_websocket(websocket: WebSocket, token: Optional[str] = None):
 
     user = get_user(payload["sub"])
     role = (user.get("role") if user else payload.get("role", "")).lower()
-    if role != "admin":
+    if role not in ("admin", "superadmin"):
         await websocket.close(code=4003, reason="Forbidden. Admin access required.")
         return
 
@@ -4955,7 +4966,7 @@ def admin_stats(current_admin: dict = Depends(check_admin_user)):
     }
 
 @app.post("/api/admin/dashboard/reset-analytics")
-def admin_reset_analytics(current_admin: dict = Depends(check_admin_user)):
+def admin_reset_analytics(current_admin: dict = Depends(check_superadmin_user)):
     execute_query("DELETE FROM orders")
     execute_query("DELETE FROM payments")
     execute_query("DELETE FROM custom_products")
