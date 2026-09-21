@@ -238,67 +238,24 @@ export const api = {
   },
 
   async login(email: string, password: string) {
-    const pwdBytes = new TextEncoder().encode(password || "");
-    const pwdHashBuffer = await crypto.subtle.digest("SHA-256", pwdBytes);
-    const pwdHashHex = Array.from(new Uint8Array(pwdHashBuffer))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    const isAdmin =
-      email?.toLowerCase() === "bommidimohan2003@gmail.com" &&
-      pwdHashHex ===
-        "457770ef49f7abdc6a0ef3b8d10dfda93c76e957b479302736b86b4ea5d2bb39";
-
     if (!API_BASE) {
-      if (isAdmin) {
-        return {
-          success: true,
-          token: `admin-standalone-token-${Date.now()}`,
-          user: {
-            id: "bommidimohan2003@gmail.com",
-            email: "bommidimohan2003@gmail.com",
-            fullName: "Bommidi Mohan",
-            role: "admin",
-            status: "active",
-            verified: true,
-          },
-        };
-      }
-      throw new Error("Invalid email or password.");
+      throw new Error("Backend API URL is not configured.");
     }
 
-    try {
-      const res = await fetch(`${API_BASE}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(parseApiError(data, "Invalid email or password."));
-      }
-      const data = await res.json();
-      if (data && data.refreshToken) {
-        storage.set(STORAGE_KEYS.refreshToken, data.refreshToken);
-      }
-      return data;
-    } catch (err) {
-      if (isAdmin) {
-        return {
-          success: true,
-          token: `admin-standalone-token-${Date.now()}`,
-          user: {
-            id: "bommidimohan2003@gmail.com",
-            email: "bommidimohan2003@gmail.com",
-            fullName: "Bommidi Mohan",
-            role: "admin",
-            status: "active",
-            verified: true,
-          },
-        };
-      }
-      throw err;
+    const res = await fetch(`${API_BASE}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(parseApiError(data, "Invalid email or password."));
     }
+    const data = await res.json();
+    if (data && data.refreshToken) {
+      storage.set(STORAGE_KEYS.refreshToken, data.refreshToken);
+    }
+    return data;
   },
 
   async forgotPasswordRequest(email: string, recovery_token?: string) {
@@ -374,29 +331,15 @@ export const api = {
   },
 
   async getMe(token: string): Promise<User | null> {
-    if (
-      !API_BASE ||
-      token.startsWith("admin-standalone-token-") ||
-      token.startsWith("offline-admin-") ||
-      token.startsWith("google-offline-")
-    ) {
-      const cached = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
-      if (cached) return cached;
-      return {
-        id: "bommidimohan2003@gmail.com",
-        email: "bommidimohan2003@gmail.com",
-        fullName: "Bommidi Mohan",
-        role: "admin",
-        status: "active",
-        verified: true,
-      };
+    if (!API_BASE || !token) {
+      return null;
     }
 
     return getCachedOrFetch<User | null>(
       `auth_profile_token_${token.slice(-16)}`,
       async () => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
 
         try {
           const res = await fetch(`${API_BASE}/api/me`, {
@@ -419,9 +362,7 @@ export const api = {
               storage.remove(STORAGE_KEYS.currentUser);
               localStorage.removeItem("payent:admin:token");
               localStorage.removeItem("payent:admin:current_user");
-              if (!token.startsWith("google-offline-")) {
-                window.dispatchEvent(new CustomEvent("payent-session-expired"));
-              }
+              window.dispatchEvent(new CustomEvent("payent-session-expired"));
             }
             const data = await res.json().catch(() => ({}));
             const error = new Error(data.detail || "Failed to fetch user profile.");
@@ -439,14 +380,7 @@ export const api = {
           ) {
             const cached = storage.get<User | null>(STORAGE_KEYS.currentUser, null);
             if (cached) return cached;
-            return {
-              id: token,
-              email: "user@payent.com",
-              fullName: "Verified User",
-              role: "customer",
-              status: "active",
-              verified: true,
-            };
+            throw new Error("User profile request timed out.");
           }
           throw err;
         }
