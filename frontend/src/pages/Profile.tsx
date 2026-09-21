@@ -92,12 +92,9 @@ export default function Profile() {
     return {
       fullName: cachedUser?.fullName || user?.fullName || "",
       email: cachedUser?.email || user?.email || "",
-      phone: cachedUser?.phone || user?.phone || "+91 98765 43210",
-      occupation: cachedUser?.occupation || user?.occupation || "Cinematographer & Drone Operator",
-      bio:
-        cachedUser?.bio ||
-        user?.bio ||
-        "Passionate filmmaker and aerial photographer. Renting out professional 4K cinema cameras, prime lenses, and workstation gear when off set.",
+      phone: cachedUser?.phone || user?.phone || "",
+      occupation: cachedUser?.occupation || user?.occupation || "",
+      bio: cachedUser?.bio || user?.bio || "",
       address: cachedUser?.address || user?.address || "",
       city: cachedUser?.city || user?.city || "",
       state: cachedUser?.state || user?.state || "",
@@ -105,8 +102,8 @@ export default function Profile() {
       pincode: cachedUser?.pincode || user?.pincode || "",
       latitude: (cachedUser?.latitude ?? user?.latitude) ?? null,
       longitude: (cachedUser?.longitude ?? user?.longitude) ?? null,
-      website: cachedUser?.website || user?.website || "https://creators.payent.in/arjun",
-      upiId: cachedUser?.upiId || user?.upiId || "arjun@upi",
+      website: cachedUser?.website || user?.website || "",
+      upiId: cachedUser?.upiId || user?.upiId || "",
     };
   });
 
@@ -147,11 +144,9 @@ export default function Profile() {
       setForm({
         fullName: user.fullName || "",
         email: user.email || "",
-        phone: user.phone || "+91 98765 43210",
-        occupation: user.occupation || "Cinematographer & Drone Operator",
-        bio:
-          user.bio ||
-          "Passionate filmmaker and aerial photographer. Renting out professional 4K cinema cameras, prime lenses, and workstation gear when off set.",
+        phone: user.phone || "",
+        occupation: user.occupation || "",
+        bio: user.bio || "",
         address: user.address || "",
         city: user.city || "",
         state: user.state || "",
@@ -159,8 +154,8 @@ export default function Profile() {
         pincode: user.pincode || "",
         latitude: user.latitude ?? null,
         longitude: user.longitude ?? null,
-        website: user.website || "https://creators.payent.in/arjun",
-        upiId: user.upiId || "arjun@upi",
+        website: user.website || "",
+        upiId: user.upiId || "",
       });
       fetchSessions();
     }
@@ -785,7 +780,7 @@ export default function Profile() {
                   icon={<Globe className="h-4 w-4" />}
                   value={form.website}
                   onChange={(e) => setForm({ ...form, website: e.target.value })}
-                  placeholder="https://creators.payent.in/arjun"
+                  placeholder="https://yourportfolio.com"
                 />
 
                 <div className="pt-2 flex justify-end">
@@ -940,7 +935,7 @@ export default function Profile() {
                   icon={<CreditCard className="h-4 w-4" />}
                   value={form.upiId}
                   onChange={(e) => setForm({ ...form, upiId: e.target.value })}
-                  placeholder="arjun@upi"
+                  placeholder="you@upi"
                 />
 
                 <div className="pt-2 flex justify-end">

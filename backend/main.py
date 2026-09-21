@@ -5317,12 +5317,6 @@ def admin_dashboard_activities(current_admin: dict = Depends(check_admin_user)):
             "icon": icon_map.get(r["module"], "Info")
         })
         
-    # Default activities fallback if empty
-    if not res:
-        res = [
-            { "id": "a-1", "type": "user_registered", "title": "New User Registered", "detail": "Emily Davis joined Payent", "time": "5 mins ago", "icon": "UserPlus" },
-            { "id": "a-2", "type": "product_uploaded", "title": "Camera Uploaded", "detail": "RED Komodo-X submitted by Alex Mercer", "time": "25 mins ago", "icon": "Camera" },
-        ]
     return res
 
 # Users
@@ -6259,9 +6253,9 @@ def admin_bookings_list(current_admin: dict = Depends(check_admin_user)):
             "productTitle": r["product_title"],
             "productImage": r["product_image"],
             "customerId": r["user_email"],
-            "customerName": r["customer_name"] or r["user_email"].split("@")[0],
-            "ownerId": r["owner_email"] or "alex@example.com",
-            "ownerName": r["owner_name"] or "Alex Mercer",
+            "customerName": r["customer_name"] or (r["user_email"].split("@")[0] if r["user_email"] else "Customer"),
+            "ownerId": r["owner_email"] or "",
+            "ownerName": r["owner_name"] or "Verified Lender",
             "startDate": r["start_date"],
             "endDate": r["end_date"],
             "amount": r["total"],
@@ -6302,9 +6296,9 @@ def admin_cancel_booking(id: str, current_admin: dict = Depends(check_admin_user
         "productTitle": r["product_title"],
         "productImage": r["product_image"],
         "customerId": r["user_email"],
-        "customerName": r["customer_name"] or r["user_email"].split("@")[0],
-        "ownerId": r["owner_email"] or "alex@example.com",
-        "ownerName": r["owner_name"] or "Alex Mercer",
+        "customerName": r["customer_name"] or (r["user_email"].split("@")[0] if r["user_email"] else "Customer"),
+        "ownerId": r["owner_email"] or "",
+        "ownerName": r["owner_name"] or "Verified Lender",
         "startDate": r["start_date"],
         "endDate": r["end_date"],
         "amount": r["total"],
@@ -6345,9 +6339,9 @@ def admin_complete_booking(id: str, current_admin: dict = Depends(check_admin_us
         "productTitle": r["product_title"],
         "productImage": r["product_image"],
         "customerId": r["user_email"],
-        "customerName": r["customer_name"] or r["user_email"].split("@")[0],
-        "ownerId": r["owner_email"] or "alex@example.com",
-        "ownerName": r["owner_name"] or "Alex Mercer",
+        "customerName": r["customer_name"] or (r["user_email"].split("@")[0] if r["user_email"] else "Customer"),
+        "ownerId": r["owner_email"] or "",
+        "ownerName": r["owner_name"] or "Verified Lender",
         "startDate": r["start_date"],
         "endDate": r["end_date"],
         "amount": r["total"],
@@ -6389,9 +6383,9 @@ def admin_refund_booking(id: str, current_admin: dict = Depends(check_admin_user
         "productTitle": r["product_title"],
         "productImage": r["product_image"],
         "customerId": r["user_email"],
-        "customerName": r["customer_name"] or r["user_email"].split("@")[0],
-        "ownerId": r["owner_email"] or "alex@example.com",
-        "ownerName": r["owner_name"] or "Alex Mercer",
+        "customerName": r["customer_name"] or (r["user_email"].split("@")[0] if r["user_email"] else "Customer"),
+        "ownerId": r["owner_email"] or "",
+        "ownerName": r["owner_name"] or "Verified Lender",
         "startDate": r["start_date"],
         "endDate": r["end_date"],
         "amount": r["total"],
@@ -7330,103 +7324,35 @@ class EventBatchSchema(BaseModel):
     events: List[EventItemSchema]
 
 
-# Helper: Consolidated Products Catalog for Recommendations
-DEFAULT_CATALOG_PRODUCTS = [
-    {
-        "id": "prod-sony-a7iv",
-        "title": "Sony Alpha a7 IV Mirrorless Camera",
-        "description": "33MP Full-Frame Exmor R CMOS Sensor, 4K 60p Video, 10 fps Shooting.",
-        "price": 2500,
-        "category": "Cameras",
-        "rating": 4.9,
-        "reviews": 0,
-        "available": True,
-        "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
-        "owner": {"name": "Alex Mercer", "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150", "rating": 4.9}
-    },
-    {
-        "id": "prod-macbook-pro-16",
-        "title": "Apple MacBook Pro 16 M3 Max",
-        "description": "36GB Unified Memory, 1TB SSD, 16-inch Liquid Retina XDR display.",
-        "price": 3500,
-        "category": "Laptops",
-        "rating": 4.95,
-        "reviews": 0,
-        "available": True,
-        "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80",
-        "owner": {"name": "Sarah Connor", "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150", "rating": 5.0}
-    },
-    {
-        "id": "prod-dji-mavic-3-pro",
-        "title": "DJI Mavic 3 Pro Cine Drone",
-        "description": "Triple-camera system, Hasselblad 4/3 CMOS, 43 min flight time.",
-        "price": 3000,
-        "category": "Drones",
-        "rating": 4.88,
-        "reviews": 0,
-        "available": True,
-        "image": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1200&q=80",
-        "owner": {"name": "Marcus Vance", "avatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150", "rating": 4.8}
-    },
-    {
-        "id": "prod-anker-737-powerbank",
-        "title": "Anker 737 Power Bank (PowerCore 24K)",
-        "description": "24,000mAh 140W Output 3-Port Laptop Power Bank with Smart Digital Display.",
-        "price": 450,
-        "category": "Power Banks",
-        "rating": 4.75,
-        "reviews": 0,
-        "available": True,
-        "image": "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?auto=format&fit=crop&w=1200&q=80",
-        "owner": {"name": "Tech Hub Rentals", "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150", "rating": 4.9}
-    },
-    {
-        "id": "prod-canon-r5",
-        "title": "Canon EOS R5 8K Mirrorless Camera",
-        "description": "45MP Full-Frame Sensor, 8K RAW Video, In-Body Image Stabilization.",
-        "price": 2800,
-        "category": "Cameras",
-        "rating": 4.9,
-        "reviews": 0,
-        "available": True,
-        "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=80",
-        "owner": {"name": "Alex Mercer", "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150", "rating": 4.9}
-    },
-    {
-        "id": "prod-dell-xps-15",
-        "title": "Dell XPS 15 OLED Touch Laptop",
-        "description": "Intel i9, 32GB RAM, RTX 4070, 3.5K OLED Display.",
-        "price": 2200,
-        "category": "Laptops",
-        "rating": 4.7,
-        "reviews": 0,
-        "available": True,
-        "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80",
-        "owner": {"name": "Sarah Connor", "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150", "rating": 5.0}
-    }
-]
+# Helper: Recommendation Catalog from DB Only
+DEFAULT_CATALOG_PRODUCTS: List[dict] = []
 
 def get_recommendation_catalog() -> List[dict]:
-    """Retrieve full product list combining custom_products DB table and reference items."""
+    """Retrieve full product list from custom_products DB table."""
     db_products = get_all_custom_products()
-    catalog_map = {p["id"]: p for p in DEFAULT_CATALOG_PRODUCTS}
+    catalog_map = {}
     
     for db_p in db_products:
         if db_p.get("status", "approved") == "approved" and not db_p.get("hidden", False):
-            catalog_map[db_p["id"]] = {
-                "id": db_p["id"],
-                "title": db_p["title"],
-                "description": db_p.get("description", ""),
-                "price": db_p["price"],
-                "category": db_p["category"],
-                "rating": float(db_p.get("rating", 4.5)),
-                "reviews": int(db_p.get("reviews", 10)),
+            owner_info = db_p.get("owner") if isinstance(db_p.get("owner"), dict) else {}
+            owner_name = db_p.get("owner_name") or owner_info.get("name") or "Verified Lender"
+            owner_avatar = db_p.get("owner_avatar") or owner_info.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
+            owner_rating = float(db_p.get("owner_rating") or owner_info.get("rating") or 5.0)
+            
+            catalog_map[str(db_p["id"])] = {
+                "id": str(db_p["id"]),
+                "title": str(db_p.get("title", "")),
+                "description": str(db_p.get("description", "")),
+                "price": float(db_p.get("price", 0)),
+                "category": str(db_p.get("category", "General")),
+                "rating": float(db_p.get("rating", 5.0)),
+                "reviews": int(db_p.get("reviews", 0)),
                 "available": bool(db_p.get("available", True)),
-                "image": db_p["image"],
+                "image": str(db_p.get("image", "")),
                 "owner": {
-                    "name": db_p.get("owner_name", "Gear Owner"),
-                    "avatar": db_p.get("owner_avatar", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"),
-                    "rating": float(db_p.get("owner_rating", 4.8))
+                    "name": owner_name,
+                    "avatar": owner_avatar,
+                    "rating": owner_rating
                 }
             }
     return list(catalog_map.values())

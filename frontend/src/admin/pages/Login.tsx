@@ -299,7 +299,7 @@ export default function Login() {
                   <User className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Mohan Bommidi"
+                    placeholder="Your full name"
                     {...registerForm.register("fullName")}
                     className="w-full bg-secondary/50 text-foreground text-xs rounded-xl pl-10 pr-4 py-3.5 border border-border/80 focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
                   />

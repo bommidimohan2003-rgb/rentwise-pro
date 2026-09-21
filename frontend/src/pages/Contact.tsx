@@ -447,7 +447,7 @@ export default function Contact() {
                           if (errors.name)
                             setErrors((prev) => ({ ...prev, name: "" }));
                         }}
-                        placeholder="Sarah Jenkins"
+                        placeholder="Your full name"
                         className={cn(
                           "w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none focus:ring-1 focus:ring-primary",
                           errors.name
@@ -474,7 +474,7 @@ export default function Contact() {
                           if (errors.email)
                             setErrors((prev) => ({ ...prev, email: "" }));
                         }}
-                        placeholder="sarah@example.com"
+                        placeholder="you@example.com"
                         className={cn(
                           "w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none focus:ring-1 focus:ring-primary",
                           errors.email

@@ -206,7 +206,7 @@ export function RegisterForm() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             label="Full Name"
-            placeholder="Aarav Sharma"
+            placeholder="Your full name"
             icon={<User className="h-4 w-4" />}
             error={errors.fullName?.message}
             {...register("fullName")}
@@ -214,7 +214,7 @@ export function RegisterForm() {
           <Input
             label="Email Address"
             type="email"
-            placeholder="aarav@creator.com"
+            placeholder="you@example.com"
             icon={<Mail className="h-4 w-4" />}
             error={errors.email?.message}
             {...register("email")}
