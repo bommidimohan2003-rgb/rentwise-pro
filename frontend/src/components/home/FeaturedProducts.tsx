@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Heart,
   MapPin,
+  Package,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -45,7 +46,7 @@ export function FeaturedProducts() {
       rating: Number(p.rating) || 5.0,
       reviewsCount: Number(p.reviews) || 0,
       location: p.location || p.owner?.city || p.owner?.address || "India",
-      image: p.image || (p.images && p.images[0]) || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+      image: p.image || (p.images && p.images[0]) || "",
       badge: idx === 0 ? "Featured" : p.status === "approved" ? "Verified" : undefined,
     }));
   });
@@ -89,7 +90,7 @@ export function FeaturedProducts() {
         rating: Number(p.rating) || 5.0,
         reviewsCount: Number(p.reviews) || 0,
         location: p.location || p.owner?.city || p.owner?.address || "India",
-        image: p.image || (p.images && p.images[0]) || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+        image: p.image || (p.images && p.images[0]) || "",
         badge: idx === 0 ? "Featured" : p.status === "approved" ? "Verified" : undefined,
       }));
 
@@ -272,15 +273,22 @@ export function FeaturedProducts() {
                     </button>
 
                     {/* Product Image */}
-                    <img
-                      src={getOptimizedImageUrl(p.image, 'card')}
-                      srcSet={getResponsiveImageSrcSet(p.image, [320, 480, 640]) || undefined}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
-                      alt={p.title}
-                      loading="lazy"
-                      decoding="async"
-                      className="max-h-full max-w-full object-contain filter contrast-110 drop-shadow-[0_8px_16px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)] group-hover:scale-105 transition-transform duration-300"
-                    />
+                    {p.image ? (
+                      <img
+                        src={getOptimizedImageUrl(p.image, 'card')}
+                        srcSet={getResponsiveImageSrcSet(p.image, [320, 480, 640]) || undefined}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
+                        alt={p.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="max-h-full max-w-full object-contain filter contrast-110 drop-shadow-[0_8px_16px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)] group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-muted-foreground/40 text-center">
+                        <Package className="h-8 w-8 mb-1 opacity-40 text-neutral-500" />
+                        <span className="text-[10px] font-semibold text-neutral-400">No image</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Card Content */}

@@ -53,7 +53,7 @@ export default function Checkout() {
   const [product, setProduct] = useState<Product | null>(null);
   const [productLoading, setProductLoading] = useState(true);
 
-  // Load product from local custom items, MOCK_PRODUCTS, and live API catalog
+  // Load product from live API catalog
   useEffect(() => {
     let isMounted = true;
     setProductLoading(true);
@@ -68,14 +68,11 @@ export default function Checkout() {
         }
       }
 
-      if (!found) {
+      if (!found && search.id) {
         try {
           const items = await api.getPublicProducts();
           if (Array.isArray(items)) {
-            found =
-              items.find((p: Product) => p.id === search.id) ||
-              items[0] ||
-              null;
+            found = items.find((p: Product) => p.id === search.id) || null;
           }
         } catch {
           /* ignore */

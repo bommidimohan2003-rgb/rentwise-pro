@@ -717,7 +717,7 @@ export const api = {
           const img = String(
             o.productImage ||
               o.product_image ||
-              "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+              "",
           );
           const start = String(o.startDate || o.start_date || "Today");
           const end = String(o.endDate || o.end_date || "Tomorrow");
@@ -763,7 +763,7 @@ export const api = {
     const img = String(
       o.productImage ||
         o.product_image ||
-        "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
+        "",
     );
     const start = String(o.startDate || o.start_date || "Today");
     const end = String(o.endDate || o.end_date || "Tomorrow");
@@ -797,7 +797,7 @@ export const api = {
     const img =
       orderData.productImage ||
       orderData.product_image ||
-      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600";
+      "";
     const start = orderData.startDate || orderData.start_date || "Today";
     const end = orderData.endDate || orderData.end_date || "Tomorrow";
 

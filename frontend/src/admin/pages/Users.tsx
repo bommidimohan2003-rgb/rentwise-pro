@@ -10,6 +10,7 @@ import {
   Download,
   Plus,
   X,
+  User,
 } from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
@@ -334,11 +335,17 @@ export default function Users() {
       sortable: true,
       render: (row) => (
         <div className="flex items-center gap-3">
-          <img
-            src={row.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"}
-            alt={row.fullName}
-            className="h-9 w-9 rounded-full object-cover border border-border shrink-0"
-          />
+          {row.avatar ? (
+            <img
+              src={row.avatar}
+              alt={row.fullName}
+              className="h-9 w-9 rounded-full object-cover border border-border shrink-0"
+            />
+          ) : (
+            <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-muted-foreground border border-border shrink-0">
+              <User className="h-4 w-4 opacity-70" />
+            </div>
+          )}
           <div className="flex flex-col min-w-0">
             <span className="text-xs font-bold text-foreground truncate">
               {row.fullName}
@@ -615,11 +622,17 @@ export default function Users() {
           <div className="space-y-6">
             <div className="flex items-start justify-between gap-4 border-b border-border/50 pb-5">
               <div className="flex items-center gap-4">
-                <img
-                  src={selectedUser.avatar || selectedUser.profilePhotoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"}
-                  alt={selectedUser.fullName}
-                  className="h-16 w-16 rounded-2xl object-cover border border-primary/20 bg-secondary"
-                />
+                {selectedUser.avatar || selectedUser.profilePhotoUrl ? (
+                  <img
+                    src={selectedUser.avatar || selectedUser.profilePhotoUrl}
+                    alt={selectedUser.fullName}
+                    className="h-16 w-16 rounded-2xl object-cover border border-primary/20 bg-secondary"
+                  />
+                ) : (
+                  <div className="h-16 w-16 rounded-2xl border border-primary/20 bg-secondary flex items-center justify-center text-muted-foreground">
+                    <User className="h-8 w-8 opacity-70" />
+                  </div>
+                )}
                 <div className="flex flex-col">
                   <span className="text-lg font-extrabold text-foreground">
                     {selectedUser.fullName}

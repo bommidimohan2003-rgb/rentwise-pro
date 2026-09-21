@@ -4,36 +4,19 @@ import { SearchBar } from "./SearchBar";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { useState, useEffect } from "react";
-import { isOfflineMode } from "@/admin/services/api";
 import { adminWS, ConnectionStatus } from "@/admin/services/websocket";
 
 export function Topbar() {
   const { theme, toggle } = useTheme();
-  const [offline, setOffline] = useState(false);
   const [wsStatus, setWsStatus] = useState<ConnectionStatus>("DISCONNECTED");
 
   useEffect(() => {
-    setOffline(isOfflineMode());
-
-    const offlineHandler = (e: CustomEvent) => {
-      setOffline(e.detail);
-    };
-
-    window.addEventListener(
-      "payent-admin-offline-change",
-      offlineHandler as EventListener,
-    );
-
     // Subscribe to WebSocket connection status
     const unsubscribe = adminWS.onStatusChange((status) => {
       setWsStatus(status);
     });
 
     return () => {
-      window.removeEventListener(
-        "payent-admin-offline-change",
-        offlineHandler as EventListener,
-      );
       unsubscribe();
     };
   }, []);
@@ -44,12 +27,7 @@ export function Topbar() {
       <div className="flex items-center gap-4 pl-8 lg:pl-0">
         <SearchBar />
 
-        {offline ? (
-          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse flex items-center gap-1.5 shrink-0">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-            Offline Demo Mode
-          </span>
-        ) : wsStatus === "LIVE" ? (
+        {wsStatus === "LIVE" ? (
           <span className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 shrink-0">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -66,7 +44,7 @@ export function Topbar() {
         ) : (
           <span className="px-3 py-1 text-xs font-semibold rounded-full bg-secondary text-muted-foreground border border-border flex items-center gap-1.5 shrink-0">
             <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground"></span>
-            Disconnected
+            Realtime Stream Offline
           </span>
         )}
       </div>

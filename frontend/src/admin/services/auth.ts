@@ -15,7 +15,7 @@ export const authService = {
         role: "admin",
         status: "active",
         verified: true,
-        avatar: `https://ui-avatars.com/api/?name=${email}&background=10b981&color=fff`,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}&background=10b981&color=fff`,
         createdAt: new Date().toISOString(),
       };
 
@@ -54,7 +54,7 @@ export const authService = {
     try {
       await adminApi.post("/auth/logout");
     } catch (err) {
-      console.warn("Logout endpoint failed:", err);
+      console.warn("Logout endpoint notice:", err);
     }
     if (typeof window !== "undefined") {
       localStorage.removeItem("payent:token");
@@ -89,19 +89,9 @@ export const authService = {
     return false;
   },
 
-  getCurrentUser(): AdminUser {
+  getCurrentUser(): AdminUser | null {
     if (typeof window === "undefined") {
-      return {
-        id: "admin@payent.com",
-        fullName: "Administrator",
-        email: "admin@payent.com",
-        phone: "+91 8810519885",
-        role: "admin",
-        status: "active",
-        verified: true,
-        avatar: "https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff",
-        createdAt: new Date().toISOString(),
-      };
+      return null;
     }
 
     const adminUser = localStorage.getItem("payent:admin:current_user");
@@ -110,16 +100,16 @@ export const authService = {
         const u = JSON.parse(adminUser);
         if (u && (u.email || u.fullName)) {
           return {
-            id: u.email || u.id || "admin@payent.com",
+            id: u.email || u.id || "",
             fullName: u.fullName || u.email?.split("@")[0] || "Administrator",
-            email: u.email || "admin@payent.com",
+            email: u.email || "",
             phone: u.phone || "",
-            role: "admin",
-            status: "active",
+            role: (u.role as AdminUser["role"]) || "admin",
+            status: u.status || "active",
             verified: true,
             avatar:
               u.avatar ||
-              `https://ui-avatars.com/api/?name=${u.fullName || u.email || "Admin"}&background=10b981&color=fff`,
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName || u.email || "Admin")}&background=10b981&color=fff`,
             createdAt: u.createdAt || new Date().toISOString(),
           };
         }
@@ -132,18 +122,18 @@ export const authService = {
     if (currentUserRaw) {
       try {
         const u = JSON.parse(currentUserRaw);
-        if (u) {
+        if (u && (u.email || u.fullName)) {
           return {
-            id: u.email || u.id || "admin@payent.com",
+            id: u.email || u.id || "",
             fullName: u.fullName || u.email?.split("@")[0] || "Administrator",
-            email: u.email || "admin@payent.com",
+            email: u.email || "",
             phone: u.phone || "",
-            role: u.role || "admin",
-            status: "active",
+            role: (u.role as AdminUser["role"]) || "admin",
+            status: u.status || "active",
             verified: true,
             avatar:
               u.avatar ||
-              `https://ui-avatars.com/api/?name=${u.fullName || u.email || "Admin"}&background=10b981&color=fff`,
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName || u.email || "Admin")}&background=10b981&color=fff`,
             createdAt: u.createdAt || new Date().toISOString(),
           };
         }
@@ -152,16 +142,6 @@ export const authService = {
       }
     }
 
-    return {
-      id: "admin@payent.com",
-      fullName: "Administrator",
-      email: "admin@payent.com",
-      phone: "+91 8810519885",
-      role: "admin",
-      status: "active",
-      verified: true,
-      avatar: "https://ui-avatars.com/api/?name=Admin&background=10b981&color=fff",
-      createdAt: new Date().toISOString(),
-    };
+    return null;
   },
 };

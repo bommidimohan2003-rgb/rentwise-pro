@@ -8,6 +8,7 @@ import {
   RotateCcw,
   Tag,
   ArrowRight,
+  Package,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import type { Product } from "@/types";
@@ -15,28 +16,6 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getOptimizedImageUrl, getResponsiveImageSrcSet } from "@/utils/images";
-
-import cameraImg from "@/assets/images/camera.webp";
-import laptopImg from "@/assets/images/laptop.webp";
-import droneImg from "@/assets/images/drone.webp";
-import reClassic350Img from "@/assets/images/re_classic350.webp";
-import toolImg from "@/assets/images/tool.webp";
-import powerbankImg from "@/assets/images/powerbank.webp";
-
-const fallbackMap: Record<string, string> = {
-  cameras: cameraImg,
-  camera: cameraImg,
-  laptops: laptopImg,
-  laptop: laptopImg,
-  drones: droneImg,
-  drone: droneImg,
-  bikes: reClassic350Img,
-  "bikes & rides": reClassic350Img,
-  tools: toolImg,
-  "electronic drilling tools": toolImg,
-  powerbanks: powerbankImg,
-  "power banks": powerbankImg,
-};
 
 const KNOWN_BRANDS = [
   "Sony",
@@ -82,8 +61,7 @@ export function getProductPrimaryImage(product?: Product | null): string {
   ) {
     return product.images[0].trim();
   }
-  const catKey = (product.category || "").toLowerCase().trim();
-  return fallbackMap[catKey] || cameraImg;
+  return "";
 }
 
 export interface BrowseSwipeDeckProps {
@@ -498,15 +476,21 @@ export function BrowseSwipeDeck({
             }}
             className="absolute inset-x-2.5 sm:inset-x-3 top-3 bottom-0 rounded-[28px] bg-white/80 dark:bg-[#0B121A]/80 border border-black/10 dark:border-white/10 pointer-events-none shadow-md overflow-hidden will-change-transform"
           >
-            <img
-              src={getOptimizedImageUrl(
-                getProductPrimaryImage(nextProduct),
-                "card",
-              )}
-              alt=""
-              aria-hidden="true"
-              className="w-full h-full object-cover opacity-70"
-            />
+            {getProductPrimaryImage(nextProduct) ? (
+              <img
+                src={getOptimizedImageUrl(
+                  getProductPrimaryImage(nextProduct),
+                  "card",
+                )}
+                alt=""
+                aria-hidden="true"
+                className="w-full h-full object-cover opacity-70"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-900 text-muted-foreground/40">
+                <Package className="h-8 w-8 mb-1 opacity-40" />
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
             <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/90 text-xs font-bold">
               <span className="truncate">{nextProduct.title}</span>
@@ -552,25 +536,32 @@ export function BrowseSwipeDeck({
           )}
         >
           {/* REAL HERO PRODUCT IMAGE (Fills card) */}
-          <img
-            key={activeProduct.id}
-            src={getOptimizedImageUrl(displayImage, "card")}
-            srcSet={
-              getResponsiveImageSrcSet(displayImage, [360, 480, 640]) ||
-              undefined
-            }
-            sizes="(max-width: 640px) 90vw, 460px"
-            alt={activeProduct.title}
-            onError={() => {
-              if (activeProduct?.id) {
-                setImageErrorMap((prev) => ({ ...prev, [activeProduct.id]: true }));
+          {displayImage && !imageErrorMap[activeProduct.id] ? (
+            <img
+              key={activeProduct.id}
+              src={getOptimizedImageUrl(displayImage, "card")}
+              srcSet={
+                getResponsiveImageSrcSet(displayImage, [360, 480, 640]) ||
+                undefined
               }
-            }}
-            draggable={false}
-            loading="eager"
-            decoding="async"
-            className="w-full h-full object-cover object-center pointer-events-none group-hover:scale-105 transition-transform duration-500 ease-out"
-          />
+              sizes="(max-width: 640px) 90vw, 460px"
+              alt={activeProduct.title}
+              onError={() => {
+                if (activeProduct?.id) {
+                  setImageErrorMap((prev) => ({ ...prev, [activeProduct.id]: true }));
+                }
+              }}
+              draggable={false}
+              loading="eager"
+              decoding="async"
+              className="w-full h-full object-cover object-center pointer-events-none group-hover:scale-105 transition-transform duration-500 ease-out"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-900 text-muted-foreground/40 p-6 text-center">
+              <Package className="h-16 w-16 mb-2 opacity-40 text-neutral-500" />
+              <span className="text-sm font-semibold text-neutral-400">No image available</span>
+            </div>
+          )}
 
           {/* Ambient Cinematic Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent pointer-events-none" />

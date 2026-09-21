@@ -783,14 +783,17 @@ export default function Messages() {
                     >
                       {/* Product Thumbnail */}
                       <div className="relative shrink-0">
-                        <img
-                          src={
-                            c.productImage ||
-                            "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
-                          }
-                          alt={c.productTitle || "Gear"}
-                          className="h-11 w-11 rounded-xl object-cover border border-border shadow-xs"
-                        />
+                        {c.productImage ? (
+                          <img
+                            src={c.productImage}
+                            alt={c.productTitle || "Gear"}
+                            className="h-11 w-11 rounded-xl object-cover border border-border shadow-xs"
+                          />
+                        ) : (
+                          <div className="h-11 w-11 rounded-xl border border-border bg-secondary/30 flex items-center justify-center text-muted-foreground/50">
+                            <Package className="h-5 w-5 opacity-60" />
+                          </div>
+                        )}
                         {itemBadge && itemBadge.pulse && (
                           <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -1310,14 +1313,17 @@ export default function Messages() {
                 </div>
 
                 <div className="flex gap-3 items-center">
-                  <img
-                    src={
-                      activeConversation.productImage ||
-                      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
-                    }
-                    alt=""
-                    className="h-14 w-14 rounded-xl object-cover border border-border shadow-xs shrink-0"
-                  />
+                  {activeConversation.productImage ? (
+                    <img
+                      src={activeConversation.productImage}
+                      alt=""
+                      className="h-14 w-14 rounded-xl object-cover border border-border shadow-xs shrink-0"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 rounded-xl border border-border bg-secondary/30 flex items-center justify-center text-muted-foreground/50 shrink-0">
+                      <Package className="h-6 w-6 opacity-60" />
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-foreground leading-snug truncate">
                       {activeConversation.productTitle || "Professional Gear"}
@@ -1465,14 +1471,17 @@ export default function Messages() {
 
               {/* Product Info */}
               <div className="flex gap-3 items-center p-3 rounded-2xl bg-secondary/30 border border-border">
-                <img
-                  src={
-                    activeConversation.productImage ||
-                    "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600"
-                  }
-                  alt=""
-                  className="h-14 w-14 rounded-xl object-cover border border-border shrink-0"
-                />
+                {activeConversation.productImage ? (
+                  <img
+                    src={activeConversation.productImage}
+                    alt=""
+                    className="h-14 w-14 rounded-xl object-cover border border-border shrink-0"
+                  />
+                ) : (
+                  <div className="h-14 w-14 rounded-xl border border-border bg-secondary/30 flex items-center justify-center text-muted-foreground/50 shrink-0">
+                    <Package className="h-6 w-6 opacity-60" />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-foreground truncate">
                     {activeConversation.productTitle || "Rental Gear"}

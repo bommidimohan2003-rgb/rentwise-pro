@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Tag as TagIcon,
   Sparkle,
+  User,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/common/Button";
@@ -265,9 +266,7 @@ export default function BecomeLender() {
       owner: {
         name: user?.fullName || user?.email || "Verified Lender",
         email: user?.email || "",
-        avatar:
-          user?.avatar ||
-          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80",
+        avatar: user?.avatar || "",
         rating: 5.0,
         city: ownerCity,
       },
@@ -898,14 +897,17 @@ export default function BecomeLender() {
 
                         <div className="pt-2 flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <img
-                              src={
-                                user?.avatar ||
-                                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80"
-                              }
-                              alt="Owner"
-                              className="h-7 w-7 rounded-full object-cover border border-border"
-                            />
+                            {user?.avatar ? (
+                              <img
+                                src={user.avatar}
+                                alt="Owner"
+                                className="h-7 w-7 rounded-full object-cover border border-border"
+                              />
+                            ) : (
+                              <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center text-muted-foreground border border-border">
+                                <User className="h-3.5 w-3.5 opacity-70" />
+                              </div>
+                            )}
                             <div className="text-[11px]">
                               <p className="font-bold text-foreground leading-none">
                                 {user?.fullName || "Verified Lender"}

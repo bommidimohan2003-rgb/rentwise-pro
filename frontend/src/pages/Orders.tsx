@@ -110,13 +110,19 @@ export default function Orders() {
                   key={o.id}
                   className="grid grid-cols-1 md:grid-cols-[70px_1fr_130px_100px_110px_180px] gap-4 p-4 items-center border-b border-border last:border-0 hover:bg-secondary/15 transition-colors"
                 >
-                  <img
-                    src={getOptimizedImageUrl(o.productImage || o.product_image || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600", 'thumb')}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="h-14 w-14 rounded-xl object-cover border border-border"
-                  />
+                  {o.productImage || o.product_image ? (
+                    <img
+                      src={getOptimizedImageUrl(o.productImage || o.product_image, 'thumb')}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-14 w-14 rounded-xl object-cover border border-border"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 rounded-xl border border-border bg-secondary/30 flex items-center justify-center text-muted-foreground/50">
+                      <Package className="h-6 w-6 opacity-60" />
+                    </div>
+                  )}
                   <div>
                     <div className="font-semibold text-foreground leading-snug">{o.productTitle || o.product_title || "Gear Rental"}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">Booking #{o.id}</div>

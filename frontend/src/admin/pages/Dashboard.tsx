@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Users,
+  User,
   UserCheck,
   Package,
   Calendar,
@@ -629,14 +630,17 @@ export default function Dashboard() {
                   </div>
 
                   <div className="flex items-center gap-2 p-2 rounded-xl bg-secondary/50 border border-border/40 text-[11px]">
-                    <img
-                      src={
-                        item.owner?.avatar ||
-                        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
-                      }
-                      alt={item.owner?.name || "Verified Lender"}
-                      className="h-5 w-5 rounded-full object-cover shrink-0"
-                    />
+                    {item.owner?.avatar ? (
+                      <img
+                        src={item.owner.avatar}
+                        alt={item.owner?.name || "Verified Lender"}
+                        className="h-5 w-5 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border/60">
+                        <User className="h-3 w-3 opacity-70" />
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1 truncate">
                       <span className="font-bold text-foreground block truncate">
                         {item.owner?.name || "Verified Lender"}

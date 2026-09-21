@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Check,
   ArrowRight,
+  Package,
 } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
@@ -24,26 +25,6 @@ import { api } from "@/utils/api";
 import { formatOwnerAddress } from "@/utils/formatters";
 import { CSSTiltCard } from "./CSSTiltCard";
 import { getOptimizedImageUrl, getResponsiveImageSrcSet } from "@/utils/images";
-
-import cameraImg from "@/assets/images/camera.webp";
-import laptopImg from "@/assets/images/laptop.webp";
-import droneImg from "@/assets/images/drone.webp";
-import bikeImg from "@/assets/images/bike.webp";
-import toolImg from "@/assets/images/tool.webp";
-import powerbankImg from "@/assets/images/powerbank.webp";
-import reClassic350Img from "@/assets/images/re_classic350.webp";
-
-const fallbackMap: Record<string, string> = {
-  cameras: cameraImg,
-  laptops: laptopImg,
-  drones: droneImg,
-  bikes: reClassic350Img,
-  "bikes & rides": reClassic350Img,
-  tools: toolImg,
-  "electronic drilling tools": toolImg,
-  powerbanks: powerbankImg,
-  "power banks": powerbankImg,
-};
 
 export interface ProductCardProps {
   product: Product;
@@ -73,26 +54,24 @@ export function ProductCard({
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
-  const catKey = (product.category || "").toLowerCase().trim();
-  const fallbackImg = fallbackMap[catKey] || cameraImg;
   const primaryImg =
     product.image ||
     (Array.isArray(product.images) && product.images.length > 0
       ? product.images[0]
-      : "") ||
-    fallbackImg;
+      : "");
 
   const [imgSrc, setImgSrc] = useState<string>(primaryImg);
+  const [imgFailed, setImgFailed] = useState<boolean>(false);
 
   useEffect(() => {
     const nextPrimary =
       product.image ||
       (Array.isArray(product.images) && product.images.length > 0
         ? product.images[0]
-        : "") ||
-      fallbackImg;
+        : "");
     setImgSrc(nextPrimary);
-  }, [product.image, product.images, fallbackImg]);
+    setImgFailed(false);
+  }, [product.image, product.images]);
 
   const ownerName = (
     product.owner?.name ||
@@ -214,16 +193,23 @@ export function ProductCard({
       >
         {/* Card Header & Media */}
         <div className="relative aspect-[16/11] sm:aspect-[4/3] w-full overflow-hidden bg-secondary/60 p-0 flex items-center justify-center border-b border-border/40">
-          <img
-            src={getOptimizedImageUrl(imgSrc, 'card')}
-            srcSet={getResponsiveImageSrcSet(imgSrc, [320, 480, 640]) || undefined}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
-            alt={product.title}
-            onError={() => setImgSrc(fallbackImg)}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-108"
-          />
+          {imgSrc && !imgFailed ? (
+            <img
+              src={getOptimizedImageUrl(imgSrc, 'card')}
+              srcSet={getResponsiveImageSrcSet(imgSrc, [320, 480, 640]) || undefined}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
+              alt={product.title}
+              onError={() => setImgFailed(true)}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-108"
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-muted-foreground/40 p-6 text-center">
+              <Package className="h-10 w-10 mb-1.5 opacity-40" />
+              <span className="text-[11px] font-semibold text-muted-foreground/60">No image available</span>
+            </div>
+          )}
 
           {/* Ambient Image Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent pointer-events-none opacity-85 group-hover:opacity-95 transition-opacity" />

@@ -338,18 +338,22 @@ export default function Dashboard() {
                       className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-black/5 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02] hover:bg-neutral-100/60 dark:hover:bg-white/[0.04] transition-colors"
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <img
-                          src={getOptimizedImageUrl(
-                            o.productImage ||
-                            o.product_image ||
-                            "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
-                            'thumb'
-                          )}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                          className="h-14 w-14 rounded-xl object-cover border border-black/10 dark:border-white/10 shrink-0"
-                        />
+                        {o.productImage || o.product_image ? (
+                          <img
+                            src={getOptimizedImageUrl(
+                              o.productImage || o.product_image,
+                              'thumb'
+                            )}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="h-14 w-14 rounded-xl object-cover border border-black/10 dark:border-white/10 shrink-0"
+                          />
+                        ) : (
+                          <div className="h-14 w-14 rounded-xl border border-black/10 dark:border-white/10 bg-secondary/30 flex items-center justify-center text-muted-foreground/50 shrink-0">
+                            <Package className="h-6 w-6 opacity-60" />
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <div className="font-bold text-sm text-neutral-950 dark:text-white truncate">
                             {o.productTitle || o.product_title || "Cinema Gear Rental"}

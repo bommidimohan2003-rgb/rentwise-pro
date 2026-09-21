@@ -579,15 +579,15 @@ export default function Profile() {
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-2">
                   <div className="px-3 py-1 rounded-xl bg-secondary/80 border border-border text-xs font-medium text-foreground flex items-center gap-1.5">
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-                    <span>Aadhaar: <strong className="font-mono text-foreground font-bold">{user?.aadhaarMasked || user?.aadhaar_masked || "XXXX-XXXX-9012"}</strong></span>
+                    <span>Aadhaar: <strong className="font-mono text-foreground font-bold">{user?.aadhaarMasked || user?.aadhaar_masked || "Not linked"}</strong></span>
                   </div>
                   <div className="px-3 py-1 rounded-xl bg-secondary/80 border border-border text-xs font-medium text-foreground flex items-center gap-1.5">
                     <Mail className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-foreground font-semibold">{user?.email || "user@example.com"}</span>
+                    <span className="text-foreground font-semibold">{user?.email || "—"}</span>
                   </div>
                   <div className="px-3 py-1 rounded-xl bg-secondary/80 border border-border text-xs font-medium text-foreground flex items-center gap-1.5">
                     <Phone className="h-3.5 w-3.5 text-purple-500" />
-                    <span className="text-foreground font-semibold">{user?.phone || "+91XXXXXXXXXX"}</span>
+                    <span className="text-foreground font-semibold">{user?.phone || "Not provided"}</span>
                   </div>
                 </div>
               </div>
