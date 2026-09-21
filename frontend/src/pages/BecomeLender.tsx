@@ -70,6 +70,57 @@ interface GearPhoto {
   isPrimary: boolean;
 }
 
+const CATEGORIES = [
+  {
+    id: "cameras",
+    label: "Cameras & Lenses",
+    icon: Camera,
+    avgPrice: 1500,
+  },
+  {
+    id: "drones",
+    label: "Drones & Aerial",
+    icon: Sparkles,
+    avgPrice: 2000,
+  },
+  {
+    id: "laptops",
+    label: "Laptops & Computing",
+    icon: Laptop,
+    avgPrice: 1800,
+  },
+  {
+    id: "audio",
+    label: "Audio & Microphones",
+    icon: Headphones,
+    avgPrice: 700,
+  },
+  {
+    id: "vr",
+    label: "VR & Spatial",
+    icon: Sparkle,
+    avgPrice: 2500,
+  },
+  {
+    id: "tools",
+    label: "Tools & Rigging",
+    icon: Wrench,
+    avgPrice: 500,
+  },
+  {
+    id: "bikes",
+    label: "Bikes & Transport",
+    icon: Bike,
+    avgPrice: 800,
+  },
+  {
+    id: "powerbanks",
+    label: "Power & Stations",
+    icon: BatteryCharging,
+    avgPrice: 600,
+  },
+];
+
 export default function BecomeLender() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/become-lender" }) as {
@@ -161,8 +212,7 @@ export default function BecomeLender() {
   const primaryImage =
     photos.find((p) => p.isPrimary)?.url ||
     photos[0]?.url ||
-    CATEGORIES.find((c) => c.id === category)?.image ||
-    CATEGORIES[0].image;
+    "";
 
   // Form Submit Handler
   const onSubmit = async (e: React.FormEvent) => {
@@ -360,11 +410,17 @@ export default function BecomeLender() {
 
                 {/* Submitted Product Card Preview */}
                 <div className="p-4 rounded-2xl bg-secondary/60 border border-border/80 max-w-sm mx-auto text-left flex gap-4 items-center shadow-md">
-                  <img
-                    src={primaryImage}
-                    alt={title}
-                    className="h-18 w-18 rounded-xl object-cover border border-border shrink-0"
-                  />
+                  {primaryImage ? (
+                    <img
+                      src={primaryImage}
+                      alt={title}
+                      className="h-18 w-18 rounded-xl object-cover border border-border shrink-0"
+                    />
+                  ) : (
+                    <div className="h-18 w-18 rounded-xl bg-secondary border border-border shrink-0 grid place-items-center text-muted-foreground">
+                      <Camera className="h-8 w-8 opacity-40" />
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <h4 className="font-bold text-sm truncate text-foreground">
                       {title}
@@ -479,25 +535,16 @@ export default function BecomeLender() {
                                 key={c.id}
                                 type="button"
                                 onClick={() => setCategory(c.id)}
-                                className={`p-2.5 rounded-2xl border text-left flex flex-col gap-2 overflow-hidden cursor-pointer ${
+                                className={`p-2.5 rounded-2xl border text-left flex flex-col gap-2 overflow-hidden cursor-pointer transition-colors ${
                                   category === c.id
                                     ? "border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary/40 shadow-md"
-                                    : "border-border/80 bg-card text-muted-foreground"
+                                    : "border-border/80 bg-card text-muted-foreground hover:border-primary/40"
                                 }`}
                               >
-                                <div className="relative h-16 w-full rounded-xl overflow-hidden bg-secondary">
-                                  <img
-                                    src={c.image}
-                                    alt={c.label}
-                                    className="h-full w-full object-cover"
-                                    loading="lazy"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                                  <div className="absolute bottom-1.5 left-1.5 h-6 w-6 rounded-lg bg-black/70 backdrop-blur-md border border-white/20 grid place-items-center text-white">
-                                    <c.icon className="h-3.5 w-3.5" />
-                                  </div>
+                                <div className="relative h-14 w-full rounded-xl overflow-hidden bg-secondary/80 flex items-center justify-center">
+                                  <c.icon className="h-6 w-6 text-foreground/80" />
                                   {category === c.id && (
-                                    <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary text-white grid place-items-center shadow-md">
+                                    <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground grid place-items-center shadow-md">
                                       <Check className="h-3 w-3" />
                                     </div>
                                   )}
@@ -774,12 +821,19 @@ export default function BecomeLender() {
 
                   {/* Simulated Marketplace Product Card */}
                   <div className="rounded-3xl overflow-hidden border border-border/80 dark:border-white/10 bg-card shadow-xl space-y-0">
-                    <div className="relative aspect-4/3 w-full overflow-hidden bg-secondary">
-                      <img
-                        src={primaryImage}
-                        alt="Product preview"
-                        className="h-full w-full object-cover"
-                      />
+                    <div className="relative aspect-4/3 w-full overflow-hidden bg-secondary flex items-center justify-center">
+                      {primaryImage ? (
+                        <img
+                          src={primaryImage}
+                          alt="Product preview"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-muted-foreground/60 gap-2">
+                          <Camera className="h-10 w-10 opacity-40" />
+                          <span className="text-xs font-semibold">Upload or Snap Gear Photos</span>
+                        </div>
+                      )}
 
                       {/* Top Badges */}
                       <div className="absolute top-3 left-3 flex gap-2">
