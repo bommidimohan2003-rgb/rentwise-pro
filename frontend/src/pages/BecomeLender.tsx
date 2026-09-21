@@ -39,6 +39,15 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { CameraCaptureModal } from "@/components/lender/CameraCaptureModal";
 
+import cameraImg from "@/assets/images/camera.webp";
+import laptopImg from "@/assets/images/laptop.webp";
+import droneImg from "@/assets/images/drone.webp";
+import bikeImg from "@/assets/images/re_classic350.webp";
+import toolImg from "@/assets/images/tool.webp";
+import powerbankImg from "@/assets/images/powerbank.webp";
+import audioImg from "@/assets/images/audio.jpg";
+import vrImg from "@/assets/images/vr.jpg";
+
 const perks = [
   {
     icon: IndianRupee,
@@ -74,48 +83,56 @@ const CATEGORIES = [
   {
     id: "cameras",
     label: "Cameras & Lenses",
+    image: cameraImg,
     icon: Camera,
     avgPrice: 1500,
   },
   {
     id: "drones",
     label: "Drones & Aerial",
+    image: droneImg,
     icon: Sparkles,
     avgPrice: 2000,
   },
   {
     id: "laptops",
     label: "Laptops & Computing",
+    image: laptopImg,
     icon: Laptop,
     avgPrice: 1800,
   },
   {
     id: "audio",
     label: "Audio & Microphones",
+    image: audioImg,
     icon: Headphones,
     avgPrice: 700,
   },
   {
     id: "vr",
     label: "VR & Spatial",
+    image: vrImg,
     icon: Sparkle,
     avgPrice: 2500,
   },
   {
     id: "tools",
-    label: "Tools & Rigging",
+    label: "Drilling Machine",
+    image: toolImg,
     icon: Wrench,
     avgPrice: 500,
   },
   {
     id: "bikes",
-    label: "Bikes & Transport",
+    label: "Bikes & Cruisers",
+    image: bikeImg,
     icon: Bike,
     avgPrice: 800,
   },
   {
     id: "powerbanks",
-    label: "Power & Stations",
+    label: "Power Bank",
+    image: powerbankImg,
     icon: BatteryCharging,
     avgPrice: 600,
   },
@@ -470,18 +487,18 @@ export default function BecomeLender() {
                         Step {currentStep} of 3
                       </span>
                       <span className="text-xs font-semibold text-muted-foreground">
-                        {currentStep === 1 && "Gear Overview"}
-                        {currentStep === 2 && "Pricing & Terms"}
-                        {currentStep === 3 && "Direct Camera Photos"}
+                        {currentStep === 1 && "Product Name & Description"}
+                        {currentStep === 2 && "Product Photos"}
+                        {currentStep === 3 && "Pricing & Terms"}
                       </span>
                     </div>
 
                     {/* Step Timeline Progress Bar */}
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { num: 1, label: "Basics" },
-                        { num: 2, label: "Pricing" },
-                        { num: 3, label: "Photos" },
+                        { num: 1, label: "1. Name & Description" },
+                        { num: 2, label: "2. Photos" },
+                        { num: 3, label: "3. Pricing" },
                       ].map((step) => {
                         const isActive = currentStep === step.num;
                         const isCompleted = currentStep > step.num;
@@ -502,9 +519,7 @@ export default function BecomeLender() {
                           >
                             {isCompleted ? (
                               <Check className="h-3.5 w-3.5" />
-                            ) : (
-                              <span>{step.num}.</span>
-                            )}
+                            ) : null}
                             <span className="truncate">{step.label}</span>
                           </button>
                         );
@@ -513,168 +528,225 @@ export default function BecomeLender() {
                   </div>
 
                   <form onSubmit={onSubmit} className="space-y-6">
-                    {/* STEP 1: GEAR BASICS */}
+                    {/* STEP 1: PRODUCT NAME, CATEGORY, CONDITION & DESCRIPTION */}
                     {currentStep === 1 && (
                       <div className="space-y-6 animate-in fade-in duration-200">
                         <Input
-                          label="Item Title"
+                          label="Product Name"
                           placeholder="e.g. Sony Alpha A7 IV Camera + 24-70mm GM Lens"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
                           required
                         />
 
-                        {/* Category Selector Grid (NO HOVER EFFECTS) */}
+                        {/* Category Selector Grid */}
                         <div>
-                          <label className="mb-2.5 block text-xs font-bold uppercase tracking-wider text-foreground">
-                            Category Selection
-                          </label>
+                          <div className="flex items-center justify-between mb-3">
+                            <label className="text-xs font-bold uppercase tracking-wider text-foreground">
+                              Category Selection
+                            </label>
+                            <span className="text-[11px] text-muted-foreground font-medium">
+                              Select gear category
+                            </span>
+                          </div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            {CATEGORIES.map((c) => (
-                              <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => setCategory(c.id)}
-                                className={`p-2.5 rounded-2xl border text-left flex flex-col gap-2 overflow-hidden cursor-pointer transition-colors ${
-                                  category === c.id
-                                    ? "border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary/40 shadow-md"
-                                    : "border-border/80 bg-card text-muted-foreground hover:border-primary/40"
-                                }`}
-                              >
-                                <div className="relative h-14 w-full rounded-xl overflow-hidden bg-secondary/80 flex items-center justify-center">
-                                  <c.icon className="h-6 w-6 text-foreground/80" />
-                                  {category === c.id && (
-                                    <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground grid place-items-center shadow-md">
-                                      <Check className="h-3 w-3" />
+                            {CATEGORIES.map((c) => {
+                              const isSelected = category === c.id;
+                              return (
+                                <button
+                                  key={c.id}
+                                  type="button"
+                                  onClick={() => setCategory(c.id)}
+                                  className={`group relative rounded-2xl overflow-hidden text-left cursor-pointer transition-all duration-300 h-28 sm:h-36 flex flex-col justify-end border shadow-sm ${
+                                    isSelected
+                                      ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background shadow-xl scale-[1.02]"
+                                      : "border-black/10 dark:border-white/10 bg-neutral-900 hover:border-primary/50 hover:shadow-lg hover:-translate-y-1"
+                                  }`}
+                                >
+                                  {/* Full Card Background Photo */}
+                                  <div className="absolute inset-0 w-full h-full bg-neutral-900 overflow-hidden">
+                                    <img
+                                      src={c.image}
+                                      alt={c.label}
+                                      loading="lazy"
+                                      className="w-full h-full object-cover filter opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 ease-out"
+                                    />
+                                    {/* Dark gradient overlay on image for crisp text readability */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+                                  </div>
+
+                                  {/* Selected Active Checkmark Badge */}
+                                  {isSelected && (
+                                    <div className="absolute top-2.5 right-2.5 h-6 w-6 rounded-full bg-primary text-primary-foreground grid place-items-center shadow-lg z-20 animate-in zoom-in-50 duration-200">
+                                      <Check className="h-3.5 w-3.5 stroke-[3]" />
                                     </div>
                                   )}
-                                </div>
-                                <span className="text-xs truncate font-semibold">
-                                  {c.label}
-                                </span>
-                              </button>
-                            ))}
+
+                                  {/* Clean Category Title sitting at the bottom of the card */}
+                                  <div className="relative z-10 p-3 text-left w-full">
+                                    <h4
+                                      className={`text-xs sm:text-sm font-bold text-white transition-colors leading-tight line-clamp-1 drop-shadow-md ${
+                                        isSelected
+                                          ? "text-primary font-black"
+                                          : "group-hover:text-primary"
+                                      }`}
+                                    >
+                                      {c.label}
+                                    </h4>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
 
-                        {/* Condition Selector */}
-                        <div>
-                          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-foreground">
-                            Item Condition
-                          </label>
-                          <div className="grid grid-cols-3 gap-3">
-                            {["Like New", "Excellent", "Good"].map((cond) => (
-                              <button
-                                key={cond}
-                                type="button"
-                                onClick={() => setCondition(cond)}
-                                className={`py-3 px-4 rounded-2xl border text-xs font-bold text-center cursor-pointer ${
-                                  condition === cond
-                                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/40 shadow-sm"
-                                    : "border-border bg-card text-muted-foreground"
-                                }`}
-                              >
-                                {cond}
-                              </button>
-                            ))}
+                        {/* Redesigned Item Condition Selector */}
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5 font-display">
+                              <Sparkles className="h-3.5 w-3.5 text-primary" />
+                              Item Condition
+                            </label>
+                            <span className="text-[11px] text-muted-foreground font-medium">
+                              Help borrowers gauge gear wear
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            {[
+                              {
+                                id: "Like New",
+                                title: "Like New",
+                                subtitle: "Pristine, zero signs of wear",
+                                icon: Sparkles,
+                                badge: "Flawless",
+                              },
+                              {
+                                id: "Excellent",
+                                title: "Excellent",
+                                subtitle: "Minor cosmetic signs, 100% tested",
+                                icon: CheckCircle2,
+                                badge: "Tested",
+                              },
+                              {
+                                id: "Good",
+                                title: "Good",
+                                subtitle: "Normal cosmetic wear, fully working",
+                                icon: ShieldCheck,
+                                badge: "Reliable",
+                              },
+                            ].map((cond) => {
+                              const isSelected = condition === cond.id;
+                              const Icon = cond.icon;
+                              return (
+                                <button
+                                  key={cond.id}
+                                  type="button"
+                                  onClick={() => setCondition(cond.id)}
+                                  className={`relative p-2.5 sm:p-3 rounded-2xl border text-left cursor-pointer transition-all duration-200 flex flex-col justify-between gap-2 overflow-hidden ${
+                                    isSelected
+                                      ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-md scale-[1.01]"
+                                      : "border-border/80 bg-card/60 dark:bg-zinc-900/60 hover:border-primary/40 hover:bg-card/90 shadow-sm"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between w-full">
+                                    <div
+                                      className={`h-6 w-6 rounded-lg grid place-items-center border transition-colors ${
+                                        isSelected
+                                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                          : "bg-secondary text-foreground border-border/70"
+                                      }`}
+                                    >
+                                      <Icon className="h-3.5 w-3.5" />
+                                    </div>
+                                    <span
+                                      className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${
+                                        isSelected
+                                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                          : "bg-secondary text-muted-foreground border-border/60"
+                                      }`}
+                                    >
+                                      {cond.badge}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <h5
+                                      className={`text-xs sm:text-sm font-bold leading-tight ${
+                                        isSelected
+                                          ? "text-primary font-black"
+                                          : "text-foreground"
+                                      }`}
+                                    >
+                                      {cond.title}
+                                    </h5>
+                                    <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                                      {cond.subtitle}
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
 
-                        <div>
-                          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-foreground">
-                            Detailed Description & Included Accessories
-                          </label>
-                          <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Describe your item condition, included batteries, chargers, SD cards, carrying cases, and usage guidelines..."
-                            className="w-full rounded-2xl border bg-card p-4 min-h-[130px] border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/40 text-sm placeholder:text-muted-foreground"
-                            required
-                          />
+                        {/* Redesigned Product Description & Included Accessories */}
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5 font-display">
+                              <Info className="h-3.5 w-3.5 text-primary" />
+                              Product Description & Included Accessories
+                            </label>
+                            <span className="text-[11px] text-muted-foreground font-medium">
+                              {description.length} characters
+                            </span>
+                          </div>
+
+                          {/* Rich Textarea Box */}
+                          <div className="relative rounded-2xl border border-border/80 bg-card/60 dark:bg-zinc-900/60 p-1 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition-all shadow-sm">
+                            <textarea
+                              value={description}
+                              onChange={(e) => setDescription(e.target.value)}
+                              placeholder="Describe item condition, included batteries, chargers, SD cards, carrying cases, and any special guidelines for borrowers..."
+                              className="w-full bg-transparent p-3 min-h-[105px] focus:outline-none text-sm placeholder:text-muted-foreground/70 leading-relaxed resize-y"
+                              required
+                            />
+                            <div className="px-3 pb-2 flex items-center justify-between text-[11px] text-muted-foreground border-t border-border/40 pt-1.5">
+                              <span>Be specific about included cables, bags & battery health.</span>
+                              <span className="font-semibold text-emerald-500">
+                                ✓ Helps faster borrower approval
+                              </span>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="pt-2 flex justify-end">
+                        {/* Redesigned Step Navigation Action Bar */}
+                        <div className="pt-4 border-t border-border/70 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <BadgeCheck className="h-4 w-4 text-emerald-500" />
+                            <span>Step 1 of 3: Details & Specs</span>
+                          </div>
+
                           <Button
                             type="button"
                             onClick={() => {
                               if (!title.trim() || !description.trim()) {
                                 toast.error(
-                                  "Please fill in title and description before proceeding."
+                                  "Please fill in product name and description before proceeding."
                                 );
                                 return;
                               }
                               setCurrentStep(2);
                             }}
-                            className="bg-primary text-primary-foreground px-8 rounded-2xl font-bold"
+                            className="w-full sm:w-auto bg-primary text-primary-foreground px-8 py-3 rounded-2xl font-extrabold shadow-lg hover:shadow-primary/25 hover:scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2"
                           >
-                            Continue to Pricing
-                            <ChevronRight className="h-4 w-4 ml-1" />
+                            <span>Continue to Photos</span>
+                            <ChevronRight className="h-4 w-4 stroke-[2.5]" />
                           </Button>
                         </div>
                       </div>
                     )}
 
-                    {/* STEP 2: PRICING & TERMS */}
+                    {/* STEP 2: DIRECT CAMERA CAPTURE & PHOTO UPLOAD */}
                     {currentStep === 2 && (
-                      <div className="space-y-6 animate-in fade-in duration-200">
-                        <div>
-                          <Input
-                            label="Daily Rental Rate (₹ / Day)"
-                            type="number"
-                            placeholder="e.g. 850"
-                            value={price}
-                            onChange={(e) => setPrice(e.target.value)}
-                            required
-                          />
-                          <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Info className="h-4 w-4 text-primary" />
-                            Suggested rate for {category}: ₹
-                            {CATEGORIES.find((c) => c.id === category)
-                              ?.avgPrice || 750}
-                            /day based on market demand.
-                          </p>
-                        </div>
-
-                        {/* Insurance Protection Badge Card */}
-                        <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 space-y-2 shadow-sm">
-                          <div className="flex items-center gap-2 font-bold text-sm">
-                            <Shield className="h-4 w-4" />
-                            ₹50,000 Payent Damage Coverage Included
-                          </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            Your equipment is automatically insured against accidental damage or non-return by verified borrowers.
-                          </p>
-                        </div>
-
-                        <div className="pt-2 flex justify-between">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setCurrentStep(1)}
-                            className="rounded-2xl font-bold"
-                          >
-                            <ChevronLeft className="h-4 w-4 mr-1" /> Back
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              if (!price || Number(price) <= 0) {
-                                toast.error("Please specify a valid daily price.");
-                                return;
-                              }
-                              setCurrentStep(3);
-                            }}
-                            className="bg-primary text-primary-foreground px-8 rounded-2xl font-bold"
-                          >
-                            Continue to Photos
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* STEP 3: DIRECT CAMERA CAPTURE & UPLOAD (NO HOVER EFFECTS) */}
-                    {currentStep === 3 && (
                       <div className="space-y-6 animate-in fade-in duration-200">
                         <div>
                           <label className="text-xs font-bold uppercase tracking-wider text-foreground block mb-3">
@@ -784,6 +856,59 @@ export default function BecomeLender() {
                           </div>
                         )}
 
+                        <div className="pt-2 flex justify-between">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setCurrentStep(1)}
+                            className="rounded-2xl font-bold"
+                          >
+                            <ChevronLeft className="h-4 w-4 mr-1" /> Back
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => setCurrentStep(3)}
+                            className="bg-primary text-primary-foreground px-8 rounded-2xl font-bold"
+                          >
+                            Continue to Pricing
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* STEP 3: PRICING & TERMS */}
+                    {currentStep === 3 && (
+                      <div className="space-y-6 animate-in fade-in duration-200">
+                        <div>
+                          <Input
+                            label="Daily Rental Rate (₹ / Day)"
+                            type="number"
+                            placeholder="e.g. 850"
+                            value={price}
+                            onChange={(e) => setPrice(e.target.value)}
+                            required
+                          />
+                          <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+                            <Info className="h-4 w-4 text-primary" />
+                            Suggested rate for {category}: ₹
+                            {CATEGORIES.find((c) => c.id === category)
+                              ?.avgPrice || 750}
+                            /day based on market demand.
+                          </p>
+                        </div>
+
+                        {/* Insurance Protection Badge Card */}
+                        <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 space-y-2 shadow-sm">
+                          <div className="flex items-center gap-2 font-bold text-sm">
+                            <Shield className="h-4 w-4" />
+                            ₹50,000 Payent Damage Coverage Included
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Your equipment is automatically insured against accidental damage or non-return by verified borrowers.
+                          </p>
+                        </div>
+
                         <div className="pt-4 flex justify-between items-center border-t border-border/80">
                           <Button
                             type="button"
@@ -796,7 +921,7 @@ export default function BecomeLender() {
                           <Button
                             type="submit"
                             size="lg"
-                            className="bg-primary text-primary-foreground px-10 rounded-2xl font-extrabold shadow-lg"
+                            className="bg-primary text-primary-foreground px-10 rounded-2xl font-extrabold shadow-lg cursor-pointer"
                             loading={isSubmitting}
                           >
                             Submit Listing
@@ -809,118 +934,88 @@ export default function BecomeLender() {
                 </div>
 
                 {/* Live Marketplace Product Card Preview (5 cols desktop) */}
-                <div className="lg:col-span-5 sticky top-24 space-y-4">
-                  <div className="flex items-center justify-between px-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-2 font-display">
-                      <Layers className="h-4 w-4 text-primary" /> Live Catalog Preview
+                <div className="lg:col-span-5 sticky top-24 space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5 font-display">
+                      <Layers className="h-3.5 w-3.5 text-primary" /> Live Catalog Preview
                     </span>
-                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
                       Real-time Preview
                     </span>
                   </div>
 
-                  {/* Simulated Marketplace Product Card */}
-                  <div className="rounded-3xl overflow-hidden border border-border/80 dark:border-white/10 bg-card shadow-xl space-y-0">
-                    <div className="relative aspect-4/3 w-full overflow-hidden bg-secondary flex items-center justify-center">
-                      {primaryImage ? (
-                        <img
-                          src={primaryImage}
-                          alt="Product preview"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-muted-foreground/60 gap-2">
-                          <Camera className="h-10 w-10 opacity-40" />
-                          <span className="text-xs font-semibold">Upload or Snap Gear Photos</span>
-                        </div>
-                      )}
+                  {/* Compact Unified Product Card (Text sits inside the full-bleed image) */}
+                  <div className="group relative rounded-3xl overflow-hidden border border-border/80 dark:border-white/10 bg-neutral-900 shadow-xl h-72 sm:h-80 flex flex-col justify-between p-4.5 transition-all duration-300">
+                    {/* Background Product / Category Image (Full bleed covering entire card) */}
+                    <div className="absolute inset-0 w-full h-full bg-neutral-900 overflow-hidden">
+                      <img
+                        src={primaryImage || CATEGORIES.find((c) => c.id === category)?.image || cameraImg}
+                        alt="Product preview"
+                        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                      />
+                      {/* Deep multi-stop gradient overlay so text and badges sit inside the image */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20 pointer-events-none" />
+                    </div>
 
-                      {/* Top Badges */}
-                      <div className="absolute top-3 left-3 flex gap-2">
-                        <div className="flex items-center gap-1 bg-[#FF5A5F] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
-                          <ShieldCheck className="h-3 w-3" />
+                    {/* Top Row: Badges sitting on top of image */}
+                    <div className="relative z-10 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1 bg-[#FF5A5F] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                          <ShieldCheck className="h-3.5 w-3.5" />
                           <span>Verified</span>
+                        </span>
+                        <span className="inline-block text-[10px] font-black text-white bg-black/60 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full capitalize">
+                          {category}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/15 shadow-sm">
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          <span>5.0</span>
                         </div>
-                      </div>
-
-                      <div className="absolute top-3 right-3 p-2 rounded-full bg-background/80 text-foreground shadow-md">
-                        <TagIcon className="h-3.5 w-3.5" />
-                      </div>
-
-                      {/* Rating Star Badge */}
-                      <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/70 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/10">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        <span>5.0 (New)</span>
+                        <div className="p-1.5 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20 shadow-sm">
+                          <TagIcon className="h-3.5 w-3.5" />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="p-5 space-y-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="inline-block text-[10px] font-black text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full capitalize">
-                            {category}
-                          </span>
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
-                            <MapPin className="h-3 w-3 text-primary" />
-                            <span className="truncate max-w-[110px]">
-                              {user?.city || user?.address || "Bengaluru, KA"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <h3 className="font-extrabold text-base leading-snug line-clamp-2 text-foreground font-display">
+                    {/* Bottom Row: Product details sitting at the bottom of the image */}
+                    <div className="relative z-10 space-y-2.5 mt-auto">
+                      <div>
+                        <h3 className="font-extrabold text-base sm:text-lg leading-snug line-clamp-1 text-white drop-shadow-md font-display">
                           {title || "High-Resolution Tech Gear"}
                         </h3>
+                        <p className="text-xs text-white/80 line-clamp-2 mt-1 leading-relaxed">
+                          {description || "High-performance tech gear available for peer-to-peer rental in your area."}
+                        </p>
                       </div>
 
-                      <div className="space-y-2 pt-3 border-t border-border/60">
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-[11px] text-muted-foreground font-bold">
-                            Daily Rate
+                      <div className="pt-2.5 border-t border-white/15 flex items-center justify-between">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-xl sm:text-2xl font-black text-white font-display drop-shadow-sm">
+                            ₹{price || "850"}
                           </span>
-                          <div>
-                            <span className="text-xl font-black text-foreground tracking-tight font-display">
-                              ₹{price || "850"}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground font-medium">
-                              {" "}
-                              /day
-                            </span>
-                          </div>
+                          <span className="text-[11px] text-white/70 font-semibold">
+                            /day
+                          </span>
                         </div>
 
-                        <div className="pt-2 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {user?.avatar ? (
-                              <img
-                                src={user.avatar}
-                                alt="Owner"
-                                className="h-7 w-7 rounded-full object-cover border border-border"
-                              />
-                            ) : (
-                              <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center text-muted-foreground border border-border">
-                                <User className="h-3.5 w-3.5 opacity-70" />
-                              </div>
-                            )}
-                            <div className="text-[11px]">
-                              <p className="font-bold text-foreground leading-none">
-                                {user?.fullName || "Verified Lender"}
-                              </p>
-                              <p className="text-[9px] text-emerald-500 font-semibold mt-0.5">
-                                ✓ Verified Owner
-                              </p>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-xs text-white/90">
+                          <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="truncate max-w-[130px] font-medium">
+                            {user?.city || user?.address || "Bengaluru, KA"}
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Security Policy Card */}
-                  <div className="p-4 rounded-2xl border border-border/80 bg-secondary/40 text-xs text-muted-foreground flex items-center gap-3 shadow-sm">
-                    <Shield className="h-5 w-5 text-primary shrink-0" />
+                  <div className="p-3 rounded-xl border border-border/80 bg-secondary/40 text-[11px] text-muted-foreground flex items-center gap-2.5 shadow-sm">
+                    <Shield className="h-4 w-4 text-primary shrink-0" />
                     <span>
-                      Automatic ₹50,000 damage policy and identity verification for all rental requests.
+                      Automatic ₹50,000 damage policy and verified lender coverage.
                     </span>
                   </div>
                 </div>

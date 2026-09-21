@@ -561,14 +561,32 @@ export default function Categories() {
         });
       });
     } else {
-      const knownKeys = ["cameras", "drones", "laptops", "audio", "lighting"];
+      const knownKeys = [
+        "cameras",
+        "drones",
+        "laptops",
+        "bikes",
+        "audio",
+        "tools",
+        "powerbanks",
+      ];
       knownKeys.forEach((key) => {
         const matchingCount = allProductsList.filter((p) =>
           matchCategory(p.category, key),
         ).length;
+        const displayName =
+          key === "powerbanks"
+            ? "Power Banks"
+            : key === "audio"
+              ? "Audio"
+              : key === "bikes"
+                ? "Bikes"
+                : key === "tools"
+                  ? "Drilling Tools"
+                  : key.charAt(0).toUpperCase() + key.slice(1);
         list.push({
           id: key,
-          name: key.charAt(0).toUpperCase() + key.slice(1),
+          name: displayName,
           count: matchingCount,
         });
       });

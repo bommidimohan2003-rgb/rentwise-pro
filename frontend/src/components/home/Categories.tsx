@@ -10,22 +10,30 @@ import droneImg from "@/assets/images/drone.webp";
 import bikeImg from "@/assets/images/re_classic350.webp";
 import toolImg from "@/assets/images/tool.webp";
 import powerbankImg from "@/assets/images/powerbank.webp";
+import audioImg from "@/assets/images/audio.jpg";
+import vrImg from "@/assets/images/vr.jpg";
 
-const categoryImageMap: Record<string, string> = {
+export const categoryImageMap: Record<string, string> = {
   camera: cameraImg,
   cameras: cameraImg,
+  "cinema cameras": cameraImg,
   laptop: laptopImg,
   laptops: laptopImg,
+  macbook: laptopImg,
+  workstations: laptopImg,
   drone: droneImg,
   drones: droneImg,
+  fpv: droneImg,
   bike: bikeImg,
   bikes: bikeImg,
   "bikes & rides": bikeImg,
   "bike (classic 350)": bikeImg,
   "royal enfield": bikeImg,
   "classic 350": bikeImg,
-  cycles: bikeImg,
+  motorcycle: bikeImg,
+  motorcycles: bikeImg,
   rides: bikeImg,
+  cycles: bikeImg,
   tool: toolImg,
   tools: toolImg,
   "power tools": toolImg,
@@ -40,6 +48,21 @@ const categoryImageMap: Record<string, string> = {
   "power banks": powerbankImg,
   "power stations": powerbankImg,
   power: powerbankImg,
+  audio: audioImg,
+  audios: audioImg,
+  sound: audioImg,
+  "audio gear": audioImg,
+  "studio audio": audioImg,
+  microphones: audioImg,
+  headphones: audioImg,
+  mic: audioImg,
+  mics: audioImg,
+  vr: vrImg,
+  ar: vrImg,
+  "vr & ar": vrImg,
+  "vr/ar": vrImg,
+  "meta quest": vrImg,
+  "vision pro": vrImg,
 };
 
 const defaultCategories: (Category & { description?: string })[] = [
@@ -72,12 +95,21 @@ const defaultCategories: (Category & { description?: string })[] = [
   },
   {
     id: "bikes",
-    name: "Bike (Classic 350)",
+    name: "Bikes",
     icon: "Bike",
     image: bikeImg,
     count: 9,
     description: "Royal Enfield Cruisers",
     color: "bg-amber-100 text-amber-800",
+  },
+  {
+    id: "audio",
+    name: "Audio",
+    icon: "Mic",
+    image: audioImg,
+    count: 16,
+    description: "Studio Mics & Rigs",
+    color: "bg-violet-100 text-violet-800",
   },
   {
     id: "tools",
@@ -108,7 +140,7 @@ export function Categories() {
       try {
         const data = await api.getPublicCategories();
         if (isMounted && Array.isArray(data) && data.length > 0) {
-          // Sync real product counts from backend while preserving the 6 curated hero showcase categories & images
+          // Sync real product counts from backend while preserving the curated hero showcase categories & verified images
           const enriched = defaultCategories.map((defCat) => {
             const match = data.find(
               (c: Category) =>
@@ -135,10 +167,10 @@ export function Categories() {
   }, []);
 
   return (
-    <section className="relative overflow-hidden bg-neutral-50/50 dark:bg-[#05090D] py-10 sm:py-16 text-neutral-900 dark:text-white border-b border-black/5 dark:border-white/10 transition-colors duration-300">
+    <section className="relative overflow-hidden bg-neutral-50/50 dark:bg-[#05090D] py-8 sm:py-12 lg:py-14 text-neutral-900 dark:text-white border-b border-black/5 dark:border-white/10 transition-colors duration-300">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6 sm:mb-8">
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
@@ -160,17 +192,22 @@ export function Categories() {
           </Link>
         </div>
 
-        {/* Photorealistic Category Showcase Grid: 1 line on large screens (6 cols), 3 cards per row on smaller screens */}
-        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5 lg:gap-4">
+        {/* Category Showcase Grid: All cards in 1 row on large screen (lg:grid-cols-7), 3 cards per row on small screens (grid-cols-3) */}
+        <div className="grid grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3 lg:gap-3.5">
           {categories.map((cat) => {
-            const imgSrc = cat.image || categoryImageMap[cat.id.toLowerCase()] || categoryImageMap[cat.name.toLowerCase()];
+            const imgSrc =
+              cat.image ||
+              categoryImageMap[cat.id.toLowerCase()] ||
+              categoryImageMap[cat.name.toLowerCase()] ||
+              categoryImageMap[cat.name.toLowerCase().replace(/[^a-z0-9]/g, "")] ||
+              cameraImg;
 
             return (
               <Link
                 key={cat.id}
                 to="/categories"
                 search={{ cat: cat.id }}
-                className="group relative rounded-xl sm:rounded-2xl overflow-hidden bg-neutral-900 border border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 shadow-sm hover:shadow-xl dark:shadow-none backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 cursor-pointer h-28 sm:h-36 md:h-40 lg:h-44 flex flex-col justify-end"
+                className="group relative rounded-xl sm:rounded-2xl overflow-hidden bg-neutral-900 border border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 shadow-sm hover:shadow-xl dark:shadow-none backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 cursor-pointer h-24 sm:h-32 md:h-36 lg:h-44 flex flex-col justify-end"
               >
                 {/* Full Card Background Photo */}
                 <div className="absolute inset-0 w-full h-full bg-neutral-900 overflow-hidden">
@@ -186,19 +223,24 @@ export function Categories() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-neutral-800 text-white">
-                      <Package className="h-8 w-8 opacity-70" />
+                      <Package className="h-7 w-7 opacity-70" />
                     </div>
                   )}
 
                   {/* Dark gradient overlay on image for crisp text readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none" />
                 </div>
 
                 {/* Clean Category Title overlaid on the bottom of the image */}
-                <div className="relative z-10 p-2.5 sm:p-3.5 text-left w-full">
-                  <h3 className="text-xs sm:text-base font-bold text-white group-hover:text-primary transition-colors leading-tight line-clamp-1 sm:line-clamp-2">
+                <div className="relative z-10 p-2 sm:p-3 lg:p-3 text-left w-full">
+                  <h3 className="text-[11px] sm:text-xs md:text-sm lg:text-[15px] font-bold text-white group-hover:text-primary transition-colors leading-tight line-clamp-1">
                     {cat.name}
                   </h3>
+                  {cat.description && (
+                    <p className="hidden md:block text-[10px] lg:text-[11px] text-white/70 truncate mt-0.5 font-medium">
+                      {cat.description}
+                    </p>
+                  )}
                 </div>
               </Link>
             );
@@ -208,4 +250,3 @@ export function Categories() {
     </section>
   );
 }
-

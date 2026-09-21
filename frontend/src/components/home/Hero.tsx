@@ -125,7 +125,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-4 sm:pt-6 pb-12 lg:pb-16 border-b border-black/10 dark:border-white/10 transition-colors duration-300">
+    <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-20 sm:pt-24 lg:pt-28 pb-12 lg:pb-16 border-b border-black/10 dark:border-white/10 transition-colors duration-300">
       {/* Ambient background glow matching dark cinematic reference */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] bg-gradient-to-b from-neutral-200/40 via-neutral-100/10 to-transparent dark:from-[#0B1522] dark:via-[#071017] dark:to-transparent rounded-full blur-[160px] pointer-events-none opacity-60" />
       <div className="absolute top-28 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-primary/5 dark:bg-white/5 rounded-full blur-[120px] pointer-events-none" />
@@ -160,7 +160,7 @@ export function Hero() {
         {/* Subtle radial and vertical scrims ensuring text readability */}
         <div className="absolute inset-0 bg-radial from-white/40 via-white/10 to-transparent dark:from-[#05090D]/75 dark:via-[#05090D]/40 dark:to-transparent pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-neutral-50/90 dark:from-[#05090D] via-neutral-50/40 dark:via-[#05090D]/80 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-neutral-50/40 dark:from-[#05090D]/70 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/20 via-black/5 to-transparent dark:from-black/40 dark:via-black/10 dark:to-transparent pointer-events-none" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-8 sm:pb-14">

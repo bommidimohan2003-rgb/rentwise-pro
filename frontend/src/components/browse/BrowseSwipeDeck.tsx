@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import {
-  ChevronLeft,
-  ChevronRight,
   Clock,
   Heart,
   RotateCcw,
@@ -396,47 +394,8 @@ export function BrowseSwipeDeck({
         className,
       )}
     >
-      {/* Top Deck Header: Queue Counter & Swipe Controls */}
-      <div className="w-full max-w-[430px] sm:max-w-[480px] lg:max-w-[500px] flex items-center justify-between mb-3 px-2">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs font-mono font-bold text-neutral-800 dark:text-[#E0E5EA] border border-black/5 dark:border-white/10">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>
-              {1} / {queue.length} in queue
-            </span>
-          </span>
-          <span className="hidden sm:inline-block text-[11px] text-neutral-400 dark:text-[#697680]">
-            Swipe to browse • Tap card for full details
-          </span>
-        </div>
-
-        {/* Swipe Left / Right Navigation Buttons (Desktop & Accessibility) */}
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => executeSwipe("left")}
-            aria-label="Swipe to previous product"
-            title="Swipe Next Product (Left Arrow)"
-            id="browse-swipe-left-btn"
-            className="h-9 w-9 rounded-full bg-white dark:bg-[#111A22] border border-black/10 dark:border-white/15 shadow-sm hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center text-neutral-700 dark:text-neutral-200 transition-colors cursor-pointer"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => executeSwipe("right")}
-            aria-label="Swipe to next product"
-            title="Swipe Next Product (Right Arrow)"
-            id="browse-swipe-right-btn"
-            className="h-9 w-9 rounded-full bg-white dark:bg-[#111A22] border border-black/10 dark:border-white/15 shadow-sm hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center text-neutral-700 dark:text-neutral-200 transition-colors cursor-pointer"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* CARD STACK CONTAINER — IMAGE-FIRST PRESENTATION */}
-      <div className="relative w-full max-w-[360px] sm:max-w-[420px] lg:max-w-[460px] min-h-[460px] sm:min-h-[500px] flex items-center justify-center">
+      {/* CARD STACK CONTAINER — COMPACT IMAGE-FIRST PRESENTATION */}
+      <div className="relative w-full max-w-[290px] sm:max-w-[320px] lg:max-w-[340px] min-h-[380px] sm:min-h-[410px] flex items-center justify-center">
         {/* SUBTLE BACKGROUND STACK CARD 3 (THIRD IN QUEUE) */}
         {thirdProduct && (
           <motion.div
@@ -447,17 +406,20 @@ export function BrowseSwipeDeck({
               opacity: thirdOpacity,
               zIndex: 1,
             }}
-            className="absolute inset-x-5 sm:inset-x-6 top-6 bottom-0 rounded-[28px] bg-white/40 dark:bg-[#090F15]/40 border border-black/5 dark:border-white/5 pointer-events-none shadow-sm overflow-hidden will-change-transform"
+            className="absolute inset-x-4 sm:inset-x-5 top-5 bottom-0 rounded-[24px] bg-white/40 dark:bg-[#090F15]/40 border border-black/5 dark:border-white/5 pointer-events-none shadow-sm overflow-hidden will-change-transform"
           >
-            <img
-              src={getOptimizedImageUrl(
-                getProductPrimaryImage(thirdProduct),
-                "card",
-              )}
-              alt=""
-              aria-hidden="true"
-              className="w-full h-full object-cover opacity-50 blur-[1px]"
-            />
+            <div className="absolute inset-0 w-full h-full overflow-hidden">
+              <img
+                src={getOptimizedImageUrl(
+                  getProductPrimaryImage(thirdProduct),
+                  "card",
+                )}
+                alt=""
+                aria-hidden="true"
+                className="w-full h-full object-cover opacity-40 blur-[1px]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            </div>
           </motion.div>
         )}
 
@@ -471,26 +433,29 @@ export function BrowseSwipeDeck({
               opacity: nextOpacity,
               zIndex: 2,
             }}
-            className="absolute inset-x-2.5 sm:inset-x-3 top-3 bottom-0 rounded-[28px] bg-white/80 dark:bg-[#0B121A]/80 border border-black/10 dark:border-white/10 pointer-events-none shadow-md overflow-hidden will-change-transform"
+            className="absolute inset-x-2 sm:inset-x-2.5 top-2.5 bottom-0 rounded-[24px] bg-white/80 dark:bg-[#0B121A]/80 border border-black/10 dark:border-white/10 pointer-events-none shadow-md overflow-hidden will-change-transform"
           >
             {getProductPrimaryImage(nextProduct) ? (
-              <img
-                src={getOptimizedImageUrl(
-                  getProductPrimaryImage(nextProduct),
-                  "card",
-                )}
-                alt=""
-                aria-hidden="true"
-                className="w-full h-full object-cover opacity-70"
-              />
+              <div className="absolute inset-0 w-full h-full overflow-hidden">
+                <img
+                  src={getOptimizedImageUrl(
+                    getProductPrimaryImage(nextProduct),
+                    "card",
+                  )}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-full h-full object-cover opacity-70"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              </div>
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-900 text-muted-foreground/40">
-                <Package className="h-8 w-8 mb-1 opacity-40" />
+                <Package className="h-7 w-7 mb-1 opacity-40" />
               </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/90 text-xs font-bold">
-              <span className="truncate">{nextProduct.title}</span>
+            <div className="absolute bottom-3 left-3.5 right-3.5 flex items-center justify-between text-white/90 text-[11px] font-bold">
+              <span className="truncate max-w-[160px]">{nextProduct.title}</span>
               <span className="font-mono text-emerald-400">
                 ₹{nextProduct.price.toLocaleString("en-IN")}/d
               </span>
@@ -526,57 +491,58 @@ export function BrowseSwipeDeck({
             }
           }}
           className={cn(
-            "group relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-[28px] bg-neutral-900 border border-black/10 dark:border-white/15 shadow-2xl overflow-hidden will-change-transform select-none transition-shadow",
+            "group relative w-full aspect-[4/5] rounded-[24px] bg-neutral-950 border border-black/10 dark:border-white/15 shadow-xl overflow-hidden will-change-transform select-none transition-shadow",
             isDraggingVisual
-              ? "cursor-grabbing shadow-3xl"
-              : "cursor-grab hover:shadow-3xl",
+              ? "cursor-grabbing shadow-2xl"
+              : "cursor-grab hover:shadow-2xl",
           )}
         >
-          {/* REAL HERO PRODUCT IMAGE (Fills card) */}
+          {/* REAL HERO PRODUCT IMAGE (Full Bleed Image with Clean Text Overlay) */}
           {displayImage && !imageErrorMap[activeProduct.id] ? (
-            <img
-              key={activeProduct.id}
-              src={getOptimizedImageUrl(displayImage, "card")}
-              srcSet={
-                getResponsiveImageSrcSet(displayImage, [360, 480, 640]) ||
-                undefined
-              }
-              sizes="(max-width: 640px) 90vw, 460px"
-              alt={activeProduct.title}
-              onError={() => {
-                if (activeProduct?.id) {
-                  setImageErrorMap((prev) => ({ ...prev, [activeProduct.id]: true }));
+            <div className="absolute inset-0 w-full h-full overflow-hidden bg-neutral-900">
+              <img
+                key={activeProduct.id}
+                src={getOptimizedImageUrl(displayImage, "card")}
+                srcSet={
+                  getResponsiveImageSrcSet(displayImage, [320, 480, 640]) ||
+                  undefined
                 }
-              }}
-              draggable={false}
-              loading="eager"
-              decoding="async"
-              className="w-full h-full object-cover object-center pointer-events-none group-hover:scale-105 transition-transform duration-500 ease-out"
-            />
+                sizes="(max-width: 640px) 85vw, 340px"
+                alt={activeProduct.title}
+                onError={() => {
+                  if (activeProduct?.id) {
+                    setImageErrorMap((prev) => ({ ...prev, [activeProduct.id]: true }));
+                  }
+                }}
+                draggable={false}
+                loading="eager"
+                decoding="async"
+                className="w-full h-full object-cover object-center pointer-events-none group-hover:scale-105 transition-transform duration-500 ease-out"
+              />
+              {/* Deep multi-stop gradient for crystal-clear text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+            </div>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-900 text-muted-foreground/40 p-6 text-center">
-              <Package className="h-16 w-16 mb-2 opacity-40 text-neutral-500" />
-              <span className="text-sm font-semibold text-neutral-400">No image available</span>
+            <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-900 text-muted-foreground/40 p-5 text-center">
+              <Package className="h-12 w-12 mb-2 opacity-40 text-neutral-500" />
+              <span className="text-xs font-semibold text-neutral-400">No image available</span>
             </div>
           )}
 
-          {/* Ambient Cinematic Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent pointer-events-none" />
-
           {/* TOP CONTROLS: Real Availability & Wishlist */}
-          <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-auto">
+          <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-20 pointer-events-auto">
             {/* Availability Badge */}
             <div
               onPointerDownCapture={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
             >
               {isAvailable ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 dark:bg-black/75 backdrop-blur-md px-3 py-1 text-xs font-bold text-emerald-400 border border-emerald-500/30 shadow-md">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-2.5 py-0.5 text-[11px] font-bold text-emerald-400 border border-emerald-500/30 shadow-md">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span>Available</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-md px-3 py-1 text-xs font-bold text-neutral-300 border border-white/10 shadow-md">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-md px-2.5 py-0.5 text-[11px] font-bold text-neutral-300 border border-white/10 shadow-md">
                   <Clock className="h-3 w-3 text-neutral-400" />
                   <span>Not Available</span>
                 </span>
@@ -589,11 +555,11 @@ export function BrowseSwipeDeck({
               onPointerDownCapture={(e) => e.stopPropagation()}
               onClick={handleWishlistToggle}
               aria-label="Toggle Wishlist"
-              className="h-9 w-9 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white/90 hover:text-red-500 transition-colors shadow-md border border-white/20 flex items-center justify-center cursor-pointer"
+              className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white/90 hover:text-red-500 transition-colors shadow-md border border-white/20 flex items-center justify-center cursor-pointer"
             >
               <Heart
                 className={cn(
-                  "h-4 w-4 transition-all",
+                  "h-3.5 w-3.5 transition-all",
                   has(activeProduct.id) &&
                     "fill-red-500 text-red-500 scale-110",
                 )}
@@ -601,16 +567,16 @@ export function BrowseSwipeDeck({
             </button>
           </div>
 
-          {/* BOTTOM IMAGE OVERLAY: Clean Minimal Header (Discover -> Swipe -> Select) */}
-          <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 space-y-2 pointer-events-none text-left">
+          {/* BOTTOM IMAGE OVERLAY: Clean, Compact Text on Image */}
+          <div className="absolute bottom-0 inset-x-0 p-4 space-y-1.5 z-20 pointer-events-none text-left">
             {/* Category & Brand Pill */}
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-bold uppercase tracking-wider border border-white/15">
-                <Tag className="h-3 w-3 text-emerald-400" />
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider border border-white/15">
+                <Tag className="h-2.5 w-2.5 text-emerald-400" />
                 <span>{activeProduct.category}</span>
               </span>
               {brand && (
-                <span className="px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-white/90 text-[11px] font-bold border border-white/10">
+                <span className="px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-white/90 text-[10px] font-bold border border-white/10">
                   {brand}
                 </span>
               )}
@@ -619,29 +585,29 @@ export function BrowseSwipeDeck({
             {/* Product Title */}
             <h2
               id="active-product-card-title"
-              className="text-xl sm:text-2xl font-black tracking-tight text-white leading-tight drop-shadow-md line-clamp-2"
+              className="text-base sm:text-lg font-extrabold tracking-tight text-white leading-snug drop-shadow-md line-clamp-1"
             >
               {activeProduct.title}
             </h2>
 
             {/* Price & Swipe/Tap Navigation Cue */}
-            <div className="pt-1 flex items-center justify-between text-white">
+            <div className="pt-0.5 flex items-center justify-between text-white">
               <div>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-white/70 block">
+                <span className="text-[9px] uppercase font-bold tracking-wider text-white/70 block">
                   Daily Rate
                 </span>
-                <div className="text-xl sm:text-2xl font-black tracking-tight font-mono leading-none mt-0.5 text-white">
+                <div className="text-lg sm:text-xl font-black tracking-tight font-mono leading-none mt-0.5 text-white">
                   ₹{activeProduct.price.toLocaleString("en-IN")}
-                  <span className="text-xs font-normal text-white/70 ml-0.5">
+                  <span className="text-[11px] font-normal text-white/70 ml-0.5">
                     /day
                   </span>
                 </div>
               </div>
 
-              {/* Click / Tap Prompt: DISCOVER -> SWIPE -> SELECT */}
-              <div className="flex items-center gap-1.5 text-xs font-bold bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-3.5 py-2 rounded-full border border-white/25 shadow-md">
+              {/* Click / Tap Prompt: SELECT GEAR */}
+              <div className="flex items-center gap-1 text-[11px] font-bold bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-3 py-1.5 rounded-full border border-white/25 shadow-md">
                 <span>Select Gear</span>
-                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
               </div>
             </div>
           </div>

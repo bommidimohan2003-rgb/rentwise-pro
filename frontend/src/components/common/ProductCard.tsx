@@ -189,251 +189,210 @@ export function ProductCard({
         onClick={handleCardClick}
         onMouseEnter={handlePreload}
         onPointerDown={handlePreload}
-        className="w-full flex flex-col justify-between overflow-hidden rounded-[22px] bg-card border border-border/60 hover:border-primary/40 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer h-full"
+        className="group relative w-full aspect-[4/5] sm:aspect-[3/4] min-h-[360px] sm:min-h-[390px] flex flex-col justify-between rounded-[24px] overflow-hidden bg-neutral-950 border border-black/10 dark:border-white/15 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer p-4 select-none"
       >
-        {/* Card Header & Media */}
-        <div className="relative aspect-[16/11] sm:aspect-[4/3] w-full overflow-hidden bg-secondary/60 p-0 flex items-center justify-center border-b border-border/40">
+        {/* FULL-BLEED HERO BACKGROUND IMAGE */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden bg-neutral-900 pointer-events-none">
           {imgSrc && !imgFailed ? (
             <img
-              src={getOptimizedImageUrl(imgSrc, 'card')}
+              src={getOptimizedImageUrl(imgSrc, "card")}
               srcSet={getResponsiveImageSrcSet(imgSrc, [320, 480, 640]) || undefined}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
               alt={product.title}
               onError={() => setImgFailed(true)}
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-108"
+              className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108 pointer-events-none"
             />
           ) : (
-            <div className="flex flex-col items-center justify-center text-muted-foreground/40 p-6 text-center">
-              <Package className="h-10 w-10 mb-1.5 opacity-40" />
-              <span className="text-[11px] font-semibold text-muted-foreground/60">No image available</span>
+            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/40 p-6 text-center bg-neutral-900">
+              <Package className="h-12 w-12 mb-2 opacity-40 text-neutral-500" />
+              <span className="text-xs font-semibold text-neutral-400">No image available</span>
             </div>
           )}
 
-          {/* Ambient Image Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent pointer-events-none opacity-85 group-hover:opacity-95 transition-opacity" />
+          {/* Multi-stop dark gradient overlay so text and badges sit inside the image */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20 pointer-events-none" />
+        </div>
 
-          {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+        {/* TOP ROW: Badges & Wishlist / Delete */}
+        <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-auto">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {product.isReference ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-extrabold text-black shadow-md">
                 <Tag className="h-3 w-3" />
                 Category Guide
               </span>
             ) : isAvailable ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-black/70 dark:bg-white/10 text-white backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold border border-white/20 shadow-md">
-                <ShieldCheck className="h-3 w-3 text-neutral-300" />
-                Verified Gear
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30 shadow-md">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Available</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-black/60 dark:bg-black/80 text-neutral-300 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold border border-white/10 shadow-md">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-neutral-300 border border-white/10 shadow-md">
                 <Clock className="h-3 w-3 text-neutral-400" />
-                Not Available
+                <span>Not Available</span>
+              </span>
+            )}
+
+            {/* Rating Badge */}
+            <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-white/15 shadow-sm">
+              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+              <span>{product.rating?.toFixed(1) || "5.0"}</span>
+            </div>
+          </div>
+
+          {/* Top Right: Delete or Wishlist Button */}
+          <div className="flex items-center gap-1.5">
+            {canDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  const userToken =
+                    storage.get<string | null>(STORAGE_KEYS.token, null) ||
+                    (user as { token?: string })?.token;
+
+                  if (!userToken) {
+                    toast.error("Please log in to delete listings.");
+                    return;
+                  }
+
+                  api
+                    .deleteCustomProduct(userToken, product.id)
+                    .then(() => {
+                      toast.success("Listing deleted permanently!");
+                      window.dispatchEvent(
+                        new CustomEvent("payent_products_updated"),
+                      );
+                    })
+                    .catch((err) => {
+                      const msg =
+                        err instanceof Error
+                          ? err.message
+                          : "Failed to delete listing";
+                      toast.error(msg);
+                    });
+                }}
+                className="h-8 w-8 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 flex items-center justify-center transition-all cursor-pointer shadow-md"
+                title="Delete Listing"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            {!product.isReference && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  toggle(product.id);
+                  toast.success(
+                    liked ? "Removed from wishlist" : "Saved to wishlist!",
+                  );
+                }}
+                aria-label="Toggle Wishlist"
+                className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white/90 hover:text-red-500 transition-colors shadow-md border border-white/20 flex items-center justify-center cursor-pointer"
+              >
+                <Heart
+                  className={cn(
+                    "h-3.5 w-3.5 transition-all",
+                    liked && "fill-red-500 text-red-500 scale-110",
+                  )}
+                />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* BOTTOM ROW: Text details sitting directly on the image */}
+        <div className="relative z-10 space-y-2 mt-auto text-left pointer-events-auto">
+          {/* Category & Location Pill */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider border border-white/15">
+              <Tag className="h-2.5 w-2.5 text-emerald-400" />
+              <span>{product.category}</span>
+            </span>
+            {location && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-white/90 text-[10px] font-medium border border-white/10 truncate max-w-[140px]">
+                <MapPin className={cn("h-2.5 w-2.5 shrink-0", isNearby ? "text-emerald-400" : "text-primary")} />
+                <span className="truncate">{location}</span>
+                {isNearby && (
+                  <span className="text-[8px] font-extrabold uppercase px-1 py-0.2 rounded bg-emerald-500/30 text-emerald-300 shrink-0">
+                    Nearby
+                  </span>
+                )}
               </span>
             )}
           </div>
 
-          {/* Wishlist Button */}
-          {!product.isReference && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                toggle(product.id);
-                toast.success(
-                  liked ? "Removed from wishlist" : "Saved to wishlist!",
-                );
-              }}
-              aria-label="Toggle Wishlist"
-              className="absolute top-3 right-3 z-10 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md p-2 text-white/90 hover:text-red-500 transition-colors shadow-md border border-white/20"
-            >
-              <Heart
-                className={cn(
-                  "h-4 w-4 transition-all",
-                  liked && "fill-red-500 text-red-500 scale-110",
-                )}
-              />
-            </button>
-          )}
+          {/* Product Title */}
+          <h3 className="font-extrabold text-base sm:text-lg leading-snug line-clamp-1 text-white drop-shadow-md font-display group-hover:text-primary transition-colors">
+            {product.title}
+          </h3>
 
-          {/* Bottom Overlay Location & Rating Bar */}
-          <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[11px] font-semibold text-white/90 bg-black/60 backdrop-blur-md rounded-xl px-2.5 py-1 border border-white/10 shadow-sm z-10">
-            <span className="inline-flex items-center gap-1.5 truncate max-w-[70%]">
-              <MapPin className={cn("h-3 w-3 shrink-0", isNearby ? "text-emerald-400" : "text-neutral-300")} />
-              <span className="truncate">{location}</span>
-              {isNearby && (
-                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 shrink-0">
-                  Nearby
-                </span>
-              )}
-            </span>
-            <span className="inline-flex items-center gap-0.5 text-amber-400 font-black shrink-0">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-              {product.rating?.toFixed(1) || "5.0"}
-            </span>
-          </div>
-        </div>
+          {/* Description */}
+          <p className="text-xs text-white/80 line-clamp-1 leading-relaxed">
+            {product.description || `High-performance ${product.title} available for instant peer-to-peer rental.`}
+          </p>
 
-        {/* Card Body */}
-        <div className="p-4 flex flex-col justify-between flex-1 space-y-3">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold tracking-wider uppercase text-neutral-500 dark:text-neutral-400">
-                {product.category}
+          {/* Price & Action Button */}
+          <div className="pt-2 border-t border-white/15 flex items-center justify-between">
+            <div>
+              <span className="text-[9px] uppercase font-bold tracking-wider text-white/70 block">
+                Daily Rate
               </span>
-              {/* Availability Indicator */}
-              {!product.isReference && (
-                <span
-                  className={cn(
-                    "text-[10px] font-semibold flex items-center gap-1.5",
-                    isAvailable
-                      ? "text-neutral-700 dark:text-neutral-300"
-                      : "text-neutral-400 dark:text-neutral-500",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      isAvailable
-                        ? "bg-neutral-800 dark:bg-neutral-200"
-                        : "bg-neutral-400 dark:bg-neutral-600",
-                    )}
-                  />
-                  <span>{isAvailable ? "Available" : "Not Available"}</span>
-                </span>
-              )}
-            </div>
-            <h3 className="text-sm font-bold tracking-tight text-foreground line-clamp-1 group-hover:text-primary transition-colors mt-0.5">
-              {product.title}
-            </h3>
-            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-              {product.description ||
-                `High performance ${product.title} available for instant peer-to-peer rental.`}
-            </p>
-          </div>
-
-          {/* Pricing and Action Buttons */}
-          <div className="pt-2.5 border-t border-border/40 flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground font-medium">
-                Day Rate
-              </span>
-              <div className="text-base font-black tracking-tight text-foreground font-mono">
+              <div className="text-lg sm:text-xl font-black tracking-tight font-mono leading-none mt-0.5 text-white">
                 ₹{product.price.toLocaleString("en-IN")}
-                <span className="text-xs font-normal text-muted-foreground ml-0.5">
+                <span className="text-[11px] font-normal text-white/70 ml-0.5">
                   /day
                 </span>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 pt-1">
+            {/* Action Button */}
+            <div>
               {product.isReference ? (
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="w-full bg-[#161616] text-[#F2F0EA] hover:bg-[#262626] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white rounded-xl py-2 px-3 text-xs font-bold inline-flex items-center justify-center shadow-sm active:scale-95 transition-all text-center cursor-pointer"
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/25 rounded-full py-1.5 px-3 text-xs font-bold inline-flex items-center gap-1 shadow-md cursor-pointer transition-all active:scale-95"
                 >
-                  + Add Listing
+                  <span>+ Add Listing</span>
                 </button>
-              ) : canDelete ? (
-                <div className="flex items-center gap-1.5 w-full">
-                  <Link
-                    to="/product/$id"
-                    params={{ id: product.id }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex-1 border border-neutral-300 dark:border-white/20 text-neutral-800 dark:text-neutral-200 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-xl h-8 text-[11px] font-bold inline-flex items-center justify-center transition-all truncate px-1"
-                  >
-                    {isAdmin && !isOwner ? "Admin Manage" : "Your Listing"}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      const userToken =
-                        storage.get<string | null>(STORAGE_KEYS.token, null) ||
-                        (user as { token?: string })?.token;
-
-                      if (!userToken) {
-                        toast.error("Please log in to delete listings.");
-                        return;
-                      }
-
-                      api
-                        .deleteCustomProduct(userToken, product.id)
-                        .then(() => {
-                          toast.success("Listing deleted permanently!");
-                          window.dispatchEvent(
-                            new CustomEvent("payent_products_updated"),
-                          );
-                        })
-                        .catch((err) => {
-                          const msg =
-                            err instanceof Error
-                              ? err.message
-                              : "Failed to delete listing";
-                          toast.error(msg);
-                        });
-                    }}
-                    className="h-8 w-8 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 flex items-center justify-center transition-all cursor-pointer shrink-0"
-                    title="Delete Listing"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
               ) : (
-                <div className="flex items-center gap-1.5 w-full">
-                  {/* Secondary: Details */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      navigate({
-                        to: "/product/$id",
-                        params: { id: product.id },
-                      });
-                    }}
-                    className="flex-1 bg-white hover:bg-neutral-100 text-[#171717] border border-[#D6D6D6] dark:bg-transparent dark:text-[#F3F3F3] dark:border-white/25 dark:hover:bg-white/10 rounded-xl py-2 px-2 text-xs font-semibold inline-flex items-center justify-center transition-all cursor-pointer truncate"
-                  >
-                    Details
-                  </button>
-
-                  {/* Primary: Add to Cart (or disabled Not Available) */}
-                  <button
-                    type="button"
-                    disabled={!isAvailable || isAdding}
-                    onClick={handleAddToCart}
-                    id={`add-to-cart-${product.id}`}
-                    className={cn(
-                      "flex-[1.4] rounded-xl py-2 px-3 text-xs font-bold inline-flex items-center justify-center gap-1 shadow-sm transition-all text-center",
-                      !isAvailable
-                        ? "bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed border border-neutral-300/40 dark:border-white/5 opacity-75"
-                        : justAdded
-                          ? "bg-neutral-900 text-white dark:bg-white dark:text-black cursor-pointer active:scale-95"
-                          : "bg-[#161616] text-[#F2F0EA] hover:bg-[#262626] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white cursor-pointer active:scale-95",
-                    )}
-                  >
-                    {isAdding ? (
-                      <span>Adding...</span>
-                    ) : justAdded ? (
-                      <>
-                        <Check className="h-3.5 w-3.5" />
-                        <span>Added</span>
-                      </>
-                    ) : !isAvailable ? (
-                      <span>Not Available</span>
-                    ) : (
-                      <>
-                        <ShoppingBag className="h-3.5 w-3.5" />
-                        <span>Add to Cart</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  disabled={!isAvailable || isAdding}
+                  onClick={handleAddToCart}
+                  id={`add-to-cart-${product.id}`}
+                  className={cn(
+                    "rounded-full py-1.5 px-3 text-xs font-bold inline-flex items-center justify-center gap-1.5 shadow-md backdrop-blur-md transition-all text-center",
+                    !isAvailable
+                      ? "bg-black/50 text-neutral-400 cursor-not-allowed border border-white/10 opacity-75"
+                      : justAdded
+                        ? "bg-emerald-500 text-white border border-emerald-400 cursor-pointer active:scale-95"
+                        : "bg-white/20 hover:bg-white/30 text-white border border-white/25 cursor-pointer active:scale-95",
+                  )}
+                >
+                  {isAdding ? (
+                    <span>Adding...</span>
+                  ) : justAdded ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      <span>Added</span>
+                    </>
+                  ) : !isAvailable ? (
+                    <span>Unavailable</span>
+                  ) : (
+                    <>
+                      <ShoppingBag className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>Rent Gear</span>
+                    </>
+                  )}
+                </button>
               )}
             </div>
           </div>

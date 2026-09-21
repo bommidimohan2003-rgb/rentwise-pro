@@ -244,33 +244,10 @@ export function FeaturedProducts() {
                   onFocus={() => {
                     api.getProduct(p.id).catch(() => {});
                   }}
-                  className="group relative rounded-2xl overflow-hidden bg-white dark:bg-[#0A1017] hover:bg-neutral-50/80 dark:hover:bg-[#0E1722] border border-black/8 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 shadow-sm hover:shadow-xl dark:shadow-none dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer p-3.5"
+                  className="group relative rounded-3xl overflow-hidden bg-neutral-950 border border-black/10 dark:border-white/15 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer p-4 select-none aspect-[4/5] sm:aspect-[3/4] min-h-[350px] sm:min-h-[380px]"
                 >
-                  {/* Top Image Stage */}
-                  <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-neutral-100/90 dark:bg-[#05090D] flex items-center justify-center p-3">
-                    {/* Badge */}
-                    {p.badge && (
-                      <span className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-black/75 dark:bg-black/80 text-white backdrop-blur-md border border-white/10 shadow-sm">
-                        {p.badge}
-                      </span>
-                    )}
-
-                    {/* Wishlist Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => handleWishlist(e, p.id)}
-                      aria-label="Save to wishlist"
-                      className="absolute top-2.5 right-2.5 z-10 h-7 w-7 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md flex items-center justify-center text-neutral-600 dark:text-white hover:text-rose-500 hover:bg-white dark:hover:bg-black transition-all cursor-pointer shadow-sm"
-                    >
-                      <Heart
-                        className={`h-3.5 w-3.5 transition-colors ${isLiked
-                            ? "fill-rose-500 text-rose-500"
-                            : "stroke-[2]"
-                          }`}
-                      />
-                    </button>
-
-                    {/* Product Image */}
+                  {/* Full-bleed background image */}
+                  <div className="absolute inset-0 w-full h-full overflow-hidden bg-neutral-900 pointer-events-none">
                     {p.image ? (
                       <img
                         src={getOptimizedImageUrl(p.image, 'card')}
@@ -279,58 +256,77 @@ export function FeaturedProducts() {
                         alt={p.title}
                         loading="lazy"
                         decoding="async"
-                        className="max-h-full max-w-full object-contain filter contrast-110 drop-shadow-[0_8px_16px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)] group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-700 ease-out pointer-events-none"
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center text-muted-foreground/40 text-center">
-                        <Package className="h-8 w-8 mb-1 opacity-40 text-neutral-500" />
-                        <span className="text-[10px] font-semibold text-neutral-400">No image</span>
+                      <div className="flex flex-col items-center justify-center text-muted-foreground/40 text-center h-full">
+                        <Package className="h-10 w-10 mb-1 opacity-40 text-neutral-500" />
+                        <span className="text-[11px] font-semibold text-neutral-400">No image</span>
                       </div>
                     )}
+                    {/* Dark gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20 pointer-events-none" />
                   </div>
 
-                  {/* Card Content */}
-                  <div className="mt-3 flex flex-col flex-1 justify-between">
-                    <div>
-                      {/* Meta Row: Category + Location */}
-                      <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-[#8B98A5] mb-1">
-                        <span className="font-semibold uppercase tracking-wider text-primary dark:text-neutral-300">
-                          {p.category}
+                  {/* Top Row: Badges & Wishlist */}
+                  <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-auto">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {p.badge && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-white border border-white/15 shadow-sm">
+                          {p.badge}
                         </span>
-                        <div className="flex items-center gap-1 truncate max-w-[120px]">
-                          <MapPin className="h-3 w-3 text-neutral-400 shrink-0" />
-                          <span className="truncate">{p.location}</span>
-                        </div>
-                      </div>
-
-                      {/* Product Title */}
-                      <h3 className="font-bold text-sm sm:text-[15px] text-neutral-900 dark:text-white group-hover:text-primary dark:group-hover:text-neutral-200 transition-colors line-clamp-1 leading-snug">
-                        {p.title}
-                      </h3>
-
-                      {/* Rating & Reviews */}
-                      <div className="flex items-center gap-1.5 mt-1.5 text-xs">
-                        <div className="flex items-center text-amber-400">
-                          <Star className="h-3.5 w-3.5 fill-current" />
-                          <span className="ml-1 font-bold text-neutral-900 dark:text-white text-xs">
-                            {p.rating.toFixed(1)}
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-neutral-400 dark:text-[#697680]">
-                          ({p.reviewsCount} reviews)
-                        </span>
+                      )}
+                      <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-white/15 shadow-sm">
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        <span>{p.rating.toFixed(1)}</span>
                       </div>
                     </div>
 
-                    {/* Action & Pricing Footer */}
-                    <div className="mt-3 pt-3 border-t border-black/5 dark:border-white/10 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] text-neutral-400 dark:text-[#8B98A5] block leading-none">
-                          Rent for
+                    {/* Wishlist Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleWishlist(e, p.id)}
+                      aria-label="Save to wishlist"
+                      className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md flex items-center justify-center text-white hover:text-rose-500 transition-all cursor-pointer shadow-md border border-white/20"
+                    >
+                      <Heart
+                        className={`h-3.5 w-3.5 transition-colors ${
+                          isLiked ? "fill-rose-500 text-rose-500" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Bottom Row: Details sitting directly on the image */}
+                  <div className="relative z-10 space-y-2 mt-auto text-left pointer-events-auto">
+                    {/* Meta Pill: Category + Location */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider border border-white/15">
+                        <Tag className="h-2.5 w-2.5 text-emerald-400" />
+                        <span>{p.category}</span>
+                      </span>
+                      {p.location && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-white/90 text-[10px] font-medium border border-white/10 truncate max-w-[130px]">
+                          <MapPin className="h-2.5 w-2.5 text-primary shrink-0" />
+                          <span className="truncate">{p.location}</span>
                         </span>
-                        <div className="text-sm font-black text-neutral-950 dark:text-white mt-0.5">
+                      )}
+                    </div>
+
+                    {/* Product Title */}
+                    <h3 className="font-extrabold text-base sm:text-lg text-white group-hover:text-primary transition-colors line-clamp-1 leading-snug drop-shadow-md">
+                      {p.title}
+                    </h3>
+
+                    {/* Price & Action */}
+                    <div className="pt-2 border-t border-white/15 flex items-center justify-between">
+                      <div>
+                        <span className="text-[9px] uppercase font-bold tracking-wider text-white/70 block">
+                          Daily Rate
+                        </span>
+                        <div className="text-lg sm:text-xl font-black tracking-tight font-mono leading-none mt-0.5 text-white">
                           ₹{p.price.toLocaleString("en-IN")}
-                          <span className="text-[10px] font-normal text-neutral-400 dark:text-[#8B98A5] ml-0.5">
+                          <span className="text-[11px] font-normal text-white/70 ml-0.5">
                             /day
                           </span>
                         </div>
@@ -342,9 +338,10 @@ export function FeaturedProducts() {
                           e.stopPropagation();
                           handleDetails(p.id);
                         }}
-                        className="px-3.5 py-1.5 rounded-lg bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-bold shadow-md border border-white/25 transition-all cursor-pointer active:scale-95 flex items-center gap-1"
                       >
-                        Rent Now
+                        <span>Rent Gear</span>
+                        <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
                       </button>
                     </div>
                   </div>

@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { Calendar, ShieldCheck, Truck, Wallet } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import verifiedGearImg from "@/assets/images/slide_verified_gear.jpg";
@@ -9,137 +8,119 @@ import expressDeliveryImg from "@/assets/images/slide_express_delivery.jpg";
 
 const trustItems = [
   {
-    id: 0,
-    icon: ShieldCheck,
+    id: "verified",
     title: "Verified Equipment",
-    description: "Quality-checked & tested gear from verified hosts",
-    tag: "100% Inspected",
+    description: "Quality-checked & tested gear from verified hosts with comprehensive inspections.",
     bgImage: verifiedGearImg,
-    badgeColor: "bg-white/10 text-white/90 border-white/20",
   },
   {
-    id: 1,
-    icon: Wallet,
+    id: "escrow",
     title: "Secure Payments",
-    description: "Escrow protection & guaranteed fast host payouts",
-    tag: "Instant Escrow",
+    description: "Escrow protection & guaranteed fast host payouts upon successful gear return.",
     bgImage: secureEscrowImg,
-    badgeColor: "bg-white/10 text-white/90 border-white/20",
   },
   {
-    id: 2,
-    icon: Calendar,
+    id: "flexible",
     title: "Flexible Rentals",
-    description: "Custom daily, weekly & monthly flexible dates",
-    tag: "Flexible Booking",
+    description: "Custom daily, weekly & monthly flexible dates with seamless extension options.",
     bgImage: flexibleRentalsImg,
-    badgeColor: "bg-white/10 text-white/90 border-white/20",
   },
   {
-    id: 3,
-    icon: Truck,
+    id: "delivery",
     title: "Pan India Delivery",
-    description: "Fast doorstep pickup & hassle-free insured return",
-    tag: "Doorstep Express",
+    description: "Fast doorstep pickup & hassle-free insured return across all major creator hubs.",
     bgImage: expressDeliveryImg,
-    badgeColor: "bg-white/10 text-white/90 border-white/20",
   },
 ];
 
 export function TrustStrip() {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Auto-advance slides every 3 seconds without human interaction
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % trustItems.length);
-    }, 3000);
-    return () => clearInterval(timer);
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % trustItems.length);
   }, []);
 
+  // Auto-advance every 5 seconds (5000ms)
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      nextSlide();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isPaused, nextSlide]);
+
+  const currentItem = trustItems[currentIndex];
+
+  const slideVariants = {
+    enter: {
+      x: "100%",
+      opacity: 0,
+    },
+    center: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        x: { type: "spring", stiffness: 260, damping: 28 },
+        opacity: { duration: 0.4 },
+      },
+    },
+    exit: {
+      x: "-100%",
+      opacity: 0,
+      transition: {
+        x: { type: "spring", stiffness: 260, damping: 28 },
+        opacity: { duration: 0.3 },
+      },
+    },
+  };
+
   return (
-    <section className="relative overflow-hidden bg-neutral-100/70 dark:bg-[#05090E] py-3 sm:py-5 border-b border-black/10 dark:border-white/10 text-neutral-900 dark:text-white transition-colors duration-300 select-none">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Main 3-Second Auto-Sliding Showcase Stage */}
-        <div className="relative w-full h-[120px] sm:h-[145px] md:h-[160px] rounded-xl sm:rounded-2xl border border-black/10 dark:border-white/15 overflow-hidden shadow-md dark:shadow-xl bg-[#09111C] dark:bg-[#09111C] transition-colors duration-300">
-          
-          {/* Stacked Persistent Background Images with Seamless Cross-Fade (Zero White Flash) */}
-          {trustItems.map((item, idx) => (
-            <motion.img
-              key={item.id}
-              src={item.bgImage}
-              alt={item.title}
-              initial={false}
-              animate={{
-                opacity: idx === activeIndex ? 1 : 0,
-                scale: idx === activeIndex ? 1.03 : 1,
-              }}
-              transition={{
-                duration: 0.8,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="absolute inset-0 w-full h-full object-cover object-center filter brightness-105 contrast-105 pointer-events-none"
-            />
-          ))}
-          
-          {/* Bottom Gradient Scrim strictly behind bottom text */}
-          <div className="absolute inset-x-0 bottom-0 h-24 sm:h-28 bg-gradient-to-t from-white/95 via-white/70 to-transparent dark:from-[#05090E]/95 dark:via-[#05090E]/70 dark:to-transparent pointer-events-none transition-colors duration-300 z-10" />
+    <section className="relative overflow-hidden bg-neutral-100/70 dark:bg-[#05090E] py-4 sm:py-6 border-b border-black/10 dark:border-white/10 text-neutral-900 dark:text-white transition-colors duration-300 select-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Clean Full-Width Showcase Stage with 5-Second Horizontal Slide Transitions */}
+        <div
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
+          className="relative w-full h-[120px] sm:h-[135px] md:h-[150px] rounded-2xl sm:rounded-3xl border border-black/10 dark:border-white/15 overflow-hidden shadow-md dark:shadow-xl bg-[#09111C]"
+        >
+          {/* Animated Sliding Full-Width Card */}
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.div
+              key={currentIndex}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="absolute inset-0 w-full h-full flex flex-col justify-end p-4 sm:p-6 md:p-7"
+            >
+              {/* Full Card Background Image */}
+              <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+                <img
+                  src={currentItem.bgImage}
+                  alt={currentItem.title}
+                  className="w-full h-full object-cover object-center filter brightness-95"
+                />
+                {/* Clean Dark Gradient Scrim behind Text */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-black/30 dark:from-[#05090E]/95 dark:via-[#05090E]/75 dark:to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+              </div>
 
-          {/* Bottom Text & Icon Bar */}
-          <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-5 z-20 flex items-center justify-between gap-4 w-full">
-            <AnimatePresence mode="popLayout">
-              <motion.div
-                key={activeIndex}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="flex items-center gap-2.5 sm:gap-3.5 max-w-xl"
-              >
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-black/5 dark:bg-white/10 backdrop-blur-xl border border-black/10 dark:border-white/20 flex items-center justify-center shrink-0 shadow-sm text-neutral-900 dark:text-white transition-colors duration-300">
-                  {(() => {
-                    const Icon = trustItems[activeIndex].icon;
-                    return <Icon className="w-4 h-4 sm:w-5 sm:h-5" />;
-                  })()}
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base md:text-lg font-extrabold text-neutral-950 dark:text-white tracking-tight leading-tight transition-colors duration-300">
-                    {trustItems[activeIndex].title}
-                  </h3>
-                  <p className="text-[11px] sm:text-xs text-neutral-600 dark:text-neutral-300 font-medium mt-0.5 transition-colors duration-300">
-                    {trustItems[activeIndex].description}
-                  </p>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Navigation Dots on Right Side */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              {trustItems.map((_, idx) => {
-                const isActive = idx === activeIndex;
-                return (
-                  <button
-                    type="button"
-                    key={idx}
-                    onClick={() => setActiveIndex(idx)}
-                    className={`transition-all duration-300 rounded-full cursor-pointer ${
-                      isActive
-                        ? "w-6 sm:w-7 h-2 bg-primary shadow-xs shadow-primary/50"
-                        : "w-2 h-2 bg-black/20 hover:bg-black/40 dark:bg-white/30 dark:hover:bg-white/60"
-                    }`}
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                );
-              })}
-            </div>
-          </div>
+              {/* Clean Typography Only: Title & Subtitle */}
+              <div className="relative z-10 max-w-2xl">
+                <h3 className="text-base sm:text-xl md:text-2xl font-black text-white tracking-tight leading-tight">
+                  {currentItem.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-neutral-300 font-medium mt-1 leading-snug">
+                  {currentItem.description}
+                </p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
-
       </div>
     </section>
   );
 }
-
-
-
