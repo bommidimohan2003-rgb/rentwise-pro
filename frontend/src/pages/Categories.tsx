@@ -1360,12 +1360,45 @@ export default function Categories() {
               </div>
             )}
 
-            {/* PRIMARY INTERACTION: SWIPE DECK EXPERIENCE */}
+            {/* PRIMARY INTERACTION: SWIPE DECK EXPERIENCE + ALL REMAINING GEAR */}
             {!isLoadingProducts && filteredProducts.length > 0 && viewMode === "swipe" && (
-              <BrowseSwipeDeck
-                products={filteredProducts}
-                onResetFilters={handleResetFilters}
-              />
+              <div className="space-y-10">
+                <BrowseSwipeDeck
+                  products={filteredProducts}
+                  onResetFilters={handleResetFilters}
+                />
+
+                {/* SHOW REMAINING PRODUCTS / CATALOG GRID */}
+                {filteredProducts.length > 1 && (
+                  <div className="pt-8 border-t border-black/10 dark:border-white/10">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg sm:text-xl font-extrabold text-neutral-950 dark:text-white flex items-center gap-2">
+                          <LayoutGrid className="h-5 w-5 text-primary" />
+                          <span>All Available Gear ({filteredProducts.length} items)</span>
+                        </h3>
+                        <p className="text-xs text-neutral-500 dark:text-[#8D98A3] mt-0.5">
+                          Browse all gear in this selection directly
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("grid")}
+                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Switch to Grid View</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {filteredProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* ALTERNATIVE INTERACTION: CLASSIC GRID */}
