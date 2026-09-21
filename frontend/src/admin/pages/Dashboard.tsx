@@ -213,7 +213,13 @@ export default function Dashboard() {
       setStats(statsData);
       setCharts(chartsData);
       setActivities(activitiesData);
-      setPendingProducts(allProds.filter((p) => p.status === "pending"));
+      setPendingProducts(
+        allProds.filter(
+          (p) =>
+            p.status?.toLowerCase() === "pending" ||
+            p.status?.toLowerCase() === "under_review",
+        ),
+      );
     } catch (err) {
       console.error(err);
       if (!silent) toast.error("Failed to load dashboard statistics.");
@@ -281,7 +287,17 @@ export default function Dashboard() {
       }
     });
 
-    return () => unsub();
+    const onLocalUpdate = () => {
+      loadData(true);
+    };
+    window.addEventListener("payent_products_updated", onLocalUpdate);
+    window.addEventListener("storage", onLocalUpdate);
+
+    return () => {
+      unsub();
+      window.removeEventListener("payent_products_updated", onLocalUpdate);
+      window.removeEventListener("storage", onLocalUpdate);
+    };
   }, []);
 
   const getActivityIcon = (type: string) => {
@@ -614,16 +630,19 @@ export default function Dashboard() {
 
                   <div className="flex items-center gap-2 p-2 rounded-xl bg-secondary/50 border border-border/40 text-[11px]">
                     <img
-                      src={item.owner.avatar}
-                      alt={item.owner.name}
+                      src={
+                        item.owner?.avatar ||
+                        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
+                      }
+                      alt={item.owner?.name || "Verified Lender"}
                       className="h-5 w-5 rounded-full object-cover shrink-0"
                     />
                     <div className="min-w-0 flex-1 truncate">
                       <span className="font-bold text-foreground block truncate">
-                        {item.owner.name}
+                        {item.owner?.name || "Verified Lender"}
                       </span>
                       <span className="text-[10px] text-muted-foreground block truncate">
-                        {item.owner.email || "Verified Lender"}
+                        {item.owner?.email || "Verified Lender"}
                       </span>
                     </div>
                   </div>

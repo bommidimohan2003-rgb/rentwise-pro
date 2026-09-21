@@ -273,32 +273,27 @@ export default function BecomeLender() {
       },
     };
 
-    let token = storage.get<string | null>(STORAGE_KEYS.token, null);
-    if (!token && user?.email) {
-      token = `google-firebase-jwt-${Date.now()}`;
-      storage.set(STORAGE_KEYS.token, token);
-    }
-
-    if (token) {
-      try {
-        await api.createCustomProduct(token, newProduct);
-        toast.success(
-          "Listing submitted for Admin Approval! Your tech gear listing is under review and will appear publicly once approved by an Admin.",
-        );
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.warn("[BecomeLender] Backend submission notice:", msg);
-        toast.error(`Database listing failed: ${msg}`);
-      }
-    } else {
+    const token = storage.get<string | null>(STORAGE_KEYS.token, null);
+    if (!token && !user?.email) {
       toast.error("Please log in to publish your gear.");
       setIsSubmitting(false);
       return;
     }
 
-    window.dispatchEvent(new CustomEvent("payent_products_updated"));
-    setIsSubmitting(false);
-    setDone(true);
+    try {
+      await api.createCustomProduct(token || "", newProduct);
+      toast.success(
+        "Listing submitted for Admin Approval! Your tech gear listing is under review and will appear publicly once approved by an Admin.",
+      );
+      window.dispatchEvent(new CustomEvent("payent_products_updated"));
+      setIsSubmitting(false);
+      setDone(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[BecomeLender] Backend submission error:", msg);
+      toast.error(`Listing failed: ${msg}`);
+      setIsSubmitting(false);
+    }
   };
 
   return (

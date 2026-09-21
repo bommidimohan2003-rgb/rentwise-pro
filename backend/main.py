@@ -515,6 +515,8 @@ class CreateAdminSchema(BaseModel):
     name: Optional[str] = "Admin"
     email: EmailStr
     password: str
+    secret: Optional[str] = None
+    admin_code: Optional[str] = None
 class ForgotPasswordRequestSchema(BaseModel):
     email: EmailStr
     recovery_token: Optional[str] = None
@@ -4809,6 +4811,7 @@ def admin_update_password(data: PasswordUpdateSchema, current_admin: dict = Depe
 
 # Dashboard stats
 @app.get("/api/admin/dashboard/stats")
+@app.get("/api/admin/stats")
 def admin_stats(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
     if not conn:
@@ -4843,7 +4846,7 @@ def admin_stats(current_admin: dict = Depends(check_admin_user)):
             cursor.execute("SELECT COUNT(*) as count FROM custom_products")
             total_products = cursor.fetchone()["count"]
             
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE status = 'pending'")
+            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE LOWER(status) IN ('pending', 'under_review')")
             pending_products = cursor.fetchone()["count"]
             
             cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE status = 'approved'")
@@ -5674,11 +5677,53 @@ def admin_delete_agent(id: str, current_admin: dict = Depends(check_admin_user))
 
 # Products
 @app.get("/api/admin/products")
-def admin_products_list(current_admin: dict = Depends(check_admin_user)):
+def admin_products_list(
+    status: Optional[str] = None,
+    current_admin: dict = Depends(check_admin_user)
+):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM custom_products ORDER BY created_at DESC")
+            if status:
+                clean_st = status.strip().lower()
+                if clean_st in ("pending", "under_review"):
+                    cursor.execute("""
+                        SELECT cp.*,
+                               u.full_name AS user_full_name,
+                               u.avatar AS user_avatar,
+                               u.phone AS user_phone,
+                               u.city AS user_city,
+                               u.status AS user_status
+                        FROM custom_products cp
+                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                        WHERE LOWER(cp.status) IN ('pending', 'under_review')
+                        ORDER BY cp.created_at DESC
+                    """)
+                else:
+                    cursor.execute("""
+                        SELECT cp.*,
+                               u.full_name AS user_full_name,
+                               u.avatar AS user_avatar,
+                               u.phone AS user_phone,
+                               u.city AS user_city,
+                               u.status AS user_status
+                        FROM custom_products cp
+                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                        WHERE LOWER(cp.status) = %s
+                        ORDER BY cp.created_at DESC
+                    """, (clean_st,))
+            else:
+                cursor.execute("""
+                    SELECT cp.*,
+                           u.full_name AS user_full_name,
+                           u.avatar AS user_avatar,
+                           u.phone AS user_phone,
+                           u.city AS user_city,
+                           u.status AS user_status
+                    FROM custom_products cp
+                    LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                    ORDER BY cp.created_at DESC
+                """)
             rows = cursor.fetchall()
     finally:
         conn.close()
@@ -5715,10 +5760,12 @@ def admin_products_list(current_admin: dict = Depends(check_admin_user)):
             "createdAt": r["created_at"],
             "owner": {
                 "id": r["user_email"],
-                "name": r["owner_name"],
-                "avatar": r["owner_avatar"] or "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-                "rating": float(r["owner_rating"]),
-                "email": r["user_email"]
+                "name": r.get("user_full_name") or r["owner_name"] or r["user_email"].split("@")[0],
+                "avatar": r.get("user_avatar") or r["owner_avatar"] or "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+                "rating": float(r["owner_rating"] or 5.0),
+                "email": r["user_email"],
+                "phone": r.get("user_phone") or "",
+                "city": r.get("user_city") or ""
             }
         })
     return res
@@ -5728,7 +5775,17 @@ def admin_get_product(id: str, current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM custom_products WHERE id = %s", (id,))
+            cursor.execute("""
+                SELECT cp.*,
+                       u.full_name AS user_full_name,
+                       u.avatar AS user_avatar,
+                       u.phone AS user_phone,
+                       u.city AS user_city,
+                       u.status AS user_status
+                FROM custom_products cp
+                LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                WHERE cp.id = %s
+            """, (id,))
             r = cursor.fetchone()
     finally:
         conn.close()
@@ -5766,10 +5823,12 @@ def admin_get_product(id: str, current_admin: dict = Depends(check_admin_user)):
         "createdAt": r["created_at"],
         "owner": {
             "id": r["user_email"],
-            "name": r["owner_name"],
-            "avatar": r["owner_avatar"] or "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-            "rating": float(r["owner_rating"]),
-            "email": r["user_email"]
+            "name": r.get("user_full_name") or r["owner_name"] or r["user_email"].split("@")[0],
+            "avatar": r.get("user_avatar") or r["owner_avatar"] or "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+            "rating": float(r["owner_rating"] or 5.0),
+            "email": r["user_email"],
+            "phone": r.get("user_phone") or "",
+            "city": r.get("user_city") or ""
         }
     }
 

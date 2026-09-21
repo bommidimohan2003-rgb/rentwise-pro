@@ -842,10 +842,14 @@ export const adminApi = axios.create({
 });
 
 adminApi.interceptors.request.use((config) => {
-  const token =
+  let token =
     localStorage.getItem("payent:admin:token") ||
     localStorage.getItem("payent:token");
   if (token) {
+    token = token.trim();
+    if (token.startsWith('"') && token.endsWith('"')) {
+      token = token.slice(1, -1).trim();
+    }
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

@@ -1025,7 +1025,10 @@ export const api = {
       },
       body: JSON.stringify(productData),
     });
-    if (!res.ok) throw new Error("Failed to create custom product");
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Failed to create custom product");
+    }
     this.invalidateCache("public_custom_products");
     this.invalidateCache("public_categories");
     this.invalidateCache("public_stats");

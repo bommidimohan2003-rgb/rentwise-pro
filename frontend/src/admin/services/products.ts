@@ -244,14 +244,17 @@ const FALLBACK_CATEGORIES: AdminCategory[] = [
 ];
 
 export const productsService = {
-  async getProducts(): Promise<AdminProduct[]> {
+  async getProducts(status?: string): Promise<AdminProduct[]> {
     try {
-      const response = await adminApi.get("/products");
+      const url = status
+        ? `/products?status=${encodeURIComponent(status)}`
+        : "/products";
+      const response = await adminApi.get(url);
       if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
     } catch (err) {
-      console.warn("[productsService] getProducts fallback:", err);
+      console.warn("[productsService] getProducts error:", err);
     }
     return FALLBACK_PRODUCTS;
   },

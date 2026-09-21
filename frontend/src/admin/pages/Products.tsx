@@ -202,18 +202,23 @@ export default function Products() {
       const q = search.toLowerCase();
       result = result.filter(
         (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.owner.name.toLowerCase().includes(q),
+          p.title?.toLowerCase().includes(q) ||
+          p.category?.toLowerCase().includes(q) ||
+          p.owner?.name?.toLowerCase().includes(q) ||
+          p.owner?.email?.toLowerCase().includes(q),
       );
     }
 
     if (categoryFilter !== "all") {
-      result = result.filter((p) => p.category === categoryFilter);
+      result = result.filter(
+        (p) => p.category?.toLowerCase() === categoryFilter.toLowerCase(),
+      );
     }
 
     if (statusFilter !== "all") {
-      result = result.filter((p) => p.status === statusFilter);
+      result = result.filter(
+        (p) => p.status?.toLowerCase() === statusFilter.toLowerCase(),
+      );
     }
 
     result.sort((a, b) => {
