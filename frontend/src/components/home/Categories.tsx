@@ -20,12 +20,25 @@ const categoryImageMap: Record<string, string> = {
   drones: droneImg,
   bike: bikeImg,
   bikes: bikeImg,
+  "bikes & rides": bikeImg,
+  "bike (classic 350)": bikeImg,
+  "royal enfield": bikeImg,
+  "classic 350": bikeImg,
   cycles: bikeImg,
   rides: bikeImg,
   tool: toolImg,
   tools: toolImg,
+  "power tools": toolImg,
+  "drilling machine": toolImg,
+  "drilling tools": toolImg,
+  "electronic drilling tools": toolImg,
+  drill: toolImg,
+  drills: toolImg,
   powerbank: powerbankImg,
   powerbanks: powerbankImg,
+  "power bank": powerbankImg,
+  "power banks": powerbankImg,
+  "power stations": powerbankImg,
   power: powerbankImg,
 };
 
@@ -40,15 +53,6 @@ const defaultCategories: (Category & { description?: string })[] = [
     color: "bg-blue-100 text-blue-800",
   },
   {
-    id: "laptops",
-    name: "Laptops",
-    icon: "Laptop",
-    image: laptopImg,
-    count: 14,
-    description: "MacBook & Workstations",
-    color: "bg-purple-100 text-purple-800",
-  },
-  {
     id: "drones",
     name: "Drones",
     icon: "Plane",
@@ -58,8 +62,17 @@ const defaultCategories: (Category & { description?: string })[] = [
     color: "bg-emerald-100 text-emerald-800",
   },
   {
+    id: "laptops",
+    name: "Laptops",
+    icon: "Laptop",
+    image: laptopImg,
+    count: 14,
+    description: "MacBook & Workstations",
+    color: "bg-purple-100 text-purple-800",
+  },
+  {
     id: "bikes",
-    name: "Bikes & Rides",
+    name: "Bike (Classic 350)",
     icon: "Bike",
     image: bikeImg,
     count: 9,
@@ -68,20 +81,20 @@ const defaultCategories: (Category & { description?: string })[] = [
   },
   {
     id: "tools",
-    name: "Power Tools",
+    name: "Drilling Machine",
     icon: "Hammer",
     image: toolImg,
     count: 15,
-    description: "Heavy Duty Cordless",
+    description: "Heavy Duty Cordless Drills",
     color: "bg-red-100 text-red-800",
   },
   {
     id: "powerbanks",
-    name: "Power Stations",
+    name: "Power Bank",
     icon: "Zap",
     image: powerbankImg,
     count: 11,
-    description: "Fast-Charging Packs",
+    description: "Fast-Charging Power Stations",
     color: "bg-slate-100 text-slate-800",
   },
 ];
@@ -95,11 +108,20 @@ export function Categories() {
       try {
         const data = await api.getPublicCategories();
         if (isMounted && Array.isArray(data) && data.length > 0) {
-          // Merge API data with photo assets
-          const enriched = data.map((cat: Category) => ({
-            ...cat,
-            image: cat.image || categoryImageMap[cat.id.toLowerCase()] || categoryImageMap[cat.name.toLowerCase()],
-          }));
+          // Sync real product counts from backend while preserving the 6 curated hero showcase categories & images
+          const enriched = defaultCategories.map((defCat) => {
+            const match = data.find(
+              (c: Category) =>
+                c.id.toLowerCase() === defCat.id.toLowerCase() ||
+                c.name.toLowerCase() === defCat.name.toLowerCase() ||
+                c.name.toLowerCase().includes(defCat.id.toLowerCase()) ||
+                defCat.name.toLowerCase().includes(c.name.toLowerCase())
+            );
+            return {
+              ...defCat,
+              count: match && typeof match.count === "number" ? match.count : defCat.count,
+            };
+          });
           setCategories(enriched);
         }
       } catch {
@@ -138,8 +160,8 @@ export function Categories() {
           </Link>
         </div>
 
-        {/* Photorealistic Category Showcase Grid: 3 cards per row */}
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:gap-5">
+        {/* Photorealistic Category Showcase Grid: 1 line on large screens (6 cols), 3 cards per row on smaller screens */}
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5 lg:gap-4">
           {categories.map((cat) => {
             const imgSrc = cat.image || categoryImageMap[cat.id.toLowerCase()] || categoryImageMap[cat.name.toLowerCase()];
 
@@ -148,7 +170,7 @@ export function Categories() {
                 key={cat.id}
                 to="/categories"
                 search={{ cat: cat.id }}
-                className="group relative rounded-xl sm:rounded-2xl overflow-hidden bg-neutral-900 border border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 shadow-sm hover:shadow-xl dark:shadow-none backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 cursor-pointer h-32 sm:h-44 md:h-48 lg:h-52 flex flex-col justify-end"
+                className="group relative rounded-xl sm:rounded-2xl overflow-hidden bg-neutral-900 border border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 shadow-sm hover:shadow-xl dark:shadow-none backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 cursor-pointer h-28 sm:h-36 md:h-40 lg:h-44 flex flex-col justify-end"
               >
                 {/* Full Card Background Photo */}
                 <div className="absolute inset-0 w-full h-full bg-neutral-900 overflow-hidden">
@@ -173,8 +195,8 @@ export function Categories() {
                 </div>
 
                 {/* Clean Category Title overlaid on the bottom of the image */}
-                <div className="relative z-10 p-3 sm:p-3.5 text-left w-full">
-                  <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-primary transition-colors leading-tight truncate">
+                <div className="relative z-10 p-2.5 sm:p-3.5 text-left w-full">
+                  <h3 className="text-xs sm:text-base font-bold text-white group-hover:text-primary transition-colors leading-tight line-clamp-1 sm:line-clamp-2">
                     {cat.name}
                   </h3>
                 </div>
