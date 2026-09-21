@@ -69,6 +69,23 @@ function getProductBrand(product: Product): string | null {
   return null;
 }
 
+export function getProductPrimaryImage(product?: Product | null): string {
+  if (!product) return "";
+  if (product.image && typeof product.image === "string" && product.image.trim()) {
+    return product.image.trim();
+  }
+  if (
+    Array.isArray(product.images) &&
+    product.images.length > 0 &&
+    typeof product.images[0] === "string" &&
+    product.images[0].trim()
+  ) {
+    return product.images[0].trim();
+  }
+  const catKey = (product.category || "").toLowerCase().trim();
+  return fallbackMap[catKey] || cameraImg;
+}
+
 export interface BrowseSwipeDeckProps {
   products: Product[];
   className?: string;
@@ -98,15 +115,17 @@ export function BrowseSwipeDeck({
 
   // Preload next 1-2 product images to guarantee zero flicker / blank card
   useEffect(() => {
-    if (nextProduct?.image) {
+    const nextImgUrl = getProductPrimaryImage(nextProduct);
+    if (nextImgUrl) {
       const img = new Image();
-      img.src = getOptimizedImageUrl(nextProduct.image, "card");
+      img.src = getOptimizedImageUrl(nextImgUrl, "card");
     }
-    if (thirdProduct?.image) {
+    const thirdImgUrl = getProductPrimaryImage(thirdProduct);
+    if (thirdImgUrl) {
       const img = new Image();
-      img.src = getOptimizedImageUrl(thirdProduct.image, "card");
+      img.src = getOptimizedImageUrl(thirdImgUrl, "card");
     }
-  }, [nextProduct?.image, thirdProduct?.image]);
+  }, [nextProduct, thirdProduct]);
 
   const isAvailable = useMemo(() => {
     if (!activeProduct) return false;
@@ -116,17 +135,14 @@ export function BrowseSwipeDeck({
     );
   }, [activeProduct]);
 
+  const [imageErrorMap, setImageErrorMap] = useState<Record<string, boolean>>({});
+
   const activeCatKey = (activeProduct?.category || "").toLowerCase().trim();
   const activeFallback = fallbackMap[activeCatKey] || cameraImg;
-  const [activeImgSrc, setActiveImgSrc] = useState<string>(
-    activeProduct?.image || activeFallback,
-  );
-
-  useEffect(() => {
-    if (activeProduct) {
-      setActiveImgSrc(activeProduct.image || activeFallback);
-    }
-  }, [activeProduct, activeFallback]);
+  const displayImage =
+    activeProduct && imageErrorMap[activeProduct.id]
+      ? activeFallback
+      : getProductPrimaryImage(activeProduct);
 
   // Motion values for real-time physics tracking on the active card
   const x = useMotionValue(0);
@@ -460,9 +476,7 @@ export function BrowseSwipeDeck({
           >
             <img
               src={getOptimizedImageUrl(
-                thirdProduct.image ||
-                  fallbackMap[(thirdProduct.category || "").toLowerCase()] ||
-                  cameraImg,
+                getProductPrimaryImage(thirdProduct),
                 "card",
               )}
               alt=""
@@ -486,9 +500,7 @@ export function BrowseSwipeDeck({
           >
             <img
               src={getOptimizedImageUrl(
-                nextProduct.image ||
-                  fallbackMap[(nextProduct.category || "").toLowerCase()] ||
-                  cameraImg,
+                getProductPrimaryImage(nextProduct),
                 "card",
               )}
               alt=""
@@ -541,14 +553,19 @@ export function BrowseSwipeDeck({
         >
           {/* REAL HERO PRODUCT IMAGE (Fills card) */}
           <img
-            src={getOptimizedImageUrl(activeImgSrc, "card")}
+            key={activeProduct.id}
+            src={getOptimizedImageUrl(displayImage, "card")}
             srcSet={
-              getResponsiveImageSrcSet(activeImgSrc, [360, 480, 640]) ||
+              getResponsiveImageSrcSet(displayImage, [360, 480, 640]) ||
               undefined
             }
             sizes="(max-width: 640px) 90vw, 460px"
             alt={activeProduct.title}
-            onError={() => setActiveImgSrc(activeFallback)}
+            onError={() => {
+              if (activeProduct?.id) {
+                setImageErrorMap((prev) => ({ ...prev, [activeProduct.id]: true }));
+              }
+            }}
             draggable={false}
             loading="eager"
             decoding="async"

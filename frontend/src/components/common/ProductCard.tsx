@@ -75,12 +75,24 @@ export function ProductCard({
 
   const catKey = (product.category || "").toLowerCase().trim();
   const fallbackImg = fallbackMap[catKey] || cameraImg;
+  const primaryImg =
+    product.image ||
+    (Array.isArray(product.images) && product.images.length > 0
+      ? product.images[0]
+      : "") ||
+    fallbackImg;
 
-  const [imgSrc, setImgSrc] = useState<string>(product.image || fallbackImg);
+  const [imgSrc, setImgSrc] = useState<string>(primaryImg);
 
   useEffect(() => {
-    setImgSrc(product.image || fallbackImg);
-  }, [product.image, fallbackImg]);
+    const nextPrimary =
+      product.image ||
+      (Array.isArray(product.images) && product.images.length > 0
+        ? product.images[0]
+        : "") ||
+      fallbackImg;
+    setImgSrc(nextPrimary);
+  }, [product.image, product.images, fallbackImg]);
 
   const ownerName = (
     product.owner?.name ||

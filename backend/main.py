@@ -2503,20 +2503,20 @@ def format_product_dict(p: dict, is_summary: bool = False, booked_pids_set: Opti
     # Authoritative lender and product availability evaluation (batched if set provided)
     is_avail, avail_status, reason = evaluate_product_availability(p, booked_pids_set=booked_pids_set)
 
-    raw_img = str(p.get("image", "")).strip()
-    if is_summary and len(raw_img) > 1024 and (raw_img.startswith("data:") or ";base64," in raw_img):
-        # Heavy inline base64 image in summary/listing view: replace with category standard thumbnail URL
-        cat = str(p.get("category", "")).lower()
-        if "camera" in cat or "lens" in cat:
-            raw_img = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&q=75"
-        elif "laptop" in cat or "macbook" in cat or "pc" in cat:
-            raw_img = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&auto=format&q=75"
-        elif "drone" in cat:
-            raw_img = "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=600&auto=format&q=75"
-        elif "audio" in cat or "mic" in cat:
-            raw_img = "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&q=75"
-        else:
-            raw_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&q=75"
+    raw_img = str(p.get("image", "") or "").strip()
+    images_val = p.get("images")
+    if isinstance(images_val, str) and images_val.strip():
+        try:
+            images_list = json.loads(images_val)
+        except Exception:
+            images_list = [images_val]
+    elif isinstance(images_val, list):
+        images_list = images_val
+    else:
+        images_list = [raw_img] if raw_img else []
+
+    if not raw_img and images_list:
+        raw_img = str(images_list[0]).strip()
 
     return {
         "id": str(p.get("id", "")),
@@ -2524,6 +2524,7 @@ def format_product_dict(p: dict, is_summary: bool = False, booked_pids_set: Opti
         "description": str(p.get("description", "")),
         "price": float(p.get("price") if p.get("price") is not None else 0),
         "image": raw_img,
+        "images": images_list,
         "category": str(p.get("category") or ""),
         "rating": float(p.get("rating") if p.get("rating") is not None else 5.0),
         "reviews": int(p.get("reviews") if p.get("reviews") is not None else 0),

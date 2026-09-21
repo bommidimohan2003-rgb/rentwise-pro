@@ -983,8 +983,8 @@ export const api = {
         if (Array.isArray(items)) {
           items.forEach((p) => {
             if (p && p.id) {
-              if (!p.image || p.image.startsWith("/assets/camera-") || p.image.includes("404")) {
-                p.image = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80";
+              if (!p.image && Array.isArray(p.images) && p.images.length > 0) {
+                p.image = p.images[0];
               }
               _productCache.set(p.id, p);
             }
