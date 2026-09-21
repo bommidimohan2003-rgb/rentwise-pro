@@ -3,15 +3,18 @@ import {
   Home,
   Compass,
   PlusCircle,
+  ShoppingBag,
   LayoutDashboard,
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useCart } from "@/hooks/useCart";
 
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { unreadCount } = useUnreadMessages();
+  const { cartCount } = useCart();
   const shouldReduceMotion = useReducedMotion();
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
 
@@ -38,6 +41,13 @@ export function MobileBottomNav() {
       badge: undefined,
     },
     {
+      to: "/cart",
+      label: "Cart",
+      icon: ShoppingBag,
+      exact: false,
+      badge: cartCount > 0 ? (cartCount > 99 ? "99+" : `${cartCount}`) : undefined,
+    },
+    {
       to: "/dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
@@ -49,10 +59,10 @@ export function MobileBottomNav() {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="fixed bottom-[calc(0.9rem+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[calc(100%-2.5rem)] max-w-[360px] z-50 lg:hidden pointer-events-auto select-none"
+      className="fixed bottom-[calc(0.9rem+env(safe-area-inset-bottom,0px))] inset-x-0 mx-auto w-[calc(100%-1.5rem)] max-w-[400px] z-50 lg:hidden pointer-events-auto select-none"
     >
       {/* Crystalline Translucent Floating Glass Dock */}
-      <div className="relative bg-white/55 dark:bg-[#070C12]/60 backdrop-blur-2xl saturate-[1.9] border border-black/[0.09] dark:border-white/[0.14] shadow-[0_16px_40px_-6px_rgba(0,0,0,0.14),0_2px_10px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_20px_48px_-8px_rgba(0,0,0,0.85),0_0_24px_rgba(16,185,129,0.08),inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-full p-1.5 flex items-center justify-between gap-1">
+      <div className="relative bg-white/55 dark:bg-[#070C12]/60 backdrop-blur-2xl saturate-[1.9] border border-black/[0.09] dark:border-white/[0.14] shadow-[0_16px_40px_-6px_rgba(0,0,0,0.14),0_2px_10px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] dark:shadow-[0_20px_48px_-8px_rgba(0,0,0,0.85),0_0_24px_rgba(16,185,129,0.08),inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-full p-1.5 flex items-center justify-between gap-0.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           let isActive = false;
@@ -68,6 +78,10 @@ export function MobileBottomNav() {
             isActive =
               pathname.startsWith("/become-lender") ||
               pathname.startsWith("/lender-portal");
+          } else if (item.to === "/cart") {
+            isActive =
+              pathname.startsWith("/cart") ||
+              pathname.startsWith("/checkout");
           } else if (item.label === "Dashboard") {
             isActive =
               pathname.startsWith("/dashboard") ||

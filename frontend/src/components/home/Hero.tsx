@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
-  Check,
-  ChevronDown,
-  Crosshair,
-  Loader2,
   MapPin,
   Search,
 } from "lucide-react";
@@ -58,35 +54,53 @@ const gearItems = [
   },
 ];
 
-const popularTags = [
-  "Sony FX3",
-  "Canon R5",
-  "DJI Mavic 3",
-  "MacBook Pro",
-  "Lighting Kit",
-  "Audio Gear",
-];
-
-const popularCities = [
-  "All Cities",
-  "Bengaluru",
-  "Mumbai",
-  "Delhi NCR",
-  "Hyderabad",
-  "Chennai",
-  "Pune",
-  "Kolkata",
-  "Ahmedabad",
-  "Jaipur",
-  "Goa",
-  "Kochi",
-  "Chandigarh",
+const searchSuggestions = [
+  "Cameras...",
+  "Laptops...",
+  "Royal Enfield bikes...",
+  "Drones...",
+  "Lighting kits...",
+  "Audio gear...",
+  "Drills & tools...",
 ];
 
 export function Hero() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeGearIndex, setActiveGearIndex] = useState(0);
+
+  // Typewriter placeholder animation (slower, natural pace)
+  const [placeholderText, setPlaceholderText] = useState("");
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentWord = searchSuggestions[suggestionIndex];
+    let timer: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting) {
+      if (placeholderText.length < currentWord.length) {
+        timer = setTimeout(() => {
+          setPlaceholderText(currentWord.slice(0, placeholderText.length + 1));
+        }, 140);
+      } else {
+        timer = setTimeout(() => {
+          setIsDeleting(true);
+        }, 2000);
+      }
+    } else {
+      if (placeholderText.length > 0) {
+        timer = setTimeout(() => {
+          setPlaceholderText(currentWord.slice(0, placeholderText.length - 1));
+        }, 65);
+      } else {
+        setIsDeleting(false);
+        setSuggestionIndex((prev) => (prev + 1) % searchSuggestions.length);
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [placeholderText, isDeleting, suggestionIndex]);
 
   // Auto-advance gear showcase every 4 seconds
   useEffect(() => {
@@ -98,14 +112,7 @@ export function Hero() {
 
   const activeGear = gearItems[activeGearIndex];
 
-  const {
-    city: selectedCity,
-    setCity: setSelectedCity,
-    isDetecting,
-    isAutoDetected,
-    detectLocation,
-  } = useUserLocation();
-  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const { city: selectedCity } = useUserLocation();
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -117,16 +124,8 @@ export function Hero() {
     });
   };
 
-  const handleTagClick = (tag: string) => {
-    setSearchTerm(tag);
-    navigate({
-      to: "/categories",
-      search: { q: tag },
-    });
-  };
-
   return (
-    <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-8 sm:pt-12 pb-12 lg:pb-16 border-b border-black/10 dark:border-white/10 transition-colors duration-300">
+    <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-4 sm:pt-6 pb-12 lg:pb-16 border-b border-black/10 dark:border-white/10 transition-colors duration-300">
       {/* Ambient background glow matching dark cinematic reference */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] bg-gradient-to-b from-neutral-200/40 via-neutral-100/10 to-transparent dark:from-[#0B1522] dark:via-[#071017] dark:to-transparent rounded-full blur-[160px] pointer-events-none opacity-60" />
       <div className="absolute top-28 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-primary/5 dark:bg-white/5 rounded-full blur-[120px] pointer-events-none" />
@@ -164,8 +163,44 @@ export function Hero() {
         <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-neutral-50/40 dark:from-[#05090D]/70 to-transparent pointer-events-none" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
-        {/* Main Text Section in Foreground */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-8 sm:pb-14">
+        {/* 1. Top Integrated Search Bar Module - Translucent Glassmorphic Style */}
+        <div className="max-w-xl sm:max-w-2xl mx-auto mb-10 sm:mb-14">
+          <form
+            onSubmit={handleSearch}
+            className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white/40 dark:bg-black/30 backdrop-blur-xl border border-black/10 dark:border-white/15 shadow-xl shadow-black/5 dark:shadow-black/30 flex items-center gap-1.5 sm:gap-2 transition-all hover:bg-white/50 dark:hover:bg-black/40 focus-within:border-black/25 dark:focus-within:border-white/30 focus-within:bg-white/60 dark:focus-within:bg-black/50"
+          >
+            {/* Keyword Search Input */}
+            <div className="flex-1 min-w-0 flex items-center gap-2 pl-2 sm:pl-3 py-1 bg-transparent">
+              <Search className="h-4 w-4 text-neutral-500 dark:text-neutral-400 shrink-0" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={placeholderText || "Cameras, laptops, bikes..."}
+                className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 dark:text-white placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus:outline-none truncate font-medium"
+              />
+            </div>
+
+            {/* Informational Location Indicator (DISPLAY ONLY) */}
+            {selectedCity && selectedCity !== "All Cities" && (
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 text-xs text-neutral-700 dark:text-neutral-200">
+                <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span suppressHydrationWarning className="truncate text-[11px] font-medium max-w-[100px]">{selectedCity}</span>
+              </div>
+            )}
+
+            {/* Search Submit Button */}
+            <button
+              type="submit"
+              className="h-9 sm:h-10 px-4 sm:px-5 rounded-xl sm:rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs sm:text-sm font-bold transition-all shrink-0 shadow-sm hover:scale-102 active:scale-98 cursor-pointer flex items-center gap-1.5"
+            >
+              <span>Search</span>
+            </button>
+          </form>
+        </div>
+
+        {/* 2. Headline & 3. Explore Gear CTA Button */}
         <div className="text-center max-w-4xl mx-auto space-y-8">
           {/* Headline */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[68px] font-black tracking-tight text-neutral-950 dark:text-white leading-[1.05]">
@@ -184,58 +219,8 @@ export function Hero() {
             </Link>
           </div>
         </div>
-
-        {/* Bottom Integrated Search Bar Module */}
-        <div className="mt-8 sm:mt-10 max-w-2xl mx-auto min-h-[96px]">
-          <form
-            onSubmit={handleSearch}
-            className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white dark:bg-[#081018] border border-black/10 dark:border-white/15 shadow-xl flex items-center gap-1.5 sm:gap-2 backdrop-blur-md"
-          >
-            {/* Keyword Search Input */}
-            <div className="flex-1 min-w-0 flex items-center gap-2 pl-2 sm:pl-3 py-1 bg-transparent">
-              <Search className="h-4 w-4 text-neutral-400 dark:text-[#AAB3BC] shrink-0" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search gear (camera, drone, laptop...)"
-                className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none truncate"
-              />
-            </div>
-
-            {/* Informational Location Indicator (DISPLAY ONLY) */}
-            {selectedCity && selectedCity !== "All Cities" && (
-              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-black/5 dark:border-white/10 text-xs text-neutral-600 dark:text-neutral-300">
-                <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                <span suppressHydrationWarning className="truncate text-[11px] font-medium max-w-[120px]">{selectedCity}</span>
-              </div>
-            )}
-
-            {/* Search Submit Button */}
-            <button
-              type="submit"
-              className="h-9 sm:h-10 px-5 sm:px-6 rounded-xl sm:rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs sm:text-sm font-bold transition-colors shrink-0 shadow-sm cursor-pointer flex items-center gap-1.5"
-            >
-              <span>Search</span>
-            </button>
-          </form>
-
-          {/* Popular Searches Chips */}
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 sm:gap-2 mt-3 px-1">
-            <span className="text-xs font-semibold text-neutral-500 dark:text-[#AAB3BC]">Popular:</span>
-            {popularTags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => handleTagClick(tag)}
-                className="px-3 py-1 rounded-full text-xs font-medium text-neutral-700 dark:text-[#AAB3BC] bg-neutral-100 dark:bg-[#0D151D] hover:text-neutral-900 dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 border border-black/10 dark:border-white/10 transition-colors cursor-pointer"
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );
 }
+

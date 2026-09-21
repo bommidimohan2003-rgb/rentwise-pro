@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Bell, Heart, LogOut, Moon, Sun, User, ShoppingBag, MessageSquare } from "lucide-react";
+import { Bell, Heart, Moon, Sun, User, ShoppingBag, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +9,6 @@ import { useCart } from "@/hooks/useCart";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { cn } from "@/lib/utils";
 import { LogoIcon } from "@/components/common/LogoIcon";
-import { toast } from "sonner";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 const links = [
@@ -22,7 +21,7 @@ const links = [
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, toggle } = useTheme();
   const { ids: wishlistIds } = useWishlist();
   const { cartCount, toggleCart } = useCart();
@@ -126,14 +125,14 @@ export function Navbar() {
               )}
             </Link>
 
-            {/* Cart Button */}
+            {/* Cart Button for Desktop / Larger Screens (Hidden on Mobile) */}
             <button
               type="button"
               onClick={toggleCart}
               aria-label={`Rental Cart (${cartCount} items)`}
               title="Rental Cart"
               id="nav-cart-top"
-              className="relative h-9 w-9 flex items-center justify-center rounded-full text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              className="hidden md:flex relative h-9 w-9 items-center justify-center rounded-full text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
               <ShoppingBag className="h-4 w-4 sm:h-[18px] sm:w-[18px] stroke-[2]" />
               {cartCount > 0 && (
