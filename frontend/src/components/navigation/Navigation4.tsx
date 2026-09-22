@@ -83,10 +83,10 @@ function Nav4DockItem({
         onFocus={() => setIsHovered(true)}
         onBlur={() => setIsHovered(false)}
         onClick={item.onClick}
-        className={`relative flex items-center justify-center rounded-2xl transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        className={`relative flex items-center justify-center rounded-2xl transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary ${
           item.isActive
-            ? "bg-primary/15 text-primary dark:bg-white/15 dark:text-white ring-1 ring-primary/40 dark:ring-white/30 shadow-md"
-            : "bg-white/70 hover:bg-white dark:bg-[#0D151D]/70 dark:hover:bg-[#15222E] text-neutral-600 hover:text-neutral-950 dark:text-[#A8B1BA] dark:hover:text-white border border-black/5 dark:border-white/10 shadow-xs"
+            ? "bg-primary/20 text-primary dark:bg-emerald-500/25 dark:text-emerald-300 ring-1 ring-primary/40 dark:ring-emerald-400/40 shadow-sm backdrop-blur-md"
+            : "bg-white/25 hover:bg-white/50 dark:bg-white/[0.07] dark:hover:bg-white/[0.16] text-neutral-700 hover:text-neutral-950 dark:text-neutral-200 dark:hover:text-white border border-black/5 dark:border-white/10 backdrop-blur-md shadow-xs"
         }`}
         aria-label={item.label}
         aria-current={item.isActive ? "page" : undefined}
@@ -266,7 +266,7 @@ export function Navigation4({
           isHovered.set(0);
           mouseY.set(Infinity);
         }}
-        className="py-3 px-2 rounded-3xl bg-white/75 dark:bg-[#071018]/85 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl flex flex-col items-center gap-2"
+        className="py-3 px-2 rounded-3xl bg-white/35 dark:bg-black/35 backdrop-blur-xl border border-white/50 dark:border-white/[0.12] shadow-xl shadow-black/5 dark:shadow-black/40 flex flex-col items-center gap-2"
       >
         {/* Core Navigation Items */}
         <div className="flex flex-col items-center gap-2">
