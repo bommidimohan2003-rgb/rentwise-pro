@@ -125,7 +125,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-20 sm:pt-24 lg:pt-28 pb-12 lg:pb-16 border-b border-black/10 dark:border-white/10 transition-colors duration-300">
+    <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-12 sm:pt-16 lg:pt-20 pb-12 lg:pb-16 border-b border-black/10 dark:border-white/10 transition-colors duration-300">
       {/* Ambient background glow matching dark cinematic reference */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] bg-gradient-to-b from-neutral-200/40 via-neutral-100/10 to-transparent dark:from-[#0B1522] dark:via-[#071017] dark:to-transparent rounded-full blur-[160px] pointer-events-none opacity-60" />
       <div className="absolute top-28 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-primary/5 dark:bg-white/5 rounded-full blur-[120px] pointer-events-none" />
