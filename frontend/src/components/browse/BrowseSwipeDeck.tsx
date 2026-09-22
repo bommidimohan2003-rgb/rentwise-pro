@@ -7,6 +7,7 @@ import {
   Tag,
   ArrowRight,
   Package,
+  ShoppingBag,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import type { Product } from "@/types";
@@ -611,10 +612,11 @@ export function BrowseSwipeDeck({
                 </div>
               </div>
 
-              {/* Click / Tap Prompt: SELECT GEAR */}
-              <div className="flex items-center gap-1 text-[11px] font-bold bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-3 py-1.5 rounded-full border border-white/25 shadow-md">
-                <span>Select Gear</span>
-                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+              {/* Click / Tap Prompt: RENT GEAR */}
+              <div className="flex items-center gap-1.5 text-xs font-bold bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full border border-white/25 shadow-md">
+                <ShoppingBag className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Rent Gear</span>
+                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform opacity-75" />
               </div>
             </div>
           </div>

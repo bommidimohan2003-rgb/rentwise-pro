@@ -621,8 +621,8 @@ export default function Categories() {
               {/* Eyebrow */}
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-[#AAB3BC]">
-                  Explore The Gear
+                <span className="text-xs font-semibold text-neutral-600 dark:text-[#AAB3BC]">
+                  Explore verified creator gear
                 </span>
               </div>
 
@@ -707,7 +707,7 @@ export default function Categories() {
 
                 {/* Popular Searches */}
                 <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="text-[11px] font-semibold text-neutral-400 dark:text-[#697680] mr-1">
+                  <span className="text-xs font-semibold text-neutral-500 dark:text-[#697680] mr-1">
                     Popular:
                   </span>
                   {popularQueries.slice(0, 5).map((tag) => (
@@ -725,7 +725,7 @@ export default function Categories() {
                         });
                         setCurrentPage(1);
                       }}
-                      className="px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-neutral-700 dark:text-[#AAB3BC] text-[11px] transition-colors cursor-pointer"
+                      className="px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-neutral-700 dark:text-[#AAB3BC] text-xs transition-colors cursor-pointer"
                     >
                       {tag}
                     </button>
@@ -740,12 +740,12 @@ export default function Categories() {
                 <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
                   <div className="flex items-center gap-2">
                     <PayentLogoMark className="h-5 w-5" />
-                    <span className="text-xs font-black uppercase tracking-wider text-neutral-950 dark:text-white">
+                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-950 dark:text-white">
                       Creator Gear Hub
                     </span>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <ShieldCheck className="h-3 w-3" />
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <ShieldCheck className="h-3.5 w-3.5" />
                     Verified Roster
                   </span>
                 </div>
@@ -760,7 +760,7 @@ export default function Categories() {
                       <Camera className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-emerald-500 transition-colors" />
                       <span className="text-xs font-bold text-neutral-900 dark:text-white">Cameras</span>
                     </div>
-                    <p className="text-[10px] text-neutral-500 dark:text-[#8D98A3] mt-1 truncate">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate">
                       Sony FX3, Cinema, RED
                     </p>
                   </button>
@@ -774,7 +774,7 @@ export default function Categories() {
                       <Plane className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-emerald-500 transition-colors" />
                       <span className="text-xs font-bold text-neutral-900 dark:text-white">Drones</span>
                     </div>
-                    <p className="text-[10px] text-neutral-500 dark:text-[#8D98A3] mt-1 truncate">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate">
                       DJI Mavic 3, Inspire
                     </p>
                   </button>
@@ -788,7 +788,7 @@ export default function Categories() {
                       <Laptop className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-emerald-500 transition-colors" />
                       <span className="text-xs font-bold text-neutral-900 dark:text-white">Workstations</span>
                     </div>
-                    <p className="text-[10px] text-neutral-500 dark:text-[#8D98A3] mt-1 truncate">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate">
                       MacBook Pro M3 Max
                     </p>
                   </button>
@@ -802,15 +802,15 @@ export default function Categories() {
                       <Mic className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-emerald-500 transition-colors" />
                       <span className="text-xs font-bold text-neutral-900 dark:text-white">Studio Audio</span>
                     </div>
-                    <p className="text-[10px] text-neutral-500 dark:text-[#8D98A3] mt-1 truncate">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate">
                       Wireless Mics, Shure
                     </p>
                   </button>
                 </div>
 
-                <div className="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400">
+                <div className="pt-2.5 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400">
                   <span>Insured gear delivery</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                     Payent Escrow Shield
                   </span>
                 </div>
@@ -1361,45 +1361,12 @@ export default function Categories() {
               </div>
             )}
 
-            {/* PRIMARY INTERACTION: SWIPE DECK EXPERIENCE + ALL REMAINING GEAR */}
+            {/* PRIMARY INTERACTION: SWIPE DECK EXPERIENCE */}
             {!isLoadingProducts && filteredProducts.length > 0 && viewMode === "swipe" && (
-              <div className="space-y-10">
-                <BrowseSwipeDeck
-                  products={filteredProducts}
-                  onResetFilters={handleResetFilters}
-                />
-
-                {/* SHOW REMAINING PRODUCTS / CATALOG GRID */}
-                {filteredProducts.length > 1 && (
-                  <div className="pt-8 border-t border-black/10 dark:border-white/10">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h3 className="text-lg sm:text-xl font-extrabold text-neutral-950 dark:text-white flex items-center gap-2">
-                          <LayoutGrid className="h-5 w-5 text-primary" />
-                          <span>All Available Gear ({filteredProducts.length} items)</span>
-                        </h3>
-                        <p className="text-xs text-neutral-500 dark:text-[#8D98A3] mt-0.5">
-                          Browse all gear in this selection directly
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setViewMode("grid")}
-                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <span>Switch to Grid View</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {filteredProducts.map((product) => (
-                        <ProductCard key={product.id} product={product} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <BrowseSwipeDeck
+                products={filteredProducts}
+                onResetFilters={handleResetFilters}
+              />
             )}
 
             {/* ALTERNATIVE INTERACTION: CLASSIC GRID */}

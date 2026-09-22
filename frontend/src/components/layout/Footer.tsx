@@ -66,7 +66,7 @@ export function Footer() {
             </div>
 
             {/* Copyright */}
-            <p className="text-[11px] text-neutral-500 dark:text-[#697681]">
+            <p className="text-xs text-neutral-500 dark:text-[#A8B1BA]">
               &copy; {new Date().getFullYear()} PAYENT. All rights reserved.
             </p>
           </div>

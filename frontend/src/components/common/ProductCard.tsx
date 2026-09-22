@@ -327,11 +327,14 @@ export function ProductCard({
               <span>{product.category}</span>
             </span>
             {location && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-white/90 text-[10px] font-medium border border-white/10 truncate max-w-[140px]">
-                <MapPin className={cn("h-2.5 w-2.5 shrink-0", isNearby ? "text-emerald-400" : "text-primary")} />
+              <span
+                title={location}
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-white text-xs font-medium border border-white/15 truncate max-w-[160px]"
+              >
+                <MapPin className={cn("h-3 w-3 shrink-0", isNearby ? "text-emerald-400" : "text-primary")} />
                 <span className="truncate">{location}</span>
                 {isNearby && (
-                  <span className="text-[8px] font-extrabold uppercase px-1 py-0.2 rounded bg-emerald-500/30 text-emerald-300 shrink-0">
+                  <span className="text-[10px] font-extrabold uppercase px-1 py-0.2 rounded bg-emerald-500/30 text-emerald-300 shrink-0">
                     Nearby
                   </span>
                 )}
