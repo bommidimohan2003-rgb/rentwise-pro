@@ -248,6 +248,10 @@ export function Navigation4({
     },
   ];
 
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <aside
       aria-label="Desktop Side Navigation"

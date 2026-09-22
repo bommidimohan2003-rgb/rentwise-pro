@@ -17,6 +17,7 @@ import { NoInternetState } from "@/components/states/NoInternetState";
 import { CartProvider } from "@/hooks/useCart";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { AppPreloader } from "@/components/common/AppPreloader";
+import { Navigation4 } from "@/components/navigation/Navigation4";
 
 import appCss from "../styles.css?url";
 
@@ -293,6 +294,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <CartProvider>
         <AppPreloader />
+        <Navigation4 />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
 
