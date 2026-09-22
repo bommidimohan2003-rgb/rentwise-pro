@@ -22,8 +22,8 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 const navLinks = [
   { to: "/", label: "Home" },
-  { to: "/browse", label: "Explore" },
-  { to: "/become-lender", label: "Lender" },
+  { to: "/browse", label: "Browse" },
+  { to: "/become-lender", label: "Become a Lender" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ] as const;
@@ -88,7 +88,7 @@ export function Navbar() {
                   to={l.to}
                   id={`nav-${l.label.toLowerCase().replace(/\s/g, "-")}`}
                   className={cn(
-                    "relative py-1 text-[13px] lg:text-sm font-medium tracking-tight transition-colors duration-150",
+                    "relative py-1.5 text-xs lg:text-sm font-medium tracking-tight transition-colors duration-150",
                     isActive
                       ? "text-neutral-950 dark:text-white font-semibold"
                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white",
@@ -99,7 +99,7 @@ export function Navbar() {
                     <motion.div
                       layoutId="navbar-minimal-active"
                       transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                      className="absolute -bottom-[21px] left-0 right-0 h-[2px] bg-neutral-950 dark:bg-white rounded-full"
+                      className="absolute -bottom-[19px] inset-x-1 h-[2px] bg-neutral-950 dark:bg-white rounded-full"
                     />
                   )}
                 </Link>

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Lock, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowRight, Users, ShieldCheck, Wallet } from "lucide-react";
 
 export function CreatorCommunity() {
   return (
@@ -69,7 +69,7 @@ export function CreatorCommunity() {
 
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
-                  <Lock className="h-4 w-4 text-amber-400" />
+                  <Users className="h-4 w-4 text-emerald-400" />
                 </div>
                 <div>
                   <div className="text-xl font-extrabold text-white">2K+</div>
@@ -88,13 +88,13 @@ export function CreatorCommunity() {
               </div>
             </div>
 
-            {/* Right Side Script Typography Accent */}
+            {/* Right Side Clean Modern Accent Badge */}
             <div className="hidden lg:flex lg:col-span-2 items-center justify-end select-none pointer-events-none">
-              <div className="font-serif italic text-2xl text-white/80 transform rotate-6 tracking-wide leading-tight text-right">
-                Good <br />
-                Gear <br />
-                <span className="text-white font-black underline decoration-white/40">Brighter</span> <br />
-                Futures
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-right space-y-1">
+                <div className="text-xs font-mono uppercase tracking-widest text-emerald-400">Verified Network</div>
+                <div className="text-base font-extrabold text-white tracking-tight leading-tight">
+                  Rent & Create With Confidence
+                </div>
               </div>
             </div>
           </div>

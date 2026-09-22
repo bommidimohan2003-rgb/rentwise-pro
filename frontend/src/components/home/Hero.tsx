@@ -164,21 +164,35 @@ export function Hero() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-8 sm:pb-14">
-        {/* 1. Top Integrated Search Bar Module - Translucent Glassmorphic Style */}
-        <div className="max-w-xl sm:max-w-2xl mx-auto mb-10 sm:mb-14">
+        {/* 1. Value Proposition Headline & Tagline */}
+        <div className="text-center max-w-4xl mx-auto space-y-4 sm:space-y-6 mb-8 sm:mb-10">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-neutral-950 dark:text-white leading-[1.08]">
+            Rent Professional Tech. <br />
+            <span className="text-neutral-950 dark:text-white font-extrabold underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">
+              Create Without Limits.
+            </span>
+          </h1>
+
+          <p className="text-sm sm:text-base text-neutral-600 dark:text-[#A8B1BA] max-w-xl mx-auto leading-relaxed">
+            Peer-to-peer marketplace to rent cinema cameras, drones, laptops, and production gear with instant escrow protection.
+          </p>
+        </div>
+
+        {/* 2. High-Contrast Integrated Search Bar Module */}
+        <div className="max-w-xl sm:max-w-2xl mx-auto mb-8 sm:mb-10">
           <form
             onSubmit={handleSearch}
-            className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white/40 dark:bg-black/30 backdrop-blur-xl border border-black/10 dark:border-white/15 shadow-xl shadow-black/5 dark:shadow-black/30 flex items-center gap-1.5 sm:gap-2 transition-all hover:bg-white/50 dark:hover:bg-black/40 focus-within:border-black/25 dark:focus-within:border-white/30 focus-within:bg-white/60 dark:focus-within:bg-black/50"
+            className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white dark:bg-[#0D151D] border border-black/15 dark:border-white/20 shadow-2xl flex items-center gap-1.5 sm:gap-2 transition-all focus-within:ring-2 focus-within:ring-primary/20 dark:focus-within:ring-white/20"
           >
             {/* Keyword Search Input */}
-            <div className="flex-1 min-w-0 flex items-center gap-2 pl-2 sm:pl-3 py-1 bg-transparent">
-              <Search className="h-4 w-4 text-neutral-500 dark:text-neutral-400 shrink-0" />
+            <div className="flex-1 min-w-0 flex items-center gap-2.5 pl-3 sm:pl-4 py-1 bg-transparent">
+              <Search className="h-4 w-4 text-neutral-400 dark:text-neutral-400 shrink-0" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={placeholderText || "Cameras, laptops, bikes..."}
-                className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 dark:text-white placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus:outline-none truncate font-medium"
+                placeholder={placeholderText || "Cameras, laptops, drones..."}
+                className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none truncate font-medium"
               />
             </div>
 
@@ -186,38 +200,29 @@ export function Hero() {
             {selectedCity && selectedCity !== "All Cities" && (
               <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 backdrop-blur-sm border border-black/5 dark:border-white/10 text-xs text-neutral-700 dark:text-neutral-200">
                 <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                <span suppressHydrationWarning className="truncate text-[11px] font-medium max-w-[100px]">{selectedCity}</span>
+                <span suppressHydrationWarning className="truncate text-xs font-medium max-w-[110px]">{selectedCity}</span>
               </div>
             )}
 
             {/* Search Submit Button */}
             <button
               type="submit"
-              className="h-9 sm:h-10 px-4 sm:px-5 rounded-xl sm:rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs sm:text-sm font-bold transition-all shrink-0 shadow-sm hover:scale-102 active:scale-98 cursor-pointer flex items-center gap-1.5"
+              className="h-9 sm:h-10 px-5 sm:px-6 rounded-xl sm:rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-xs sm:text-sm font-bold transition-all shrink-0 shadow-sm cursor-pointer flex items-center gap-1.5"
             >
               <span>Search</span>
             </button>
           </form>
         </div>
 
-        {/* 2. Headline & 3. Explore Gear CTA Button */}
-        <div className="text-center max-w-4xl mx-auto space-y-8">
-          {/* Headline */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[68px] font-black tracking-tight text-neutral-950 dark:text-white leading-[1.05]">
-            Rent Professional Tech. <br />
-            <span className="text-neutral-950 dark:text-white font-extrabold underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">Create Without Limits.</span>
-          </h1>
-
-          {/* Primary CTA: Explore Gear → */}
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              to="/categories"
-              className="inline-flex items-center justify-center gap-2.5 h-[52px] sm:h-[56px] px-9 rounded-full bg-[#161616] hover:bg-[#262626] text-[#F2F0EA] dark:bg-[#F2F0EA] dark:text-[#161616] dark:hover:bg-white text-base font-bold transition-all duration-200 shadow-xl hover:scale-102 active:scale-98 cursor-pointer"
-            >
-              <span>Explore Gear</span>
-              <ArrowRight className="h-5 w-5" />
-            </Link>
-          </div>
+        {/* 3. Primary CTA: Explore Gear → */}
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link
+            to="/categories"
+            className="inline-flex items-center justify-center gap-2.5 h-12 sm:h-13 px-8 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15 border border-black/10 dark:border-white/15 text-neutral-900 dark:text-white text-sm font-bold transition-all duration-200 shadow-sm hover:scale-102 active:scale-98 cursor-pointer"
+          >
+            <span>Explore All Gear</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </section>

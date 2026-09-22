@@ -17,6 +17,10 @@ export function Testimonials() {
 
   const reviews = data?.reviews || [];
 
+  if (!isLoading && reviews.length === 0) {
+    return null;
+  }
+
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
       const offset = direction === "left" ? -340 : 340;

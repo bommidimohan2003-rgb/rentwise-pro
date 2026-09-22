@@ -117,7 +117,7 @@ const defaultCategories: (Category & { description?: string })[] = [
     icon: "Hammer",
     image: toolImg,
     count: 15,
-    description: "Heavy Duty Cordless Drills",
+    description: "Cordless Drills",
     color: "bg-red-100 text-red-800",
   },
   {
@@ -126,7 +126,7 @@ const defaultCategories: (Category & { description?: string })[] = [
     icon: "Zap",
     image: powerbankImg,
     count: 11,
-    description: "Fast-Charging Power Stations",
+    description: "Power Stations",
     color: "bg-slate-100 text-slate-800",
   },
 ];
@@ -227,17 +227,20 @@ export function Categories() {
                     </div>
                   )}
 
-                  {/* Dark gradient overlay on image for crisp text readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-transparent pointer-events-none" />
+                  {/* Multi-stop dark gradient overlay on image for crisp text readability across all background types */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/20 pointer-events-none" />
                 </div>
 
                 {/* Clean Category Title overlaid on the bottom of the image */}
-                <div className="relative z-10 p-2 sm:p-3 lg:p-3 text-left w-full">
-                  <h3 className="text-[11px] sm:text-xs md:text-sm lg:text-[15px] font-bold text-white group-hover:text-primary transition-colors leading-tight line-clamp-1">
+                <div className="relative z-10 p-2.5 sm:p-3.5 text-left w-full">
+                  <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-primary transition-colors leading-tight line-clamp-1 drop-shadow-sm">
                     {cat.name}
                   </h3>
                   {cat.description && (
-                    <p className="hidden md:block text-[10px] lg:text-[11px] text-white/70 truncate mt-0.5 font-medium">
+                    <p
+                      title={cat.description}
+                      className="hidden md:block text-xs text-white/80 truncate mt-0.5 font-medium drop-shadow-xs"
+                    >
                       {cat.description}
                     </p>
                   )}

@@ -153,20 +153,20 @@ export function HowItWorks() {
                   {s.number}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block truncate">
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 block truncate">
                     Step {s.number}
                   </span>
-                  <h4 className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white truncate">
+                  <p className="text-xs sm:text-sm font-bold text-neutral-950 dark:text-white truncate">
                     {s.tabTitle}
-                  </h4>
+                  </p>
                 </div>
               </motion.button>
             );
           })}
         </motion.div>
 
-        {/* Interactive Step Display Stage (Reduced Length & Smooth Content Slide) */}
-        <div className="relative rounded-2xl sm:rounded-3xl bg-white dark:bg-[#081018] border border-neutral-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm dark:shadow-md overflow-hidden transition-colors duration-300">
+        {/* Interactive Step Display Stage (Snug layout & flush alignment) */}
+        <div className="relative rounded-2xl sm:rounded-3xl bg-white dark:bg-[#081018] border border-neutral-200 dark:border-white/10 p-5 sm:p-6 md:p-7 shadow-sm dark:shadow-md overflow-hidden transition-colors duration-300">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeStep}
@@ -176,13 +176,13 @@ export function HowItWorks() {
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center"
             >
-              {/* Left Column (Details & Highlights with Staggered Elements) */}
+              {/* Left Column (Details & Highlights aligned flush left) */}
               <div className="lg:col-span-6 text-left space-y-3">
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.05 }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/15 dark:bg-primary/10 border border-primary/30 dark:border-primary/20 text-neutral-900 dark:text-white text-[11px] font-semibold"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/15 dark:bg-primary/10 border border-primary/30 dark:border-primary/20 text-neutral-900 dark:text-white text-xs font-semibold"
                 >
                   <Zap className="h-3 w-3 text-primary" />
                   <span>Step {step.number} — {step.tabTitle}</span>
