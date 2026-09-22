@@ -369,39 +369,50 @@ export default function BecomeLender() {
             </div>
           </div>
 
-          {/* PERKS GRID SECTION (STATIC / NO HOVER EFFECTS) */}
-          <div className="grid md:grid-cols-3 gap-6">
-            {perks.map((p) => (
-              <div
-                key={p.title}
-                className="relative overflow-hidden rounded-3xl border border-border/80 dark:border-white/10 bg-card/60 dark:bg-card/40 backdrop-blur-xl p-6 shadow-lg flex flex-col justify-between"
-              >
-                <div className="relative aspect-16/10 w-full overflow-hidden rounded-2xl bg-secondary mb-5">
-                  <img
-                    src={p.image}
-                    alt={p.title}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <span className="absolute top-3 right-3 text-[10px] font-black uppercase tracking-wider bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full border border-white/20 shadow-md">
-                    {p.tag}
-                  </span>
-                  <div className="absolute bottom-3 left-3 h-10 w-10 rounded-xl bg-primary/20 backdrop-blur-md border border-primary/40 grid place-items-center text-primary shadow-xl">
-                    <p.icon className="h-5 w-5" />
+          {/* PERKS GRID SECTION */}
+          <div className="space-y-6">
+            <div className="text-left">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight font-display">
+                Why Host Your Gear on Payent
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Built from the ground up for seamless, protected peer-to-peer equipment sharing.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {perks.map((p) => (
+                <div
+                  key={p.title}
+                  className="relative overflow-hidden rounded-3xl border border-border/80 dark:border-white/10 bg-card/60 dark:bg-card/40 backdrop-blur-xl p-6 shadow-lg flex flex-col justify-between"
+                >
+                  <div className="relative aspect-16/10 w-full overflow-hidden rounded-2xl bg-secondary mb-5">
+                    <img
+                      src={p.image}
+                      alt={p.title}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <span className="absolute top-3 right-3 text-xs font-bold uppercase tracking-wider bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full border border-white/20 shadow-md">
+                      {p.tag}
+                    </span>
+                    <div className="absolute bottom-3 left-3 h-10 w-10 rounded-xl bg-primary/20 backdrop-blur-md border border-primary/40 grid place-items-center text-primary shadow-xl">
+                      <p.icon className="h-5 w-5" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-extrabold text-lg text-foreground font-display">
+                      {p.title}
+                    </h3>
+                    <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                      {p.body}
+                    </p>
                   </div>
                 </div>
-
-                <div>
-                  <h3 className="font-extrabold text-lg text-foreground font-display">
-                    {p.title}
-                  </h3>
-                  <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    {p.body}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* MAIN LISTING WORKFLOW SECTION */}
@@ -483,48 +494,64 @@ export default function BecomeLender() {
                   {/* Stepper Navigation */}
                   <div className="space-y-4 border-b border-border/80 pb-6">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase tracking-wider text-primary">
+                      <span className="text-xs font-bold text-primary">
                         Step {currentStep} of 3
                       </span>
-                      <span className="text-xs font-semibold text-muted-foreground">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {currentStep === 1 && "Product Name & Description"}
                         {currentStep === 2 && "Product Photos"}
                         {currentStep === 3 && "Pricing & Terms"}
                       </span>
                     </div>
 
-                    {/* Step Timeline Progress Bar */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { num: 1, label: "1. Name & Description" },
-                        { num: 2, label: "2. Photos" },
-                        { num: 3, label: "3. Pricing" },
-                      ].map((step) => {
-                        const isActive = currentStep === step.num;
-                        const isCompleted = currentStep > step.num;
-                        return (
-                          <button
-                            key={step.num}
-                            type="button"
-                            onClick={() =>
-                              setCurrentStep(step.num as 1 | 2 | 3)
-                            }
-                            className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${
-                              isActive
-                                ? "border-primary bg-primary text-primary-foreground shadow-md"
-                                : isCompleted
-                                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500"
-                                : "border-border/80 bg-background/50 text-muted-foreground"
-                            }`}
-                          >
-                            {isCompleted ? (
-                              <Check className="h-3.5 w-3.5" />
-                            ) : null}
-                            <span className="truncate">{step.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {/* Step Timeline Stepper Indicator */}
+                    <nav aria-label="Listing Progress">
+                      <ol className="grid grid-cols-3 gap-2">
+                        {[
+                          { num: 1, label: "Name & Specs" },
+                          { num: 2, label: "Photos" },
+                          { num: 3, label: "Pricing" },
+                        ].map((step) => {
+                          const isActive = currentStep === step.num;
+                          const isCompleted = currentStep > step.num;
+                          return (
+                            <li key={step.num}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCurrentStep(step.num as 1 | 2 | 3)
+                                }
+                                aria-current={isActive ? "step" : undefined}
+                                className={`w-full py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                                  isActive
+                                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary shadow-xs"
+                                    : isCompleted
+                                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : "border-border/70 bg-background/40 text-muted-foreground hover:bg-secondary/60"
+                                }`}
+                              >
+                                <span
+                                  className={`h-5 w-5 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 ${
+                                    isActive
+                                      ? "bg-primary text-primary-foreground"
+                                      : isCompleted
+                                      ? "bg-emerald-500 text-white"
+                                      : "bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {isCompleted ? (
+                                    <Check className="h-3 w-3 stroke-[3]" />
+                                  ) : (
+                                    step.num
+                                  )}
+                                </span>
+                                <span className="truncate">{step.label}</span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </nav>
                   </div>
 
                   <form onSubmit={onSubmit} className="space-y-6">
@@ -541,13 +568,13 @@ export default function BecomeLender() {
 
                         {/* Category Selector Grid */}
                         <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <label className="text-xs font-bold uppercase tracking-wider text-foreground">
+                          <div className="mb-3 space-y-0.5 text-left">
+                            <label className="text-xs font-bold text-foreground block">
                               Category Selection
                             </label>
-                            <span className="text-[11px] text-muted-foreground font-medium">
-                              Select gear category
-                            </span>
+                            <p className="text-xs text-muted-foreground">
+                              Select the gear category that best matches your equipment.
+                            </p>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {CATEGORIES.map((c) => {
@@ -560,18 +587,18 @@ export default function BecomeLender() {
                                   className={`group relative rounded-2xl overflow-hidden text-left cursor-pointer transition-all duration-300 h-28 sm:h-36 flex flex-col justify-end border shadow-sm ${
                                     isSelected
                                       ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background shadow-xl scale-[1.02]"
-                                      : "border-black/10 dark:border-white/10 bg-neutral-900 hover:border-primary/50 hover:shadow-lg hover:-translate-y-1"
+                                      : "border-border/80 bg-neutral-900 hover:border-primary/50 hover:shadow-lg hover:-translate-y-1"
                                   }`}
                                 >
-                                  {/* Full Card Background Photo */}
-                                  <div className="absolute inset-0 w-full h-full bg-neutral-900 overflow-hidden">
+                                  {/* Full Card Background Photo with enhanced contrast */}
+                                  <div className="absolute inset-0 w-full h-full bg-neutral-950 overflow-hidden">
                                     <img
                                       src={c.image}
                                       alt={c.label}
                                       loading="lazy"
-                                      className="w-full h-full object-cover filter opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 ease-out"
+                                      className="w-full h-full object-cover filter brightness-110 contrast-105 group-hover:scale-110 transition-all duration-500 ease-out"
                                     />
-                                    {/* Dark gradient overlay on image for crisp text readability */}
+                                    {/* Gradient overlay for high legibility */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
                                   </div>
 
@@ -582,7 +609,7 @@ export default function BecomeLender() {
                                     </div>
                                   )}
 
-                                  {/* Clean Category Title sitting at the bottom of the card */}
+                                  {/* Category Title sitting at the bottom of the card */}
                                   <div className="relative z-10 p-3 text-left w-full">
                                     <h4
                                       className={`text-xs sm:text-sm font-bold text-white transition-colors leading-tight line-clamp-1 drop-shadow-md ${
@@ -600,16 +627,16 @@ export default function BecomeLender() {
                           </div>
                         </div>
 
-                        {/* Redesigned Item Condition Selector */}
+                        {/* Item Condition Selector */}
                         <div className="space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5 font-display">
+                          <div className="mb-2 space-y-0.5 text-left">
+                            <label className="text-xs font-bold text-foreground flex items-center gap-1.5 font-display">
                               <Sparkles className="h-3.5 w-3.5 text-primary" />
                               Item Condition
                             </label>
-                            <span className="text-[11px] text-muted-foreground font-medium">
-                              Help borrowers gauge gear wear
-                            </span>
+                            <p className="text-xs text-muted-foreground">
+                              Help borrowers accurately gauge equipment wear and reliability.
+                            </p>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                             {[
@@ -642,7 +669,7 @@ export default function BecomeLender() {
                                   key={cond.id}
                                   type="button"
                                   onClick={() => setCondition(cond.id)}
-                                  className={`relative p-2.5 sm:p-3 rounded-2xl border text-left cursor-pointer transition-all duration-200 flex flex-col justify-between gap-2 overflow-hidden ${
+                                  className={`relative p-3 rounded-2xl border text-left cursor-pointer transition-all duration-200 flex flex-col justify-between gap-2 overflow-hidden ${
                                     isSelected
                                       ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-md scale-[1.01]"
                                       : "border-border/80 bg-card/60 dark:bg-zinc-900/60 hover:border-primary/40 hover:bg-card/90 shadow-sm"
@@ -659,7 +686,7 @@ export default function BecomeLender() {
                                       <Icon className="h-3.5 w-3.5" />
                                     </div>
                                     <span
-                                      className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${
+                                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                                         isSelected
                                           ? "bg-primary text-primary-foreground border-primary shadow-sm"
                                           : "bg-secondary text-muted-foreground border-border/60"
@@ -678,7 +705,7 @@ export default function BecomeLender() {
                                     >
                                       {cond.title}
                                     </h5>
-                                    <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                                       {cond.subtitle}
                                     </p>
                                   </div>
@@ -688,14 +715,14 @@ export default function BecomeLender() {
                           </div>
                         </div>
 
-                        {/* Redesigned Product Description & Included Accessories */}
+                        {/* Product Description & Included Accessories */}
                         <div className="space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5 font-display">
+                            <label className="text-xs font-bold text-foreground flex items-center gap-1.5 font-display">
                               <Info className="h-3.5 w-3.5 text-primary" />
                               Product Description & Included Accessories
                             </label>
-                            <span className="text-[11px] text-muted-foreground font-medium">
+                            <span className="text-xs text-muted-foreground font-medium">
                               {description.length} characters
                             </span>
                           </div>
@@ -709,7 +736,7 @@ export default function BecomeLender() {
                               className="w-full bg-transparent p-3 min-h-[105px] focus:outline-none text-sm placeholder:text-muted-foreground/70 leading-relaxed resize-y"
                               required
                             />
-                            <div className="px-3 pb-2 flex items-center justify-between text-[11px] text-muted-foreground border-t border-border/40 pt-1.5">
+                            <div className="px-3 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-muted-foreground border-t border-border/40 pt-1.5">
                               <span>Be specific about included cables, bags & battery health.</span>
                               <span className="font-semibold text-emerald-500">
                                 ✓ Helps faster borrower approval
@@ -718,10 +745,10 @@ export default function BecomeLender() {
                           </div>
                         </div>
 
-                        {/* Redesigned Step Navigation Action Bar */}
+                        {/* Step Navigation Action Bar */}
                         <div className="pt-4 border-t border-border/70 flex flex-col sm:flex-row gap-3 items-center justify-between">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <BadgeCheck className="h-4 w-4 text-emerald-500" />
+                            <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
                             <span>Step 1 of 3: Details & Specs</span>
                           </div>
 
@@ -736,7 +763,7 @@ export default function BecomeLender() {
                               }
                               setCurrentStep(2);
                             }}
-                            className="w-full sm:w-auto bg-primary text-primary-foreground px-8 py-3 rounded-2xl font-extrabold shadow-lg hover:shadow-primary/25 hover:scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2"
+                            className="w-full sm:w-auto bg-primary text-primary-foreground px-8 py-3 rounded-2xl font-bold shadow-lg hover:shadow-primary/25 hover:scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2"
                           >
                             <span>Continue to Photos</span>
                             <ChevronRight className="h-4 w-4 stroke-[2.5]" />
@@ -749,7 +776,7 @@ export default function BecomeLender() {
                     {currentStep === 2 && (
                       <div className="space-y-6 animate-in fade-in duration-200">
                         <div>
-                          <label className="text-xs font-bold uppercase tracking-wider text-foreground block mb-3">
+                          <label className="text-xs font-bold text-foreground block mb-3">
                             Snap Photos with Camera or Upload
                           </label>
 
@@ -767,17 +794,17 @@ export default function BecomeLender() {
                                 );
                                 setIsCameraOpen(true);
                               }}
-                              className="p-5 rounded-3xl border-2 border-primary/50 bg-gradient-to-br from-primary/20 via-rose-500/10 to-primary/5 text-left flex items-center gap-4 shadow-md cursor-pointer"
+                              className="p-5 rounded-3xl border-2 border-primary/50 bg-gradient-to-br from-primary/20 via-rose-500/10 to-primary/5 text-left flex items-center gap-4 shadow-md cursor-pointer hover:border-primary transition-all"
                             >
                               <div className="h-14 w-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-lg">
                                 <Camera className="h-7 w-7" />
                               </div>
                               <div>
-                                <h4 className="font-extrabold text-sm text-foreground flex items-center gap-1.5 font-display">
+                                <h4 className="font-bold text-sm text-foreground flex items-center gap-1.5 font-display">
                                   Take Photo with Camera
                                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                                 </h4>
-                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                <p className="text-xs text-muted-foreground mt-0.5">
                                   Snap product photos directly from device camera
                                 </p>
                               </div>
@@ -787,16 +814,16 @@ export default function BecomeLender() {
                             <button
                               type="button"
                               onClick={() => fileInputRef.current?.click()}
-                              className="p-5 rounded-3xl border-2 border-dashed border-border bg-card text-left flex items-center gap-4 cursor-pointer"
+                              className="p-5 rounded-3xl border-2 border-dashed border-border bg-card text-left flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-all"
                             >
                               <div className="h-14 w-14 rounded-2xl bg-secondary text-foreground grid place-items-center">
                                 <Upload className="h-6 w-6" />
                               </div>
                               <div>
-                                <h4 className="font-extrabold text-sm text-foreground font-display">
+                                <h4 className="font-bold text-sm text-foreground font-display">
                                   Upload Image File
                                 </h4>
-                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                <p className="text-xs text-muted-foreground mt-0.5">
                                   Select existing photos from gallery
                                 </p>
                               </div>
@@ -807,9 +834,9 @@ export default function BecomeLender() {
                         {/* Photo Gallery Thumbnails */}
                         {photos.length > 0 && (
                           <div className="space-y-3">
-                            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-foreground">
+                            <div className="flex items-center justify-between text-xs font-bold text-foreground">
                               <span>Captured Gallery ({photos.length})</span>
-                              <span className="text-[11px] text-muted-foreground font-normal">
+                              <span className="text-xs text-muted-foreground font-normal">
                                 Tap thumbnail to select primary image
                               </span>
                             </div>
@@ -830,12 +857,12 @@ export default function BecomeLender() {
                                     className="h-full w-full object-cover"
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90" />
-                                  <span className="absolute bottom-2 left-2 text-[10px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-md backdrop-blur-md">
+                                  <span className="absolute bottom-2 left-2 text-xs font-bold text-white bg-black/70 px-2 py-0.5 rounded-md backdrop-blur-md">
                                     {photo.tag}
                                   </span>
 
                                   {photo.isPrimary && (
-                                    <span className="absolute top-2 left-2 text-[9px] font-black uppercase text-black bg-primary px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                                    <span className="absolute top-2 left-2 text-[10px] font-bold text-black bg-primary px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
                                       <Check className="h-2.5 w-2.5" /> Primary
                                     </span>
                                   )}
@@ -921,7 +948,7 @@ export default function BecomeLender() {
                           <Button
                             type="submit"
                             size="lg"
-                            className="bg-primary text-primary-foreground px-10 rounded-2xl font-extrabold shadow-lg cursor-pointer"
+                            className="bg-primary text-primary-foreground px-10 rounded-2xl font-bold shadow-lg cursor-pointer"
                             loading={isSubmitting}
                           >
                             Submit Listing
@@ -936,41 +963,41 @@ export default function BecomeLender() {
                 {/* Live Marketplace Product Card Preview (5 cols desktop) */}
                 <div className="lg:col-span-5 sticky top-24 space-y-3">
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5 font-display">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5 font-display">
                       <Layers className="h-3.5 w-3.5 text-primary" /> Live Catalog Preview
                     </span>
-                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                    <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                       Real-time Preview
                     </span>
                   </div>
 
-                  {/* Compact Unified Product Card (Text sits inside the full-bleed image) */}
+                  {/* Compact Unified Product Card */}
                   <div className="group relative rounded-3xl overflow-hidden border border-border/80 dark:border-white/10 bg-neutral-900 shadow-xl h-72 sm:h-80 flex flex-col justify-between p-4.5 transition-all duration-300">
-                    {/* Background Product / Category Image (Full bleed covering entire card) */}
+                    {/* Background Product / Category Image */}
                     <div className="absolute inset-0 w-full h-full bg-neutral-900 overflow-hidden">
                       <img
                         src={primaryImage || CATEGORIES.find((c) => c.id === category)?.image || cameraImg}
                         alt="Product preview"
                         className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                       />
-                      {/* Deep multi-stop gradient overlay so text and badges sit inside the image */}
+                      {/* Deep multi-stop gradient overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20 pointer-events-none" />
                     </div>
 
                     {/* Top Row: Badges sitting on top of image */}
                     <div className="relative z-10 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="flex items-center gap-1 bg-[#FF5A5F] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md">
+                        <span className="flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
                           <ShieldCheck className="h-3.5 w-3.5" />
                           <span>Verified</span>
                         </span>
-                        <span className="inline-block text-[10px] font-black text-white bg-black/60 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full capitalize">
+                        <span className="inline-block text-xs font-bold text-white bg-black/60 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full capitalize">
                           {category}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/15 shadow-sm">
+                        <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1 rounded-full border border-white/15 shadow-sm">
                           <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                           <span>5.0</span>
                         </div>
@@ -996,7 +1023,7 @@ export default function BecomeLender() {
                           <span className="text-xl sm:text-2xl font-black text-white font-display drop-shadow-sm">
                             ₹{price || "850"}
                           </span>
-                          <span className="text-[11px] text-white/70 font-semibold">
+                          <span className="text-xs text-white/70 font-semibold">
                             /day
                           </span>
                         </div>
@@ -1012,7 +1039,7 @@ export default function BecomeLender() {
                   </div>
 
                   {/* Security Policy Card */}
-                  <div className="p-3 rounded-xl border border-border/80 bg-secondary/40 text-[11px] text-muted-foreground flex items-center gap-2.5 shadow-sm">
+                  <div className="p-3 rounded-xl border border-border/80 bg-secondary/40 text-xs text-muted-foreground flex items-center gap-2.5 shadow-sm">
                     <Shield className="h-4 w-4 text-primary shrink-0" />
                     <span>
                       Automatic ₹50,000 damage policy and verified lender coverage.
