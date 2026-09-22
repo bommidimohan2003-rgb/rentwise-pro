@@ -48,9 +48,10 @@ export function CreatorCommunity() {
 
                 <Link
                   to="/about"
-                  className="px-5 py-3 rounded-xl border border-white/20 hover:border-white/40 bg-[#0D151D]/80 hover:bg-[#111B24] text-white text-sm font-medium transition-colors cursor-pointer"
+                  className="px-5 py-3 rounded-xl border border-white/20 hover:border-white/40 bg-[#0D151D]/80 hover:bg-[#111B24] text-white text-sm font-medium transition-colors cursor-pointer flex items-center gap-2"
                 >
-                  Learn More
+                  <span>Learn More</span>
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>

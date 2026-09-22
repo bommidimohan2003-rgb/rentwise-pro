@@ -239,7 +239,7 @@ export function Categories() {
                   {cat.description && (
                     <p
                       title={cat.description}
-                      className="hidden md:block text-xs text-white/80 truncate mt-0.5 font-medium drop-shadow-xs"
+                      className="hidden md:block text-xs text-white/80 line-clamp-2 mt-0.5 font-medium drop-shadow-xs leading-tight"
                     >
                       {cat.description}
                     </p>

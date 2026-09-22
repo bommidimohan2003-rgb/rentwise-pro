@@ -214,14 +214,14 @@ export function Hero() {
           </form>
         </div>
 
-        {/* 3. Primary CTA: Explore Gear → */}
+        {/* 3. Secondary Navigation Link: Browse All Gear (De-emphasized to prioritize Search) */}
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
             to="/categories"
-            className="inline-flex items-center justify-center gap-2.5 h-12 sm:h-13 px-8 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15 border border-black/10 dark:border-white/15 text-neutral-900 dark:text-white text-sm font-bold transition-all duration-200 shadow-sm hover:scale-102 active:scale-98 cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white transition-colors duration-200 group py-1 px-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5"
           >
-            <span>Explore All Gear</span>
-            <ArrowRight className="h-4 w-4" />
+            <span>Or browse all gear categories</span>
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
       </div>

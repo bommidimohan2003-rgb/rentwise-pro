@@ -97,31 +97,32 @@ export function HowItWorks() {
     <section className="relative overflow-hidden bg-neutral-50/70 dark:bg-[#05090D] py-8 sm:py-10 border-b border-black/10 dark:border-white/10 text-neutral-900 dark:text-white transition-colors duration-300">
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6 sm:mb-8">
-          <div className="text-left">
+        {/* Section Header with grouped Learn More link */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
+          <div className="text-left space-y-1">
             <div className="flex items-center gap-2.5">
               <h2 className="text-lg sm:text-xl lg:text-2xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
                 How It Works
               </h2>
               <span className="inline-block w-6 h-[3px] bg-primary rounded-full" />
+              <Link
+                to="/about"
+                className="ml-2 text-xs font-semibold text-neutral-600 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white inline-flex items-center gap-1 transition-colors group"
+              >
+                <span>Learn More</span>
+                <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </div>
-            <p className="mt-1 text-xs sm:text-sm text-neutral-600 dark:text-[#A8B1BA]">
+            <p className="text-xs sm:text-sm text-neutral-600 dark:text-[#A8B1BA]">
               Experience seamless, peer-to-peer creator gear rental in 3 effortless steps.
             </p>
           </div>
-
-          <Link
-            to="/about"
-            className="text-xs font-semibold text-neutral-700 dark:text-[#A8B1BA] hover:text-black dark:hover:text-white flex items-center gap-1.5 transition-colors group self-start sm:self-auto"
-          >
-            <span>Learn More</span>
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-neutral-700 dark:text-neutral-300" />
-          </Link>
         </div>
 
-        {/* 3 Step Interactive Tab Selectors with One-After-One Entrance */}
+        {/* 3 Step Interactive Tab Selectors */}
         <motion.div
+          role="tablist"
+          aria-label="How It Works Steps"
           variants={tabContainerVariants}
           initial="hidden"
           whileInView="visible"
@@ -134,6 +135,10 @@ export function HowItWorks() {
             return (
               <motion.button
                 key={s.id}
+                id={`step-tab-${s.id}`}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`step-panel-${s.id}`}
                 variants={tabItemVariants}
                 type="button"
                 onClick={() => handleSelectStep(idx)}
@@ -165,8 +170,13 @@ export function HowItWorks() {
           })}
         </motion.div>
 
-        {/* Interactive Step Display Stage (Snug layout & flush alignment) */}
-        <div className="relative rounded-2xl sm:rounded-3xl bg-white dark:bg-[#081018] border border-neutral-200 dark:border-white/10 p-5 sm:p-6 md:p-7 shadow-sm dark:shadow-md overflow-hidden transition-colors duration-300">
+        {/* Interactive Step Display Stage */}
+        <div
+          role="tabpanel"
+          id={`step-panel-${step.id}`}
+          aria-labelledby={`step-tab-${step.id}`}
+          className="relative rounded-2xl sm:rounded-3xl bg-white dark:bg-[#081018] border border-neutral-200 dark:border-white/10 p-5 sm:p-6 md:p-7 shadow-sm dark:shadow-md overflow-hidden transition-colors duration-300"
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={activeStep}
