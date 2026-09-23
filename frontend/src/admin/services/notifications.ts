@@ -189,9 +189,7 @@ export const notificationsService = {
 
   // Dashboard Stats & Analytics
   async getDashboardStats(): Promise<DashboardStats> {
-    const response = await adminApi.get("/dashboard/stats");
-    if (response.data) return response.data;
-    return {
+    const fallback: DashboardStats = {
       totalUsers: 0,
       totalAgents: 0,
       totalProducts: 0,
@@ -207,13 +205,23 @@ export const notificationsService = {
       unreadNotifications: 0,
       websiteVisitors: 0,
     };
+    try {
+      const response = await adminApi.get("/dashboard/stats");
+      if (response.data && typeof response.data === "object") {
+        return {
+          ...fallback,
+          ...response.data,
+        };
+      }
+      return fallback;
+    } catch (err) {
+      console.warn("[AdminService] getDashboardStats error, returning fallback:", err);
+      return fallback;
+    }
   },
 
   async getDashboardCharts(period = "30"): Promise<DashboardCharts> {
-    const days = parseInt(period, 10) || 30;
-    const response = await adminApi.get(`/dashboard/charts?days=${days}`);
-    if (response.data) return response.data;
-    return {
+    const fallback: DashboardCharts = {
       revenueChart: [],
       bookingChart: [],
       userGrowth: [],
@@ -221,14 +229,33 @@ export const notificationsService = {
       categoryDistribution: [],
       topProducts: [],
     };
+    try {
+      const days = parseInt(period, 10) || 30;
+      const response = await adminApi.get(`/dashboard/charts?days=${days}`);
+      if (response.data && typeof response.data === "object") {
+        return {
+          ...fallback,
+          ...response.data,
+        };
+      }
+      return fallback;
+    } catch (err) {
+      console.warn("[AdminService] getDashboardCharts error, returning fallback:", err);
+      return fallback;
+    }
   },
 
   async getDashboardActivities(): Promise<DashboardActivity[]> {
-    const response = await adminApi.get("/dashboard/activities");
-    if (response.data && Array.isArray(response.data)) {
-      return response.data;
+    try {
+      const response = await adminApi.get("/dashboard/activities");
+      if (response.data && Array.isArray(response.data)) {
+        return response.data;
+      }
+      return [];
+    } catch (err) {
+      console.warn("[AdminService] getDashboardActivities error, returning fallback:", err);
+      return [];
     }
-    return [];
   },
 
   async resetAnalytics(): Promise<void> {

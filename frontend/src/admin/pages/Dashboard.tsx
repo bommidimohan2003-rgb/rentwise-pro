@@ -204,25 +204,45 @@ export default function Dashboard() {
   const loadData = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      const [statsData, chartsData, activitiesData, allProds] =
-        await Promise.all([
+      const [statsRes, chartsRes, activitiesRes, prodsRes] =
+        await Promise.allSettled([
           notificationsService.getDashboardStats(),
           notificationsService.getDashboardCharts(),
           notificationsService.getDashboardActivities(),
           productsService.getProducts(),
         ]);
-      setStats(statsData);
-      setCharts(chartsData);
-      setActivities(activitiesData);
-      setPendingProducts(
-        allProds.filter(
-          (p) =>
-            p.status?.toLowerCase() === "pending" ||
-            p.status?.toLowerCase() === "under_review",
-        ),
-      );
+
+      if (statsRes.status === "fulfilled" && statsRes.value) {
+        setStats(statsRes.value);
+      }
+      if (chartsRes.status === "fulfilled" && chartsRes.value) {
+        setCharts(chartsRes.value);
+      }
+      if (activitiesRes.status === "fulfilled" && Array.isArray(activitiesRes.value)) {
+        setActivities(activitiesRes.value);
+      }
+      if (prodsRes.status === "fulfilled" && Array.isArray(prodsRes.value)) {
+        const prods = prodsRes.value;
+        setPendingProducts(
+          prods.filter(
+            (p) =>
+              p.status?.toLowerCase() === "pending" ||
+              p.status?.toLowerCase() === "under_review",
+          ),
+        );
+      }
+
+      // If all critical requests failed unexpectedly
+      if (
+        statsRes.status === "rejected" &&
+        chartsRes.status === "rejected" &&
+        activitiesRes.status === "rejected" &&
+        prodsRes.status === "rejected"
+      ) {
+        if (!silent) toast.error("Failed to load dashboard statistics.");
+      }
     } catch (err) {
-      console.error(err);
+      console.error("[Dashboard] loadData unexpected error:", err);
       if (!silent) toast.error("Failed to load dashboard statistics.");
     } finally {
       if (!silent) setLoading(false);

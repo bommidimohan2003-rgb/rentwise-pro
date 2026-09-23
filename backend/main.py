@@ -4905,106 +4905,71 @@ def admin_update_password(data: PasswordUpdateSchema, current_admin: dict = Depe
     
     return {"success": True, "message": "Password updated successfully"}
 
-# Dashboard stats
 @app.get("/api/admin/dashboard/stats")
 @app.get("/api/admin/stats")
 def admin_stats(current_admin: dict = Depends(check_admin_user)):
+    stats_result = {
+        "totalUsers": 0,
+        "totalAgents": 0,
+        "totalProducts": 0,
+        "pendingProducts": 0,
+        "approvedProducts": 0,
+        "rejectedProducts": 0,
+        "totalCategories": 0,
+        "bookingsToday": 0,
+        "monthlyBookings": 0,
+        "revenueToday": 0.0,
+        "monthlyRevenue": 0.0,
+        "pendingReports": 0,
+        "unreadNotifications": 0,
+        "activeVisitors": 0,
+        "websiteVisitors": 0
+    }
     conn = get_db_connection()
     if not conn:
-        return {
-            "totalUsers": 0,
-            "totalAgents": 0,
-            "totalProducts": 0,
-            "pendingProducts": 0,
-            "approvedProducts": 0,
-            "rejectedProducts": 0,
-            "totalCategories": 0,
-            "bookingsToday": 0,
-            "monthlyBookings": 0,
-            "revenueToday": 0,
-            "monthlyRevenue": 0,
-            "pendingReports": 0,
-            "unreadNotifications": 0,
-            "activeVisitors": 0,
-            "websiteVisitors": 0
-        }
+        return stats_result
     try:
         with conn.cursor() as cursor:
-            # Users
-            cursor.execute("SELECT COUNT(*) as count FROM users")
-            total_users = cursor.fetchone()["count"]
+            def safe_query(sql, params=None, default=0):
+                try:
+                    cursor.execute(sql, params or ())
+                    row = cursor.fetchone()
+                    if row:
+                        val = next(iter(row.values()))
+                        return val if val is not None else default
+                    return default
+                except Exception as ex:
+                    logger.warning(f"[admin_stats] query failed: {sql} error: {ex}")
+                    return default
+
+            stats_result["totalUsers"] = int(safe_query("SELECT COUNT(*) as count FROM users", default=0))
+            stats_result["totalAgents"] = int(safe_query("SELECT COUNT(*) as count FROM agents", default=0))
+            stats_result["totalProducts"] = int(safe_query("SELECT COUNT(*) as count FROM custom_products", default=0))
+            stats_result["pendingProducts"] = int(safe_query("SELECT COUNT(*) as count FROM custom_products WHERE LOWER(status) IN ('pending', 'under_review')", default=0))
+            stats_result["approvedProducts"] = int(safe_query("SELECT COUNT(*) as count FROM custom_products WHERE status = 'approved'", default=0))
+            stats_result["rejectedProducts"] = int(safe_query("SELECT COUNT(*) as count FROM custom_products WHERE status = 'rejected'", default=0))
+            stats_result["totalCategories"] = int(safe_query("SELECT COUNT(*) as count FROM categories", default=0))
+            stats_result["monthlyBookings"] = int(safe_query("SELECT COUNT(*) as count FROM orders", default=0))
+            stats_result["monthlyRevenue"] = float(safe_query("SELECT IFNULL(SUM(total), 0) as total FROM orders", default=0.0))
             
-            # Agents (lenders/agents profile)
-            cursor.execute("SELECT COUNT(*) as count FROM agents")
-            total_agents = cursor.fetchone()["count"]
-            
-            # Products
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products")
-            total_products = cursor.fetchone()["count"]
-            
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE LOWER(status) IN ('pending', 'under_review')")
-            pending_products = cursor.fetchone()["count"]
-            
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE status = 'approved'")
-            approved_products = cursor.fetchone()["count"]
-            
-            cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE status = 'rejected'")
-            rejected_products = cursor.fetchone()["count"]
-            
-            # Categories
-            cursor.execute("SELECT COUNT(*) as count FROM categories")
-            total_categories = cursor.fetchone()["count"]
-            
-            # Bookings (orders)
-            cursor.execute("SELECT COUNT(*) as count FROM orders")
-            monthly_bookings = cursor.fetchone()["count"]
-            
-            # Revenue
-            cursor.execute("SELECT IFNULL(SUM(total), 0) as total FROM orders")
-            monthly_revenue = cursor.fetchone()["total"]
-            
-            # Stats today (dynamic date filtering)
             today_prefix = datetime.date.today().isoformat()
-            cursor.execute("SELECT COUNT(*) as count FROM orders WHERE created_at LIKE %s OR created_at >= CURDATE()", (f"{today_prefix}%",))
-            bookings_today = cursor.fetchone()["count"]
-            
-            cursor.execute("SELECT IFNULL(SUM(total), 0) as total FROM orders WHERE created_at LIKE %s OR created_at >= CURDATE()", (f"{today_prefix}%",))
-            revenue_today = cursor.fetchone()["total"]
-            
-            # Reports & notifications
-            cursor.execute("SELECT COUNT(*) as count FROM reports WHERE status = 'open'")
-            pending_reports = cursor.fetchone()["count"]
-            
-            cursor.execute("SELECT COUNT(*) as count FROM admin_notifications WHERE is_read = 0")
-            unread_notifications = cursor.fetchone()["count"]
-            
-            # Real website visitors count from user_events table
-            cursor.execute("SELECT COUNT(DISTINCT session_id) as count FROM user_events WHERE session_id IS NOT NULL AND session_id != ''")
-            visitors_count = cursor.fetchone()["count"]
-            if visitors_count == 0:
-                cursor.execute("SELECT COUNT(*) as count FROM user_events")
-                visitors_count = cursor.fetchone()["count"]
-            
+            stats_result["bookingsToday"] = int(safe_query("SELECT COUNT(*) as count FROM orders WHERE created_at LIKE %s OR created_at >= CURDATE()", (f"{today_prefix}%",), default=0))
+            stats_result["revenueToday"] = float(safe_query("SELECT IFNULL(SUM(total), 0) as total FROM orders WHERE created_at LIKE %s OR created_at >= CURDATE()", (f"{today_prefix}%",), default=0.0))
+            stats_result["pendingReports"] = int(safe_query("SELECT COUNT(*) as count FROM reports WHERE status = 'open'", default=0))
+            stats_result["unreadNotifications"] = int(safe_query("SELECT COUNT(*) as count FROM admin_notifications WHERE is_read = 0", default=0))
+
+            visitors = safe_query("SELECT COUNT(DISTINCT session_id) as count FROM user_events WHERE session_id IS NOT NULL AND session_id != ''", default=0)
+            if visitors == 0:
+                visitors = safe_query("SELECT COUNT(*) as count FROM user_events", default=0)
+            stats_result["websiteVisitors"] = int(visitors)
+            stats_result["activeVisitors"] = max(1, int(visitors // 10)) if visitors > 0 else 1
+    except Exception as e:
+        logger.error(f"[admin_stats] overall error: {e}")
     finally:
         if conn:
             conn.close()
         
-    return {
-        "totalUsers": total_users,
-        "totalAgents": total_agents,
-        "totalProducts": total_products,
-        "pendingProducts": pending_products,
-        "approvedProducts": approved_products,
-        "rejectedProducts": rejected_products,
-        "totalCategories": total_categories,
-        "bookingsToday": bookings_today,
-        "monthlyBookings": monthly_bookings,
-        "revenueToday": float(revenue_today),
-        "monthlyRevenue": float(monthly_revenue),
-        "pendingReports": pending_reports,
-        "unreadNotifications": unread_notifications,
-        "websiteVisitors": visitors_count
-    }
+    return stats_result
 
 @app.post("/api/admin/dashboard/reset-analytics")
 def admin_reset_analytics(current_admin: dict = Depends(check_superadmin_user)):
@@ -5170,7 +5135,17 @@ def admin_delete_api_key(key_id: str, current_admin: dict = Depends(check_admin_
 
 @app.get("/api/admin/dashboard/charts")
 def admin_charts(days: int = Query(30), current_admin: dict = Depends(check_admin_user)):
+    fallback_charts = {
+        "revenueChart": [],
+        "bookingChart": [],
+        "userGrowth": [],
+        "productGrowth": [],
+        "categoryDistribution": [],
+        "topProducts": []
+    }
     conn = get_db_connection()
+    if not conn:
+        return fallback_charts
     try:
         with conn.cursor() as cursor:
             # Build dynamic time-series buckets based on requested days
@@ -5178,58 +5153,78 @@ def admin_charts(days: int = Query(30), current_admin: dict = Depends(check_admi
             end_date = datetime.date.today()
             start_date = end_date - datetime.timedelta(days=num_days - 1)
             
-            # Top products
-            cursor.execute("""
-                SELECT product_title, COUNT(*) as rentals, IFNULL(SUM(total), 0) as revenue
-                FROM orders
-                GROUP BY product_title
-                ORDER BY rentals DESC
-                LIMIT 4
-            """)
-            top_rows = cursor.fetchall()
-            top_products = [
-                {"name": r["product_title"], "rentals": r["rentals"], "revenue": float(r["revenue"])}
-                for r in top_rows
-            ]
+            top_products = []
+            try:
+                # Top products
+                cursor.execute("""
+                    SELECT product_title, COUNT(*) as rentals, IFNULL(SUM(total), 0) as revenue
+                    FROM orders
+                    GROUP BY product_title
+                    ORDER BY rentals DESC
+                    LIMIT 4
+                """)
+                top_rows = cursor.fetchall() or []
+                top_products = [
+                    {"name": r.get("product_title") or "Unnamed", "rentals": r.get("rentals", 0), "revenue": float(r.get("revenue", 0))}
+                    for r in top_rows
+                ]
+            except Exception as e:
+                logger.warning(f"[admin_charts] top products query failed: {e}")
                 
-            # Category distribution share
-            cursor.execute("""
-                SELECT category as name, COUNT(*) as value
-                FROM custom_products
-                GROUP BY category
-            """)
-            cat_rows = cursor.fetchall()
-            category_distribution = [
-                {"name": c["name"], "value": c["value"]}
-                for c in cat_rows if c["name"]
-            ]
+            category_distribution = []
+            try:
+                # Category distribution share
+                cursor.execute("""
+                    SELECT category as name, COUNT(*) as value
+                    FROM custom_products
+                    GROUP BY category
+                """)
+                cat_rows = cursor.fetchall() or []
+                category_distribution = [
+                    {"name": c.get("name") or "General", "value": c.get("value", 0)}
+                    for c in cat_rows if c.get("name")
+                ]
+            except Exception as e:
+                logger.warning(f"[admin_charts] category distribution query failed: {e}")
 
-            # Aggregate time-series for orders (revenue & booking count)
-            cursor.execute("""
-                SELECT DATE(created_at) as dt, COUNT(*) as cnt, IFNULL(SUM(total), 0) as rev
-                FROM orders
-                WHERE created_at >= %s
-                GROUP BY DATE(created_at)
-            """, (start_date.isoformat(),))
-            order_data = {str(r["dt"]): (r["cnt"], float(r["rev"])) for r in cursor.fetchall()}
+            order_data = {}
+            try:
+                # Aggregate time-series for orders (revenue & booking count)
+                cursor.execute("""
+                    SELECT DATE(created_at) as dt, COUNT(*) as cnt, IFNULL(SUM(total), 0) as rev
+                    FROM orders
+                    WHERE created_at >= %s
+                    GROUP BY DATE(created_at)
+                """, (start_date.isoformat(),))
+                order_data = {str(r["dt"]): (r.get("cnt", 0), float(r.get("rev", 0))) for r in (cursor.fetchall() or []) if r.get("dt")}
+            except Exception as e:
+                logger.warning(f"[admin_charts] order time-series failed: {e}")
 
-            # Aggregate time-series for user growth
-            cursor.execute("""
-                SELECT DATE(created_at) as dt, COUNT(*) as cnt
-                FROM users
-                WHERE created_at >= %s
-                GROUP BY DATE(created_at)
-            """, (start_date.isoformat(),))
-            user_data = {str(r["dt"]): r["cnt"] for r in cursor.fetchall()}
+            user_data = {}
+            try:
+                # Aggregate time-series for user growth
+                cursor.execute("""
+                    SELECT DATE(created_at) as dt, COUNT(*) as cnt
+                    FROM users
+                    WHERE created_at >= %s
+                    GROUP BY DATE(created_at)
+                """, (start_date.isoformat(),))
+                user_data = {str(r["dt"]): r.get("cnt", 0) for r in (cursor.fetchall() or []) if r.get("dt")}
+            except Exception as e:
+                logger.warning(f"[admin_charts] user time-series failed: {e}")
 
-            # Aggregate time-series for product growth
-            cursor.execute("""
-                SELECT DATE(created_at) as dt, COUNT(*) as cnt
-                FROM custom_products
-                WHERE created_at >= %s
-                GROUP BY DATE(created_at)
-            """, (start_date.isoformat(),))
-            product_data = {str(r["dt"]): r["cnt"] for r in cursor.fetchall()}
+            product_data = {}
+            try:
+                # Aggregate time-series for product growth
+                cursor.execute("""
+                    SELECT DATE(created_at) as dt, COUNT(*) as cnt
+                    FROM custom_products
+                    WHERE created_at >= %s
+                    GROUP BY DATE(created_at)
+                """, (start_date.isoformat(),))
+                product_data = {str(r["dt"]): r.get("cnt", 0) for r in (cursor.fetchall() or []) if r.get("dt")}
+            except Exception as e:
+                logger.warning(f"[admin_charts] product time-series failed: {e}")
 
             revenue_chart = []
             booking_chart = []
@@ -5253,7 +5248,6 @@ def admin_charts(days: int = Query(30), current_admin: dict = Depends(check_admi
                     curr += datetime.timedelta(days=1)
             else:
                 # Group by month for longer periods (90, 365 days)
-                # Aggregate daily values into monthly buckets
                 rev_m, book_m, user_m, prod_m = {}, {}, {}, {}
                 curr = start_date
                 while curr <= end_date:
@@ -5276,45 +5270,56 @@ def admin_charts(days: int = Query(30), current_admin: dict = Depends(check_admi
                     user_growth.append({"name": m_label, "users": user_m[m_label]})
                     product_growth.append({"name": m_label, "products": prod_m[m_label]})
 
+            return {
+                "revenueChart": revenue_chart,
+                "bookingChart": booking_chart,
+                "userGrowth": user_growth,
+                "productGrowth": product_growth,
+                "categoryDistribution": category_distribution,
+                "topProducts": top_products
+            }
+    except Exception as e:
+        logger.error(f"[admin_charts] overall error: {e}")
+        return fallback_charts
     finally:
-        conn.close()
-        
-    return {
-        "revenueChart": revenue_chart,
-        "bookingChart": booking_chart,
-        "userGrowth": user_growth,
-        "productGrowth": product_growth,
-        "categoryDistribution": category_distribution,
-        "topProducts": top_products
-    }
+        if conn:
+            conn.close()
 
 @app.get("/api/admin/dashboard/activities")
 def admin_dashboard_activities(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
+    if not conn:
+        return []
+    rows = []
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT id, timestamp, user_name, action, module FROM admin_logs ORDER BY timestamp DESC LIMIT 7")
-            rows = cursor.fetchall()
+            rows = cursor.fetchall() or []
+    except Exception as e:
+        logger.warning(f"[admin_dashboard_activities] error: {e}")
+        return []
     finally:
-        conn.close()
+        if conn:
+            conn.close()
         
     res = []
+    icon_map = {
+        "Auth": "UserPlus",
+        "Inventory": "Camera",
+        "Orders": "Calendar",
+        "Payments": "CreditCard",
+        "Reports": "Flag",
+        "Users": "Users"
+    }
     for r in rows:
-        icon_map = {
-            "Auth": "UserPlus",
-            "Inventory": "Camera",
-            "Orders": "Calendar",
-            "Payments": "CreditCard",
-            "Reports": "Flag",
-            "Users": "Users"
-        }
+        module = r.get("module") or "System"
         res.append({
-            "id": r["id"],
-            "type": r["module"].lower(),
-            "title": r["action"],
-            "detail": f"By {r['user_name']} in {r['module']}",
-            "time": r["timestamp"],
-            "icon": icon_map.get(r["module"], "Info")
+            "id": r.get("id") or str(random.randint(1000, 9999)),
+            "type": module.lower(),
+            "title": r.get("action") or "Activity",
+            "detail": f"By {r.get('user_name', 'Admin')} in {module}",
+            "time": r.get("timestamp") or datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "icon": icon_map.get(module, "Info")
         })
         
     return res
@@ -5323,28 +5328,35 @@ def admin_dashboard_activities(current_admin: dict = Depends(check_admin_user)):
 @app.get("/api/admin/users")
 def admin_users_list(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
+    if not conn:
+        return []
+    rows = []
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT email, phone, full_name, role, status, verified, avatar, address, city, pincode, created_at FROM users ORDER BY created_at DESC")
-            rows = cursor.fetchall()
+            rows = cursor.fetchall() or []
+    except Exception as e:
+        logger.warning(f"[admin_users_list] error: {e}")
+        return []
     finally:
-        conn.close()
+        if conn:
+            conn.close()
         
     res = []
     for r in rows:
         res.append({
             "id": r["email"],
-            "fullName": r["full_name"],
+            "fullName": r.get("full_name") or r["email"].split("@")[0],
             "email": r["email"],
-            "phone": r["phone"],
+            "phone": r.get("phone") or "",
             "address": r.get("address"),
             "city": r.get("city"),
             "pincode": r.get("pincode"),
-            "role": r["role"],
-            "status": r["status"] or "active",
-            "verified": bool(r["verified"]),
-            "avatar": r["avatar"] or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-            "createdAt": r["created_at"]
+            "role": r.get("role") or "customer",
+            "status": r.get("status") or "active",
+            "verified": bool(r.get("verified")),
+            "avatar": r.get("avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+            "createdAt": r.get("created_at") or ""
         })
     return res
 
@@ -5767,6 +5779,9 @@ def admin_products_list(
     current_admin: dict = Depends(check_admin_user)
 ):
     conn = get_db_connection()
+    if not conn:
+        return []
+    rows = []
     try:
         with conn.cursor() as cursor:
             if status:
@@ -5809,18 +5824,22 @@ def admin_products_list(
                     LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
                     ORDER BY cp.created_at DESC
                 """)
-            rows = cursor.fetchall()
+            rows = cursor.fetchall() or []
+    except Exception as e:
+        logger.warning(f"[admin_products_list] error: {e}")
+        return []
     finally:
-        conn.close()
+        if conn:
+            conn.close()
         
     res = []
     for r in rows:
-        images_val = r["images"]
-        documents_val = r["documents"]
+        images_val = r.get("images")
+        documents_val = r.get("documents")
         try:
             images_list = json.loads(images_val) if images_val else []
         except Exception:
-            images_list = [r["image"]] if r["image"] else []
+            images_list = [r["image"]] if r.get("image") else []
             
         try:
             documents_list = json.loads(documents_val) if documents_val else []
@@ -5829,26 +5848,26 @@ def admin_products_list(
             
         res.append({
             "id": r["id"],
-            "title": r["title"],
-            "description": r["description"],
-            "category": r["category"],
-            "price": r["price"],
-            "rating": float(r["rating"]),
-            "reviewsCount": r["reviews"],
-            "available": bool(r["available"]),
-            "status": r["status"] or "approved",
-            "featured": bool(r["featured"]),
-            "hidden": bool(r["hidden"]),
-            "image": r["image"],
-            "images": images_list if images_list else [r["image"]],
+            "title": r.get("title") or "Product",
+            "description": r.get("description") or "",
+            "category": r.get("category") or "General",
+            "price": r.get("price") or 0,
+            "rating": float(r.get("rating") or 5.0),
+            "reviewsCount": r.get("reviews") or 0,
+            "available": bool(r.get("available", True)),
+            "status": r.get("status") or "approved",
+            "featured": bool(r.get("featured", False)),
+            "hidden": bool(r.get("hidden", False)),
+            "image": r.get("image") or "",
+            "images": images_list if images_list else ([r["image"]] if r.get("image") else []),
             "documents": documents_list,
-            "createdAt": r["created_at"],
+            "createdAt": r.get("created_at") or "",
             "owner": {
-                "id": r["user_email"],
-                "name": r.get("user_full_name") or r["owner_name"] or r["user_email"].split("@")[0],
-                "avatar": r.get("user_avatar") or r["owner_avatar"] or "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-                "rating": float(r["owner_rating"] or 5.0),
-                "email": r["user_email"],
+                "id": r.get("user_email") or "",
+                "name": r.get("user_full_name") or r.get("owner_name") or (r["user_email"].split("@")[0] if r.get("user_email") else "Owner"),
+                "avatar": r.get("user_avatar") or r.get("owner_avatar") or "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+                "rating": float(r.get("owner_rating") or 5.0),
+                "email": r.get("user_email") or "",
                 "phone": r.get("user_phone") or "",
                 "city": r.get("user_city") or ""
             }
@@ -5858,6 +5877,8 @@ def admin_products_list(
 @app.get("/api/admin/products/{id}")
 def admin_get_product(id: str, current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
