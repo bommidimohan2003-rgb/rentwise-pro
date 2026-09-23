@@ -669,91 +669,112 @@ export default function Categories() {
   return (
     <MainLayout>
       {/* 1. TOP BROWSE SEARCH & UTILITY BAR */}
-      <section className="bg-white/95 dark:bg-[#070C12]/95 py-3 backdrop-blur-xl transition-colors">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-row items-center justify-between gap-3">
-          {/* Left Side: Small Search Bar + Location Tab */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-2xl min-w-0">
-            {/* Search Input Form */}
-            <form
-              onSubmit={handleSearchSubmit}
-              className="relative flex-1 min-w-[140px] sm:min-w-[260px] max-w-md"
-            >
-              <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 dark:text-[#8D98A3]" />
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => setLocalQ(e.target.value)}
-                placeholder={typedPlaceholder}
-                className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none focus:ring-1.5 focus:ring-emerald-500 shadow-xs transition-all"
-              />
-              {q && (
+      <section className="bg-white/95 dark:bg-[#070C12]/95 py-2.5 sm:py-3.5 backdrop-blur-xl transition-colors">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+            {/* Search Input Form (Full width on mobile, max-w-md on desktop) */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="relative flex-1 max-w-full sm:max-w-md"
+              >
+                <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 dark:text-[#8D98A3]" />
+                <input
+                  type="text"
+                  value={q}
+                  onChange={(e) => setLocalQ(e.target.value)}
+                  placeholder={typedPlaceholder}
+                  className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none focus:ring-1.5 focus:ring-emerald-500 shadow-xs transition-all"
+                />
+                {q && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocalQ("");
+                      navigate({
+                        to: "/browse",
+                        search: (prev: Record<string, unknown>) => ({ ...prev, q: undefined }),
+                      });
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-white cursor-pointer"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </form>
+
+              {/* Location Tab / Pill (Shown inline on desktop) */}
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-neutral-100 dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/10 shrink-0 text-xs text-neutral-700 dark:text-[#AAB3BC]">
+                <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span suppressHydrationWarning className="font-semibold text-xs truncate max-w-[120px] md:max-w-[150px]">
+                  {isDetecting ? "Locating..." : isLocationActive ? detectedCity : "Pan India"}
+                </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    setLocalQ("");
-                    navigate({
-                      to: "/browse",
-                      search: (prev: Record<string, unknown>) => ({ ...prev, q: undefined }),
-                    });
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-white cursor-pointer"
+                  onClick={() => detectLocation()}
+                  disabled={isDetecting}
+                  title="Update location"
+                  className="p-0.5 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <RotateCcw className={cn("h-3 w-3", isDetecting && "animate-spin")} />
                 </button>
-              )}
-            </form>
-
-            {/* Location Tab / Pill */}
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-neutral-100 dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/10 shrink-0 text-xs text-neutral-700 dark:text-[#AAB3BC]">
-              <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-              <span suppressHydrationWarning className="font-semibold text-xs truncate max-w-[85px] sm:max-w-[130px]">
-                {isDetecting ? "Locating..." : isLocationActive ? detectedCity : "Pan India"}
-              </span>
-              <button
-                type="button"
-                onClick={() => detectLocation()}
-                disabled={isDetecting}
-                title="Update location"
-                className="p-0.5 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
-              >
-                <RotateCcw className={cn("h-3 w-3", isDetecting && "animate-spin")} />
-              </button>
+              </div>
             </div>
-          </div>
 
-          {/* Right Side: Wishlist & Messages Circular Dark Buttons (matching screenshot) */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Wishlist Button */}
-            <Link
-              to="/wishlist"
-              id="browse-top-wishlist"
-              className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-neutral-900 dark:bg-[#151D24] text-white hover:bg-neutral-800 dark:hover:bg-[#1F2B36] border border-neutral-800 dark:border-white/15 transition-all flex items-center justify-center cursor-pointer shadow-sm group"
-              aria-label="Wishlist"
-              title="Wishlist"
-            >
-              <Heart className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-white/90 group-hover:text-white stroke-[1.8] group-hover:scale-110 transition-transform" />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 px-1.5 min-w-[17px] h-[17px] rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md">
-                  {wishlistCount}
+            {/* Mobile Second Row: Location Tab on Left + Wishlist & Messages on Right / Desktop Right End */}
+            <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 w-full sm:w-auto">
+              {/* Location Tab on Mobile (Takes left side of row 2) */}
+              <div className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/10 text-xs text-neutral-700 dark:text-[#AAB3BC]">
+                <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span suppressHydrationWarning className="font-semibold text-xs truncate max-w-[160px]">
+                  {isDetecting ? "Locating..." : isLocationActive ? detectedCity : "Pan India"}
                 </span>
-              )}
-            </Link>
+                <button
+                  type="button"
+                  onClick={() => detectLocation()}
+                  disabled={isDetecting}
+                  title="Update location"
+                  className="p-0.5 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <RotateCcw className={cn("h-3 w-3", isDetecting && "animate-spin")} />
+                </button>
+              </div>
 
-            {/* Messages Button */}
-            <Link
-              to="/messages"
-              id="browse-top-messages"
-              className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-neutral-900 dark:bg-[#151D24] text-white hover:bg-neutral-800 dark:hover:bg-[#1F2B36] border border-neutral-800 dark:border-white/15 transition-all flex items-center justify-center cursor-pointer shadow-sm group"
-              aria-label="Messages"
-              title="Messages"
-            >
-              <MessageSquare className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-white/90 group-hover:text-white stroke-[1.8] group-hover:scale-110 transition-transform" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 px-1.5 min-w-[17px] h-[17px] rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md">
-                  {unreadCount}
-                </span>
-              )}
-            </Link>
+              {/* Wishlist & Messages Circular Dark Buttons */}
+              <div className="flex items-center gap-2 sm:gap-2.5 ml-auto sm:ml-0">
+                {/* Wishlist Button */}
+                <Link
+                  to="/wishlist"
+                  id="browse-top-wishlist"
+                  className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-neutral-900 dark:bg-[#151D24] text-white hover:bg-neutral-800 dark:hover:bg-[#1F2B36] border border-neutral-800 dark:border-white/15 transition-all flex items-center justify-center cursor-pointer shadow-sm group"
+                  aria-label="Wishlist"
+                  title="Wishlist"
+                >
+                  <Heart className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-white/90 group-hover:text-white stroke-[1.8] group-hover:scale-110 transition-transform" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 min-w-[17px] h-[17px] rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Messages Button */}
+                <Link
+                  to="/messages"
+                  id="browse-top-messages"
+                  className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-neutral-900 dark:bg-[#151D24] text-white hover:bg-neutral-800 dark:hover:bg-[#1F2B36] border border-neutral-800 dark:border-white/15 transition-all flex items-center justify-center cursor-pointer shadow-sm group"
+                  aria-label="Messages"
+                  title="Messages"
+                >
+                  <MessageSquare className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-white/90 group-hover:text-white stroke-[1.8] group-hover:scale-110 transition-transform" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 min-w-[17px] h-[17px] rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
