@@ -292,38 +292,52 @@ export default function Agents() {
         </div>
       </div>
 
-      {/* ERROR BANNER */}
-      {error && (
-        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={fetchAgents} className="underline font-bold cursor-pointer">Retry</button>
+      {/* 3-STATE CONTAINER: ERROR vs TABLE (LOADING / REAL DATA / EMPTY DB) */}
+      {error ? (
+        <div className="card-premium bg-card/40 border border-destructive/30 p-12 rounded-2xl text-center space-y-4">
+          <div className="inline-flex p-3 rounded-full bg-destructive/10 text-destructive">
+            <ShieldAlert className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Unable to Load Agents</h3>
+            <p className="text-xs text-muted-foreground mt-1">{error}</p>
+          </div>
+          <div>
+            <button
+              onClick={() => fetchAgents()}
+              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>Retry Database Fetch</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+          <Table
+            columns={columns}
+            data={paginatedAgents}
+            loading={loading}
+            sortKey={sortKey}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+            emptyTitle="No Agents Found"
+            emptyDescription="The database contains no registered agent lender records matching your filter criteria."
+          />
+
+          {filteredAgents.length > itemsPerPage && !loading && (
+            <div className="p-4 border-t border-border/40">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(filteredAgents.length / itemsPerPage)}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={filteredAgents.length}
+              />
+            </div>
+          )}
         </div>
       )}
-
-      {/* TABLE */}
-      <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
-        <Table
-          columns={columns}
-          data={paginatedAgents}
-          loading={loading}
-          sortKey={sortKey}
-          sortOrder={sortOrder}
-          onSort={handleSort}
-          emptyMessage="No verified agent lenders found in the database."
-        />
-
-        {filteredAgents.length > itemsPerPage && (
-          <div className="p-4 border-t border-border/40">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(filteredAgents.length / itemsPerPage)}
-              onPageChange={setCurrentPage}
-              itemsPerPage={itemsPerPage}
-              totalItems={filteredAgents.length}
-            />
-          </div>
-        )}
-      </div>
 
       {/* AGENT DETAIL MODAL */}
       {modalOpen && selectedAgent && (

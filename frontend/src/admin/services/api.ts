@@ -175,21 +175,27 @@ export interface AdminActivityLog {
 // ----------------------------------------------------------------------
 
 const getAdminApiBase = () => {
+  let base = "";
   if (typeof window !== "undefined") {
     const win = window as unknown as { PAYENT_API_URL?: string };
-    if (win.PAYENT_API_URL) return win.PAYENT_API_URL;
+    if (win.PAYENT_API_URL) base = win.PAYENT_API_URL;
   }
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  if (!base && import.meta.env.VITE_API_URL) {
+    base = import.meta.env.VITE_API_URL;
   }
-  if (typeof window !== "undefined") {
-    const isLocal =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-    if (isLocal) return "http://127.0.0.1:8001";
-    return window.location.origin;
+  if (!base && typeof window !== "undefined") {
+    const host = window.location.hostname;
+    const isLocal = host === "localhost" || host === "127.0.0.1";
+    if (isLocal) base = "http://127.0.0.1:8001";
+    else if (host.endsWith(".vercel.app")) base = "";
+    else base = window.location.origin;
   }
-  return "";
+  // Strip trailing slashes and trailing /api to prevent /api/api duplication
+  base = (base || "").replace(/\/+$/, "");
+  if (base.endsWith("/api")) {
+    base = base.slice(0, -4);
+  }
+  return base;
 };
 const API_BASE = getAdminApiBase();
 

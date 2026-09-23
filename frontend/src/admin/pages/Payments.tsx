@@ -9,6 +9,7 @@ import {
   X,
   CheckCircle,
   AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
@@ -315,38 +316,47 @@ export default function Payments() {
         </div>
       </div>
 
-      {/* ERROR BANNER */}
-      {error && (
-        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={() => fetchPayments()} className="underline font-bold cursor-pointer">Retry</button>
+      {/* ERROR STATE */}
+      {error && !loading ? (
+        <div className="bg-card rounded-2xl border border-destructive/30 p-12 text-center shadow-xs flex flex-col items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-3">
+            <ShieldAlert className="h-6 w-6" />
+          </div>
+          <h3 className="text-base font-bold text-foreground font-display">Database Sync Failed</h3>
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+          <button
+            onClick={() => fetchPayments()}
+            className="mt-4 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all shadow-xs cursor-pointer"
+          >
+            Retry Database Fetch
+          </button>
+        </div>
+      ) : (
+        /* TABLE */
+        <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+          <Table
+            columns={columns}
+            data={paginatedPayments}
+            loading={loading}
+            sortKey={sortKey}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+            emptyMessage="No payment transactions found matching the filters."
+          />
+
+          {filteredPayments.length > itemsPerPage && (
+            <div className="p-4 border-t border-border/40">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(filteredPayments.length / itemsPerPage)}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={filteredPayments.length}
+              />
+            </div>
+          )}
         </div>
       )}
-
-      {/* TABLE */}
-      <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
-        <Table
-          columns={columns}
-          data={paginatedPayments}
-          loading={loading}
-          sortKey={sortKey}
-          sortOrder={sortOrder}
-          onSort={handleSort}
-          emptyMessage="No payment transactions found matching the filters."
-        />
-
-        {filteredPayments.length > itemsPerPage && (
-          <div className="p-4 border-t border-border/40">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(filteredPayments.length / itemsPerPage)}
-              onPageChange={setCurrentPage}
-              itemsPerPage={itemsPerPage}
-              totalItems={filteredPayments.length}
-            />
-          </div>
-        )}
-      </div>
 
       {/* PAYMENT DETAIL MODAL */}
       {modalOpen && selectedPayment && (

@@ -512,33 +512,42 @@ export default function Reports() {
             </div>
           </div>
 
-          {disputeError && (
-            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
-              <span>{disputeError}</span>
-              <button onClick={fetchDisputes} className="underline font-bold cursor-pointer">Retry</button>
+          {disputeError && !loadingDisputes ? (
+            <div className="bg-card rounded-2xl border border-destructive/30 p-12 text-center shadow-xs flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-3">
+                <ShieldAlert className="h-6 w-6" />
+              </div>
+              <h3 className="text-base font-bold text-foreground font-display">Database Sync Failed</h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-sm">{disputeError}</p>
+              <button
+                onClick={fetchDisputes}
+                className="mt-4 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                Retry Database Fetch
+              </button>
+            </div>
+          ) : (
+            <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+              <Table
+                columns={disputeColumns}
+                data={paginatedDisputes}
+                loading={loadingDisputes}
+                emptyMessage="No open dispute reports or violation claims found."
+              />
+
+              {filteredDisputes.length > itemsPerPage && (
+                <div className="p-4 border-t border-border/40">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(filteredDisputes.length / itemsPerPage)}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={filteredDisputes.length}
+                  />
+                </div>
+              )}
             </div>
           )}
-
-          <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
-            <Table
-              columns={disputeColumns}
-              data={paginatedDisputes}
-              loading={loadingDisputes}
-              emptyMessage="No open dispute reports or violation claims found."
-            />
-
-            {filteredDisputes.length > itemsPerPage && (
-              <div className="p-4 border-t border-border/40">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={Math.ceil(filteredDisputes.length / itemsPerPage)}
-                  onPageChange={setCurrentPage}
-                  itemsPerPage={itemsPerPage}
-                  totalItems={filteredDisputes.length}
-                />
-              </div>
-            )}
-          </div>
         </div>
       )}
     </div>

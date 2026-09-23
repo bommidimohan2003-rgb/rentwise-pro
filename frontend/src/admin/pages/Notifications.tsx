@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Clock,
   Info,
+  ShieldAlert,
 } from "lucide-react";
 import { notificationsService } from "../services/notifications";
 import { AdminNotification } from "../services/api";
@@ -170,71 +171,80 @@ export default function Notifications() {
         ))}
       </div>
 
-      {/* ERROR BANNER */}
-      {error && (
-        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={() => fetchNotifications()} className="underline font-bold cursor-pointer">Retry</button>
+      {/* ERROR STATE */}
+      {error && !loading ? (
+        <div className="bg-card rounded-2xl border border-destructive/30 p-12 text-center shadow-xs flex flex-col items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-3">
+            <ShieldAlert className="h-6 w-6" />
+          </div>
+          <h3 className="text-base font-bold text-foreground font-display">Database Sync Failed</h3>
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+          <button
+            onClick={() => fetchNotifications()}
+            className="mt-4 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all shadow-xs cursor-pointer"
+          >
+            Retry Database Fetch
+          </button>
+        </div>
+      ) : (
+        /* NOTIFICATIONS LIST */
+        <div className="bg-card rounded-2xl border border-border/80 shadow-xs divide-y divide-border/30 overflow-hidden">
+          {filteredNotifications.length === 0 ? (
+            <div className="py-16 text-center text-xs text-muted-foreground space-y-2">
+              <Bell className="h-6 w-6 text-muted-foreground mx-auto opacity-40" />
+              <p>No notifications found in this category.</p>
+            </div>
+          ) : (
+            filteredNotifications.map((notif) => (
+              <div
+                key={notif.id}
+                className={cn(
+                  "p-4.5 flex items-start justify-between gap-4 transition-colors",
+                  !notif.read ? "bg-secondary/25" : "hover:bg-secondary/20"
+                )}
+              >
+                <div className="flex items-start gap-3.5 min-w-0">
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-xl flex items-center justify-center border shrink-0 mt-0.5",
+                      notif.type === "error"
+                        ? "bg-destructive/10 text-destructive border-destructive/20"
+                        : notif.type === "warning"
+                        ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                        : "bg-secondary text-foreground border-border/60"
+                    )}
+                  >
+                    <Info className="h-4 w-4" />
+                  </div>
+
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-foreground text-xs">{notif.title}</h4>
+                      {!notif.read && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {notif.message}
+                    </p>
+                    <div className="text-[10px] text-muted-foreground font-mono pt-1">
+                      {notif.createdAt ? new Date(notif.createdAt).toLocaleString() : "—"}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleDelete(notif.id)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer shrink-0"
+                  title="Delete notification"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))
+          )}
         </div>
       )}
-
-      {/* NOTIFICATIONS LIST */}
-      <div className="bg-card rounded-2xl border border-border/80 shadow-xs divide-y divide-border/30 overflow-hidden">
-        {filteredNotifications.length === 0 ? (
-          <div className="py-16 text-center text-xs text-muted-foreground space-y-2">
-            <Bell className="h-6 w-6 text-muted-foreground mx-auto opacity-40" />
-            <p>No notifications found in this category.</p>
-          </div>
-        ) : (
-          filteredNotifications.map((notif) => (
-            <div
-              key={notif.id}
-              className={cn(
-                "p-4.5 flex items-start justify-between gap-4 transition-colors",
-                !notif.read ? "bg-secondary/25" : "hover:bg-secondary/20"
-              )}
-            >
-              <div className="flex items-start gap-3.5 min-w-0">
-                <div
-                  className={cn(
-                    "h-8 w-8 rounded-xl flex items-center justify-center border shrink-0 mt-0.5",
-                    notif.type === "error"
-                      ? "bg-destructive/10 text-destructive border-destructive/20"
-                      : notif.type === "warning"
-                      ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                      : "bg-secondary text-foreground border-border/60"
-                  )}
-                >
-                  <Info className="h-4 w-4" />
-                </div>
-
-                <div className="space-y-0.5 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-foreground text-xs">{notif.title}</h4>
-                    {!notif.read && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {notif.message}
-                  </p>
-                  <div className="text-[10px] text-muted-foreground font-mono pt-1">
-                    {notif.createdAt ? new Date(notif.createdAt).toLocaleString() : "—"}
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => handleDelete(notif.id)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer shrink-0"
-                title="Delete notification"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))
-        )}
-      </div>
     </div>
   );
 }

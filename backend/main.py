@@ -5655,11 +5655,10 @@ def admin_agents_list(current_admin: dict = Depends(check_admin_user)):
                 SELECT a.id AS agent_id, a.user_email, a.status AS agent_status, a.created_at AS agent_created_at,
                        u.full_name, u.avatar, u.status AS user_status
                 FROM agents a
-                JOIN users u ON LOWER(a.user_email) = LOWER(u.email)
-                WHERE a.user_email NOT LIKE '%@payent.com'
+                JOIN users u ON a.user_email = u.email
                 ORDER BY a.created_at DESC
             """)
-            agents_rows = cursor.fetchall()
+            agents_rows = cursor.fetchall() or []
 
             cursor.execute("""
                 SELECT user_email, COUNT(*) as p_count
@@ -5667,15 +5666,15 @@ def admin_agents_list(current_admin: dict = Depends(check_admin_user)):
                 WHERE user_email IS NOT NULL AND user_email != ''
                 GROUP BY user_email
             """)
-            p_counts = {r["user_email"].lower(): r["p_count"] for r in cursor.fetchall()}
+            p_counts = {r["user_email"].lower(): r["p_count"] for r in (cursor.fetchall() or [])}
 
             cursor.execute("""
                 SELECT p.user_email, COUNT(o.id) as b_count, IFNULL(SUM(o.total), 0) as revenue
                 FROM orders o
-                JOIN custom_products p ON (o.product_id = p.id OR o.product_id = p.title)
+                JOIN custom_products p ON o.product_id = p.id
                 GROUP BY p.user_email
             """)
-            o_stats = {r["user_email"].lower(): {"count": r["b_count"], "revenue": float(r["revenue"])} for r in cursor.fetchall()}
+            o_stats = {r["user_email"].lower(): {"count": r["b_count"], "revenue": float(r["revenue"])} for r in (cursor.fetchall() or [])}
 
             cursor.execute("""
                 SELECT p.user_email, IFNULL(AVG(r.rating), 4.8) as avg_rating
@@ -5683,7 +5682,7 @@ def admin_agents_list(current_admin: dict = Depends(check_admin_user)):
                 JOIN custom_products p ON r.product_id = p.id
                 GROUP BY p.user_email
             """)
-            r_stats = {r["user_email"].lower(): float(r["avg_rating"] or 4.8) for r in cursor.fetchall()}
+            r_stats = {r["user_email"].lower(): float(r["avg_rating"] or 4.8) for r in (cursor.fetchall() or [])}
 
             result = []
             for a in agents_rows:
@@ -5805,7 +5804,7 @@ def admin_products_list(
                                u.city AS user_city,
                                u.status AS user_status
                         FROM custom_products cp
-                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                        LEFT JOIN users u ON cp.user_email = u.email
                         WHERE LOWER(cp.status) IN ('pending', 'under_review')
                         ORDER BY cp.created_at DESC
                     """)
@@ -5818,7 +5817,7 @@ def admin_products_list(
                                u.city AS user_city,
                                u.status AS user_status
                         FROM custom_products cp
-                        LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                        LEFT JOIN users u ON cp.user_email = u.email
                         WHERE LOWER(cp.status) = %s
                         ORDER BY cp.created_at DESC
                     """, (clean_st,))
@@ -5831,7 +5830,7 @@ def admin_products_list(
                            u.city AS user_city,
                            u.status AS user_status
                     FROM custom_products cp
-                    LEFT JOIN users u ON LOWER(cp.user_email) = LOWER(u.email)
+                    LEFT JOIN users u ON cp.user_email = u.email
                     ORDER BY cp.created_at DESC
                 """)
             rows = cursor.fetchall() or []
@@ -6151,26 +6150,33 @@ def admin_toggle_hide_product(id: str, current_admin: dict = Depends(check_admin
 @app.get("/api/admin/categories")
 def admin_categories_list(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
+    if not conn:
+        return []
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM categories")
-            rows = cursor.fetchall()
+            cursor.execute("SELECT * FROM categories ORDER BY name ASC")
+            rows = cursor.fetchall() or []
+            
+            cursor.execute("SELECT category, COUNT(*) as count FROM custom_products WHERE category IS NOT NULL GROUP BY category")
+            cat_counts = {r["category"]: r["count"] for r in (cursor.fetchall() or [])}
             
             res = []
             for r in rows:
-                cursor.execute("SELECT COUNT(*) as count FROM custom_products WHERE category = %s", (r["name"],))
-                p_count = cursor.fetchone()["count"]
+                p_count = cat_counts.get(r["name"], 0)
                 res.append({
                     "id": r["id"],
                     "name": r["name"],
                     "icon": r["icon"] or "Laptop",
                     "count": p_count,
                     "color": r["color"] or "bg-gray-500/10 text-gray-500",
-                    "enabled": bool(r["enabled"])
+                    "enabled": bool(r.get("enabled", 1))
                 })
+            return res
     finally:
-        conn.close()
-    return res
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 @app.post("/api/admin/categories", status_code=201)
 def admin_create_category(data: CategorySchema, current_admin: dict = Depends(check_admin_user)):
@@ -6428,24 +6434,39 @@ def admin_refund_booking(id: str, current_admin: dict = Depends(check_admin_user
 @app.get("/api/admin/payments")
 def admin_payments_list(current_admin: dict = Depends(check_admin_user)):
     conn = get_db_connection()
+    if not conn:
+        return []
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM payments ORDER BY created_at DESC")
-            rows = cursor.fetchall()
+            cursor.execute("""
+                SELECT o.id AS booking_id, o.user_email, o.total AS amount, o.payment_status, o.razorpay_payment_id,
+                       o.razorpay_order_id, o.created_at, o.refund_status,
+                       u.full_name AS customer_name
+                FROM orders o
+                LEFT JOIN users u ON o.user_email = u.email
+                ORDER BY o.created_at DESC
+            """)
+            rows = cursor.fetchall() or []
     finally:
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
         
     res = []
     for r in rows:
+        st = r.get("payment_status") or "successful"
+        if r.get("refund_status") == "refunded":
+            st = "refunded"
         res.append({
-            "id": r["id"],
+            "id": r.get("razorpay_payment_id") or f"pay-{r['booking_id']}",
             "bookingId": r["booking_id"],
-            "customerId": r["customer_id"],
-            "customerName": r["customer_name"],
+            "customerId": r["user_email"],
+            "customerName": r.get("customer_name") or (r["user_email"].split("@")[0] if r.get("user_email") else "Customer"),
             "amount": r["amount"],
-            "status": r["status"] or "successful",
-            "method": r["method"] or "UPI / Card",
-            "invoiceUrl": r["invoice_url"] or "#",
+            "status": st,
+            "method": "Razorpay (UPI / Card)",
+            "invoiceUrl": "#",
             "createdAt": r["created_at"]
         })
     return res
@@ -7245,67 +7266,108 @@ def admin_settings_get(current_admin: dict = Depends(check_admin_user)):
         conn.close()
         
     if not r:
-        raise HTTPException(status_code=404, detail="Settings not found")
+        return {
+            "websiteName": "PAYENT",
+            "logoUrl": "",
+            "theme": "dark",
+            "contactEmail": "support@payent.com",
+            "contactPhone": "+91 98765 43210",
+            "socialFacebook": "",
+            "socialTwitter": "",
+            "socialInstagram": "",
+            "seoTitle": "PAYENT — Premium Tech Gear Rental Platform",
+            "seoDescription": "Rent top-tier creator and tech equipment safely and seamlessly with peer-to-peer verified agents.",
+            "homepageBannerText": "Special Weekend Rate: Get 20% off cinema cameras and drones",
+            "footerText": "© 2026 PAYENT Technologies Inc. All rights reserved."
+        }
         
     return {
-        "websiteName": r["website_name"],
-        "logoUrl": r["logo_url"],
-        "theme": r["theme"],
-        "contactEmail": r["contact_email"],
-        "contactPhone": r["contact_phone"],
-        "socialFacebook": r["social_facebook"],
-        "socialTwitter": r["social_twitter"],
-        "socialInstagram": r["social_instagram"],
-        "seoTitle": r["seo_title"],
-        "seoDescription": r["seo_description"],
-        "homepageBannerText": r["homepage_banner_text"],
-        "footerText": r["footer_text"]
+        "websiteName": r.get("website_name") or "PAYENT",
+        "logoUrl": r.get("logo_url") or "",
+        "theme": r.get("theme") or "dark",
+        "contactEmail": r.get("contact_email") or "support@payent.com",
+        "contactPhone": r.get("contact_phone") or "+91 98765 43210",
+        "socialFacebook": r.get("social_facebook") or "",
+        "socialTwitter": r.get("social_twitter") or "",
+        "socialInstagram": r.get("social_instagram") or "",
+        "seoTitle": r.get("seo_title") or "PAYENT — Premium Tech Gear Rental Platform",
+        "seoDescription": r.get("seo_description") or "Rent top-tier creator and tech equipment safely and seamlessly with peer-to-peer verified agents.",
+        "homepageBannerText": r.get("homepage_banner_text") or "",
+        "footerText": r.get("footer_text") or "© 2026 PAYENT Technologies Inc. All rights reserved."
     }
 
 @app.post("/api/admin/settings")
 def admin_settings_save(data: SettingsUpdateSchema, current_admin: dict = Depends(check_admin_user)):
-    fields = []
-    params = []
-    if data.websiteName is not None:
-        fields.append("website_name = %s")
-        params.append(data.websiteName)
-    if data.logoUrl is not None:
-        fields.append("logo_url = %s")
-        params.append(data.logoUrl)
-    if data.theme is not None:
-        fields.append("theme = %s")
-        params.append(data.theme)
-    if data.contactEmail is not None:
-        fields.append("contact_email = %s")
-        params.append(data.contactEmail)
-    if data.contactPhone is not None:
-        fields.append("contact_phone = %s")
-        params.append(data.contactPhone)
-    if data.socialFacebook is not None:
-        fields.append("social_facebook = %s")
-        params.append(data.socialFacebook)
-    if data.socialTwitter is not None:
-        fields.append("social_twitter = %s")
-        params.append(data.socialTwitter)
-    if data.socialInstagram is not None:
-        fields.append("social_instagram = %s")
-        params.append(data.socialInstagram)
-    if data.seoTitle is not None:
-        fields.append("seo_title = %s")
-        params.append(data.seoTitle)
-    if data.seoDescription is not None:
-        fields.append("seo_description = %s")
-        params.append(data.seoDescription)
-    if data.homepageBannerText is not None:
-        fields.append("homepage_banner_text = %s")
-        params.append(data.homepageBannerText)
-    if data.footerText is not None:
-        fields.append("footer_text = %s")
-        params.append(data.footerText)
-        
-    if fields:
-        query = f"UPDATE admin_settings SET {', '.join(fields)} WHERE id = 1"
-        execute_query(query, tuple(params))
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM admin_settings LIMIT 1")
+            existing = cursor.fetchone()
+            if not existing:
+                cursor.execute("""
+                    INSERT INTO admin_settings (id, website_name, logo_url, theme, contact_email, contact_phone, social_facebook, social_twitter, social_instagram, seo_title, seo_description, homepage_banner_text, footer_text)
+                    VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    data.websiteName or "PAYENT",
+                    data.logoUrl or "",
+                    data.theme or "dark",
+                    data.contactEmail or "support@payent.com",
+                    data.contactPhone or "+91 98765 43210",
+                    data.socialFacebook or "",
+                    data.socialTwitter or "",
+                    data.socialInstagram or "",
+                    data.seoTitle or "PAYENT — Premium Tech Gear Rental Platform",
+                    data.seoDescription or "Rent top-tier creator and tech equipment safely and seamlessly with peer-to-peer verified agents.",
+                    data.homepageBannerText or "",
+                    data.footerText or "© 2026 PAYENT Technologies Inc. All rights reserved."
+                ))
+            else:
+                fields = []
+                params = []
+                if data.websiteName is not None:
+                    fields.append("website_name = %s")
+                    params.append(data.websiteName)
+                if data.logoUrl is not None:
+                    fields.append("logo_url = %s")
+                    params.append(data.logoUrl)
+                if data.theme is not None:
+                    fields.append("theme = %s")
+                    params.append(data.theme)
+                if data.contactEmail is not None:
+                    fields.append("contact_email = %s")
+                    params.append(data.contactEmail)
+                if data.contactPhone is not None:
+                    fields.append("contact_phone = %s")
+                    params.append(data.contactPhone)
+                if data.socialFacebook is not None:
+                    fields.append("social_facebook = %s")
+                    params.append(data.socialFacebook)
+                if data.socialTwitter is not None:
+                    fields.append("social_twitter = %s")
+                    params.append(data.socialTwitter)
+                if data.socialInstagram is not None:
+                    fields.append("social_instagram = %s")
+                    params.append(data.socialInstagram)
+                if data.seoTitle is not None:
+                    fields.append("seo_title = %s")
+                    params.append(data.seoTitle)
+                if data.seoDescription is not None:
+                    fields.append("seo_description = %s")
+                    params.append(data.seoDescription)
+                if data.homepageBannerText is not None:
+                    fields.append("homepage_banner_text = %s")
+                    params.append(data.homepageBannerText)
+                if data.footerText is not None:
+                    fields.append("footer_text = %s")
+                    params.append(data.footerText)
+                    
+                if fields:
+                    params.append(existing["id"])
+                    query = f"UPDATE admin_settings SET {', '.join(fields)} WHERE id = %s"
+                    cursor.execute(query, tuple(params))
+            conn.commit()
+    finally:
+        conn.close()
         
     # Log action
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()

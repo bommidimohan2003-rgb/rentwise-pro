@@ -11,6 +11,7 @@ import {
   Clock,
   MessageSquare,
   AlertCircle,
+  ShieldAlert,
 } from "lucide-react";
 import { notificationsService } from "../services/notifications";
 import { AdminSupportTicket } from "../services/api";
@@ -129,13 +130,19 @@ export default function Support() {
       </div>
 
       {/* ERROR / UNCONFIGURED BANNER */}
-      {error && (
-        <div className="p-4 rounded-xl bg-secondary/60 border border-border text-foreground text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <AlertCircle className="h-4 w-4 text-amber-500" />
-            <span>Support service is not configured or returned no connection.</span>
+      {error && !loading && (
+        <div className="bg-card rounded-2xl border border-destructive/30 p-8 text-center shadow-xs flex flex-col items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-3">
+            <ShieldAlert className="h-6 w-6" />
           </div>
-          <button onClick={() => fetchTickets()} className="font-bold underline cursor-pointer">Retry</button>
+          <h3 className="text-base font-bold text-foreground font-display">Database Sync Failed</h3>
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+          <button
+            onClick={() => fetchTickets()}
+            className="mt-4 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all shadow-xs cursor-pointer"
+          >
+            Retry Database Fetch
+          </button>
         </div>
       )}
 
