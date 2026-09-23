@@ -3023,7 +3023,7 @@ def fetch_public_stats(response: Response):
     return get_cached("public_stats", 60, _load_stats)
 
 @app.post("/api/products/custom")
-def add_custom_listing(data: CustomProductSchema, current_user: dict = Depends(get_approved_user)):
+def add_custom_listing(data: CustomProductSchema, current_user: dict = Depends(require_authenticated_user)):
     email = current_user["email"].strip().lower()
     product_dict = getattr(data, "model_dump", data.dict)()
     if not product_dict.get("id"):

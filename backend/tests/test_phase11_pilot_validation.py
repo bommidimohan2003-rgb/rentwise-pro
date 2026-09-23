@@ -287,8 +287,7 @@ class TestPhase11PilotValidation(unittest.TestCase):
         endpoints = [
             ("POST", "/api/cart", {"productId": self.product_id, "days": 3, "startDate": "2026-10-01", "endDate": "2026-10-03"}),
             ("POST", "/api/cart/checkout", {}),
-            ("POST", "/api/orders", {"productId": self.product_id, "startDate": "2026-10-01", "endDate": "2026-10-03", "totalPrice": 10500}),
-            ("POST", "/api/products/custom", {"title": "Pending User Gear", "category": "cameras", "price": 1000, "daily_rate": 1000})
+            ("POST", "/api/orders", {"productId": self.product_id, "startDate": "2026-10-01", "endDate": "2026-10-03", "totalPrice": 10500})
         ]
 
         for method, path, payload in endpoints:

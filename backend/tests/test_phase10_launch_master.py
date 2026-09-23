@@ -169,18 +169,29 @@ class TestPhase10LaunchMaster(unittest.TestCase):
         self.assertEqual(res.status_code, 403)
         self.assertIn("pending", res.json().get("detail", "").lower())
 
-    def test_02_pending_user_blocked_from_creating_listing(self):
-        """Pending users must be blocked from listing custom gear (403 Forbidden)."""
+    def test_02_pending_user_can_submit_listing_for_admin_review(self):
+        """Pending users can submit custom gear for admin review (creates product with status='pending')."""
         res = self.client.post("/api/products/custom", json={
-            "title": "Pending User Unauthorized Drone",
+            "title": "Pending User Drone Listing",
             "category": "Drones",
             "price": 2000,
-            "description": "Should fail",
+            "description": "Gear for admin review",
             "image": "https://example.com/drone.jpg",
             "city": "Bengaluru",
             "state": "Karnataka"
         }, headers=self.pending_headers)
-        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.status_code, 200)
+        prod = res.json().get("product")
+        self.assertIsNotNone(prod)
+        self.assertEqual(prod["status"], "pending")
+
+        # Rejected user must be blocked with 403 Forbidden
+        rej_res = self.client.post("/api/products/custom", json={
+            "title": "Rejected User Drone Listing",
+            "category": "Drones",
+            "price": 2000
+        }, headers=self.rejected_headers)
+        self.assertEqual(rej_res.status_code, 403)
 
     def test_03_pending_user_allowed_to_view_catalog_and_status(self):
         """Pending users can view public catalog and check their account status."""
