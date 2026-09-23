@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { PayentLogoMark } from "@/components/common/LogoIcon";
 
 interface AppPreloaderProps {
   onComplete?: () => void;
@@ -8,12 +7,14 @@ interface AppPreloaderProps {
 }
 
 type PreloaderPhase =
-  | "black"
-  | "top-left-reveal"
-  | "center-reveal"
-  | "center-hold"
-  | "center-move-left"
-  | "complete";
+  | "p-center-hold"     // 0.00s - 2.00s: Single white "P" holds in exact viewport center
+  | "p-move-up"         // 2.00s - 2.80s: "P" smoothly moves upward
+  | "payent-typing"     // 2.80s - 3.90s: "PAYENT" typed letter-by-letter in the center
+  | "payent-hold"       // 3.90s - 4.40s: Complete "PAYENT" holds in center
+  | "payent-move-left"  // 4.40s - 5.40s: "PAYENT" moves horizontally center -> left; home reveals
+  | "complete";         // 5.90s+: Preloader unmounts, normal website interactivity
+
+const LETTERS = ["P", "A", "Y", "E", "N", "T"];
 
 export function AppPreloader({
   onComplete,
@@ -21,17 +22,19 @@ export function AppPreloader({
 }: AppPreloaderProps) {
   const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [phase, setPhase] = useState<PreloaderPhase>("black");
+  const [phase, setPhase] = useState<PreloaderPhase>("p-center-hold");
+  const [typedCount, setTypedCount] = useState(0);
   const shouldReduceMotion = useReducedMotion();
 
-  // Target coordinates for navbar logo
+  // Target coordinates for navbar brand logo
   const [navTarget, setNavTarget] = useState({
-    top: 32,
-    left: 45,
-    width: 140,
-    height: 36,
+    top: 34,
+    left: 80,
+    width: 100,
+    height: 32,
   });
 
+  // Track whether user has already seen preloader in this session
   useEffect(() => {
     setMounted(true);
     let hasSeen = false;
@@ -50,10 +53,11 @@ export function AppPreloader({
     setIsVisible(true);
   }, [forceShow, onComplete]);
 
-  // Measure actual nav logo position from DOM
+  // Dynamically measure navbar logo position from the DOM
   useEffect(() => {
     if (!isVisible) return;
-    const calculateNavPos = () => {
+
+    const measureNavPos = () => {
       const navEl = document.getElementById("nav-logo");
       if (navEl) {
         const rect = navEl.getBoundingClientRect();
@@ -71,76 +75,103 @@ export function AppPreloader({
         const leftBase = Math.max(pad, (window.innerWidth - maxW) / 2 + pad);
         setNavTarget({
           top: isTablet ? 34 : 32,
-          left: leftBase + 60,
-          width: 130,
-          height: 36,
+          left: leftBase + 48,
+          width: 90,
+          height: 32,
         });
       }
     };
 
-    calculateNavPos();
-    window.addEventListener("resize", calculateNavPos);
-    return () => window.removeEventListener("resize", calculateNavPos);
+    measureNavPos();
+    window.addEventListener("resize", measureNavPos);
+    return () => window.removeEventListener("resize", measureNavPos);
   }, [isVisible]);
 
-  // Master timeline orchestration
+  // Master Timeline Orchestration
   useEffect(() => {
     if (!isVisible) return;
 
+    // Accessibility fallback for reduced motion preference
     if (shouldReduceMotion) {
-      // Reduced motion path
-      const t1 = setTimeout(() => {
+      const tReduce = setTimeout(() => {
         setIsVisible(false);
         try {
           sessionStorage.setItem("payent:preloaded", "true");
         } catch {}
         if (onComplete) onComplete();
       }, 700);
-      return () => clearTimeout(t1);
+      return () => clearTimeout(tReduce);
     }
 
-    // 0.0s - 0.6s: Top-left small white PAYENT reveals
-    const tTopLeft = setTimeout(() => {
-      setPhase("top-left-reveal");
-    }, 100);
+    // ----------------------------------------------------
+    // TIMELINE:
+    // 0.00s - 2.00s: Pure black screen, single white "P" in center (Hold)
+    // 2.00s - 2.80s: "P" smoothly moves upward
+    // 2.80s - 3.90s: "PAYENT" typed letter-by-letter
+    // 3.90s - 4.40s: "PAYENT" holds in center
+    // 4.40s - 5.40s: "PAYENT" moves center -> left (home reveals)
+    // 5.40s - 5.90s: Home content settles
+    // 5.90s+: Preloader unmounts
+    // ----------------------------------------------------
 
-    // 0.6s - 1.5s: Large white PAYENT appears in center
-    const tCenterReveal = setTimeout(() => {
-      setPhase("center-reveal");
-    }, 600);
+    const timers: NodeJS.Timeout[] = [];
 
-    // 1.5s - 2.3s: Center PAYENT holds
-    const tCenterHold = setTimeout(() => {
-      setPhase("center-hold");
-    }, 1500);
+    // Phase 3: P moves up at 2.00s
+    timers.push(
+      setTimeout(() => {
+        setPhase("p-move-up");
+      }, 2000)
+    );
 
-    // 2.3s - 3.3s: Center PAYENT smoothly moves toward the left & home page reveals
-    const tMoveLeft = setTimeout(() => {
-      setPhase("center-move-left");
-    }, 2300);
+    // Phase 4: Begin typing PAYENT at 2.80s
+    timers.push(
+      setTimeout(() => {
+        setPhase("payent-typing");
+        setTypedCount(1); // 'P'
+      }, 2800)
+    );
 
-    // 3.5s - 3.8s: Settle and finish
-    const tComplete = setTimeout(() => {
-      setPhase("complete");
-      setIsVisible(false);
-      try {
-        sessionStorage.setItem("payent:preloaded", "true");
-      } catch {}
-      if (onComplete) onComplete();
-    }, 3600);
+    // Stagger letters 'A', 'Y', 'E', 'N', 'T' (every ~180ms)
+    timers.push(setTimeout(() => setTypedCount(2), 3000)); // 'PA'
+    timers.push(setTimeout(() => setTypedCount(3), 3200)); // 'PAY'
+    timers.push(setTimeout(() => setTypedCount(4), 3400)); // 'PAYE'
+    timers.push(setTimeout(() => setTypedCount(5), 3600)); // 'PAYEN'
+    timers.push(setTimeout(() => setTypedCount(6), 3800)); // 'PAYENT'
+
+    // Phase 5: PAYENT center hold at 3.90s
+    timers.push(
+      setTimeout(() => {
+        setPhase("payent-hold");
+      }, 3900)
+    );
+
+    // Phase 6 & 8: Move from Center -> Left & Reveal Home page simultaneously at 4.40s
+    timers.push(
+      setTimeout(() => {
+        setPhase("payent-move-left");
+      }, 4400)
+    );
+
+    // Phase 12: Complete preloader at 5.90s
+    timers.push(
+      setTimeout(() => {
+        setPhase("complete");
+        setIsVisible(false);
+        try {
+          sessionStorage.setItem("payent:preloaded", "true");
+        } catch {}
+        if (onComplete) onComplete();
+      }, 5900)
+    );
 
     return () => {
-      clearTimeout(tTopLeft);
-      clearTimeout(tCenterReveal);
-      clearTimeout(tCenterHold);
-      clearTimeout(tMoveLeft);
-      clearTimeout(tComplete);
+      timers.forEach(clearTimeout);
     };
   }, [isVisible, shouldReduceMotion, onComplete]);
 
   if (!mounted || !isVisible) return null;
 
-  // Reduced motion fallback
+  // Reduced motion render
   if (shouldReduceMotion) {
     return (
       <AnimatePresence>
@@ -161,117 +192,148 @@ export function AppPreloader({
     );
   }
 
-  const showTopLeft =
-    phase === "top-left-reveal" ||
-    phase === "center-reveal" ||
-    phase === "center-hold";
-  const showCenter =
-    phase === "center-reveal" ||
-    phase === "center-hold" ||
-    phase === "center-move-left";
-  const isMovingLeft = phase === "center-move-left";
+  // Animation phase flags
+  const isPMovedUp =
+    phase === "p-move-up" ||
+    phase === "payent-typing" ||
+    phase === "payent-hold" ||
+    phase === "payent-move-left";
+
+  const showTypingWord =
+    phase === "payent-typing" ||
+    phase === "payent-hold" ||
+    phase === "payent-move-left";
+
+  const isMovingLeft = phase === "payent-move-left";
 
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          key="payent-final-preloader"
+          key="payent-cinematic-preloader"
           initial={{ opacity: 1 }}
           animate={{
+            // Black background seamlessly fades out starting at 4.40s when PAYENT travels to the left
             opacity: isMovingLeft ? 0 : 1,
           }}
           exit={{ opacity: 0 }}
           transition={{
-            duration: 0.9,
+            duration: 1.1,
             ease: [0.22, 1, 0.36, 1],
           }}
           className="fixed inset-0 z-[99999] bg-[#000000] text-white select-none overflow-hidden pointer-events-none"
+          style={{ willChange: "opacity" }}
         >
           {/* ==================================================== */}
-          {/* 1. TOP-LEFT SMALL WHITE PAYENT WORDMARK              */}
+          {/* 1. CENTER "P" (HOLDS, MOVES UP, FADES ON LEFT MOVE)   */}
           {/* ==================================================== */}
-          <AnimatePresence>
-            {showTopLeft && (
-              <motion.div
-                key="top-left-payent"
-                initial={{ opacity: 0, scale: 0.96, filter: "blur(4px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{
-                  opacity: 0,
-                  filter: "blur(3px)",
-                  transition: { duration: 0.4, ease: "easeInOut" },
-                }}
-                transition={{
-                  duration: 0.55,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                style={{
-                  position: "absolute",
-                  top: navTarget.top - 18,
-                  left: navTarget.left - navTarget.width / 2,
-                }}
-                className="flex items-center gap-2.5 z-20"
-              >
-                <span className="font-sans font-black tracking-tight text-xl text-white">
-                  PAYENT
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <motion.div
+            initial={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              x: "-50%",
+              y: "-50%",
+              opacity: 1,
+              scale: 1,
+            }}
+            animate={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              x: "-50%",
+              // Moves up smoothly by ~48px-56px at 2.00s
+              y: isPMovedUp ? "calc(-50% - 48px)" : "-50%",
+              // Gently dissolves when the full wordmark travels to header
+              opacity: isMovingLeft ? 0 : 1,
+              scale: isPMovedUp ? 0.95 : 1,
+            }}
+            transition={{
+              duration: 0.8,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="z-40 pointer-events-none flex items-center justify-center select-none"
+          >
+            <span className="font-sans font-black tracking-tight text-6xl sm:text-7xl md:text-8xl text-white leading-none drop-shadow-2xl">
+              P
+            </span>
+          </motion.div>
 
           {/* ==================================================== */}
-          {/* 2. LARGE WHITE PAYENT IN CENTER & MOVES LEFT         */}
+          {/* 2. "PAYENT" WORDMARK (TYPED LETTER-BY-LETTER)         */}
+          {/*    THEN MOVES FROM VIEWPORT CENTER -> NAVBAR LEFT    */}
           {/* ==================================================== */}
-          {showCenter && (
+          {showTypingWord && (
             <motion.div
-              layoutId="payent-center-wordmark"
               initial={{
                 position: "fixed",
                 top: "50%",
                 left: "50%",
                 x: "-50%",
-                y: "-50%",
-                opacity: 0,
-                scale: 0.94,
-                filter: "blur(6px)",
+                y: "calc(-50% + 24px)",
+                scale: 1,
+                opacity: 1,
               }}
               animate={
                 isMovingLeft
                   ? {
+                      position: "fixed",
                       top: navTarget.top,
                       left: navTarget.left,
                       x: "-50%",
                       y: "-50%",
+                      // Scales proportionally to match the exact navbar logo size (~20px text)
+                      scale: typeof window !== "undefined" && window.innerWidth < 640 ? 0.42 : 0.48,
                       opacity: 1,
-                      scale: 0.55,
-                      filter: "blur(0px)",
                     }
                   : {
+                      position: "fixed",
                       top: "50%",
                       left: "50%",
                       x: "-50%",
-                      y: "-50%",
-                      opacity: 1,
+                      y: "calc(-50% + 24px)",
                       scale: 1,
-                      filter: "blur(0px)",
+                      opacity: 1,
                     }
               }
               transition={
                 isMovingLeft
                   ? {
-                      duration: 0.9,
+                      duration: 1.0,
                       ease: [0.22, 1, 0.36, 1],
                     }
                   : {
-                      duration: 0.75,
-                      ease: [0.16, 1, 0.3, 1],
+                      duration: 0.4,
+                      ease: [0.22, 1, 0.36, 1],
                     }
               }
-              className="z-30 flex items-center justify-center select-none origin-center text-center"
+              className="z-50 pointer-events-none flex items-center justify-center select-none origin-center"
+              style={{ willChange: "transform, top, left" }}
             >
-              <h1 className="font-sans font-black tracking-tight text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white tracking-wider drop-shadow-2xl">
-                PAYENT
-              </h1>
+              {/* Reserved fixed wordmark container ensures zero layout shift while letters appear */}
+              <div className="inline-flex items-center justify-center font-sans font-black tracking-tight text-4xl sm:text-5xl md:text-6xl text-white leading-none">
+                {LETTERS.map((char, index) => {
+                  const isCharVisible = index < typedCount;
+                  return (
+                    <motion.span
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.94, filter: "blur(4px)" }}
+                      animate={{
+                        opacity: isCharVisible ? 1 : 0,
+                        scale: isCharVisible ? 1 : 0.94,
+                        filter: isCharVisible ? "blur(0px)" : "blur(4px)",
+                      }}
+                      transition={{
+                        duration: 0.24,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                      className="inline-block"
+                    >
+                      {char}
+                    </motion.span>
+                  );
+                })}
+              </div>
             </motion.div>
           )}
         </motion.div>
