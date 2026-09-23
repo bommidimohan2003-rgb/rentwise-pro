@@ -399,10 +399,20 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/api/health")
 @app.get("/health")
 @app.get("/healthz")
-def health_check():
-    """Universal health probe for platform orchestrators (Railway / Docker)."""
+def health_check(response: Response):
+    """Universal health probe verifying both application runtime and TiDB database connectivity."""
+    is_ready, msg = check_db_health()
+    if is_ready:
+        return {
+            "status": "ok",
+            "database": "connected",
+            "service": "Payent FastAPI Backend API",
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        }
+    response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return {
-        "status": "ok",
+        "status": "degraded",
+        "database": "disconnected",
         "service": "Payent FastAPI Backend API",
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }

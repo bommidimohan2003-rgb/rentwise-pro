@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Settings as SettingsIcon,
   Globe,
@@ -6,7 +6,10 @@ import {
   Megaphone,
   Share2,
   Save,
-  Loader2,
+  RefreshCw,
+  Sun,
+  Moon,
+  Laptop,
 } from "lucide-react";
 import { notificationsService } from "../services/notifications";
 import { AdminSettings } from "../services/api";
@@ -18,42 +21,41 @@ import { cn } from "@/lib/utils";
 export default function Settings() {
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "general" | "branding" | "seo" | "social"
-  >("general");
+  const [activeTab, setActiveTab] = useState<"general" | "branding" | "seo" | "appearance">("general");
 
   const { theme, toggle } = useTheme();
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await notificationsService.getSettings();
       setSettings(data);
-    } catch {
-      toast.error("Failed to load settings.");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load platform settings from database.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!settings) return;
 
-    setSubmitting(true);
     try {
-      // Sync theme hook if user changed theme in dropdown
+      setSubmitting(true);
       const updated = await notificationsService.updateSettings(settings);
       setSettings(updated);
-
-      toast.success("Settings saved successfully.");
+      toast.success("Platform settings persisted successfully.");
     } catch {
-      toast.error("Failed to save settings.");
+      toast.error("Failed to save settings to database.");
     } finally {
       setSubmitting(false);
     }
@@ -66,309 +68,246 @@ export default function Settings() {
     });
   };
 
-  if (loading) {
-    return <Loader message="Accessing config parameters..." size="lg" />;
+  if (loading && !settings) {
+    return (
+      <div className="py-24 flex items-center justify-center">
+        <Loader message="Loading platform configuration..." size="lg" />
+      </div>
+    );
   }
-
-  if (!settings) return null;
 
   return (
     <div className="space-y-6">
-      {/* Header bar */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Platform Settings</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Configure Payent parameters, change branding details, set SEO tags,
-          and sync color themes.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-        {/* Navigation Sidebar Panel */}
-        <div className="card-premium bg-card/60 p-2 space-y-1">
-          <button
-            onClick={() => setActiveTab("general")}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left",
-              activeTab === "general"
-                ? "bg-primary text-white"
-                : "text-muted-foreground hover:bg-secondary",
-            )}
-          >
-            <Globe className="h-4 w-4" />
-            <span>General Settings</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("branding")}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left",
-              activeTab === "branding"
-                ? "bg-primary text-white"
-                : "text-muted-foreground hover:bg-secondary",
-            )}
-          >
-            <Palette className="h-4 w-4" />
-            <span>Appearance & Theme</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("seo")}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left",
-              activeTab === "seo"
-                ? "bg-primary text-white"
-                : "text-muted-foreground hover:bg-secondary",
-            )}
-          >
-            <Megaphone className="h-4 w-4" />
-            <span>SEO Configuration</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("social")}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left",
-              activeTab === "social"
-                ? "bg-primary text-white"
-                : "text-muted-foreground hover:bg-secondary",
-            )}
-          >
-            <Share2 className="h-4 w-4" />
-            <span>Social Connections</span>
-          </button>
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+            Platform Settings
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Persisted configurations, branding assets, SEO metadata, and system appearance.
+          </p>
         </div>
 
-        {/* Configurations Fields Area */}
-        <form
-          onSubmit={handleSave}
-          className="md:col-span-3 card-premium bg-card/60 p-6 space-y-5"
+        <button
+          onClick={fetchSettings}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
         >
-          {activeTab === "general" && (
-            <div className="space-y-4 text-xs font-semibold">
-              <h3 className="text-sm font-bold text-foreground pb-2 border-b">
-                General Profile
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Website Branding Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={settings.websiteName}
-                    onChange={(e) =>
-                      handleFieldChange("websiteName", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Primary Contact Email
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={settings.contactEmail}
-                    onChange={(e) =>
-                      handleFieldChange("contactEmail", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Hotline Support Phone
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={settings.contactPhone}
-                    onChange={(e) =>
-                      handleFieldChange("contactPhone", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Homepage Header Promo Text
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.homepageBannerText}
-                    onChange={(e) =>
-                      handleFieldChange("homepageBannerText", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Footer Copyrights Text
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.footerText}
-                    onChange={(e) =>
-                      handleFieldChange("footerText", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <span>Sync Settings</span>
+        </button>
+      </div>
 
-          {activeTab === "branding" && (
-            <div className="space-y-4 text-xs font-semibold">
-              <h3 className="text-sm font-bold text-foreground pb-2 border-b">
-                Theme & Logo
-              </h3>
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Asset Logo URL
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={settings.logoUrl}
-                    onChange={(e) =>
-                      handleFieldChange("logoUrl", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={fetchSettings} className="underline font-bold cursor-pointer">Retry</button>
+        </div>
+      )}
 
-                <div className="p-4 rounded-xl bg-secondary/20 border flex items-center justify-between">
-                  <div className="flex flex-col pr-4">
-                    <span className="text-xs font-bold text-foreground">
-                      Synchronized color modes
-                    </span>
-                    <span className="text-[10px] text-muted-foreground mt-0.5">
-                      Toggle admin interface theme colors
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={toggle}
-                    className="btn-gradient text-xs px-4.5 py-2.5 rounded-xl font-bold uppercase tracking-wider select-none"
-                  >
-                    Set {theme === "dark" ? "Light Mode" : "Dark Mode"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "seo" && (
-            <div className="space-y-4 text-xs font-semibold">
-              <h3 className="text-sm font-bold text-foreground pb-2 border-b">
-                Search Engine Optimizations
-              </h3>
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Default SEO Meta Title
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={settings.seoTitle}
-                    onChange={(e) =>
-                      handleFieldChange("seoTitle", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Default SEO Meta Description
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={settings.seoDescription}
-                    onChange={(e) =>
-                      handleFieldChange("seoDescription", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "social" && (
-            <div className="space-y-4 text-xs font-semibold">
-              <h3 className="text-sm font-bold text-foreground pb-2 border-b">
-                Social Networking Links
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Facebook Link
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.socialFacebook}
-                    onChange={(e) =>
-                      handleFieldChange("socialFacebook", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Twitter / X Link
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.socialTwitter}
-                    onChange={(e) =>
-                      handleFieldChange("socialTwitter", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Instagram Link
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.socialInstagram}
-                    onChange={(e) =>
-                      handleFieldChange("socialInstagram", e.target.value)
-                    }
-                    className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end pt-4 border-t border-border/40 shrink-0">
+      {settings && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+          {/* TAB NAVIGATION PANEL */}
+          <div className="p-2 bg-card rounded-2xl border border-border/80 shadow-xs space-y-1">
             <button
-              type="submit"
-              disabled={submitting}
-              className="btn-gradient text-xs px-5 py-3.5 rounded-xl font-bold flex items-center gap-2 select-none"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="h-4.5 w-4.5" />
-                  <span>Save Configuration</span>
-                </>
+              onClick={() => setActiveTab("general")}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer",
+                activeTab === "general"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
+            >
+              <Globe className="h-4 w-4" />
+              <span>General Settings</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("branding")}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer",
+                activeTab === "branding"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+            >
+              <Megaphone className="h-4 w-4" />
+              <span>Branding & Banners</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("seo")}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer",
+                activeTab === "seo"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+            >
+              <Share2 className="h-4 w-4" />
+              <span>SEO & Metadata</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("appearance")}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer",
+                activeTab === "appearance"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+            >
+              <Palette className="h-4 w-4" />
+              <span>System Appearance</span>
             </button>
           </div>
-        </form>
-      </div>
+
+          {/* MAIN SETTINGS FORM */}
+          <div className="md:col-span-3 p-6 bg-card rounded-2xl border border-border/80 shadow-xs">
+            <form onSubmit={handleSave} className="space-y-5 text-xs">
+              {activeTab === "general" && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-foreground">General Marketplace Parameters</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="font-bold text-foreground">Website Platform Name</label>
+                      <input
+                        type="text"
+                        value={settings.websiteName}
+                        onChange={(e) => handleFieldChange("websiteName", e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="font-bold text-foreground">Contact Email</label>
+                      <input
+                        type="email"
+                        value={settings.contactEmail}
+                        onChange={(e) => handleFieldChange("contactEmail", e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-foreground">Support Hotline Phone</label>
+                    <input
+                      type="text"
+                      value={settings.contactPhone}
+                      onChange={(e) => handleFieldChange("contactPhone", e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "branding" && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-foreground">Branding Assets & Announcement Banners</h3>
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-foreground">Navbar Logo Asset URL</label>
+                    <input
+                      type="text"
+                      value={settings.logoUrl}
+                      onChange={(e) => handleFieldChange("logoUrl", e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-foreground">Homepage Hero Headline / Banner</label>
+                    <input
+                      type="text"
+                      value={settings.homepageBannerText}
+                      onChange={(e) => handleFieldChange("homepageBannerText", e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-foreground">Footer Copyright Notice</label>
+                    <input
+                      type="text"
+                      value={settings.footerText}
+                      onChange={(e) => handleFieldChange("footerText", e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "seo" && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-foreground">Search Engine Optimization Tags</h3>
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-foreground">Meta Title</label>
+                    <input
+                      type="text"
+                      value={settings.seoTitle}
+                      onChange={(e) => handleFieldChange("seoTitle", e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-foreground">Meta Description</label>
+                    <textarea
+                      rows={3}
+                      value={settings.seoDescription}
+                      onChange={(e) => handleFieldChange("seoDescription", e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "appearance" && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-foreground">System Appearance Mode</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={toggle}
+                      className={cn(
+                        "p-4 rounded-xl border flex flex-col items-center gap-2 cursor-pointer transition-all",
+                        theme === "light" ? "border-primary bg-primary/5 font-bold" : "border-border/60 bg-secondary/40 text-muted-foreground"
+                      )}
+                    >
+                      <Sun className="h-5 w-5 text-amber-500" />
+                      <span>Light Theme</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={toggle}
+                      className={cn(
+                        "p-4 rounded-xl border flex flex-col items-center gap-2 cursor-pointer transition-all",
+                        theme === "dark" ? "border-primary bg-primary/5 font-bold" : "border-border/60 bg-secondary/40 text-muted-foreground"
+                      )}
+                    >
+                      <Moon className="h-5 w-5 text-foreground" />
+                      <span>Dark Theme</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4 border-t border-border/40">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  <span>{submitting ? "Saving to Database..." : "Save Settings"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

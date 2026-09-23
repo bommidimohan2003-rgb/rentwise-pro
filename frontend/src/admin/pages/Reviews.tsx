@@ -1,8 +1,15 @@
-import { useEffect, useState, useMemo } from "react";
-import { Search, Trash2, Eye, EyeOff, Star, Trash } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import {
+  Search,
+  Trash2,
+  Eye,
+  EyeOff,
+  Star,
+  RefreshCw,
+  MessageSquare,
+} from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
-import { Loader } from "../components/layout/Loader";
 import { notificationsService } from "../services/notifications";
 import { AdminReview } from "../services/api";
 import { toast } from "sonner";
@@ -11,28 +18,37 @@ import { cn } from "@/lib/utils";
 export default function Reviews() {
   const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Sorting
   const [sortKey, setSortKey] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const fetchReviews = async () => {
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const fetchReviews = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      setError(null);
       const data = await notificationsService.getReviews();
       setReviews(data);
-    } catch {
-      toast.error("Failed to load reviews catalog.");
+    } catch (err) {
+      console.error(err);
+      if (!silent) setError("Failed to load customer feedback & reviews.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchReviews();
-  }, []);
+  }, [fetchReviews]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -47,18 +63,14 @@ export default function Reviews() {
     try {
       const updated = await notificationsService.toggleHideReview(id);
       setReviews((prev) => prev.map((r) => (r.id === id ? updated : r)));
-      toast.info(
-        updated.hidden
-          ? "Review comment hidden from public catalog."
-          : "Review comment visible.",
-      );
+      toast.info(updated.hidden ? "Review comment hidden from public catalog." : "Review comment published.");
     } catch {
       toast.error("Failed to toggle visibility status.");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this review?")) return;
+    if (!confirm("Are you sure you want to permanently delete this customer review?")) return;
     try {
       await notificationsService.deleteReview(id);
       setReviews((prev) => prev.filter((r) => r.id !== id));
@@ -75,14 +87,14 @@ export default function Reviews() {
       const q = search.toLowerCase();
       result = result.filter(
         (r) =>
-          r.comment.toLowerCase().includes(q) ||
-          r.productTitle.toLowerCase().includes(q) ||
-          r.userName.toLowerCase().includes(q),
+          (r.comment && r.comment.toLowerCase().includes(q)) ||
+          (r.productTitle && r.productTitle.toLowerCase().includes(q)) ||
+          (r.userName && r.userName.toLowerCase().includes(q))
       );
     }
 
     if (statusFilter !== "all") {
-      const isHidden = statusFilter === "hidden";
+      const isHidden = statusFilter === "hidden" || statusFilter === "flagged";
       result = result.filter((r) => r.hidden === isHidden);
     }
 
@@ -91,9 +103,7 @@ export default function Reviews() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc"
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -109,36 +119,30 @@ export default function Reviews() {
     return filteredReviews.slice(start, start + itemsPerPage);
   }, [filteredReviews, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
-
   const columns: Column<AdminReview>[] = [
     {
-      key: "productTitle",
-      label: "Listed Product",
-      sortable: true,
+      key: "userName",
+      label: "Customer / Renter",
       render: (row) => (
-        <span className="text-xs font-bold text-foreground">
-          {row.productTitle}
-        </span>
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-full bg-secondary border border-border/80 flex items-center justify-center font-bold text-xs text-foreground overflow-hidden shrink-0">
+            {row.userAvatar ? (
+              <img src={row.userAvatar} alt={row.userName} className="h-full w-full object-cover" />
+            ) : (
+              <span>{(row.userName || "U").charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <span className="font-bold text-foreground text-xs truncate">{row.userName || "Verified Renter"}</span>
+        </div>
       ),
     },
     {
-      key: "userName",
-      label: "Customer Name",
-      sortable: true,
+      key: "productTitle",
+      label: "Gear Item",
       render: (row) => (
-        <div className="flex items-center gap-2">
-          <img
-            src={row.userAvatar}
-            alt=""
-            className="h-6 w-6 rounded-full object-cover border shrink-0"
-          />
-          <span className="text-xs font-bold text-foreground truncate">
-            {row.userName}
-          </span>
-        </div>
+        <span className="font-semibold text-foreground text-xs truncate max-w-xs block">
+          {row.productTitle}
+        </span>
       ),
     },
     {
@@ -146,139 +150,164 @@ export default function Reviews() {
       label: "Rating",
       sortable: true,
       render: (row) => (
-        <div className="flex items-center gap-0.5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star
-              key={i}
-              className={cn(
-                "h-3.5 w-3.5",
-                i < row.rating
-                  ? "text-amber-500 fill-amber-500"
-                  : "text-muted-foreground/30",
-              )}
-            />
-          ))}
+        <div className="flex items-center gap-1 font-mono font-bold text-amber-500 text-xs">
+          <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+          <span>{row.rating || 5}</span>
         </div>
       ),
     },
     {
       key: "comment",
-      label: "Comment Feed",
+      label: "Review Feedback",
       render: (row) => (
-        <p
-          className="text-xs font-semibold text-muted-foreground max-w-sm truncate leading-normal"
-          title={row.comment}
-        >
+        <p className="text-xs text-muted-foreground line-clamp-2 max-w-md leading-relaxed">
           {row.comment}
         </p>
       ),
     },
     {
+      key: "status",
+      label: "Status",
+      render: (row) => (
+        <span
+          className={cn(
+            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+            row.hidden
+              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+              : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+          )}
+        >
+          {row.hidden ? "Hidden" : "Published"}
+        </span>
+      ),
+    },
+    {
       key: "createdAt",
-      label: "Posted Date",
+      label: "Date",
       sortable: true,
       render: (row) => (
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          {new Date(row.createdAt).toLocaleDateString()}
+        <span className="text-xs text-muted-foreground font-mono">
+          {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "—"}
         </span>
       ),
     },
     {
       key: "actions",
       label: "Actions",
+      align: "right",
       render: (row) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => handleToggleHide(row.id)}
-            className={cn(
-              "p-1.5 rounded-lg transition-colors",
-              row.hidden
-                ? "text-red-500 hover:bg-red-500/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
-            )}
-            title={row.hidden ? "Show Review" : "Hide Review"}
+            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            title={row.hidden ? "Publish review" : "Hide review"}
           >
-            {row.hidden ? (
-              <EyeOff className="h-4 w-4" />
-            ) : (
-              <Eye className="h-4 w-4" />
-            )}
+            {row.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
           </button>
           <button
             onClick={() => handleDelete(row.id)}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-            title="Delete Review"
+            className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+            title="Delete review"
           >
-            <Trash className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       ),
-      align: "right",
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">
-          Reviews Moderation
-        </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Audit customer rental feedbacks, filter star evaluations, and moderate
-          listing visibility.
-        </p>
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+            Customer Reviews & Feedback
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Genuine verified rental feedback, ratings moderation, and catalog visibility control.
+          </p>
+        </div>
+
+        <button
+          onClick={() => fetchReviews()}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <span>Refresh</span>
+        </button>
       </div>
 
-      {/* Query filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
+      {/* FILTERS & SEARCH */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search reviews by comment keywords, listing, or user..."
+            placeholder="Search reviews by user, product, or comment text..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-card/60 text-foreground text-xs rounded-xl pl-10 pr-4 py-3 border border-border focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/60"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
           />
         </div>
 
-        {/* Status select dropdown */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-card/60 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary transition-all"
-        >
-          <option value="all">All Reviews</option>
-          <option value="visible">Visible Reviews</option>
-          <option value="hidden">Hidden Reviews</option>
-        </select>
+        <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold">
+          {["all", "published", "hidden"].map((st) => (
+            <button
+              key={st}
+              onClick={() => {
+                setStatusFilter(st);
+                setCurrentPage(1);
+              }}
+              className={cn(
+                "px-3 py-1 rounded-lg capitalize transition-all cursor-pointer text-[11px]",
+                statusFilter === st
+                  ? "bg-card text-foreground shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {st}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Table grid */}
-      {loading ? (
-        <Loader message="Gathering client comments..." />
-      ) : (
-        <>
-          <Table
-            columns={columns}
-            data={paginatedReviews}
-            onSort={handleSort}
-            sortKey={sortKey}
-            sortOrder={sortOrder}
-            emptyTitle="No reviews found"
-            emptyDescription="Try revising search query or status criteria."
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredReviews.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
-        </>
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => fetchReviews()} className="underline font-bold cursor-pointer">Retry</button>
+        </div>
       )}
+
+      {/* TABLE */}
+      <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+        <Table
+          columns={columns}
+          data={paginatedReviews}
+          loading={loading}
+          sortKey={sortKey}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          emptyMessage="No customer reviews found in the database."
+        />
+
+        {filteredReviews.length > itemsPerPage && (
+          <div className="p-4 border-t border-border/40">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredReviews.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredReviews.length}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

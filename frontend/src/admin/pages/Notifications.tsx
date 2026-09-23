@@ -1,53 +1,62 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Bell,
-  Search,
-  Check,
+  CheckCheck,
   Trash2,
-  MailOpen,
-  Mail,
-  AlertTriangle,
-  CheckCircle,
+  Shield,
+  CreditCard,
+  User,
+  Package,
+  LifeBuoy,
+  RefreshCw,
+  Clock,
   Info,
 } from "lucide-react";
 import { notificationsService } from "../services/notifications";
 import { AdminNotification } from "../services/api";
-import { Loader } from "../components/layout/Loader";
-import { EmptyState } from "../components/layout/EmptyState";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { adminWS } from "../services/websocket";
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
+  const [error, setError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const fetchNotifs = async () => {
+  const fetchNotifications = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      setError(null);
       const data = await notificationsService.getNotifications();
       setNotifications(data);
-    } catch {
-      toast.error("Failed to fetch notifications.");
+    } catch (err) {
+      console.error(err);
+      if (!silent) setError("Failed to load notifications from server.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchNotifs();
-  }, []);
+    fetchNotifications();
+
+    const unsubWS = adminWS.onEvent(() => {
+      fetchNotifications(true);
+    });
+
+    return () => {
+      unsubWS();
+    };
+  }, [fetchNotifications]);
 
   const handleMarkAllRead = async () => {
     try {
       await notificationsService.markAllRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      // Dispatch event to update Topbar dropdown dynamically
-      window.dispatchEvent(new Event("payent:admin:refresh-notifications"));
       toast.success("All notifications marked as read.");
     } catch {
-      toast.error("Failed to update status.");
+      toast.error("Failed to update notification states.");
     }
   };
 
@@ -55,179 +64,177 @@ export default function Notifications() {
     try {
       await notificationsService.deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
-      window.dispatchEvent(new Event("payent:admin:refresh-notifications"));
-      toast.success("Notification deleted.");
+      toast.info("Notification removed.");
     } catch {
       toast.error("Failed to delete notification.");
     }
   };
 
-  const filteredNotifs = useMemo(() => {
+  const filteredNotifications = useMemo(() => {
     let result = [...notifications];
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (n) =>
-          n.title.toLowerCase().includes(q) ||
-          n.message.toLowerCase().includes(q),
-      );
-    }
-
-    if (filter === "unread") {
-      result = result.filter((n) => !n.read);
-    } else if (filter === "read") {
-      result = result.filter((n) => n.read);
+    if (categoryFilter !== "all") {
+      result = result.filter((n) => {
+        const titleLower = (n.title || "").toLowerCase();
+        const msgLower = (n.message || "").toLowerCase();
+        if (categoryFilter === "security") {
+          return titleLower.includes("security") || titleLower.includes("auth") || n.type === "error";
+        }
+        if (categoryFilter === "payments") {
+          return titleLower.includes("payment") || titleLower.includes("refund") || msgLower.includes("₹");
+        }
+        if (categoryFilter === "users") {
+          return titleLower.includes("user") || titleLower.includes("account") || titleLower.includes("agent");
+        }
+        if (categoryFilter === "products") {
+          return titleLower.includes("product") || titleLower.includes("gear") || titleLower.includes("listing");
+        }
+        if (categoryFilter === "support") {
+          return titleLower.includes("ticket") || titleLower.includes("support");
+        }
+        return true;
+      });
     }
 
     return result;
-  }, [notifications, search, filter]);
+  }, [notifications, categoryFilter]);
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "success":
-        return (
-          <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-        );
-      case "warning":
-        return (
-          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-        );
-      case "error":
-        return <AlertTriangle className="h-5 w-5 text-destructive" />;
-      default:
-        return <Info className="h-5 w-5 text-foreground" />;
-    }
-  };
-
-  const getBg = (type: string) => {
-    switch (type) {
-      case "success":
-        return "bg-emerald-500/10 border border-emerald-500/20";
-      case "warning":
-        return "bg-amber-500/10 border border-amber-500/20";
-      case "error":
-        return "bg-destructive/10 border border-destructive/20";
-      default:
-        return "bg-secondary border border-border";
-    }
-  };
+  const unreadCount = useMemo(() => {
+    return notifications.filter((n) => !n.read).length;
+  }, [notifications]);
 
   return (
     <div className="space-y-6">
-      {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">
-            Notification Center
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Monitor system alarms, user triggers, and administrative alerts.
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+              Notifications Center
+            </h1>
+            {unreadCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-primary text-primary-foreground">
+                {unreadCount} UNREAD
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Real-time security events, operational alerts, and transactional messages.
           </p>
         </div>
 
-        {notifications.some((n) => !n.read) && (
-          <button
-            onClick={handleMarkAllRead}
-            className="btn-gradient text-xs px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 self-start sm:self-auto"
-          >
-            <Check className="h-4.5 w-4.5" />
-            <span>Mark all read</span>
-          </button>
-        )}
-      </div>
-
-      {/* Query filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search alerts..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-card/60 text-foreground text-xs rounded-xl pl-10 pr-4 py-3 border border-border focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/60"
-          />
-        </div>
-
-        {/* Visibility Filter */}
-        <div className="flex items-center gap-1.5 bg-secondary/30 p-1 rounded-xl border border-border/50 self-start sm:self-auto justify-start w-fit">
-          {(["all", "unread", "read"] as const).map((mode) => (
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
             <button
-              key={mode}
-              onClick={() => setFilter(mode)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-bold rounded-lg uppercase tracking-wider text-muted-foreground transition-all",
-                filter === mode && "bg-card text-foreground shadow-xs",
-              )}
+              onClick={handleMarkAllRead}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs"
             >
-              {mode}
+              <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>Mark all read</span>
             </button>
-          ))}
+          )}
+
+          <button
+            onClick={() => fetchNotifications()}
+            disabled={loading}
+            className="p-2 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-foreground transition-all cursor-pointer"
+            title="Refresh notifications"
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+          </button>
         </div>
       </div>
 
-      {/* Notifs list items */}
-      {loading ? (
-        <Loader message="Gathering alerts ledger..." />
-      ) : filteredNotifs.length === 0 ? (
-        <EmptyState
-          title="No notifications"
-          description="You have no notifications in this category."
-          icon={Bell}
-        />
-      ) : (
-        <div className="space-y-4">
-          {filteredNotifs.map((n) => (
-            <div
-              key={n.id}
-              className={cn(
-                "card-premium p-5 bg-card/60 flex items-start gap-4 relative overflow-hidden group/item border-l-4",
-                n.read
-                  ? "border-l-transparent"
-                  : "border-l-primary bg-primary/5",
-              )}
-            >
-              {/* Alert symbol */}
-              <div
-                className={cn(
-                  "p-2.5 rounded-2xl shrink-0 mt-0.5",
-                  getBg(n.type),
-                )}
-              >
-                {getIcon(n.type)}
-              </div>
+      {/* CATEGORY TABS */}
+      <div className="flex items-center gap-2 border-b border-border/40 pb-2 overflow-x-auto no-scrollbar text-xs font-semibold">
+        {[
+          { id: "all", label: "All Alerts" },
+          { id: "security", label: "Security" },
+          { id: "payments", label: "Payments" },
+          { id: "users", label: "Users" },
+          { id: "products", label: "Products" },
+          { id: "support", label: "Support" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setCategoryFilter(tab.id)}
+            className={cn(
+              "px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer",
+              categoryFilter === tab.id
+                ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-              {/* Title & Msg */}
-              <div className="flex-1 min-w-0 pr-12">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h4 className="text-xs font-bold text-foreground">
-                    {n.title}
-                  </h4>
-                  <span className="text-[9px] font-semibold text-muted-foreground/60">
-                    {new Date(n.createdAt).toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-xs font-semibold text-muted-foreground mt-1.5 leading-relaxed">
-                  {n.message}
-                </p>
-              </div>
-
-              {/* Individual actions (Delete) */}
-              <div className="absolute right-4 top-5 opacity-0 group-hover/item:opacity-100 transition-all flex items-center gap-1.5">
-                <button
-                  onClick={() => handleDelete(n.id)}
-                  className="p-2 rounded-xl bg-card border border-border/80 text-muted-foreground hover:text-destructive hover:bg-secondary shadow-xs transition-colors"
-                  title="Delete Alert"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => fetchNotifications()} className="underline font-bold cursor-pointer">Retry</button>
         </div>
       )}
+
+      {/* NOTIFICATIONS LIST */}
+      <div className="bg-card rounded-2xl border border-border/80 shadow-xs divide-y divide-border/30 overflow-hidden">
+        {filteredNotifications.length === 0 ? (
+          <div className="py-16 text-center text-xs text-muted-foreground space-y-2">
+            <Bell className="h-6 w-6 text-muted-foreground mx-auto opacity-40" />
+            <p>No notifications found in this category.</p>
+          </div>
+        ) : (
+          filteredNotifications.map((notif) => (
+            <div
+              key={notif.id}
+              className={cn(
+                "p-4.5 flex items-start justify-between gap-4 transition-colors",
+                !notif.read ? "bg-secondary/25" : "hover:bg-secondary/20"
+              )}
+            >
+              <div className="flex items-start gap-3.5 min-w-0">
+                <div
+                  className={cn(
+                    "h-8 w-8 rounded-xl flex items-center justify-center border shrink-0 mt-0.5",
+                    notif.type === "error"
+                      ? "bg-destructive/10 text-destructive border-destructive/20"
+                      : notif.type === "warning"
+                      ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                      : "bg-secondary text-foreground border-border/60"
+                  )}
+                >
+                  <Info className="h-4 w-4" />
+                </div>
+
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-foreground text-xs">{notif.title}</h4>
+                    {!notif.read && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {notif.message}
+                  </p>
+                  <div className="text-[10px] text-muted-foreground font-mono pt-1">
+                    {notif.createdAt ? new Date(notif.createdAt).toLocaleString() : "—"}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleDelete(notif.id)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer shrink-0"
+                title="Delete notification"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

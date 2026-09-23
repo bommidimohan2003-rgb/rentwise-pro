@@ -1,67 +1,76 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Search,
   ShieldAlert,
   CheckCircle,
   XCircle,
-  UserX,
+  FileSpreadsheet,
+  Download,
   AlertTriangle,
-  Eye,
+  RefreshCw,
+  X,
+  Flag,
+  Calendar,
+  Users,
+  Package,
+  CreditCard,
+  Star,
+  IndianRupee,
 } from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
-import { Modal } from "../components/layout/Modal";
-import { Loader } from "../components/layout/Loader";
 import { notificationsService } from "../services/notifications";
+import { usersService } from "../services/users";
+import { productsService } from "../services/products";
+import { bookingsService } from "../services/bookings";
+import { paymentsService } from "../services/payments";
 import { AdminReport } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+type ReportType = "revenue" | "bookings" | "users" | "products" | "payments" | "agents" | "reviews";
+
 export default function Reports() {
+  const [activeTab, setActiveTab] = useState<"generator" | "disputes">("generator");
+
+  // Dispute reports state
   const [reports, setReports] = useState<AdminReport[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [loadingDisputes, setLoadingDisputes] = useState(true);
+  const [disputeError, setDisputeError] = useState<string | null>(null);
+
+  // Operational reports generator state
+  const [reportType, setReportType] = useState<ReportType>("revenue");
+  const [dateRange, setDateRange] = useState<"7" | "30" | "90" | "all">("30");
+  const [generating, setGenerating] = useState(false);
+  const [generatedData, setGeneratedData] = useState<Record<string, unknown>[] | null>(null);
+
+  // Pagination for disputes
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
-  const [sortKey, setSortKey] = useState("createdAt");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [disputeSearch, setDisputeSearch] = useState("");
 
-  const [selectedReport, setSelectedReport] = useState<AdminReport | null>(
-    null,
-  );
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-
-  const fetchReports = async () => {
+  const fetchDisputes = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoadingDisputes(true);
+      setDisputeError(null);
       const data = await notificationsService.getReports();
       setReports(data);
-    } catch {
-      toast.error("Failed to load reports catalog.");
+    } catch (err) {
+      console.error(err);
+      setDisputeError("Failed to load dispute reports.");
     } finally {
-      setLoading(false);
+      setLoadingDisputes(false);
     }
-  };
-
-  useEffect(() => {
-    fetchReports();
   }, []);
 
-  const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortOrder("asc");
-    }
-  };
+  useEffect(() => {
+    fetchDisputes();
+  }, [fetchDisputes]);
 
   const handleResolve = async (id: string) => {
     try {
       const updated = await notificationsService.resolveReport(id);
       setReports((prev) => prev.map((r) => (r.id === id ? updated : r)));
-      if (selectedReport?.id === id) setSelectedReport(updated);
       toast.success("Dispute resolved successfully.");
     } catch {
       toast.error("Failed to resolve dispute.");
@@ -72,145 +81,224 @@ export default function Reports() {
     try {
       const updated = await notificationsService.dismissReport(id);
       setReports((prev) => prev.map((r) => (r.id === id ? updated : r)));
-      if (selectedReport?.id === id) setSelectedReport(updated);
-      toast.info("Report request dismissed.");
+      toast.info("Report dismissed.");
     } catch {
       toast.error("Failed to dismiss report.");
     }
   };
 
   const handleSuspendProduct = async (id: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to suspend this reported product? This will reject the listing.",
-      )
-    )
-      return;
+    if (!confirm("Are you sure you want to suspend this reported product?")) return;
     try {
       const updated = await notificationsService.suspendProductReport(id);
       setReports((prev) => prev.map((r) => (r.id === id ? updated : r)));
-      if (selectedReport?.id === id) setSelectedReport(updated);
-      toast.success("Product listing suspended successfully.");
+      toast.success("Product listing suspended.");
     } catch {
       toast.error("Failed to suspend product.");
     }
   };
 
   const handleBanUser = async (id: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to ban the owner of this product? This will suspend their user account.",
-      )
-    )
-      return;
+    if (!confirm("Are you sure you want to suspend the reported user account?")) return;
     try {
       const updated = await notificationsService.banUserReport(id);
       setReports((prev) => prev.map((r) => (r.id === id ? updated : r)));
-      if (selectedReport?.id === id) setSelectedReport(updated);
-      toast.success("Listing owner has been banned.");
+      toast.success("User account suspended.");
     } catch {
-      toast.error("Failed to ban owner.");
+      toast.error("Failed to suspend user.");
     }
   };
 
-  const filteredReports = useMemo(() => {
-    let result = [...reports];
+  // Generate real operational report from backend endpoints
+  const handleGenerateReport = async () => {
+    try {
+      setGenerating(true);
+      setGeneratedData(null);
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (r) =>
-          r.reason.toLowerCase().includes(q) ||
-          r.productTitle.toLowerCase().includes(q) ||
-          r.reporterName.toLowerCase().includes(q) ||
-          r.ownerName.toLowerCase().includes(q),
-      );
-    }
-
-    if (statusFilter !== "all") {
-      result = result.filter((r) => r.status === statusFilter);
-    }
-
-    result.sort((a, b) => {
-      const fieldA = (a as unknown as Record<string, string | number>)[sortKey];
-      const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
-
-      if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc"
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
+      if (reportType === "revenue") {
+        const stats = await notificationsService.getDashboardStats();
+        const charts = await notificationsService.getDashboardCharts(dateRange === "all" ? "365" : dateRange);
+        const rows = (charts.revenueChart || []).map((r) => ({
+          Period: r.name,
+          "Gross Revenue (INR)": r.revenue,
+          "Monthly Total (INR)": stats.monthlyRevenue,
+          "Today's Revenue (INR)": stats.revenueToday,
+        }));
+        setGeneratedData(rows);
+      } else if (reportType === "bookings") {
+        const bookings = await bookingsService.getBookings();
+        const rows = bookings.map((b) => ({
+          "Booking ID": b.id,
+          Customer: b.customerName,
+          Email: b.customerId,
+          Gear: b.productTitle,
+          Lender: b.ownerName,
+          "Amount (INR)": b.amount,
+          Status: b.status,
+          Date: b.createdAt ? new Date(b.createdAt).toLocaleDateString() : "—",
+        }));
+        setGeneratedData(rows);
+      } else if (reportType === "users") {
+        const users = await usersService.getUsers();
+        const rows = users.map((u) => ({
+          "User ID": u.id,
+          "Full Name": u.fullName,
+          Email: u.email,
+          Role: u.role,
+          Status: u.status,
+          Verified: u.verified ? "YES" : "NO",
+          Joined: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—",
+        }));
+        setGeneratedData(rows);
+      } else if (reportType === "products") {
+        const products = await productsService.getProducts();
+        const rows = products.map((p) => ({
+          "Product ID": p.id,
+          Title: p.title,
+          Category: p.category,
+          "Rate / Day (INR)": p.price,
+          Owner: p.owner?.name || "Lender",
+          Status: p.status,
+          Visibility: p.hidden ? "HIDDEN" : "LIVE",
+          Created: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—",
+        }));
+        setGeneratedData(rows);
+      } else if (reportType === "payments") {
+        const payments = await paymentsService.getPayments();
+        const rows = payments.map((py) => ({
+          "Payment ID": py.id,
+          "Order ID": py.bookingId,
+          Customer: py.customerName,
+          "Amount (INR)": py.amount,
+          Gateway: py.method || "Razorpay",
+          Status: py.status,
+          Date: py.createdAt ? new Date(py.createdAt).toLocaleString() : "—",
+        }));
+        setGeneratedData(rows);
+      } else if (reportType === "agents") {
+        const agents = await usersService.getAgents();
+        const rows = agents.map((a) => ({
+          "Agent ID": a.id,
+          Name: a.fullName,
+          Email: a.email,
+          "Listings Count": a.productsCount,
+          "Completed Leases": a.bookingsCount,
+          "Gross Revenue (INR)": a.revenue,
+          Rating: a.rating,
+          Status: a.status,
+        }));
+        setGeneratedData(rows);
+      } else if (reportType === "reviews") {
+        const reviews = await notificationsService.getReviews();
+        const rows = reviews.map((rv) => ({
+          "Review ID": rv.id,
+          Product: rv.productTitle,
+          Customer: rv.userName,
+          Rating: rv.rating,
+          Comment: rv.comment,
+          Status: rv.hidden ? "HIDDEN" : "PUBLISHED",
+          Date: rv.createdAt ? new Date(rv.createdAt).toLocaleDateString() : "—",
+        }));
+        setGeneratedData(rows);
       }
-      if (typeof fieldA === "number" && typeof fieldB === "number") {
-        return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
-      }
-      return 0;
+      toast.success("Operational report generated from live database.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to compile operational report.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!generatedData || generatedData.length === 0) return;
+
+    const headers = Object.keys(generatedData[0]);
+    const csvRows = [headers.join(",")];
+
+    generatedData.forEach((row) => {
+      const values = headers.map((h) => {
+        const val = row[h] ?? "";
+        return `"${String(val).replace(/"/g, '""')}"`;
+      });
+      csvRows.push(values.join(","));
     });
 
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `payent_${reportType}_report_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Report CSV exported successfully.");
+  };
+
+  const filteredDisputes = useMemo(() => {
+    let result = [...reports];
+    if (disputeSearch.trim()) {
+      const q = disputeSearch.toLowerCase();
+      result = result.filter(
+        (r) =>
+          (r.reason && r.reason.toLowerCase().includes(q)) ||
+          (r.productTitle && r.productTitle.toLowerCase().includes(q)) ||
+          (r.reporterName && r.reporterName.toLowerCase().includes(q)) ||
+          (r.ownerName && r.ownerName.toLowerCase().includes(q))
+      );
+    }
     return result;
-  }, [reports, search, statusFilter, sortKey, sortOrder]);
+  }, [reports, disputeSearch]);
 
-  const paginatedReports = useMemo(() => {
+  const paginatedDisputes = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredReports.slice(start, start + itemsPerPage);
-  }, [filteredReports, currentPage, itemsPerPage]);
+    return filteredDisputes.slice(start, start + itemsPerPage);
+  }, [filteredDisputes, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
-
-  const columns: Column<AdminReport>[] = [
+  const disputeColumns: Column<AdminReport>[] = [
     {
       key: "productTitle",
-      label: "Reported Item",
-      sortable: true,
+      label: "Reported Resource",
       render: (row) => (
-        <span className="text-xs font-bold text-foreground">
-          {row.productTitle}
-        </span>
+        <div className="min-w-0">
+          <span className="font-bold text-foreground text-xs truncate block">{row.productTitle || `Item #${row.productId}`}</span>
+          <span className="text-[10px] text-muted-foreground font-mono truncate block">Owner: {row.ownerName}</span>
+        </div>
       ),
     },
     {
       key: "reason",
-      label: "Dispute Reason",
+      label: "Violation Alleged",
       render: (row) => (
-        <p
-          className="text-xs font-semibold text-muted-foreground truncate max-w-xs"
-          title={row.reason}
-        >
-          {row.reason}
-        </p>
+        <span className="text-xs font-semibold text-foreground">{row.reason || "Disputed listing"}</span>
+      ),
+    },
+    {
+      key: "evidence",
+      label: "Dispute Detail / Evidence",
+      render: (row) => (
+        <p className="text-xs text-muted-foreground line-clamp-2 max-w-sm leading-relaxed">{row.evidence || "—"}</p>
       ),
     },
     {
       key: "reporterName",
       label: "Reporter",
-      sortable: true,
       render: (row) => (
-        <span className="text-xs font-bold">{row.reporterName}</span>
-      ),
-    },
-    {
-      key: "ownerName",
-      label: "Listing Owner",
-      sortable: true,
-      render: (row) => (
-        <span className="text-xs font-bold">{row.ownerName}</span>
+        <span className="text-xs text-muted-foreground">{row.reporterName || "Platform User"}</span>
       ),
     },
     {
       key: "status",
       label: "Status",
-      sortable: true,
       render: (row) => (
         <span
           className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
-            row.status === "open" &&
-              "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse",
-            row.status === "resolved" &&
-              "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-            row.status === "dismissed" &&
-              "bg-secondary text-muted-foreground border-border",
+            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+            row.status === "open"
+              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+              : row.status === "resolved"
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+              : "bg-secondary text-muted-foreground border-border/60"
           )}
         >
           {row.status}
@@ -218,253 +306,241 @@ export default function Reports() {
       ),
     },
     {
-      key: "createdAt",
-      label: "Filed Date",
-      sortable: true,
-      render: (row) => (
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          {new Date(row.createdAt).toLocaleDateString()}
-        </span>
-      ),
-    },
-    {
       key: "actions",
-      label: "Actions",
-      render: (row) => (
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => {
-              setSelectedReport(row);
-              setViewModalOpen(true);
-            }}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/65 transition-all"
-            title="Inspect claim"
-          >
-            <Eye className="h-4 w-4" />
-          </button>
-
-          {row.status === "open" && (
-            <>
-              <button
-                onClick={() => handleDismiss(row.id)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/65 transition-all"
-                title="Dismiss Report"
-              >
-                <XCircle className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => handleResolve(row.id)}
-                className="p-1.5 rounded-lg text-green-600 hover:bg-green-500/10 transition-all"
-                title="Mark Resolved"
-              >
-                <CheckCircle className="h-4 w-4" />
-              </button>
-            </>
-          )}
-        </div>
-      ),
+      label: "Resolution Actions",
       align: "right",
+      render: (row) =>
+        row.status === "open" ? (
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              onClick={() => handleResolve(row.id)}
+              className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
+              title="Mark as resolved"
+            >
+              <CheckCircle className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => handleSuspendProduct(row.id)}
+              className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer"
+              title="Suspend reported listing"
+            >
+              <Package className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => handleBanUser(row.id)}
+              className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+              title="Suspend offender account"
+            >
+              <ShieldAlert className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => handleDismiss(row.id)}
+              className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+              title="Dismiss report"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <span className="text-[11px] text-muted-foreground font-mono">Closed</span>
+        ),
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header bar */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Flagged Listings</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Moderate catalog disputes, inspect evidence claims, and override
-          user/product statuses.
-        </p>
-      </div>
-
-      {/* Query filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search reports by reason, product title, reporter, or owner..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-card/60 text-foreground text-xs rounded-xl pl-10 pr-4 py-3 border border-border focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/60"
-          />
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+            Operational Reporting & Dispute Center
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Generate authoritative platform business reports and arbitrate marketplace dispute claims.
+          </p>
         </div>
 
-        {/* Status dropdown */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-card/60 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary transition-all"
-        >
-          <option value="all">All Claims</option>
-          <option value="open">Open Disputes</option>
-          <option value="resolved">Resolved Disputes</option>
-          <option value="dismissed">Dismissed Disputes</option>
-        </select>
+        {/* TABS SWITCH */}
+        <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold">
+          <button
+            onClick={() => setActiveTab("generator")}
+            className={cn(
+              "px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
+              activeTab === "generator" ? "bg-card text-foreground shadow-xs font-bold" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            <span>Generate Reports</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("disputes")}
+            className={cn(
+              "px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
+              activeTab === "disputes" ? "bg-card text-foreground shadow-xs font-bold" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Flag className="h-3.5 w-3.5" />
+            <span>Disputes & Claims</span>
+          </button>
+        </div>
       </div>
 
-      {/* Table grid */}
-      {loading ? (
-        <Loader message="Gathering claims ledger..." />
-      ) : (
-        <>
-          <Table
-            columns={columns}
-            data={paginatedReports}
-            onSort={handleSort}
-            sortKey={sortKey}
-            sortOrder={sortOrder}
-            emptyTitle="No claims reported"
-            emptyDescription="Try clearing filters or checking other logs."
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredReports.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
-        </>
-      )}
-
-      {/* VIEW MODAL */}
-      <Modal
-        isOpen={viewModalOpen}
-        onClose={() => setViewModalOpen(false)}
-        title="Audit Moderation Claim"
-      >
-        {selectedReport && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 border-b border-border/50 pb-4">
-              <div className="p-3 rounded-xl bg-destructive/10 text-destructive">
-                <AlertTriangle className="h-6 w-6" />
-              </div>
-              <div>
-                <span className="text-xs text-destructive font-bold">
-                  Reported Listing:
-                </span>
-                <h4 className="text-sm font-bold text-foreground">
-                  {selectedReport.productTitle}
-                </h4>
-              </div>
-            </div>
-
-            {/* Claims details */}
-            <div className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-muted-foreground font-semibold">
-                    Filed by (Reporter)
-                  </span>
-                  <p className="font-bold text-foreground mt-0.5">
-                    {selectedReport.reporterName}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground font-semibold">
-                    Owner of Listing
-                  </span>
-                  <p className="font-bold text-foreground mt-0.5">
-                    {selectedReport.ownerName}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">
-                  Dispute Reason
-                </span>
-                <p className="font-bold text-foreground/95 mt-1 leading-normal">
-                  {selectedReport.reason}
-                </p>
-              </div>
-
-              {selectedReport.evidence && (
-                <div className="flex flex-col border-t border-border/40 pt-3">
-                  <span className="text-muted-foreground font-semibold">
-                    Reporter Evidence / Description
-                  </span>
-                  <p className="font-bold text-foreground/95 mt-1 leading-normal">
-                    {selectedReport.evidence}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">
-                  Status of Claim
-                </span>
-                <span
-                  className={cn(
-                    "text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border",
-                    selectedReport.status === "open" &&
-                      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-                    selectedReport.status === "resolved" &&
-                      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-                    selectedReport.status === "dismissed" &&
-                      "bg-secondary text-muted-foreground border-border",
-                  )}
+      {activeTab === "generator" ? (
+        <div className="space-y-6">
+          {/* REPORT GENERATOR CONTROLS */}
+          <div className="p-6 bg-card rounded-2xl border border-border/80 shadow-xs space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">Report Type</label>
+                <select
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value as ReportType)}
+                  className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-3 py-2.5 border border-border/80 focus:outline-none font-semibold cursor-pointer"
                 >
-                  {selectedReport.status}
-                </span>
+                  <option value="revenue">Revenue Report</option>
+                  <option value="bookings">Booking & Lease Report</option>
+                  <option value="users">User Registration Report</option>
+                  <option value="products">Equipment Fleet Report</option>
+                  <option value="payments">Payment Reconciliation Report</option>
+                  <option value="agents">Agent & Lender Report</option>
+                  <option value="reviews">Customer Feedback Report</option>
+                </select>
               </div>
-            </div>
 
-            {/* Actions list */}
-            <div className="flex flex-wrap gap-2 justify-end pt-4 border-t border-border/50">
-              <button
-                onClick={() => setViewModalOpen(false)}
-                className="bg-secondary text-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-secondary/80 transition-colors"
-              >
-                Close View
-              </button>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">Date Range Window</label>
+                <select
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
+                  className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-3 py-2.5 border border-border/80 focus:outline-none font-semibold cursor-pointer"
+                >
+                  <option value="7">Last 7 Days</option>
+                  <option value="30">Last 30 Days</option>
+                  <option value="90">Last 90 Days</option>
+                  <option value="all">All-Time Dataset</option>
+                </select>
+              </div>
 
-              {selectedReport.status === "open" && (
-                <>
+              <div className="flex items-end gap-2">
+                <button
+                  onClick={handleGenerateReport}
+                  disabled={generating}
+                  className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", generating && "animate-spin")} />
+                  <span>{generating ? "Querying..." : "Generate Dataset"}</span>
+                </button>
+
+                {generatedData && generatedData.length > 0 && (
                   <button
-                    onClick={() => {
-                      setViewModalOpen(false);
-                      handleDismiss(selectedReport.id);
-                    }}
-                    className="bg-secondary text-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-secondary/80 transition-colors"
+                    onClick={handleExportCSV}
+                    className="px-3.5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 border border-border/80 text-foreground font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                    title="Export CSV"
                   >
-                    Dismiss Report
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Export CSV</span>
                   </button>
-                  <button
-                    onClick={() => {
-                      setViewModalOpen(false);
-                      handleSuspendProduct(selectedReport.id);
-                    }}
-                    className="bg-destructive/10 text-destructive text-xs font-bold px-4 py-2 rounded-xl hover:bg-destructive/25 transition-colors border border-destructive/20"
-                  >
-                    Block listing
-                  </button>
-                  <button
-                    onClick={() => {
-                      setViewModalOpen(false);
-                      handleBanUser(selectedReport.id);
-                    }}
-                    className="bg-destructive text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-destructive/80 transition-colors"
-                  >
-                    Ban Owner
-                  </button>
-                  <button
-                    onClick={() => {
-                      setViewModalOpen(false);
-                      handleResolve(selectedReport.id);
-                    }}
-                    className="bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-green-500 transition-colors"
-                  >
-                    Resolve Dispute
-                  </button>
-                </>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        )}
-      </Modal>
+
+          {/* GENERATED DATA VIEW */}
+          {generatedData && (
+            <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-border/40 flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Compiled Records ({generatedData.length} rows)
+                </span>
+                <span className="text-[11px] font-mono text-muted-foreground">Live Database Extract</span>
+              </div>
+
+              {generatedData.length === 0 ? (
+                <div className="py-12 text-center text-xs text-muted-foreground">
+                  No records found for the selected operational scope.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-border/40 bg-secondary/30">
+                        {Object.keys(generatedData[0]).map((k) => (
+                          <th key={k} className="py-3 px-4 font-bold text-muted-foreground uppercase text-[10px] tracking-wider">
+                            {k}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/20">
+                      {generatedData.slice(0, 15).map((row, idx) => (
+                        <tr key={idx} className="hover:bg-secondary/30 transition-colors">
+                          {Object.keys(row).map((k) => (
+                            <td key={k} className="py-2.5 px-4 font-medium text-foreground">
+                              {String(row[k])}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {generatedData.length > 15 && (
+                    <div className="p-3 text-center text-[11px] text-muted-foreground bg-secondary/10 border-t border-border/30">
+                      Showing preview of 15 of {generatedData.length} records. Click 'Export CSV' for full dataset.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* DISPUTES LIST */
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search disputes by reason, resource, reporter..."
+                value={disputeSearch}
+                onChange={(e) => {
+                  setDisputeSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
+              />
+            </div>
+          </div>
+
+          {disputeError && (
+            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+              <span>{disputeError}</span>
+              <button onClick={fetchDisputes} className="underline font-bold cursor-pointer">Retry</button>
+            </div>
+          )}
+
+          <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+            <Table
+              columns={disputeColumns}
+              data={paginatedDisputes}
+              loading={loadingDisputes}
+              emptyMessage="No open dispute reports or violation claims found."
+            />
+
+            {filteredDisputes.length > itemsPerPage && (
+              <div className="p-4 border-t border-border/40">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(filteredDisputes.length / itemsPerPage)}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredDisputes.length}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

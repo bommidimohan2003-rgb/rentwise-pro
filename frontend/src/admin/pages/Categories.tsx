@@ -1,438 +1,329 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Plus,
   Edit2,
   Trash2,
-  CheckCircle,
-  XCircle,
   Grid,
-  Play,
-  Square,
-  CircleHelp,
+  RefreshCw,
+  X,
+  Package,
 } from "lucide-react";
-import * as LucideIcons from "lucide-react";
 import { productsService } from "../services/products";
 import { AdminCategory } from "../services/api";
-import { Modal } from "../components/layout/Modal";
-import { Loader } from "../components/layout/Loader";
+import { Table, Column } from "../components/layout/Table";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-// Helper to dynamic load lucide icons safely
-function IconRenderer({
-  name,
-  className,
-}: {
-  name: string;
-  className?: string;
-}) {
-  const IconComponent = (
-    LucideIcons as unknown as Record<
-      string,
-      React.ComponentType<{ className?: string }>
-    >
-  )[name];
-  if (!IconComponent) {
-    return <CircleHelp className={className} />;
-  }
-  return <IconComponent className={className} />;
-}
 
 export default function Categories() {
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Modals
+  // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedCat, setSelectedCat] = useState<AdminCategory | null>(null);
 
-  // Form State
+  // Form states
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("Camera");
-  const [color, setColor] = useState(
-    "bg-secondary text-foreground border border-border",
-  );
+  const [color, setColor] = useState("bg-secondary text-foreground border border-border");
+  const [submitting, setSubmitting] = useState(false);
 
-  const fetchCats = async () => {
+  const fetchCats = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await productsService.getCategories();
       setCategories(data);
-    } catch {
-      toast.error("Failed to load categories.");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load gear categories.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCats();
-  }, []);
+  }, [fetchCats]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     try {
+      setSubmitting(true);
       const created = await productsService.createCategory({
-        name,
+        name: name.trim(),
         icon,
         color,
       });
       setCategories((prev) => [...prev, created]);
       setCreateModalOpen(false);
       setName("");
-      toast.success("Category created successfully!");
+      toast.success("Category created successfully.");
     } catch {
       toast.error("Failed to create category.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleOpenEdit = (cat: AdminCategory) => {
     setSelectedCat(cat);
     setName(cat.name);
-    setIcon(cat.icon);
-    setColor(cat.color);
+    setIcon(cat.icon || "Camera");
+    setColor(cat.color || "bg-secondary text-foreground border border-border");
     setEditModalOpen(true);
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCat) return;
+    if (!selectedCat || !name.trim()) return;
 
     try {
+      setSubmitting(true);
       const updated = await productsService.updateCategory(selectedCat.id, {
-        name,
+        name: name.trim(),
         icon,
         color,
       });
-      setCategories((prev) =>
-        prev.map((c) => (c.id === selectedCat.id ? updated : c)),
-      );
+      setCategories((prev) => prev.map((c) => (c.id === selectedCat.id ? { ...c, ...updated } : c)));
       setEditModalOpen(false);
-      toast.success("Category details updated.");
+      setSelectedCat(null);
+      setName("");
+      toast.success("Category updated.");
     } catch {
-      toast.error("Failed to save changes.");
+      toast.error("Failed to update category.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleToggleEnable = async (cat: AdminCategory) => {
+  const handleDelete = async (cat: AdminCategory) => {
+    if (cat.count && cat.count > 0) {
+      alert(`Cannot delete category '${cat.name}' because ${cat.count} active gear items depend on it. Reassign items first.`);
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete category '${cat.name}'?`)) return;
+
     try {
-      const updated = await productsService.updateCategory(cat.id, {
-        enabled: !cat.enabled,
-      });
-      setCategories((prev) => prev.map((c) => (c.id === cat.id ? updated : c)));
-      toast.info(updated.enabled ? "Category enabled." : "Category disabled.");
+      await productsService.deleteCategory(cat.id);
+      setCategories((prev) => prev.filter((c) => c.id !== cat.id));
+      toast.success("Category removed.");
     } catch {
-      toast.error("Failed to update status.");
+      toast.error("Failed to remove category.");
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
-    try {
-      await productsService.deleteCategory(id);
-      setCategories((prev) => prev.filter((c) => c.id !== id));
-      toast.success("Category deleted.");
-    } catch {
-      toast.error("Failed to delete category.");
-    }
-  };
+  const columns: Column<AdminCategory>[] = [
+    {
+      key: "name",
+      label: "Category Name",
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center text-foreground border border-border/60">
+            <Grid className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="font-bold text-foreground text-xs">{row.name}</div>
+            <div className="text-[10px] text-muted-foreground font-mono">ID: {row.id}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "count",
+      label: "Indexed Equipment",
+      render: (row) => (
+        <span className="font-mono text-xs font-semibold text-foreground">
+          {row.count || 0} gear listings
+        </span>
+      ),
+    },
+    {
+      key: "enabled",
+      label: "Visibility",
+      render: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          Enabled
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      align: "right",
+      render: (row) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => handleOpenEdit(row)}
+            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-all cursor-pointer"
+            title="Edit category"
+          >
+            <Edit2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => handleDelete(row)}
+            className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+            title="Delete category"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Title block */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">
-            Category Management
+          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+            Categories & Taxonomy
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Configure listed tech categories, disable inactive paths, and assign
-            lucide iconography styles.
+          <p className="text-xs text-muted-foreground mt-1">
+            Organize catalog taxonomy, inspect product counts, and manage marketplace gear hierarchies.
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setName("");
-            setIcon("Camera");
-            setColor("bg-secondary text-foreground border border-border");
-            setCreateModalOpen(true);
-          }}
-          className="btn-gradient text-xs px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 self-start sm:self-auto"
-        >
-          <Plus className="h-4.5 w-4.5" />
-          <span>Add Category</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setName("");
+              setCreateModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all cursor-pointer shadow-xs"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>New Category</span>
+          </button>
+
+          <button
+            onClick={fetchCats}
+            disabled={loading}
+            className="p-2 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-foreground transition-all cursor-pointer"
+            title="Refresh categories"
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+          </button>
+        </div>
       </div>
 
-      {/* Grid List */}
-      {loading ? (
-        <Loader message="Loading categories configuration..." />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              className={cn(
-                "card-premium bg-card/60 p-5 flex items-center justify-between border-l-4 relative overflow-hidden group",
-                cat.enabled
-                  ? "border-l-primary"
-                  : "border-l-muted-foreground opacity-60",
-              )}
-            >
-              {/* Category info */}
-              <div className="flex items-center gap-4">
-                <div
-                  className={cn(
-                    "p-3 rounded-2xl shrink-0 group-hover:scale-105 transition-transform",
-                    cat.color,
-                  )}
-                >
-                  <IconRenderer name={cat.icon} className="h-5 w-5" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-bold text-foreground truncate">
-                    {cat.name}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground mt-0.5">
-                    {cat.count} listings
-                  </span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-1.5 z-10">
-                <button
-                  onClick={() => handleToggleEnable(cat)}
-                  className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
-                  title={cat.enabled ? "Disable Category" : "Enable Category"}
-                >
-                  {cat.enabled ? (
-                    <XCircle className="h-4.5 w-4.5 text-destructive/80" />
-                  ) : (
-                    <CheckCircle className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
-                  )}
-                </button>
-                <button
-                  onClick={() => handleOpenEdit(cat)}
-                  className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-all"
-                  title="Edit details"
-                >
-                  <Edit2 className="h-4.5 w-4.5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(cat.id)}
-                  className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-destructive transition-all"
-                  title="Delete category"
-                >
-                  <Trash2 className="h-4.5 w-4.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={fetchCats} className="underline font-bold cursor-pointer">Retry</button>
         </div>
       )}
 
+      {/* TABLE */}
+      <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+        <Table
+          columns={columns}
+          data={categories}
+          loading={loading}
+          emptyMessage="No categories found."
+        />
+      </div>
+
       {/* CREATE MODAL */}
-      <Modal
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        title="Create New Category"
-      >
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div className="space-y-4 text-xs font-semibold">
-            {/* Category Name */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">
-                Category Name
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Video Consoles"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-              />
-            </div>
-
-            {/* Icon Select */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">
-                Lucide Icon Class
-              </label>
-              <select
-                value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
+      {createModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-card border border-border/80 rounded-2xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <h3 className="text-sm font-bold text-foreground">Create New Category</h3>
+              <button
+                onClick={() => setCreateModalOpen(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
               >
-                {[
-                  "Camera",
-                  "Plane",
-                  "Laptop",
-                  "Mic",
-                  "Glasses",
-                  "Gamepad",
-                  "Monitor",
-                  "Headphones",
-                  "Speaker",
-                  "Tv",
-                ].map((ico) => (
-                  <option key={ico} value={ico}>
-                    {ico}
-                  </option>
-                ))}
-              </select>
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
-            {/* Color Class */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">
-                Color Badge Styling
-              </label>
-              <select
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-              >
-                <option value="bg-purple-500/10 text-purple-500">
-                  Purple Accent
-                </option>
-                <option value="bg-blue-500/10 text-blue-500">
-                  Blue Accent
-                </option>
-                <option value="bg-green-500/10 text-green-500">
-                  Green Accent
-                </option>
-                <option value="bg-pink-500/10 text-pink-500">
-                  Pink Accent
-                </option>
-                <option value="bg-orange-500/10 text-orange-500">
-                  Orange Accent
-                </option>
-              </select>
-            </div>
-          </div>
+            <form onSubmit={handleCreate} className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="font-bold text-foreground">Category Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Cinema Lenses, Drone Fleets..."
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                />
+              </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-            <button
-              type="button"
-              onClick={() => setCreateModalOpen(false)}
-              className="bg-secondary text-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-secondary/80 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold"
-            >
-              Create
-            </button>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+                <button
+                  type="button"
+                  onClick={() => setCreateModalOpen(false)}
+                  className="px-3.5 py-2 rounded-xl bg-secondary text-muted-foreground hover:text-foreground font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {submitting ? "Saving..." : "Create Category"}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </Modal>
+        </div>
+      )}
 
       {/* EDIT MODAL */}
-      <Modal
-        isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        title="Modify Category Specs"
-      >
-        <form onSubmit={handleSaveEdit} className="space-y-4">
-          <div className="space-y-4 text-xs font-semibold">
-            {/* Category Name */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">
-                Category Name
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-              />
-            </div>
-
-            {/* Icon Select */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">
-                Lucide Icon Class
-              </label>
-              <select
-                value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
+      {editModalOpen && selectedCat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-card border border-border/80 rounded-2xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <h3 className="text-sm font-bold text-foreground">Edit Category</h3>
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
               >
-                {[
-                  "Camera",
-                  "Plane",
-                  "Laptop",
-                  "Mic",
-                  "Glasses",
-                  "Gamepad",
-                  "Monitor",
-                  "Headphones",
-                  "Speaker",
-                  "Tv",
-                ].map((ico) => (
-                  <option key={ico} value={ico}>
-                    {ico}
-                  </option>
-                ))}
-              </select>
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
-            {/* Color Class */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground">
-                Color Badge Styling
-              </label>
-              <select
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-              >
-                <option value="bg-purple-500/10 text-purple-500">
-                  Purple Accent
-                </option>
-                <option value="bg-blue-500/10 text-blue-500">
-                  Blue Accent
-                </option>
-                <option value="bg-green-500/10 text-green-500">
-                  Green Accent
-                </option>
-                <option value="bg-pink-500/10 text-pink-500">
-                  Pink Accent
-                </option>
-                <option value="bg-orange-500/10 text-orange-500">
-                  Orange Accent
-                </option>
-              </select>
-            </div>
-          </div>
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="font-bold text-foreground">Category Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/80 text-foreground font-medium focus:outline-none focus:border-primary"
+                />
+              </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-            <button
-              type="button"
-              onClick={() => setEditModalOpen(false)}
-              className="bg-secondary text-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-secondary/80 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold"
-            >
-              Save Changes
-            </button>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+                <button
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  className="px-3.5 py-2 rounded-xl bg-secondary text-muted-foreground hover:text-foreground font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {submitting ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }
-export { IconRenderer };

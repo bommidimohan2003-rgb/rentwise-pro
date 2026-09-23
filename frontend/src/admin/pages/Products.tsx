@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Search,
   Eye,
@@ -8,9 +8,9 @@ import {
   Star,
   EyeOff,
   ShieldCheck,
-  Heart,
-  LayoutGrid,
-  List,
+  RefreshCw,
+  Plus,
+  ShieldAlert,
 } from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
@@ -19,32 +19,19 @@ import { AdminProduct } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import {
-  LoadingState,
-  ErrorState,
-  SlowConnectionIndicator,
-  NoSearchResults,
-  useSlowConnection,
-} from "@/components/states";
-
 import { adminWS } from "../services/websocket";
+import { AdminProductImage } from "../components/common/AdminProductImage";
 
 export default function Products() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const isSlow = useSlowConnection(loading);
 
-  // Search & Filters from router search query if available
-  const routerSearch = useSearch({ from: "/admin/products" }) as {
-    search?: string;
-  };
+  // Router search params
+  const routerSearch = useSearch({ strict: false }) as { search?: string; status?: string };
   const [search, setSearch] = useState(routerSearch?.search || "");
+  const [statusFilter, setStatusFilter] = useState(routerSearch?.status || "all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  // View state: grid vs list
-  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   // Sorting
   const [sortKey, setSortKey] = useState("createdAt");
@@ -52,11 +39,13 @@ export default function Products() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
-  const fetchProducts = async (silent = false) => {
+  const fetchProducts = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
@@ -64,62 +53,27 @@ export default function Products() {
       setProducts(data);
     } catch (err) {
       console.error(err);
-      if (!silent) {
-        setError("Failed to fetch product catalog.");
-        toast.error("Failed to load products list.");
-      }
+      if (!silent) setError("Failed to fetch equipment catalog from database.");
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchProducts();
 
-    const unsubCreated = adminWS.subscribe("product.created", (event) => {
-      const newProd = event.data as AdminProduct;
-      if (newProd && newProd.id) {
-        setProducts((prev) => {
-          if (prev.some((p) => p.id === newProd.id)) return prev;
-          return [newProd, ...prev];
-        });
-        toast.info(
-          `Live WS: New product "${newProd.title || newProd.id}" submitted for Admin Approval!`,
-        );
-      }
+    const unsubCreated = adminWS.subscribe("product.created", () => {
+      fetchProducts(true);
     });
-
-    const unsubUpdated = adminWS.subscribe("product.updated", (event) => {
-      const updated = event.data as AdminProduct;
-      if (updated && updated.id) {
-        setProducts((prev) =>
-          prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)),
-        );
-        if (updated.status === "approved") {
-          toast.success(
-            `Live WS: Listing "${updated.title || updated.id}" approved and published!`,
-          );
-        } else if (updated.status === "rejected") {
-          toast.warning(
-            `Live WS: Listing "${updated.title || updated.id}" rejected.`,
-          );
-        }
-      }
-    });
-
-    const unsubDeleted = adminWS.subscribe("product.deleted", (event) => {
-      const deleted = event.data as { id: string };
-      if (deleted && deleted.id) {
-        setProducts((prev) => prev.filter((p) => p.id !== deleted.id));
-      }
+    const unsubUpdated = adminWS.subscribe("product.updated", () => {
+      fetchProducts(true);
     });
 
     return () => {
       unsubCreated();
       unsubUpdated();
-      unsubDeleted();
     };
-  }, []);
+  }, [fetchProducts]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -130,70 +84,67 @@ export default function Products() {
     }
   };
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (id: string, title: string) => {
     try {
-      const updated = await productsService.approveProduct(id);
-      setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
-      toast.success("Listing request approved successfully!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to approve listing.");
+      setActionLoadingId(id);
+      await productsService.approveProduct(id);
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, status: "approved", available: true } : p)));
+      toast.success(`Listing "${title}" approved and published.`);
+    } catch {
+      toast.error("Failed to approve product.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = async (id: string, title: string) => {
     try {
-      const updated = await productsService.rejectProduct(id);
-      setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
-      toast.warning("Listing request rejected.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to reject listing.");
-    }
-  };
-
-  const handleToggleFeature = async (id: string) => {
-    try {
-      const updated = await productsService.toggleFeatureProduct(id);
-      setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
-      toast.success(
-        updated.featured
-          ? "Product featured on homepage."
-          : "Product removed from features.",
-      );
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to update feature state.");
+      setActionLoadingId(id);
+      await productsService.rejectProduct(id);
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, status: "rejected", available: false } : p)));
+      toast.info(`Listing "${title}" rejected.`);
+    } catch {
+      toast.error("Failed to reject product.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleToggleHide = async (id: string) => {
     try {
+      setActionLoadingId(id);
       const updated = await productsService.toggleHideProduct(id);
-      setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
-      toast.info(
-        updated.hidden
-          ? "Product hidden from catalog."
-          : "Product visible in catalog.",
-      );
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to update visibility state.");
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, hidden: updated.hidden } : p)));
+      toast.info(updated.hidden ? "Listing hidden from public marketplace." : "Listing restored to public catalog.");
+    } catch {
+      toast.error("Failed to toggle listing visibility.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this listing permanently?"))
-      return;
+    if (!confirm("Are you sure you want to permanently delete this listing?")) return;
     try {
+      setActionLoadingId(id);
       await productsService.deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
-      toast.success("Listing deleted successfully.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete listing.");
+      toast.success("Listing deleted permanently.");
+    } catch {
+      toast.error("Failed to delete product.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
+
+  // Extract unique categories
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      if (p.category) set.add(p.category);
+    });
+    return Array.from(set);
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -202,23 +153,25 @@ export default function Products() {
       const q = search.toLowerCase();
       result = result.filter(
         (p) =>
-          p.title?.toLowerCase().includes(q) ||
-          p.category?.toLowerCase().includes(q) ||
-          p.owner?.name?.toLowerCase().includes(q) ||
-          p.owner?.email?.toLowerCase().includes(q),
-      );
-    }
-
-    if (categoryFilter !== "all") {
-      result = result.filter(
-        (p) => p.category?.toLowerCase() === categoryFilter.toLowerCase(),
+          (p.title && p.title.toLowerCase().includes(q)) ||
+          (p.category && p.category.toLowerCase().includes(q)) ||
+          (p.owner?.name && p.owner.name.toLowerCase().includes(q)) ||
+          (p.id && p.id.toLowerCase().includes(q))
       );
     }
 
     if (statusFilter !== "all") {
-      result = result.filter(
-        (p) => p.status?.toLowerCase() === statusFilter.toLowerCase(),
-      );
+      if (statusFilter === "live") {
+        result = result.filter((p) => p.status === "approved" && !p.hidden);
+      } else if (statusFilter === "suspended") {
+        result = result.filter((p) => p.hidden || (!p.available && p.status === "approved"));
+      } else {
+        result = result.filter((p) => p.status === statusFilter);
+      }
+    }
+
+    if (categoryFilter !== "all") {
+      result = result.filter((p) => p.category === categoryFilter);
     }
 
     result.sort((a, b) => {
@@ -226,9 +179,7 @@ export default function Products() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc"
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -237,70 +188,44 @@ export default function Products() {
     });
 
     return result;
-  }, [products, search, categoryFilter, statusFilter, sortKey, sortOrder]);
+  }, [products, search, statusFilter, categoryFilter, sortKey, sortOrder]);
 
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredProducts.slice(start, start + itemsPerPage);
   }, [filteredProducts, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, categoryFilter, statusFilter]);
-
-  // Extract unique categories for dropdown filter
-  const categories = useMemo(() => {
-    const set = new Set(products.map((p) => p.category));
-    return Array.from(set);
-  }, [products]);
-
   const columns: Column<AdminProduct>[] = [
     {
-      key: "title",
-      label: "Product listing",
-      sortable: true,
+      key: "product",
+      label: "Gear Item",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <img
-            src={row.image}
-            alt={row.title}
-            className="h-10 w-12 rounded-lg object-cover border border-border shrink-0"
-          />
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-foreground truncate">
-              {row.title}
-            </span>
-            <span className="text-[10px] text-muted-foreground mt-0.5">
-              {row.category}
-            </span>
+          <AdminProductImage src={row.image} alt={row.title} className="w-10 h-10 rounded-lg" />
+          <div className="min-w-0">
+            <div className="font-bold text-foreground truncate max-w-xs">{row.title}</div>
+            <div className="text-[11px] text-muted-foreground truncate">{row.category}</div>
           </div>
         </div>
       ),
     },
     {
       key: "owner",
-      label: "Lender / Agent",
-      sortable: true,
+      label: "Owner / Lender",
       render: (row) => (
-        <div className="flex items-center gap-2">
-          <img
-            src={row.owner.avatar}
-            alt={row.owner.name}
-            className="h-6 w-6 rounded-full object-cover"
-          />
-          <span className="text-xs font-bold text-foreground truncate">
-            {row.owner.name}
-          </span>
+        <div className="min-w-0">
+          <div className="font-semibold text-foreground truncate">{row.owner?.name || "Verified Lender"}</div>
+          <div className="text-[10px] text-muted-foreground font-mono truncate">{row.owner?.email || "—"}</div>
         </div>
       ),
     },
     {
       key: "price",
-      label: "Price (Day)",
+      label: "Rental Rate",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-extrabold text-primary">
-          ₹{row.price}
+        <span className="font-mono font-bold text-foreground text-xs">
+          ₹{(row.price || 0).toLocaleString("en-IN")}/day
         </span>
       ),
     },
@@ -308,310 +233,221 @@ export default function Products() {
       key: "status",
       label: "Approval Status",
       sortable: true,
-      render: (row) => (
-        <span
-          className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
-            row.status === "approved" &&
-              "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-            row.status === "pending" &&
-              "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-            row.status === "rejected" &&
-              "bg-destructive/10 text-destructive border-destructive/20",
-          )}
-        >
-          {row.status}
-        </span>
-      ),
+      render: (row) => {
+        const isApproved = row.status === "approved";
+        const isPending = row.status === "pending";
+        const isRejected = row.status === "rejected";
+
+        return (
+          <div className="flex flex-col gap-1 items-start">
+            <span
+              className={cn(
+                "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center gap-1",
+                isApproved
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  : isPending
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                  : isRejected
+                  ? "bg-destructive/10 text-destructive border-destructive/20"
+                  : "bg-secondary text-muted-foreground border-border/60"
+              )}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              {row.status}
+            </span>
+            {row.hidden && (
+              <span className="text-[9px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded border border-border/60">
+                Hidden
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "createdAt",
-      label: "Uploaded Date",
+      label: "Listed Date",
       sortable: true,
       render: (row) => (
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          {new Date(row.createdAt).toLocaleDateString()}
+        <span className="text-xs text-muted-foreground font-mono">
+          {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "—"}
         </span>
       ),
     },
     {
       key: "actions",
       label: "Actions",
+      align: "right",
       render: (row) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-end gap-1.5">
           <button
-            onClick={() =>
-              navigate({ to: "/admin/products/$id", params: { id: row.id } })
-            }
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
-            title="View details"
+            onClick={() => navigate({ to: `/admin/products/${row.id}` as unknown as "/admin/dashboard" })}
+            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-all cursor-pointer"
+            title="Inspect product detail"
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-3.5 w-3.5" />
           </button>
 
           {row.status === "pending" && (
             <>
               <button
-                onClick={() => handleApprove(row.id)}
-                className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-500/10 transition-all"
+                onClick={() => handleApprove(row.id, row.title)}
+                disabled={actionLoadingId === row.id}
+                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
                 title="Approve listing"
               >
-                <CheckCircle className="h-4 w-4" />
+                <CheckCircle className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={() => handleReject(row.id)}
-                className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-all"
+                onClick={() => handleReject(row.id, row.title)}
+                disabled={actionLoadingId === row.id}
+                className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
                 title="Reject listing"
               >
-                <XCircle className="h-4 w-4" />
+                <XCircle className="h-3.5 w-3.5" />
               </button>
             </>
           )}
 
           <button
-            onClick={() => handleToggleFeature(row.id)}
-            className={cn(
-              "p-1.5 rounded-lg transition-all",
-              row.featured
-                ? "text-amber-500 hover:bg-amber-500/10"
-                : "text-muted-foreground hover:text-amber-500 hover:bg-secondary/40",
-            )}
-            title={row.featured ? "Remove from featured" : "Feature listing"}
+            onClick={() => handleToggleHide(row.id)}
+            disabled={actionLoadingId === row.id}
+            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            title={row.hidden ? "Unhide from marketplace" : "Hide from marketplace"}
           >
-            <Heart
-              className={cn("h-4 w-4", row.featured && "fill-amber-500")}
-            />
-          </button>
-
-          <button
-            onClick={() => handleToggleHide}
-            className={cn(
-              "p-1.5 rounded-lg transition-all",
-              row.hidden
-                ? "text-red-500 hover:bg-red-500/10"
-                : "text-muted-foreground hover:text-red-500 hover:bg-secondary/40",
-            )}
-            onClickCapture={() => handleToggleHide(row.id)}
-            title={row.hidden ? "Unhide from catalog" : "Hide from catalog"}
-          >
-            <EyeOff className="h-4 w-4" />
+            <EyeOff className="h-3.5 w-3.5" />
           </button>
 
           <button
             onClick={() => handleDelete(row.id)}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-            title="Delete permanently"
+            disabled={actionLoadingId === row.id}
+            className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+            title="Delete listing"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       ),
-      align: "right",
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header bar */}
-      <div className="flex items-center justify-between">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">
-            Product Management
+          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+            Equipment & Catalog Moderation
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Approve lender listings, regulate feature highlights, and audit
-            insurance validation papers.
+          <p className="text-xs text-muted-foreground mt-1">
+            Authoritative fleet inventory, listing verification workflows, and public catalog gating.
           </p>
         </div>
 
-        {/* View toggles */}
-        <div className="flex items-center gap-1.5 bg-secondary/30 p-1 rounded-xl border border-border/50">
-          <button
-            onClick={() => setViewMode("list")}
-            className={cn(
-              "p-1.5 rounded-lg text-muted-foreground",
-              viewMode === "list" && "bg-card text-foreground shadow-xs",
-            )}
-          >
-            <List className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setViewMode("grid")}
-            className={cn(
-              "p-1.5 rounded-lg text-muted-foreground",
-              viewMode === "grid" && "bg-card text-foreground shadow-xs",
-            )}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-        </div>
+        <button
+          onClick={() => fetchProducts()}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <span>Refresh</span>
+        </button>
       </div>
 
-      {/* Query Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
+      {/* TABS: ALL | PENDING | LIVE | REJECTED | SUSPENDED */}
+      <div className="flex items-center gap-2 border-b border-border/40 pb-2 overflow-x-auto no-scrollbar">
+        {[
+          { id: "all", label: "ALL" },
+          { id: "pending", label: "PENDING" },
+          { id: "live", label: "LIVE" },
+          { id: "rejected", label: "REJECTED" },
+          { id: "suspended", label: "SUSPENDED / HIDDEN" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => {
+              setStatusFilter(tab.id);
+              setCurrentPage(1);
+            }}
+            className={cn(
+              "px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
+              statusFilter === tab.id
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* SEARCH & CATEGORY FILTER */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by title, owner, category..."
+            placeholder="Search gear by title, category, owner..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-card/60 text-foreground text-xs rounded-xl pl-10 pr-4 py-3 border border-border focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/60"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
           />
         </div>
 
-        {/* Category dropdown */}
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="bg-card/60 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary transition-all"
-        >
-          <option value="all">All Categories</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-
-        {/* Status dropdown */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-card/60 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary transition-all"
-        >
-          <option value="all">All Statuses</option>
-          <option value="approved">Approved</option>
-          <option value="pending">Pending Review</option>
-          <option value="rejected">Rejected</option>
-        </select>
+        {categories.length > 0 && (
+          <select
+            value={categoryFilter}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-card text-foreground text-xs rounded-xl px-3 py-2 border border-border/80 focus:outline-none font-semibold cursor-pointer"
+          >
+            <option value="all">All Categories</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {/* Slow Connection Indicator */}
-      {isSlow && (
-        <SlowConnectionIndicator message="Product catalog is taking a bit longer to load..." />
-      )}
-
-      {/* Products list body */}
-      {loading ? (
-        <LoadingState type={viewMode === "list" ? "table" : "grid"} count={6} />
-      ) : error ? (
-        <ErrorState
-          title="Unable to load products"
-          error={error}
-          onRetry={fetchProducts}
-        />
-      ) : filteredProducts.length === 0 ? (
-        <NoSearchResults
-          query={search}
-          onClearFilters={() => {
-            setSearch("");
-            setCategoryFilter("all");
-            setStatusFilter("all");
-          }}
-        />
-      ) : viewMode === "list" ? (
-        <>
-          <Table
-            columns={columns}
-            data={paginatedProducts}
-            onSort={handleSort}
-            sortKey={sortKey}
-            sortOrder={sortOrder}
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredProducts.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
-        </>
-      ) : (
-        /* Grid layout */
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {paginatedProducts.map((p) => (
-              <div
-                key={p.id}
-                className="card-premium bg-card/60 flex flex-col h-[380px] overflow-hidden relative group/card"
-              >
-                {/* Status absolute badge */}
-                <span
-                  className={cn(
-                    "absolute top-3 left-3 z-10 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full select-none",
-                    p.status === "approved" && "bg-green-500/90 text-white",
-                    p.status === "pending" && "bg-amber-500/90 text-white",
-                    p.status === "rejected" && "bg-red-500/90 text-white",
-                  )}
-                >
-                  {p.status}
-                </span>
-
-                {/* Image cover */}
-                <div className="h-44 w-full relative overflow-hidden bg-secondary">
-                  <img
-                    src={p.image}
-                    alt={p.title}
-                    className="h-full w-full object-cover group-hover/card:scale-105 transition-all duration-300"
-                  />
-                </div>
-
-                {/* Content body */}
-                <div className="p-4 flex-1 flex flex-col justify-between min-h-0">
-                  <div className="min-h-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-bold text-primary uppercase">
-                        {p.category}
-                      </span>
-                      <div className="flex items-center gap-0.5 text-xs text-amber-500">
-                        <Star className="h-3 w-3 fill-current" />
-                        <span className="font-bold">{p.rating.toFixed(1)}</span>
-                      </div>
-                    </div>
-                    <h4 className="text-xs font-bold text-foreground truncate mt-1">
-                      {p.title}
-                    </h4>
-                    <p className="text-[11px] font-semibold text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-                      {p.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-3 border-t border-border/40 flex items-center justify-between mt-3 shrink-0">
-                    <span className="text-xs font-extrabold text-primary">
-                      ₹{p.price}/day
-                    </span>
-                    <button
-                      onClick={() =>
-                        navigate({
-                          to: "/admin/products/$id",
-                          params: { id: p.id },
-                        })
-                      }
-                      className="btn-gradient text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      <span>Inspect</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredProducts.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
+      {/* ERROR STATE */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => fetchProducts()} className="underline font-bold cursor-pointer">Retry</button>
         </div>
       )}
+
+      {/* TABLE */}
+      <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+        <Table
+          columns={columns}
+          data={paginatedProducts}
+          loading={loading}
+          sortKey={sortKey}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          emptyMessage="No equipment listings match the selected filters."
+        />
+
+        {filteredProducts.length > itemsPerPage && (
+          <div className="p-4 border-t border-border/40">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredProducts.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredProducts.length}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
-}
-export function ProductsSearchRoute() {
-  const search = useSearch({ from: "/admin/products" });
-  return <Products />;
 }

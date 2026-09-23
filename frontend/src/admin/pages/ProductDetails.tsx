@@ -19,6 +19,7 @@ import { AdminProduct, AdminBooking, AdminReview } from "../services/api";
 import { Loader } from "../components/layout/Loader";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AdminProductImage } from "../components/common/AdminProductImage";
 
 export default function ProductDetails() {
   const { id } = useParams({ from: "/admin/products/$id" }) as { id: string };
@@ -202,30 +203,31 @@ export default function ProductDetails() {
         {/* Left 2 Cols: Media & Logs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Media Frame */}
-          <div className="card-premium bg-card/60 p-4 space-y-3">
-            <div className="h-96 w-full rounded-xl overflow-hidden bg-secondary">
-              <img
+          <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-xs space-y-3">
+            <div className="h-96 w-full rounded-xl overflow-hidden bg-secondary flex items-center justify-center">
+              <AdminProductImage
                 src={activeImage}
                 alt={product.title}
                 className="h-full w-full object-cover"
+                iconClassName="h-12 w-12"
               />
             </div>
 
             {/* Thumbnails */}
             {product.images && product.images.length > 1 && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {product.images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImage(img)}
                     className={cn(
-                      "h-16 w-20 rounded-lg overflow-hidden border-2 transition-all shrink-0",
+                      "h-16 w-20 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer",
                       activeImage === img
                         ? "border-primary"
                         : "border-transparent opacity-75 hover:opacity-100",
                     )}
                   >
-                    <img
+                    <AdminProductImage
                       src={img}
                       alt=""
                       className="h-full w-full object-cover"

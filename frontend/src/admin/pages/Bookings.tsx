@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Search,
   Eye,
@@ -6,90 +6,69 @@ import {
   CheckCircle,
   RotateCcw,
   Calendar,
-  User,
   Package,
+  User,
+  IndianRupee,
+  RefreshCw,
+  X,
+  Clock,
 } from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
-import { Modal } from "../components/layout/Modal";
 import { bookingsService } from "../services/bookings";
 import { AdminBooking } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  LoadingState,
-  ErrorState,
-  SlowConnectionIndicator,
-  NoSearchResults,
-  useSlowConnection,
-} from "@/components/states";
 import { adminWS } from "../services/websocket";
+import { AdminProductImage } from "../components/common/AdminProductImage";
 
 export default function Bookings() {
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const isSlow = useSlowConnection(loading);
+
+  // Filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Sorting
   const [sortKey, setSortKey] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(
-    null,
-  );
-  const [viewModalOpen, setViewModalOpen] = useState(false);
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const fetchBookings = async (silent = false) => {
+  // Drawer / Detail modal
+  const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const fetchBookings = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
       const data = await bookingsService.getBookings();
       setBookings(data);
-    } catch {
-      if (!silent) {
-        setError("Failed to load bookings database.");
-        toast.error("Failed to load bookings list.");
-      }
+    } catch (err) {
+      console.error(err);
+      if (!silent) setError("Failed to load rental bookings from database.");
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchBookings();
 
-    const unsubCreated = adminWS.subscribe("booking.created", (event) => {
-      const newBooking = event.data as AdminBooking;
-      if (newBooking && newBooking.id) {
-        setBookings((prev) => {
-          if (prev.some((b) => b.id === newBooking.id)) return prev;
-          return [newBooking, ...prev];
-        });
-        toast.info(`Live: New booking #${newBooking.id} received!`);
-      }
+    const unsubCreated = adminWS.subscribe("booking.created", () => {
+      fetchBookings(true);
     });
-
-    const unsubUpdated = adminWS.subscribe("booking.updated", (event) => {
-      const updated = event.data as AdminBooking;
-      if (updated && updated.id) {
-        setBookings((prev) =>
-          prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)),
-        );
-      }
+    const unsubUpdated = adminWS.subscribe("booking.updated", () => {
+      fetchBookings(true);
     });
-
-    const unsubCancelled = adminWS.subscribe("booking.cancelled", (event) => {
-      const cancelled = event.data as { id: string; status: string };
-      if (cancelled && cancelled.id) {
-        setBookings((prev) =>
-          prev.map((b) =>
-            b.id === cancelled.id ? { ...b, status: "cancelled" } : b,
-          ),
-        );
-      }
+    const unsubCancelled = adminWS.subscribe("booking.cancelled", () => {
+      fetchBookings(true);
     });
 
     return () => {
@@ -97,7 +76,7 @@ export default function Bookings() {
       unsubUpdated();
       unsubCancelled();
     };
-  }, []);
+  }, [fetchBookings]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -109,42 +88,52 @@ export default function Bookings() {
   };
 
   const handleCancel = async (id: string) => {
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
+    if (!confirm(`Are you sure you want to cancel booking #${id}?`)) return;
     try {
+      setActionLoading(true);
       const updated = await bookingsService.cancelBooking(id);
-      setBookings((prev) => prev.map((b) => (b.id === id ? updated : b)));
-      if (selectedBooking?.id === id) setSelectedBooking(updated);
-      toast.warning("Booking has been cancelled.");
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, ...updated, status: "cancelled" } : b)));
+      if (selectedBooking?.id === id) {
+        setSelectedBooking((prev) => prev ? { ...prev, ...updated, status: "cancelled" } : null);
+      }
+      toast.warning(`Booking #${id} cancelled.`);
     } catch {
       toast.error("Failed to cancel booking.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleComplete = async (id: string) => {
     try {
+      setActionLoading(true);
       const updated = await bookingsService.completeBooking(id);
-      setBookings((prev) => prev.map((b) => (b.id === id ? updated : b)));
-      if (selectedBooking?.id === id) setSelectedBooking(updated);
-      toast.success("Booking marked as completed.");
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, ...updated, status: "completed" } : b)));
+      if (selectedBooking?.id === id) {
+        setSelectedBooking((prev) => prev ? { ...prev, ...updated, status: "completed" } : null);
+      }
+      toast.success(`Booking #${id} marked as completed.`);
     } catch {
       toast.error("Failed to complete booking.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleRefund = async (id: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to refund this booking? This will cancel the booking as well.",
-      )
-    )
-      return;
+    if (!confirm(`Are you sure you want to refund and cancel booking #${id}?`)) return;
     try {
+      setActionLoading(true);
       const updated = await bookingsService.refundBooking(id);
-      setBookings((prev) => prev.map((b) => (b.id === id ? updated : b)));
-      if (selectedBooking?.id === id) setSelectedBooking(updated);
-      toast.success("Refund processed successfully!");
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, ...updated, status: "cancelled" } : b)));
+      if (selectedBooking?.id === id) {
+        setSelectedBooking((prev) => prev ? { ...prev, ...updated, status: "cancelled" } : null);
+      }
+      toast.success(`Booking #${id} payment refunded.`);
     } catch {
       toast.error("Failed to process refund.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -155,10 +144,10 @@ export default function Bookings() {
       const q = search.toLowerCase();
       result = result.filter(
         (b) =>
-          b.id.toLowerCase().includes(q) ||
-          b.productTitle.toLowerCase().includes(q) ||
-          b.customerName.toLowerCase().includes(q) ||
-          b.ownerName.toLowerCase().includes(q),
+          (b.id && b.id.toLowerCase().includes(q)) ||
+          (b.customerName && b.customerName.toLowerCase().includes(q)) ||
+          (b.productTitle && b.productTitle.toLowerCase().includes(q)) ||
+          (b.ownerName && b.ownerName.toLowerCase().includes(q))
       );
     }
 
@@ -171,9 +160,7 @@ export default function Bookings() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc"
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -189,66 +176,50 @@ export default function Bookings() {
     return filteredBookings.slice(start, start + itemsPerPage);
   }, [filteredBookings, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
-
   const columns: Column<AdminBooking>[] = [
     {
       key: "id",
       label: "Booking ID",
-      sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.id}</span>,
+      render: (row) => (
+        <span className="font-mono font-bold text-foreground text-xs">
+          #{row.id}
+        </span>
+      ),
     },
     {
       key: "productTitle",
-      label: "Product",
-      sortable: true,
+      label: "Gear Item",
       render: (row) => (
-        <div className="flex items-center gap-3">
-          <img
-            src={row.productImage}
-            alt={row.productTitle}
-            className="h-8 w-10 rounded-md object-cover border"
-          />
-          <span className="text-xs font-bold text-foreground truncate max-w-[140px]">
-            {row.productTitle}
-          </span>
+        <div className="flex items-center gap-2.5">
+          <AdminProductImage src={row.productImage} alt={row.productTitle} className="w-8 h-8 rounded-lg" />
+          <span className="font-bold text-foreground truncate max-w-xs text-xs">{row.productTitle}</span>
         </div>
       ),
     },
     {
       key: "customerName",
-      label: "Customer",
-      sortable: true,
+      label: "Renter",
       render: (row) => (
-        <span className="text-xs font-bold">{row.customerName}</span>
+        <div className="min-w-0">
+          <div className="font-semibold text-foreground truncate text-xs">{row.customerName}</div>
+          <div className="text-[10px] text-muted-foreground font-mono truncate">{row.customerId}</div>
+        </div>
       ),
     },
     {
       key: "ownerName",
       label: "Lender",
-      sortable: true,
       render: (row) => (
-        <span className="text-xs font-bold">{row.ownerName}</span>
-      ),
-    },
-    {
-      key: "startDate",
-      label: "Rental Period",
-      render: (row) => (
-        <span className="text-xs font-semibold text-muted-foreground">
-          {row.startDate} to {row.endDate}
-        </span>
+        <span className="text-xs text-muted-foreground truncate">{row.ownerName || "Verified Lender"}</span>
       ),
     },
     {
       key: "amount",
-      label: "Total Amount",
+      label: "Total Fee",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-extrabold text-primary">
-          ₹{row.amount}
+        <span className="font-mono font-bold text-foreground text-xs">
+          ₹{(row.amount || 0).toLocaleString("en-IN")}
         </span>
       ),
     },
@@ -256,307 +227,238 @@ export default function Bookings() {
       key: "status",
       label: "Status",
       sortable: true,
-      render: (row) => (
-        <span
-          className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
-            (row.status === "completed" || row.status === "active") &&
-              "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-            row.status === "pending" &&
-              "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-            row.status === "cancelled" &&
-              "bg-destructive/10 text-destructive border-destructive/20",
-          )}
-        >
-          {row.status}
-        </span>
-      ),
+      render: (row) => {
+        const isCompleted = row.status === "completed";
+        const isActive = row.status === "active" || row.status === "confirmed";
+        const isPending = row.status === "pending";
+        const isCancelled = row.status === "cancelled";
+
+        return (
+          <span
+            className={cn(
+              "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center gap-1",
+              isCompleted
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                : isActive
+                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                : isPending
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                : isCancelled
+                ? "bg-destructive/10 text-destructive border-destructive/20"
+                : "bg-secondary text-muted-foreground border-border/60"
+            )}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {row.status}
+          </span>
+        );
+      },
     },
     {
       key: "actions",
       label: "Actions",
+      align: "right",
       render: (row) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => {
               setSelectedBooking(row);
-              setViewModalOpen(true);
+              setModalOpen(true);
             }}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/65 transition-all"
+            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-all cursor-pointer"
             title="Inspect booking"
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-3.5 w-3.5" />
           </button>
-
-          {row.status === "pending" && (
-            <button
-              onClick={() => handleCancel(row.id)}
-              className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-all"
-              title="Cancel Booking"
-            >
-              <XCircle className="h-4 w-4" />
-            </button>
-          )}
-
-          {row.status === "active" && (
+          {row.status !== "completed" && row.status !== "cancelled" && (
             <>
               <button
                 onClick={() => handleComplete(row.id)}
-                className="p-1.5 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-500/10 transition-all"
-                title="Mark Completed"
+                disabled={actionLoading}
+                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
+                title="Mark as completed"
               >
-                <CheckCircle className="h-4 w-4" />
+                <CheckCircle className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={() => handleRefund(row.id)}
-                className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-all"
-                title="Refund & Cancel"
+                onClick={() => handleCancel(row.id)}
+                disabled={actionLoading}
+                className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+                title="Cancel booking"
               >
-                <RotateCcw className="h-4 w-4" />
+                <XCircle className="h-3.5 w-3.5" />
               </button>
             </>
           )}
         </div>
       ),
-      align: "right",
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header bar */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Rental Bookings</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Moderate active lease schedules, override booking statuses, and
-          process refunds.
-        </p>
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+            Rental Bookings Operations
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Real-time equipment dispatch, confirmed rental orders, cancellations, and completed leases.
+          </p>
+        </div>
+
+        <button
+          onClick={() => fetchBookings()}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <span>Refresh</span>
+        </button>
       </div>
 
-      {/* Query filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
+      {/* FILTERS & SEARCH */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by ID, item name, client or owner..."
+            placeholder="Search bookings by ID, customer, product..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-card/60 text-foreground text-xs rounded-xl pl-10 pr-4 py-3 border border-border focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/60"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
           />
         </div>
 
-        {/* Status selection */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-card/60 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary transition-all"
-        >
-          <option value="all">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="active">Active Rentals</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled/Refunded</option>
-        </select>
+        <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold overflow-x-auto no-scrollbar">
+          {["all", "pending", "confirmed", "active", "completed", "cancelled"].map((st) => (
+            <button
+              key={st}
+              onClick={() => {
+                setStatusFilter(st);
+                setCurrentPage(1);
+              }}
+              className={cn(
+                "px-2.5 py-1 rounded-lg capitalize transition-all cursor-pointer text-[11px] whitespace-nowrap",
+                statusFilter === st
+                  ? "bg-card text-foreground shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {st}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Slow Connection Indicator */}
-      {isSlow && (
-        <SlowConnectionIndicator message="Fetching rental records is taking a bit longer than expected..." />
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => fetchBookings()} className="underline font-bold cursor-pointer">Retry</button>
+        </div>
       )}
 
-      {/* Grid table */}
-      {loading ? (
-        <LoadingState type="table" count={5} />
-      ) : error ? (
-        <ErrorState
-          title="Unable to load bookings"
-          error={error}
-          onRetry={fetchBookings}
+      {/* TABLE */}
+      <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+        <Table
+          columns={columns}
+          data={paginatedBookings}
+          loading={loading}
+          sortKey={sortKey}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          emptyMessage="No rental bookings found matching the filters."
         />
-      ) : filteredBookings.length === 0 ? (
-        <NoSearchResults
-          query={search}
-          onClearFilters={() => {
-            setSearch("");
-            setStatusFilter("all");
-          }}
-        />
-      ) : (
-        <>
-          <Table
-            columns={columns}
-            data={paginatedBookings}
-            onSort={handleSort}
-            sortKey={sortKey}
-            sortOrder={sortOrder}
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredBookings.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
-        </>
-      )}
 
-      {/* DETAILED BOOKING MODAL */}
-      <Modal
-        isOpen={viewModalOpen}
-        onClose={() => setViewModalOpen(false)}
-        title="Rental Agreement Summary"
-      >
-        {selectedBooking && (
-          <div className="space-y-6">
-            {/* Header Product description */}
-            <div className="flex items-center gap-3 border-b border-border/50 pb-4">
-              <img
-                src={selectedBooking.productImage}
-                alt=""
-                className="h-12 w-16 rounded-xl object-cover border"
-              />
-              <div>
-                <span className="text-xs text-primary font-bold">
-                  Booking Details
-                </span>
-                <h4 className="text-sm font-bold text-foreground">
-                  {selectedBooking.productTitle}
-                </h4>
-              </div>
-            </div>
-
-            {/* Specific values grid */}
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="text-muted-foreground font-semibold">
-                  Booking ID
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {selectedBooking.id}
-                </p>
-              </div>
-              <div>
-                <span className="text-muted-foreground font-semibold">
-                  Product ID
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {selectedBooking.productId}
-                </p>
-              </div>
-              <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">
-                  Customer (Renter)
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {selectedBooking.customerName}
-                </p>
-              </div>
-              <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">
-                  Lender (Agent)
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {selectedBooking.ownerName}
-                </p>
-              </div>
-              <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">
-                  Rental Start Date
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {selectedBooking.startDate}
-                </p>
-              </div>
-              <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">
-                  Rental End Date
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {selectedBooking.endDate}
-                </p>
-              </div>
-              <div className="border-t border-border/40 pt-3 col-span-2 flex items-center justify-between">
-                <div>
-                  <span className="text-muted-foreground font-semibold">
-                    Lease State
-                  </span>
-                  <p className="mt-0.5">
-                    <span
-                      className={cn(
-                        "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border",
-                        (selectedBooking.status === "completed" ||
-                          selectedBooking.status === "active") &&
-                          "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-                        selectedBooking.status === "pending" &&
-                          "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-                        selectedBooking.status === "cancelled" &&
-                          "bg-destructive/10 text-destructive border-destructive/20",
-                      )}
-                    >
-                      {selectedBooking.status}
-                    </span>
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-muted-foreground font-semibold">
-                    Total Lease Cost
-                  </span>
-                  <p className="text-sm font-extrabold text-primary mt-0.5">
-                    ₹{selectedBooking.amount}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions area inside footer */}
-            <div className="flex justify-end gap-2 pt-4 border-t border-border/50">
-              <button
-                onClick={() => setViewModalOpen(false)}
-                className="bg-secondary text-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-secondary/80 transition-colors"
-              >
-                Close View
-              </button>
-
-              {selectedBooking.status === "pending" && (
-                <button
-                  onClick={() => {
-                    setViewModalOpen(false);
-                    handleCancel(selectedBooking.id);
-                  }}
-                  className="bg-destructive text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-destructive/80 transition-colors"
-                >
-                  Cancel Booking
-                </button>
-              )}
-
-              {selectedBooking.status === "active" && (
-                <>
-                  <button
-                    onClick={() => {
-                      setViewModalOpen(false);
-                      handleRefund(selectedBooking.id);
-                    }}
-                    className="bg-destructive text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-destructive/80 transition-colors"
-                  >
-                    Refund & Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      setViewModalOpen(false);
-                      handleComplete(selectedBooking.id);
-                    }}
-                    className="bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-green-500 transition-colors"
-                  >
-                    Complete Booking
-                  </button>
-                </>
-              )}
-            </div>
+        {filteredBookings.length > itemsPerPage && (
+          <div className="p-4 border-t border-border/40">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredBookings.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredBookings.length}
+            />
           </div>
         )}
-      </Modal>
+      </div>
+
+      {/* BOOKING DETAIL MODAL */}
+      {modalOpen && selectedBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-card border border-border/80 rounded-2xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Booking #{selectedBooking.id}</h3>
+                <p className="text-[11px] text-muted-foreground font-mono">
+                  {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleString() : "—"}
+                </p>
+              </div>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-4 rounded-xl bg-secondary/40 border border-border/60 flex items-center gap-3">
+                <AdminProductImage src={selectedBooking.productImage} alt={selectedBooking.productTitle} className="w-12 h-12 rounded-lg" />
+                <div className="min-w-0">
+                  <h4 className="font-bold text-foreground truncate">{selectedBooking.productTitle}</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Rental Dates: {selectedBooking.startDate || "Start"} ➔ {selectedBooking.endDate || "End"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-secondary/40 border border-border/60 space-y-1">
+                  <span className="text-muted-foreground text-[10px] uppercase font-bold block">Customer / Renter</span>
+                  <span className="font-bold text-foreground block">{selectedBooking.customerName}</span>
+                  <span className="text-[10px] text-muted-foreground font-mono block truncate">{selectedBooking.customerId}</span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-secondary/40 border border-border/60 space-y-1">
+                  <span className="text-muted-foreground text-[10px] uppercase font-bold block">Lender / Agent</span>
+                  <span className="font-bold text-foreground block">{selectedBooking.ownerName || "Verified Lender"}</span>
+                  <span className="text-[10px] text-muted-foreground font-mono block truncate">{selectedBooking.ownerId || "—"}</span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60 flex justify-between items-center">
+                <span className="text-muted-foreground">Total Fee</span>
+                <span className="font-mono font-black text-sm text-foreground">₹{(selectedBooking.amount || 0).toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+
+            {selectedBooking.status !== "completed" && selectedBooking.status !== "cancelled" && (
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+                <button
+                  onClick={() => handleRefund(selectedBooking.id)}
+                  disabled={actionLoading}
+                  className="px-3.5 py-2 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive font-bold text-xs transition-all cursor-pointer"
+                >
+                  Refund & Cancel
+                </button>
+                <button
+                  onClick={() => handleComplete(selectedBooking.id)}
+                  disabled={actionLoading}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all cursor-pointer"
+                >
+                  Mark Completed
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

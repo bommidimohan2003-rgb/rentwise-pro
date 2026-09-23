@@ -189,73 +189,28 @@ export const notificationsService = {
 
   // Dashboard Stats & Analytics
   async getDashboardStats(): Promise<DashboardStats> {
-    const fallback: DashboardStats = {
-      totalUsers: 0,
-      totalAgents: 0,
-      totalProducts: 0,
-      pendingProducts: 0,
-      approvedProducts: 0,
-      rejectedProducts: 0,
-      totalCategories: 0,
-      bookingsToday: 0,
-      monthlyBookings: 0,
-      revenueToday: 0,
-      monthlyRevenue: 0,
-      pendingReports: 0,
-      unreadNotifications: 0,
-      websiteVisitors: 0,
-    };
-    try {
-      const response = await adminApi.get("/dashboard/stats");
-      if (response.data && typeof response.data === "object") {
-        return {
-          ...fallback,
-          ...response.data,
-        };
-      }
-      return fallback;
-    } catch (err) {
-      console.warn("[AdminService] getDashboardStats error, returning fallback:", err);
-      return fallback;
+    const response = await adminApi.get("/dashboard/stats");
+    if (response.data && typeof response.data === "object") {
+      return response.data as DashboardStats;
     }
+    throw new Error("Invalid stats response from server");
   },
 
   async getDashboardCharts(period = "30"): Promise<DashboardCharts> {
-    const fallback: DashboardCharts = {
-      revenueChart: [],
-      bookingChart: [],
-      userGrowth: [],
-      productGrowth: [],
-      categoryDistribution: [],
-      topProducts: [],
-    };
-    try {
-      const days = parseInt(period, 10) || 30;
-      const response = await adminApi.get(`/dashboard/charts?days=${days}`);
-      if (response.data && typeof response.data === "object") {
-        return {
-          ...fallback,
-          ...response.data,
-        };
-      }
-      return fallback;
-    } catch (err) {
-      console.warn("[AdminService] getDashboardCharts error, returning fallback:", err);
-      return fallback;
+    const days = parseInt(period, 10) || 30;
+    const response = await adminApi.get(`/dashboard/charts?days=${days}`);
+    if (response.data && typeof response.data === "object") {
+      return response.data as DashboardCharts;
     }
+    throw new Error("Invalid charts response from server");
   },
 
   async getDashboardActivities(): Promise<DashboardActivity[]> {
-    try {
-      const response = await adminApi.get("/dashboard/activities");
-      if (response.data && Array.isArray(response.data)) {
-        return response.data;
-      }
-      return [];
-    } catch (err) {
-      console.warn("[AdminService] getDashboardActivities error, returning fallback:", err);
-      return [];
+    const response = await adminApi.get("/dashboard/activities");
+    if (response.data && Array.isArray(response.data)) {
+      return response.data;
     }
+    return [];
   },
 
   async resetAnalytics(): Promise<void> {

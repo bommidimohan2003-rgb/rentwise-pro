@@ -21,7 +21,6 @@ import {
   ChevronRight,
   Menu,
   X,
-  Key,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -57,7 +56,6 @@ const menuItems = [
         label: "Reports",
         badgeKey: "reports",
       },
-      { to: "/admin/api-keys", icon: Key, label: "API Keys" },
     ],
   },
   {

@@ -1,88 +1,74 @@
-import { useEffect, useState, useMemo } from "react";
-import { Search, Eye, RotateCcw, Download, CreditCard } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import {
+  Search,
+  Eye,
+  RotateCcw,
+  Download,
+  CreditCard,
+  RefreshCw,
+  X,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
-import { Modal } from "../components/layout/Modal";
-import { Loader } from "../components/layout/Loader";
 import { paymentsService } from "../services/payments";
 import { AdminPayment } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  LoadingState,
-  ErrorState,
-  SlowConnectionIndicator,
-  NoSearchResults,
-  useSlowConnection,
-} from "@/components/states";
-
 import { adminWS } from "../services/websocket";
 
 export default function Payments() {
   const [payments, setPayments] = useState<AdminPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const isSlow = useSlowConnection(loading);
+
+  // Filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Sorting
   const [sortKey, setSortKey] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(
-    null,
-  );
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const fetchPayments = async (silent = false) => {
+  // Detail Modal
+  const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [refunding, setRefunding] = useState(false);
+
+  const fetchPayments = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
       const data = await paymentsService.getPayments();
       setPayments(data);
-    } catch {
-      if (!silent) {
-        setError("Failed to load payment transactions.");
-        toast.error("Failed to load transactions.");
-      }
+    } catch (err) {
+      console.error(err);
+      if (!silent) setError("Failed to load payment transactions.");
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPayments();
 
-    const unsubCreated = adminWS.subscribe("payment.created", (event) => {
-      const newPay = event.data as AdminPayment;
-      if (newPay && newPay.id) {
-        setPayments((prev) => {
-          if (prev.some((p) => p.id === newPay.id)) return prev;
-          return [newPay, ...prev];
-        });
-        toast.info(
-          `Live: New payment transaction ₹${newPay.amount || 0} received!`,
-        );
-      }
+    const unsubCreated = adminWS.subscribe("payment.created", () => {
+      fetchPayments(true);
     });
-
-    const unsubRefunded = adminWS.subscribe("payment.refunded", (event) => {
-      const refunded = event.data as AdminPayment;
-      if (refunded && refunded.id) {
-        setPayments((prev) =>
-          prev.map((p) =>
-            p.id === refunded.id ? { ...p, status: "refunded" } : p,
-          ),
-        );
-      }
+    const unsubRefunded = adminWS.subscribe("payment.refunded", () => {
+      fetchPayments(true);
     });
 
     return () => {
       unsubCreated();
       unsubRefunded();
     };
-  }, []);
+  }, [fetchPayments]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -94,27 +80,20 @@ export default function Payments() {
   };
 
   const handleRefund = async (id: string) => {
-    if (
-      !confirm("Are you sure you want to issue a refund for this transaction?")
-    )
-      return;
+    if (!confirm(`Are you sure you want to issue a refund for payment #${id}? This will reverse the transaction and cancel the order.`)) return;
     try {
+      setRefunding(true);
       const updated = await paymentsService.refundPayment(id);
-      setPayments((prev) => prev.map((p) => (p.id === id ? updated : p)));
-      if (selectedPayment?.id === id) setSelectedPayment(updated);
-      toast.success("Transaction refunded successfully.");
+      setPayments((prev) => prev.map((p) => (p.id === id ? { ...p, ...updated, status: "refunded" } : p)));
+      if (selectedPayment?.id === id) {
+        setSelectedPayment((prev) => prev ? { ...prev, ...updated, status: "refunded" } : null);
+      }
+      toast.success(`Payment #${id} refunded.`);
     } catch {
-      toast.error("Failed to refund transaction.");
+      toast.error("Failed to refund payment.");
+    } finally {
+      setRefunding(false);
     }
-  };
-
-  const handleDownloadInvoice = (id: string) => {
-    toast.info(`Generating receipt copy for Invoice ${id}...`);
-    // Simulated receipt download
-    const link = document.createElement("a");
-    link.href = "#";
-    link.download = `Payent_Invoice_${id}.pdf`;
-    toast.success(`Invoice receipt Payent_Invoice_${id}.pdf downloaded!`);
   };
 
   const filteredPayments = useMemo(() => {
@@ -124,9 +103,10 @@ export default function Payments() {
       const q = search.toLowerCase();
       result = result.filter(
         (p) =>
-          p.id.toLowerCase().includes(q) ||
-          p.customerName.toLowerCase().includes(q) ||
-          p.method.toLowerCase().includes(q),
+          (p.id && p.id.toLowerCase().includes(q)) ||
+          (p.bookingId && p.bookingId.toLowerCase().includes(q)) ||
+          (p.customerName && p.customerName.toLowerCase().includes(q)) ||
+          (p.customerId && p.customerId.toLowerCase().includes(q))
       );
     }
 
@@ -139,9 +119,7 @@ export default function Payments() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc"
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -157,42 +135,51 @@ export default function Payments() {
     return filteredPayments.slice(start, start + itemsPerPage);
   }, [filteredPayments, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
-
   const columns: Column<AdminPayment>[] = [
     {
       key: "id",
       label: "Payment ID",
-      sortable: true,
-      render: (row) => <span className="text-xs font-bold">{row.id}</span>,
+      render: (row) => (
+        <span className="font-mono font-bold text-foreground text-xs">
+          #{row.id}
+        </span>
+      ),
+    },
+    {
+      key: "bookingId",
+      label: "Order Ref",
+      render: (row) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          #{row.bookingId}
+        </span>
+      ),
     },
     {
       key: "customerName",
-      label: "Customer / Renter",
-      sortable: true,
+      label: "Customer",
       render: (row) => (
-        <span className="text-xs font-bold">{row.customerName}</span>
+        <div className="min-w-0">
+          <div className="font-bold text-foreground truncate text-xs">{row.customerName}</div>
+          <div className="text-[10px] text-muted-foreground font-mono truncate">{row.customerId}</div>
+        </div>
       ),
     },
     {
       key: "amount",
-      label: "Charged Amount",
+      label: "Amount",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-extrabold text-primary">
-          ₹{row.amount}
+        <span className="font-mono font-bold text-foreground text-xs">
+          ₹{(row.amount || 0).toLocaleString("en-IN")}
         </span>
       ),
     },
     {
       key: "method",
-      label: "Gateway Method",
-      sortable: true,
+      label: "Gateway",
       render: (row) => (
-        <span className="text-xs font-bold text-muted-foreground">
-          {row.method}
+        <span className="text-xs font-medium text-muted-foreground">
+          {row.method || "Razorpay Verified"}
         </span>
       ),
     },
@@ -200,275 +187,229 @@ export default function Payments() {
       key: "status",
       label: "Status",
       sortable: true,
-      render: (row) => (
-        <span
-          className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none",
-            row.status === "successful" &&
-              "bg-green-500/10 text-green-600 dark:text-green-400",
-            row.status === "refunded" &&
-              "bg-red-500/10 text-red-600 dark:text-red-400",
-            row.status === "failed" && "bg-muted text-muted-foreground",
-          )}
-        >
-          {row.status}
-        </span>
-      ),
+      render: (row) => {
+        const isSuccess = row.status === "successful" || row.status === "captured";
+        const isPending = row.status === "pending";
+        const isRefunded = row.status === "refunded";
+        const isFailed = row.status === "failed";
+
+        return (
+          <span
+            className={cn(
+              "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center gap-1",
+              isSuccess
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                : isPending
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                : isRefunded
+                ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+                : isFailed
+                ? "bg-destructive/10 text-destructive border-destructive/20"
+                : "bg-secondary text-muted-foreground border-border/60"
+            )}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {row.status}
+          </span>
+        );
+      },
     },
     {
       key: "createdAt",
-      label: "Processed Date",
+      label: "Timestamp",
       sortable: true,
       render: (row) => (
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          {new Date(row.createdAt).toLocaleDateString()}
+        <span className="text-xs text-muted-foreground font-mono">
+          {row.createdAt ? new Date(row.createdAt).toLocaleString() : "—"}
         </span>
       ),
     },
     {
       key: "actions",
       label: "Actions",
+      align: "right",
       render: (row) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => {
               setSelectedPayment(row);
-              setDetailsModalOpen(true);
+              setModalOpen(true);
             }}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/65 transition-all"
-            title="Inspect transaction"
+            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-all cursor-pointer"
+            title="Inspect payment transaction"
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-3.5 w-3.5" />
           </button>
-
-          <button
-            onClick={() => handleDownloadInvoice(row.id)}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
-            title="Download Invoice"
-          >
-            <Download className="h-4 w-4" />
-          </button>
-
           {row.status === "successful" && (
             <button
               onClick={() => handleRefund(row.id)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all"
-              title="Issue Payout Refund"
+              disabled={refunding}
+              className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+              title="Issue refund"
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
       ),
-      align: "right",
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header bar */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">
-          Transactions Register
-        </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Audit customer payment events, issue payouts, track stripe/paypal
-          statuses, and download invoice archives.
-        </p>
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+            Payments & Reconciliation
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Authoritative financial transactions, Razorpay escrow verification, and refund management.
+          </p>
+        </div>
+
+        <button
+          onClick={() => fetchPayments()}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <span>Refresh</span>
+        </button>
       </div>
 
-      {/* Query filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
+      {/* FILTERS & SEARCH */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by Payment ID, customer name, method..."
+            placeholder="Search payments by ID, order, customer..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-card/60 text-foreground text-xs rounded-xl pl-10 pr-4 py-3 border border-border focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/60"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
           />
         </div>
 
-        {/* Status select dropdown */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-card/60 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary transition-all"
-        >
-          <option value="all">All Statuses</option>
-          <option value="successful">Successful Transactions</option>
-          <option value="refunded">Refunded Transactions</option>
-          <option value="failed">Failed/Declined</option>
-        </select>
+        <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold">
+          {["all", "successful", "pending", "failed", "refunded"].map((st) => (
+            <button
+              key={st}
+              onClick={() => {
+                setStatusFilter(st);
+                setCurrentPage(1);
+              }}
+              className={cn(
+                "px-2.5 py-1 rounded-lg capitalize transition-all cursor-pointer text-[11px]",
+                statusFilter === st
+                  ? "bg-card text-foreground shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {st}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Slow Connection Indicator */}
-      {isSlow && (
-        <SlowConnectionIndicator message="Transaction ledger is taking a bit longer to load..." />
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => fetchPayments()} className="underline font-bold cursor-pointer">Retry</button>
+        </div>
       )}
 
-      {/* Table grid */}
-      {loading ? (
-        <LoadingState type="table" count={5} />
-      ) : error ? (
-        <ErrorState
-          title="Unable to load transactions"
-          error={error}
-          onRetry={fetchPayments}
+      {/* TABLE */}
+      <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+        <Table
+          columns={columns}
+          data={paginatedPayments}
+          loading={loading}
+          sortKey={sortKey}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          emptyMessage="No payment transactions found matching the filters."
         />
-      ) : filteredPayments.length === 0 ? (
-        <NoSearchResults
-          query={search}
-          onClearFilters={() => {
-            setSearch("");
-            setStatusFilter("all");
-          }}
-        />
-      ) : (
-        <>
-          <Table
-            columns={columns}
-            data={paginatedPayments}
-            onSort={handleSort}
-            sortKey={sortKey}
-            sortOrder={sortOrder}
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredPayments.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
-        </>
-      )}
 
-      {/* DETAILED TRANSACTION MODAL */}
-      <Modal
-        isOpen={detailsModalOpen}
-        onClose={() => setDetailsModalOpen(false)}
-        title="Audit Transaction details"
-      >
-        {selectedPayment && (
-          <div className="space-y-6">
-            {/* Header description */}
-            <div className="flex items-center gap-3 border-b border-border/50 pb-4">
-              <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                <CreditCard className="h-6 w-6" />
-              </div>
-              <div>
-                <span className="text-xs text-primary font-bold">
-                  Transaction Record
-                </span>
-                <h4 className="text-sm font-bold text-foreground">
-                  Charged to {selectedPayment.customerName}
-                </h4>
-              </div>
-            </div>
-
-            {/* Content specifications */}
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="text-muted-foreground font-semibold">
-                  Payment ID
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {selectedPayment.id}
-                </p>
-              </div>
-              <div>
-                <span className="text-muted-foreground font-semibold">
-                  Booking ID
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {selectedPayment.bookingId}
-                </p>
-              </div>
-              <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">
-                  Billing Method
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {selectedPayment.method}
-                </p>
-              </div>
-              <div className="border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold">
-                  Processed Date
-                </span>
-                <p className="font-bold text-foreground mt-0.5">
-                  {new Date(selectedPayment.createdAt).toLocaleString()}
-                </p>
-              </div>
-              <div className="border-t border-border/40 pt-3 col-span-2 flex items-center justify-between">
-                <div>
-                  <span className="text-muted-foreground font-semibold">
-                    Gateway Status
-                  </span>
-                  <p className="mt-0.5">
-                    <span
-                      className={cn(
-                        "inline-flex items-center text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full",
-                        selectedPayment.status === "successful" &&
-                          "bg-green-500/10 text-green-600",
-                        selectedPayment.status === "refunded" &&
-                          "bg-red-500/10 text-red-600",
-                        selectedPayment.status === "failed" &&
-                          "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {selectedPayment.status}
-                    </span>
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-muted-foreground font-semibold">
-                    Billed Total
-                  </span>
-                  <p className="text-sm font-extrabold text-primary mt-0.5">
-                    ₹{selectedPayment.amount}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer actions buttons */}
-            <div className="flex justify-end gap-2 pt-4 border-t border-border/50">
-              <button
-                onClick={() => setDetailsModalOpen(false)}
-                className="bg-secondary text-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-secondary/80 transition-colors"
-              >
-                Close View
-              </button>
-
-              <button
-                onClick={() => {
-                  setDetailsModalOpen(false);
-                  handleDownloadInvoice(selectedPayment.id);
-                }}
-                className="bg-secondary text-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-secondary/80 transition-colors flex items-center gap-1"
-              >
-                <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Invoice receipt</span>
-              </button>
-
-              {selectedPayment.status === "successful" && (
-                <button
-                  onClick={() => {
-                    setDetailsModalOpen(false);
-                    handleRefund(selectedPayment.id);
-                  }}
-                  className="bg-destructive text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-destructive/80 transition-colors"
-                >
-                  Refund Transaction
-                </button>
-              )}
-            </div>
+        {filteredPayments.length > itemsPerPage && (
+          <div className="p-4 border-t border-border/40">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredPayments.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredPayments.length}
+            />
           </div>
         )}
-      </Modal>
+      </div>
+
+      {/* PAYMENT DETAIL MODAL */}
+      {modalOpen && selectedPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-card border border-border/80 rounded-2xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Payment #{selectedPayment.id}</h3>
+                <p className="text-[11px] text-muted-foreground font-mono">
+                  {selectedPayment.createdAt ? new Date(selectedPayment.createdAt).toLocaleString() : "—"}
+                </p>
+              </div>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60 flex justify-between items-center">
+                <span className="text-muted-foreground">Verification Status</span>
+                <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded bg-secondary border border-border/60">
+                  {selectedPayment.status}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60 flex justify-between items-center">
+                <span className="text-muted-foreground">Order Reference</span>
+                <span className="font-mono font-bold">#{selectedPayment.bookingId}</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60 flex justify-between items-center">
+                <span className="text-muted-foreground">Customer / Payer</span>
+                <span className="font-bold">{selectedPayment.customerName} ({selectedPayment.customerId})</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60 flex justify-between items-center">
+                <span className="text-muted-foreground">Gateway Provider</span>
+                <span className="font-medium">{selectedPayment.method || "Razorpay Standard"}</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60 flex justify-between items-center">
+                <span className="text-muted-foreground">Total Transacted</span>
+                <span className="font-mono font-black text-sm text-foreground">₹{(selectedPayment.amount || 0).toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+
+            {selectedPayment.status === "successful" && (
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+                <button
+                  onClick={() => handleRefund(selectedPayment.id)}
+                  disabled={refunding}
+                  className="px-4 py-2 rounded-xl bg-destructive text-white font-bold text-xs hover:bg-destructive/90 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {refunding ? "Processing Refund..." : "Issue Verified Refund"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,43 +1,42 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Search,
   Eye,
-  Edit2,
-  ShieldAlert,
   CheckCircle,
+  XCircle,
   Trash2,
+  ShieldAlert,
   ShieldCheck,
-  Download,
-  Plus,
+  UserCheck,
+  Calendar,
+  Package,
+  CreditCard,
+  Star,
+  RefreshCw,
   X,
-  User,
+  Lock,
+  Mail,
+  Phone,
+  MapPin,
+  Clock,
 } from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
-import { Modal } from "../components/layout/Modal";
 import { usersService } from "../services/users";
 import { AdminUser } from "../services/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  LoadingState,
-  ErrorState,
-  SlowConnectionIndicator,
-  NoSearchResults,
-  useSlowConnection,
-} from "@/components/states";
 import { adminWS } from "../services/websocket";
 
 export default function Users() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const isSlow = useSlowConnection(loading);
 
   // Search & Filters
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
 
   // Sorting
   const [sortKey, setSortKey] = useState("createdAt");
@@ -45,24 +44,17 @@ export default function Users() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Modals
+  // User Detail Drawer
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<"profile" | "verification" | "security">("profile");
 
-  // Edit Form State
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editRole, setEditRole] = useState<"admin" | "agent" | "user">("user");
-  const [editStatus, setEditStatus] = useState<"active" | "suspended">(
-    "active",
-  );
-  const [editVerified, setEditVerified] = useState(false);
+  // Action states
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchUsers = async (silent = false) => {
+  const fetchUsers = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
@@ -70,56 +62,28 @@ export default function Users() {
       setUsers(data);
     } catch (err) {
       console.error(err);
-      if (!silent) setError("Failed to fetch users. Please try again.");
+      if (!silent) setError("Failed to fetch user directory from database.");
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
 
-    const unsubRegister = adminWS.subscribe("user.registered", (event) => {
-      const newUser = event.data as AdminUser;
-      if (newUser && newUser.email) {
-        setUsers((prev) => {
-          if (prev.some((u) => u.email === newUser.email)) return prev;
-          return [newUser, ...prev];
-        });
-        toast.info(
-          `Live: New user ${newUser.fullName || newUser.email} registered!`,
-        );
-      }
+    const unsubRegister = adminWS.subscribe("user.registered", () => {
+      fetchUsers(true);
     });
-
-    const unsubUpdate = adminWS.subscribe("user.updated", (event) => {
-      const updatedUser = event.data as Partial<AdminUser>;
-      if (updatedUser && (updatedUser.id || updatedUser.email)) {
-        const key = updatedUser.id || updatedUser.email;
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.id === key || u.email === key ? { ...u, ...updatedUser } : u,
-          ),
-        );
-      }
-    });
-
-    const unsubDelete = adminWS.subscribe("user.deleted", (event) => {
-      const deleted = event.data as { id: string; email?: string };
-      if (deleted && (deleted.id || deleted.email)) {
-        const key = deleted.id || deleted.email;
-        setUsers((prev) => prev.filter((u) => u.id !== key && u.email !== key));
-      }
+    const unsubUpdate = adminWS.subscribe("user.updated", () => {
+      fetchUsers(true);
     });
 
     return () => {
       unsubRegister();
       unsubUpdate();
-      unsubDelete();
     };
-  }, []);
+  }, [fetchUsers]);
 
-  // Sort callback
   const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -129,183 +93,107 @@ export default function Users() {
     }
   };
 
-  // Actions
+  const handleOpenUser = (u: AdminUser) => {
+    setSelectedUser(u);
+    setDrawerTab("profile");
+    setDrawerOpen(true);
+  };
+
+  // User sensitive actions with backend enforcement
   const handleApprove = async (id: string) => {
+    if (!confirm("Are you sure you want to approve and verify this user account?")) return;
     try {
+      setActionLoading(true);
       const updated = await usersService.approveUser(id);
-      setUsers((prev) => prev.map((u) => (u.id === id || u.email === id ? { ...u, ...updated, status: "approved", verified: true } : u)));
+      setUsers((prev) => prev.map((u) => ((u.id === id || u.email === id) ? { ...u, ...updated, status: "approved", verified: true } : u)));
       if (selectedUser && (selectedUser.id === id || selectedUser.email === id)) {
-        setSelectedUser((prev) => prev ? { ...prev, status: "approved", verified: true } : null);
+        setSelectedUser((prev) => prev ? { ...prev, ...updated, status: "approved", verified: true } : null);
       }
-      toast.success(`User ${id} approved successfully!`);
-    } catch (err: unknown) {
-      console.error(err);
-      const msg = err instanceof Error ? err.message : "Failed to approve user.";
-      toast.error(msg);
+      toast.success("User account approved and verified.");
+    } catch {
+      toast.error("Failed to approve user.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleReject = async (id: string) => {
-    const reason = prompt("Optional: Enter rejection reason for user notification:") || undefined;
+    const reason = prompt("Enter reason for rejection (optional):") || undefined;
     try {
+      setActionLoading(true);
       const updated = await usersService.rejectUser(id, reason);
-      setUsers((prev) => prev.map((u) => (u.id === id || u.email === id ? { ...u, ...updated, status: "rejected" } : u)));
+      setUsers((prev) => prev.map((u) => ((u.id === id || u.email === id) ? { ...u, ...updated, status: "rejected" } : u)));
       if (selectedUser && (selectedUser.id === id || selectedUser.email === id)) {
-        setSelectedUser((prev) => prev ? { ...prev, status: "rejected" } : null);
+        setSelectedUser((prev) => prev ? { ...prev, ...updated, status: "rejected" } : null);
       }
-      toast.warning(`User ${id} has been rejected.`);
-    } catch (err: unknown) {
-      console.error(err);
-      const msg = err instanceof Error ? err.message : "Failed to reject user.";
-      toast.error(msg);
+      toast.info("User account registration rejected.");
+    } catch {
+      toast.error("Failed to reject user.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleSuspend = async (id: string) => {
+    if (!confirm("Are you sure you want to suspend this user? They will be barred from creating bookings or listings.")) return;
     try {
+      setActionLoading(true);
       const updated = await usersService.suspendUser(id);
-      setUsers((prev) => prev.map((u) => (u.id === id || u.email === id ? { ...u, ...updated, status: "suspended" } : u)));
-      toast.warning("User suspended successfully.");
-    } catch (err) {
-      console.error(err);
+      setUsers((prev) => prev.map((u) => ((u.id === id || u.email === id) ? { ...u, ...updated, status: "suspended" } : u)));
+      if (selectedUser && (selectedUser.id === id || selectedUser.email === id)) {
+        setSelectedUser((prev) => prev ? { ...prev, ...updated, status: "suspended" } : null);
+      }
+      toast.warning("User suspended.");
+    } catch {
       toast.error("Failed to suspend user.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleActivate = async (id: string) => {
     try {
+      setActionLoading(true);
       const updated = await usersService.activateUser(id);
-      setUsers((prev) => prev.map((u) => (u.id === id || u.email === id ? { ...u, ...updated, status: "active" } : u)));
-      toast.success("User activated successfully.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to activate user.");
+      setUsers((prev) => prev.map((u) => ((u.id === id || u.email === id) ? { ...u, ...updated, status: "active" } : u)));
+      if (selectedUser && (selectedUser.id === id || selectedUser.email === id)) {
+        setSelectedUser((prev) => prev ? { ...prev, ...updated, status: "active" } : null);
+      }
+      toast.success("User account reactivated.");
+    } catch {
+      toast.error("Failed to reactivate user.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-    try {
-      await usersService.deleteUser(id);
-      setUsers((prev) => prev.filter((u) => u.id !== id && u.email !== id));
-      toast.success("User deleted successfully.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete user.");
-    }
-  };
-
-  const handleOpenEdit = (user: AdminUser) => {
-    setSelectedUser(user);
-    setEditName(user.fullName);
-    setEditEmail(user.email);
-    setEditPhone(user.phone);
-    setEditRole(user.role);
-    setEditStatus(user.status as any);
-    setEditVerified(user.verified);
-    setEditModalOpen(true);
-  };
-
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedUser) return;
-
-    try {
-      const updated = await usersService.updateUser(selectedUser.id, {
-        fullName: editName,
-        email: editEmail,
-        phone: editPhone,
-        role: editRole,
-        status: editStatus,
-        verified: editVerified,
-      });
-
-      setUsers((prev) =>
-        prev.map((u) => (u.id === selectedUser.id ? { ...u, ...updated } : u)),
-      );
-      setEditModalOpen(false);
-      toast.success("User details updated successfully.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to update user.");
-    }
-  };
-
-  // CSV Exporter
-  const handleExportCSV = () => {
-    if (users.length === 0) return;
-    const headers = [
-      "ID",
-      "Full Name",
-      "Email",
-      "Phone",
-      "Role",
-      "Status",
-      "Verified",
-      "Created At",
-    ];
-    const rows = users.map((u) => [
-      u.id,
-      u.fullName,
-      u.email,
-      u.phone,
-      u.role,
-      u.status,
-      u.verified ? "Yes" : "No",
-      u.createdAt,
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [
-        headers.join(","),
-        ...rows.map((e) => e.map((x) => `"${x}"`).join(",")),
-      ].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "payent_users_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("CSV file exported successfully!");
-  };
-
-  // Filtering & Sorting Math
   const filteredUsers = useMemo(() => {
     let result = [...users];
 
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
         (u) =>
-          u.fullName.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          u.phone.includes(q),
+          (u.fullName && u.fullName.toLowerCase().includes(q)) ||
+          (u.email && u.email.toLowerCase().includes(q)) ||
+          (u.id && u.id.toLowerCase().includes(q))
       );
     }
 
-    // Role
-    if (roleFilter !== "all") {
-      result = result.filter((u) => u.role === roleFilter);
-    }
-
-    // Status
     if (statusFilter !== "all") {
       result = result.filter((u) => u.status === statusFilter);
     }
 
-    // Sort
+    if (roleFilter !== "all") {
+      result = result.filter((u) => u.role === roleFilter);
+    }
+
     result.sort((a, b) => {
       const fieldA = (a as unknown as Record<string, string | number>)[sortKey];
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc"
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -314,55 +202,31 @@ export default function Users() {
     });
 
     return result;
-  }, [users, search, roleFilter, statusFilter, sortKey, sortOrder]);
+  }, [users, search, statusFilter, roleFilter, sortKey, sortOrder]);
 
-  // Paginated slices
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredUsers.slice(start, start + itemsPerPage);
   }, [filteredUsers, currentPage, itemsPerPage]);
 
-  // Reset page when queries change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, roleFilter, statusFilter]);
-
-  // Table Columns Definition
   const columns: Column<AdminUser>[] = [
     {
-      key: "fullName",
-      label: "User",
-      sortable: true,
+      key: "user",
+      label: "User Profile",
       render: (row) => (
         <div className="flex items-center gap-3">
-          {row.avatar ? (
-            <img
-              src={row.avatar}
-              alt={row.fullName}
-              className="h-9 w-9 rounded-full object-cover border border-border shrink-0"
-            />
-          ) : (
-            <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center text-muted-foreground border border-border shrink-0">
-              <User className="h-4 w-4 opacity-70" />
-            </div>
-          )}
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-foreground truncate">
-              {row.fullName}
-            </span>
-            <span className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[140px]">
-              {row.email}
-            </span>
+          <div className="h-9 w-9 rounded-full bg-secondary border border-border/80 flex items-center justify-center font-bold text-xs text-foreground overflow-hidden shrink-0">
+            {row.avatar || row.profilePhotoUrl ? (
+              <img src={row.avatar || row.profilePhotoUrl} alt={row.fullName} className="h-full w-full object-cover" />
+            ) : (
+              <span>{(row.fullName || row.email || "U").charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="font-bold text-foreground truncate">{row.fullName || "Unnamed User"}</div>
+            <div className="text-[11px] text-muted-foreground font-mono truncate">{row.email}</div>
           </div>
         </div>
-      ),
-    },
-    {
-      key: "phone",
-      label: "Phone",
-      sortable: true,
-      render: (row) => (
-        <span className="text-xs font-semibold">{row.phone || "—"}</span>
       ),
     },
     {
@@ -372,64 +236,67 @@ export default function Users() {
       render: (row) => (
         <span
           className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
-            row.role === "admin" &&
-              "bg-primary text-primary-foreground border-primary",
-            row.role === "agent" &&
-              "bg-secondary text-foreground border-border",
-            row.role === "user" &&
-              "bg-secondary text-muted-foreground border-border/60",
+            "px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider border",
+            row.role === "admin"
+              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+              : row.role === "agent"
+              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+              : "bg-secondary text-muted-foreground border-border/60"
           )}
         >
-          {row.role}
+          {row.role || "user"}
         </span>
       ),
-    },
-    {
-      key: "verified",
-      label: "Verified",
-      sortable: true,
-      render: (row) => (
-        <div className="flex items-center justify-center">
-          {row.verified ? (
-            <ShieldCheck className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
-          ) : (
-            <ShieldAlert className="h-4.5 w-4.5 text-muted-foreground/60" />
-          )}
-        </div>
-      ),
-      align: "center",
     },
     {
       key: "status",
       label: "Status",
       sortable: true,
       render: (row) => {
-        const s = (row.status || "pending").toLowerCase();
+        const isApproved = row.status === "approved" || row.status === "active";
+        const isPending = row.status === "pending";
+        const isSuspended = row.status === "suspended";
+        const isRejected = row.status === "rejected";
+
         return (
           <span
             className={cn(
-              "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none border",
-              s === "approved" || s === "active"
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                : s === "pending"
-                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 animate-pulse"
-                : s === "rejected"
-                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30"
-                : "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/30",
+              "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center gap-1",
+              isApproved
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                : isPending
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                : isSuspended || isRejected
+                ? "bg-destructive/10 text-destructive border-destructive/20"
+                : "bg-secondary text-muted-foreground border-border/60"
             )}
           >
-            {s === "pending" ? "Pending Approval" : s}
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {row.status || "active"}
           </span>
         );
       },
     },
     {
+      key: "verified",
+      label: "Verification",
+      render: (row) =>
+        row.verified ? (
+          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <ShieldCheck className="h-3.5 w-3.5" /> Verified
+          </span>
+        ) : (
+          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" /> Pending
+          </span>
+        ),
+    },
+    {
       key: "createdAt",
-      label: "Registered",
+      label: "Joined",
       sortable: true,
       render: (row) => (
-        <span className="text-[11px] font-semibold text-muted-foreground">
+        <span className="text-xs text-muted-foreground font-mono">
           {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "—"}
         </span>
       ),
@@ -437,442 +304,370 @@ export default function Users() {
     {
       key: "actions",
       label: "Actions",
-      render: (row) => {
-        const isPending = (row.status || "pending").toLowerCase() === "pending";
-        return (
-          <div className="flex items-center gap-1 justify-end">
-            <button
-              onClick={() => {
-                setSelectedUser(row);
-                setViewModalOpen(true);
-              }}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all cursor-pointer"
-              title="View full account details"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-            {isPending && (
-              <>
-                <button
-                  onClick={() => handleApprove(row.id || row.email)}
-                  className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-all cursor-pointer"
-                  title="Approve user registration"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleReject(row.id || row.email)}
-                  className="p-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 transition-all cursor-pointer"
-                  title="Reject user registration"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </>
-            )}
-            <button
-              onClick={() => handleOpenEdit(row)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all cursor-pointer"
-              title="Edit info"
-            >
-              <Edit2 className="h-4 w-4" />
-            </button>
-            {(row.status === "active" || row.status === "approved") ? (
-              <button
-                onClick={() => handleSuspend(row.id)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all cursor-pointer"
-                title="Suspend User"
-              >
-                <ShieldAlert className="h-4 w-4" />
-              </button>
-            ) : row.status === "suspended" ? (
-              <button
-                onClick={() => handleActivate(row.id)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/5 transition-all cursor-pointer"
-                title="Activate User"
-              >
-                <CheckCircle className="h-4 w-4" />
-              </button>
-            ) : null}
-            <button
-              onClick={() => handleDelete(row.id)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
-              title="Delete User"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        );
-      },
       align: "right",
+      render: (row) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => handleOpenUser(row)}
+            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-all cursor-pointer"
+            title="View user details drawer"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </button>
+
+          {row.status === "pending" && (
+            <>
+              <button
+                onClick={() => handleApprove(row.id || row.email)}
+                disabled={actionLoading}
+                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
+                title="Approve user"
+              >
+                <CheckCircle className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => handleReject(row.id || row.email)}
+                disabled={actionLoading}
+                className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+                title="Reject user"
+              >
+                <XCircle className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+
+          {row.status === "suspended" ? (
+            <button
+              onClick={() => handleActivate(row.id || row.email)}
+              disabled={actionLoading}
+              className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
+              title="Reactivate user"
+            >
+              <UserCheck className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            row.status !== "pending" && (
+              <button
+                onClick={() => handleSuspend(row.id || row.email)}
+                disabled={actionLoading}
+                className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+                title="Suspend user"
+              >
+                <ShieldAlert className="h-3.5 w-3.5" />
+              </button>
+            )
+          )}
+        </div>
+      ),
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Title Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">User Management & Approvals</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Audit user registrations, inspect credentials, and manually approve or reject accounts.
+          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+            Users Management Workspace
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Authoritative database user records, identity verification, account status, and role gating.
           </p>
         </div>
 
-        {/* Buttons */}
-        <button
-          onClick={handleExportCSV}
-          className="btn-gradient text-xs px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 self-start sm:self-auto cursor-pointer"
-        >
-          <Download className="h-4 w-4" />
-          <span>Export CSV</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchUsers()}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filters Dashboard */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* FILTERS & SEARCH BAR */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by name, email, phone..."
+            placeholder="Search by name, email, or user ID..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-card/60 text-foreground text-xs rounded-xl pl-10 pr-4 py-3 border border-border focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/60"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
           />
         </div>
 
-        {/* Role Filter */}
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className="bg-card/60 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary transition-all cursor-pointer"
-        >
-          <option value="all">All Roles</option>
-          <option value="admin">Administrators</option>
-          <option value="agent">Lenders (Agents)</option>
-          <option value="user">Renters (Users)</option>
-        </select>
+        {/* Filter Controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Status Tabs */}
+          <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold">
+            {["all", "pending", "approved", "suspended"].map((st) => (
+              <button
+                key={st}
+                onClick={() => {
+                  setStatusFilter(st);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg capitalize transition-all cursor-pointer text-[11px]",
+                  statusFilter === st
+                    ? "bg-card text-foreground shadow-xs font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
 
-        {/* Status Filter */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-card/60 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary transition-all cursor-pointer"
-        >
-          <option value="all">All Statuses</option>
-          <option value="pending">Pending Approval</option>
-          <option value="approved">Approved</option>
-          <option value="active">Active</option>
-          <option value="rejected">Rejected</option>
-          <option value="suspended">Suspended</option>
-        </select>
+          {/* Role Select */}
+          <select
+            value={roleFilter}
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-card text-foreground text-xs rounded-xl px-3 py-2 border border-border/80 focus:outline-none font-semibold cursor-pointer"
+          >
+            <option value="all">All Roles</option>
+            <option value="user">User</option>
+            <option value="agent">Agent / Lender</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
       </div>
 
-      {/* Slow Connection Indicator */}
-      {isSlow && (
-        <SlowConnectionIndicator message="Fetching user records is taking a bit longer than usual..." />
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => fetchUsers()} className="underline font-bold cursor-pointer">Retry</button>
+        </div>
       )}
 
-      {/* Main Table & States */}
-      {loading ? (
-        <LoadingState type="table" count={5} />
-      ) : error ? (
-        <ErrorState
-          title="Unable to load user list"
-          error={error}
-          onRetry={fetchUsers}
+      {/* USERS TABLE */}
+      <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+        <Table
+          columns={columns}
+          data={paginatedUsers}
+          loading={loading}
+          sortKey={sortKey}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          emptyMessage="No matching user records found in the database."
         />
-      ) : filteredUsers.length === 0 ? (
-        <NoSearchResults
-          query={search}
-          onClearFilters={() => {
-            setSearch("");
-            setRoleFilter("all");
-            setStatusFilter("all");
-          }}
-        />
-      ) : (
-        <>
-          <Table
-            columns={columns}
-            data={paginatedUsers}
-            onSort={handleSort}
-            sortKey={sortKey}
-            sortOrder={sortOrder}
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredUsers.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
-        </>
-      )}
 
-      {/* VIEW MODAL */}
-      <Modal
-        isOpen={viewModalOpen}
-        onClose={() => setViewModalOpen(false)}
-        title="Complete User Account Details"
-        size="lg"
-      >
-        {selectedUser && (
-          <div className="space-y-6">
-            <div className="flex items-start justify-between gap-4 border-b border-border/50 pb-5">
-              <div className="flex items-center gap-4">
-                {selectedUser.avatar || selectedUser.profilePhotoUrl ? (
-                  <img
-                    src={selectedUser.avatar || selectedUser.profilePhotoUrl}
-                    alt={selectedUser.fullName}
-                    className="h-16 w-16 rounded-2xl object-cover border border-primary/20 bg-secondary"
-                  />
-                ) : (
-                  <div className="h-16 w-16 rounded-2xl border border-primary/20 bg-secondary flex items-center justify-center text-muted-foreground">
-                    <User className="h-8 w-8 opacity-70" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="text-lg font-extrabold text-foreground">
-                    {selectedUser.fullName}
-                  </span>
-                  <span className="text-xs text-muted-foreground mt-0.5">
+        {filteredUsers.length > itemsPerPage && (
+          <div className="p-4 border-t border-border/40">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredUsers.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredUsers.length}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* USER DETAIL SLIDE-OUT DRAWER */}
+      {drawerOpen && selectedUser && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-background/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-card border-l border-border/80 shadow-2xl h-full flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
+            {/* Drawer Header */}
+            <div className="p-5 border-b border-border/60 flex items-center justify-between bg-secondary/30">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-secondary border border-border flex items-center justify-center font-bold text-sm text-foreground overflow-hidden">
+                  {selectedUser.avatar || selectedUser.profilePhotoUrl ? (
+                    <img src={selectedUser.avatar || selectedUser.profilePhotoUrl} alt={selectedUser.fullName} className="h-full w-full object-cover" />
+                  ) : (
+                    <span>{(selectedUser.fullName || selectedUser.email).charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground truncate max-w-[200px]">
+                    {selectedUser.fullName || "User Detail"}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground font-mono truncate max-w-[200px]">
                     {selectedUser.email}
-                  </span>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-secondary border border-border">
-                      {selectedUser.role}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border",
-                        (selectedUser.status === "approved" || selectedUser.status === "active")
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                          : selectedUser.status === "pending"
-                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40"
-                          : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30"
-                      )}
-                    >
-                      {selectedUser.status === "pending" ? "Pending Approval" : selectedUser.status}
-                    </span>
-                  </div>
+                  </p>
                 </div>
               </div>
 
-              {/* Quick Actions in Header */}
-              {selectedUser.status === "pending" && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleApprove(selectedUser.id || selectedUser.email)}
-                    className="px-4 py-2 text-xs font-extrabold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-md cursor-pointer transition-colors"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    <span>Approve User</span>
-                  </button>
-                  <button
-                    onClick={() => handleReject(selectedUser.id || selectedUser.email)}
-                    className="px-4 py-2 text-xs font-extrabold rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 shadow-md cursor-pointer transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                    <span>Reject User</span>
-                  </button>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Drawer Navigation Tabs */}
+            <div className="flex items-center border-b border-border/40 px-5 pt-2 gap-4 text-xs font-semibold">
+              <button
+                onClick={() => setDrawerTab("profile")}
+                className={cn(
+                  "pb-2 border-b-2 cursor-pointer transition-colors",
+                  drawerTab === "profile" ? "border-primary text-foreground font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Profile & Overview
+              </button>
+              <button
+                onClick={() => setDrawerTab("verification")}
+                className={cn(
+                  "pb-2 border-b-2 cursor-pointer transition-colors",
+                  drawerTab === "verification" ? "border-primary text-foreground font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Verification & KYC
+              </button>
+              <button
+                onClick={() => setDrawerTab("security")}
+                className={cn(
+                  "pb-2 border-b-2 cursor-pointer transition-colors",
+                  drawerTab === "security" ? "border-primary text-foreground font-bold" : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Account Security
+              </button>
+            </div>
+
+            {/* Drawer Body Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
+              {drawerTab === "profile" && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-secondary/40 border border-border/60 space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">User ID</span>
+                      <span className="font-mono font-bold">{selectedUser.id}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Status</span>
+                      <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded bg-secondary border border-border/60">
+                        {selectedUser.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Platform Role</span>
+                      <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded bg-secondary border border-border/60">
+                        {selectedUser.role}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Registered Date</span>
+                      <span className="font-mono">{selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : "—"}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-bold uppercase tracking-wider text-[10px] text-muted-foreground">Contact Information</h4>
+                    <div className="p-3 rounded-xl bg-card border border-border/60 space-y-2">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-3.5 w-3.5" />
+                        <span className="text-foreground font-medium">{selectedUser.email}</span>
+                      </div>
+                      {selectedUser.phone && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="h-3.5 w-3.5" />
+                          <span className="text-foreground font-medium">{selectedUser.phone}</span>
+                        </div>
+                      )}
+                      {(selectedUser.city || selectedUser.address) && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span className="text-foreground font-medium">{selectedUser.city || selectedUser.address}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {drawerTab === "verification" && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-secondary/40 border border-border/60 space-y-3">
+                    <div className="flex items-center gap-2 font-bold text-foreground">
+                      <ShieldCheck className="h-4 w-4 text-primary" />
+                      <span>Identity Verification Status</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {selectedUser.verified
+                        ? "User has successfully fulfilled email, phone 2FA, and identity verification requirements."
+                        : "Account registration is awaiting administrative identity confirmation."}
+                    </p>
+                    <div className="pt-2 border-t border-border/40 flex justify-between items-center font-mono">
+                      <span>KYC Verified:</span>
+                      <span className={cn("font-bold", selectedUser.verified ? "text-emerald-500" : "text-amber-500")}>
+                        {selectedUser.verified ? "YES" : "PENDING"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {drawerTab === "security" && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-secondary/40 border border-border/60 space-y-2">
+                    <div className="flex items-center gap-2 font-bold text-foreground">
+                      <Lock className="h-4 w-4 text-primary" />
+                      <span>Security & Access Control</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Administrative state changes are tracked in the security audit logs and enforced at backend gateway layer.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Account Details Sections */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="p-3.5 rounded-xl bg-secondary/40 border border-border/50 space-y-1">
-                <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider block">
-                  Account ID / Email
-                </span>
-                <p className="font-bold text-foreground">
-                  {selectedUser.id || selectedUser.email}
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-secondary/40 border border-border/50 space-y-1">
-                <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider block">
-                  Phone Number
-                </span>
-                <p className="font-bold text-foreground">
-                  {selectedUser.phone || "Not set"}
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-secondary/40 border border-border/50 space-y-1">
-                <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider block">
-                  Location / Address
-                </span>
-                <p className="font-bold text-foreground">
-                  {[selectedUser.address, selectedUser.city, selectedUser.pincode].filter(Boolean).join(", ") || "India"}
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-secondary/40 border border-border/50 space-y-1">
-                <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider block">
-                  KYC / Identity Verification
-                </span>
-                <p className="font-bold text-foreground flex items-center gap-1.5">
-                  {selectedUser.verified ? (
-                    <span className="text-emerald-500 font-bold flex items-center gap-1">
-                      <ShieldCheck className="h-4 w-4" /> Verified Identity
-                    </span>
-                  ) : (
-                    <span className="text-amber-500 font-bold flex items-center gap-1">
-                      <ShieldAlert className="h-4 w-4" /> Verification Pending
-                    </span>
-                  )}
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-secondary/40 border border-border/50 space-y-1 sm:col-span-2">
-                <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider block">
-                  Registration Timestamp
-                </span>
-                <p className="font-bold text-foreground">
-                  {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : "Recently registered"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-4 border-t border-border/50">
-              <span className="text-[11px] text-muted-foreground">
-                Payent Administrative Audit Trail Synced
-              </span>
-              <button
-                onClick={() => setViewModalOpen(false)}
-                className="bg-secondary text-foreground text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-secondary/80 transition-colors cursor-pointer"
-              >
-                Close
-              </button>
+            {/* Drawer Footer Actions */}
+            <div className="p-5 border-t border-border/60 bg-secondary/20 flex items-center justify-between gap-2">
+              {selectedUser.status === "pending" ? (
+                <>
+                  <button
+                    onClick={() => handleApprove(selectedUser.id || selectedUser.email)}
+                    disabled={actionLoading}
+                    className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all cursor-pointer"
+                  >
+                    Approve Account
+                  </button>
+                  <button
+                    onClick={() => handleReject(selectedUser.id || selectedUser.email)}
+                    disabled={actionLoading}
+                    className="flex-1 py-2 rounded-xl bg-destructive hover:bg-destructive/90 text-white font-bold text-xs transition-all cursor-pointer"
+                  >
+                    Reject Account
+                  </button>
+                </>
+              ) : selectedUser.status === "suspended" ? (
+                <button
+                  onClick={() => handleActivate(selectedUser.id || selectedUser.email)}
+                  disabled={actionLoading}
+                  className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all cursor-pointer"
+                >
+                  Reactivate Account
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleSuspend(selectedUser.id || selectedUser.email)}
+                  disabled={actionLoading}
+                  className="w-full py-2 rounded-xl bg-destructive hover:bg-destructive/90 text-white font-bold text-xs transition-all cursor-pointer"
+                >
+                  Suspend User Account
+                </button>
+              )}
             </div>
           </div>
-        )}
-      </Modal>
-
-      {/* EDIT MODAL */}
-      <Modal
-        isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        title="Edit User Profile"
-        size="md"
-      >
-        <form onSubmit={handleSaveEdit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Full Name */}
-            <div className="col-span-2 space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground tracking-wide">
-                Full Name
-              </label>
-              <input
-                type="text"
-                required
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-              />
-            </div>
-
-            {/* Email */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground tracking-wide">
-                Email
-              </label>
-              <input
-                type="email"
-                required
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-              />
-            </div>
-
-            {/* Phone */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground tracking-wide">
-                Phone Number
-              </label>
-              <input
-                type="text"
-                required
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-              />
-            </div>
-
-            {/* Role */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground tracking-wide">
-                Account Role
-              </label>
-              <select
-                value={editRole}
-                onChange={(e) =>
-                  setEditRole(e.target.value as "admin" | "agent" | "user")
-                }
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-              >
-                <option value="user">Renter (User)</option>
-                <option value="agent">Lender (Agent)</option>
-                <option value="admin">Administrator</option>
-              </select>
-            </div>
-
-            {/* Status */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground tracking-wide">
-                Status
-              </label>
-              <select
-                value={editStatus}
-                onChange={(e) =>
-                  setEditStatus(e.target.value as "active" | "suspended")
-                }
-                className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary focus:bg-card focus:ring-1 focus:ring-primary transition-all"
-              >
-                <option value="active">Active</option>
-                <option value="suspended">Suspended</option>
-              </select>
-            </div>
-
-            {/* Verified status checkbox */}
-            <div className="col-span-2 flex items-center mt-2">
-              <input
-                id="editVerified"
-                type="checkbox"
-                checked={editVerified}
-                onChange={(e) => setEditVerified(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/20 accent-primary"
-              />
-              <label
-                htmlFor="editVerified"
-                className="ml-2 text-xs font-semibold text-muted-foreground select-none"
-              >
-                Identity Profile Verified (KYC)
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-            <button
-              type="button"
-              onClick={() => setEditModalOpen(false)}
-              className="bg-secondary text-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-secondary/80 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }

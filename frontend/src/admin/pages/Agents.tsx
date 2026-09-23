@@ -1,20 +1,19 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Search,
   Eye,
-  ShoppingBag,
+  UserCheck,
   ShieldAlert,
-  CheckCircle,
-  Trash2,
   Star,
   IndianRupee,
-  Calendar,
   Package,
+  Calendar,
+  RefreshCw,
+  X,
+  Mail,
 } from "lucide-react";
 import { Table, Column } from "../components/layout/Table";
 import { Pagination } from "../components/layout/Pagination";
-import { Modal } from "../components/layout/Modal";
-import { Loader } from "../components/layout/Loader";
 import { usersService } from "../services/users";
 import { AdminAgent } from "../services/api";
 import { toast } from "sonner";
@@ -28,16 +27,17 @@ export default function Agents() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortKey, setSortKey] = useState("revenue");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  // Agent detail modal
   const [selectedAgent, setSelectedAgent] = useState<AdminAgent | null>(null);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const navigate = useNavigate();
 
-  const fetchAgents = async () => {
+  const fetchAgents = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -45,17 +45,16 @@ export default function Agents() {
       setAgents(data);
     } catch (err) {
       console.error(err);
-      const msg = err instanceof Error ? err.message : "Failed to load agents list.";
-      setError(msg);
-      toast.error(msg);
+      setError("Failed to load agent lenders directory.");
+      toast.error("Failed to load agents.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchAgents();
-  }, []);
+  }, [fetchAgents]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -67,29 +66,17 @@ export default function Agents() {
   };
 
   const handleSuspend = async (id: string) => {
+    if (!confirm("Are you sure you want to suspend this agent lender?")) return;
     try {
       const updated = await usersService.suspendAgent(id);
       setAgents((prev) => prev.map((a) => (a.id === id ? updated : a)));
+      if (selectedAgent?.id === id) setSelectedAgent(updated);
       toast.warning("Agent suspended successfully.");
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Failed to suspend agent.");
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this agent profile?")) return;
-    try {
-      await usersService.deleteAgent(id);
-      setAgents((prev) => prev.filter((a) => a.id !== id));
-      toast.success("Agent profile deleted successfully.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete agent.");
-    }
-  };
-
-  // Navigate to Products page, passing agent name as search filter
   const handleViewProducts = (agentName: string) => {
     navigate({
       to: "/admin/products",
@@ -104,8 +91,9 @@ export default function Agents() {
       const q = search.toLowerCase();
       result = result.filter(
         (a) =>
-          a.fullName.toLowerCase().includes(q) ||
-          a.email.toLowerCase().includes(q),
+          (a.fullName && a.fullName.toLowerCase().includes(q)) ||
+          (a.email && a.email.toLowerCase().includes(q)) ||
+          (a.id && a.id.toLowerCase().includes(q))
       );
     }
 
@@ -118,9 +106,7 @@ export default function Agents() {
       const fieldB = (b as unknown as Record<string, string | number>)[sortKey];
 
       if (typeof fieldA === "string" && typeof fieldB === "string") {
-        return sortOrder === "asc"
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
+        return sortOrder === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
       }
       if (typeof fieldA === "number" && typeof fieldB === "number") {
         return sortOrder === "asc" ? fieldA - fieldB : fieldB - fieldA;
@@ -136,60 +122,56 @@ export default function Agents() {
     return filteredAgents.slice(start, start + itemsPerPage);
   }, [filteredAgents, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
-
   const columns: Column<AdminAgent>[] = [
     {
       key: "fullName",
       label: "Agent / Lender",
-      sortable: true,
       render: (row) => (
         <div className="flex items-center gap-3">
-          <img
-            src={row.avatar}
-            alt={row.fullName}
-            className="h-9 w-9 rounded-full object-cover border border-border"
-          />
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-foreground truncate">
-              {row.fullName}
-            </span>
-            <span className="text-[10px] text-muted-foreground mt-0.5">
-              {row.email}
-            </span>
+          <div className="h-9 w-9 rounded-full bg-secondary border border-border/80 flex items-center justify-center font-bold text-xs text-foreground overflow-hidden shrink-0">
+            {row.avatar ? (
+              <img src={row.avatar} alt={row.fullName} className="h-full w-full object-cover" />
+            ) : (
+              <span>{(row.fullName || row.email || "A").charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="font-bold text-foreground truncate">{row.fullName || "Verified Agent"}</div>
+            <div className="text-[11px] text-muted-foreground font-mono truncate">{row.email}</div>
           </div>
         </div>
       ),
     },
     {
       key: "productsCount",
-      label: "Uploads",
+      label: "Listings",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-bold">
-          {row.productsCount} gear items
-        </span>
+        <button
+          onClick={() => handleViewProducts(row.fullName || row.email)}
+          className="text-xs font-mono font-bold text-primary hover:underline"
+        >
+          {row.productsCount || 0} gear items
+        </button>
       ),
-      align: "center",
     },
     {
       key: "bookingsCount",
-      label: "Rentals",
+      label: "Leases Completed",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-bold">{row.bookingsCount} orders</span>
+        <span className="text-xs font-mono font-semibold text-foreground">
+          {row.bookingsCount || 0} bookings
+        </span>
       ),
-      align: "center",
     },
     {
       key: "revenue",
-      label: "Revenue",
+      label: "Gross Revenue",
       sortable: true,
       render: (row) => (
-        <span className="text-xs font-extrabold text-primary">
-          ₹{row.revenue.toLocaleString()}
+        <span className="text-xs font-mono font-bold text-foreground">
+          ₹{(row.revenue || 0).toLocaleString("en-IN")}
         </span>
       ),
     },
@@ -198,254 +180,210 @@ export default function Agents() {
       label: "Rating",
       sortable: true,
       render: (row) => (
-        <div className="flex items-center gap-1">
-          <Star className="h-3.5 w-3.5 text-foreground fill-foreground" />
-          <span className="text-xs font-bold">{row.rating.toFixed(1)}</span>
+        <div className="flex items-center gap-1 text-xs font-mono font-bold text-amber-500">
+          <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+          <span>{(row.rating || 5.0).toFixed(1)}</span>
         </div>
       ),
     },
     {
       key: "status",
       label: "Status",
-      sortable: true,
       render: (row) => (
         <span
           className={cn(
-            "inline-flex items-center text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full select-none",
+            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
             row.status === "active"
-              ? "bg-green-500/10 text-green-600 dark:text-green-400"
-              : "bg-red-500/10 text-red-600 dark:text-red-400",
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+              : "bg-destructive/10 text-destructive border-destructive/20"
           )}
         >
-          {row.status}
+          {row.status || "active"}
         </span>
       ),
     },
     {
       key: "actions",
       label: "Actions",
+      align: "right",
       render: (row) => (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => {
               setSelectedAgent(row);
-              setProfileModalOpen(true);
+              setModalOpen(true);
             }}
-            className="btn-gradient text-[10px] px-2.5 py-1.5 rounded-lg font-bold flex items-center gap-1"
-            title="View full profiles"
+            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-all cursor-pointer"
+            title="View agent details"
           >
-            <Eye className="h-3 w-3" />
-            <span>Profile</span>
-          </button>
-          <button
-            onClick={() => handleViewProducts(row.fullName)}
-            className="bg-secondary text-foreground text-[10px] px-2.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 hover:bg-secondary/70 transition-colors"
-            title="View inventory listings"
-          >
-            <ShoppingBag className="h-3 w-3 text-muted-foreground" />
-            <span>Gear</span>
+            <Eye className="h-3.5 w-3.5" />
           </button>
           {row.status === "active" && (
             <button
               onClick={() => handleSuspend(row.id)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all"
-              title="Suspend profile"
+              className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+              title="Suspend agent"
             >
-              <ShieldAlert className="h-4 w-4" />
+              <ShieldAlert className="h-3.5 w-3.5" />
             </button>
           )}
-          <button
-            onClick={() => handleDelete(row.id)}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-            title="Delete lender account"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
         </div>
       ),
-      align: "right",
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Agent Management</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Moderate verified lender agents, track products cataloged, total
-          rental count, and revenue commissions.
-        </p>
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
+            Agent & Lender Directory
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Verified equipment suppliers, rental volume, ratings, and active catalog items.
+          </p>
+        </div>
+
+        <button
+          onClick={fetchAgents}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <span>Refresh</span>
+        </button>
       </div>
 
-      {/* Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
+      {/* SEARCH & FILTERS */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by agent name, email..."
+            placeholder="Search agents by name or email..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-card/60 text-foreground text-xs rounded-xl pl-10 pr-4 py-3 border border-border focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/60"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
           />
         </div>
 
-        {/* Status Select */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-card/60 text-foreground text-xs rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary transition-all"
-        >
-          <option value="all">All Lenders</option>
-          <option value="active">Active Lenders</option>
-          <option value="suspended">Suspended Lenders</option>
-        </select>
+        <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold">
+          {["all", "active", "suspended"].map((st) => (
+            <button
+              key={st}
+              onClick={() => {
+                setStatusFilter(st);
+                setCurrentPage(1);
+              }}
+              className={cn(
+                "px-3 py-1 rounded-lg capitalize transition-all cursor-pointer text-[11px]",
+                statusFilter === st
+                  ? "bg-card text-foreground shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {st}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Table grid */}
-      {loading ? (
-        <Loader message="Gathering agent records..." />
-      ) : error ? (
-        <div className="p-8 rounded-2xl bg-destructive/10 border border-destructive/20 text-center space-y-3">
-          <ShieldAlert className="h-8 w-8 text-destructive mx-auto" />
-          <h3 className="text-sm font-bold text-foreground">Failed to load agents</h3>
-          <p className="text-xs text-muted-foreground max-w-md mx-auto">{error}</p>
-          <button
-            onClick={fetchAgents}
-            className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold cursor-pointer inline-flex items-center gap-2"
-          >
-            <span>Retry Connection</span>
-          </button>
+      {/* ERROR BANNER */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={fetchAgents} className="underline font-bold cursor-pointer">Retry</button>
         </div>
-      ) : (
-        <>
-          <Table
-            columns={columns}
-            data={paginatedAgents}
-            onSort={handleSort}
-            sortKey={sortKey}
-            sortOrder={sortOrder}
-            emptyTitle="No agents found"
-            emptyDescription="Try tweaking your queries or verification criteria."
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredAgents.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
-        </>
       )}
 
-      {/* AGENT PROFILE MODAL */}
-      <Modal
-        isOpen={profileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-        title="Agent Performance Report"
-        size="md"
-      >
-        {selectedAgent && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 border-b border-border/50 pb-4">
-              <img
-                src={selectedAgent.avatar}
-                alt={selectedAgent.fullName}
-                className="h-16 w-16 rounded-full object-cover border border-primary/20"
-              />
-              <div className="flex flex-col">
-                <span className="text-base font-bold text-foreground">
-                  {selectedAgent.fullName}
-                </span>
-                <span className="text-xs text-muted-foreground mt-0.5">
-                  {selectedAgent.email}
-                </span>
-                <div className="flex items-center gap-1.5 mt-2 bg-primary/10 text-primary text-[10px] font-extrabold px-2 py-0.5 rounded-full w-fit">
-                  <Star className="h-3 w-3 fill-primary" />
-                  <span>Agent Rating: {selectedAgent.rating.toFixed(1)}</span>
+      {/* TABLE */}
+      <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+        <Table
+          columns={columns}
+          data={paginatedAgents}
+          loading={loading}
+          sortKey={sortKey}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          emptyMessage="No verified agent lenders found in the database."
+        />
+
+        {filteredAgents.length > itemsPerPage && (
+          <div className="p-4 border-t border-border/40">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredAgents.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredAgents.length}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* AGENT DETAIL MODAL */}
+      {modalOpen && selectedAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-card border border-border/80 rounded-2xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-secondary border border-border flex items-center justify-center font-bold text-sm text-foreground overflow-hidden">
+                  {selectedAgent.avatar ? (
+                    <img src={selectedAgent.avatar} alt={selectedAgent.fullName} className="h-full w-full object-cover" />
+                  ) : (
+                    <span>{(selectedAgent.fullName || selectedAgent.email).charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">{selectedAgent.fullName || "Agent Profile"}</h3>
+                  <p className="text-[11px] text-muted-foreground font-mono">{selectedAgent.email}</p>
                 </div>
               </div>
-            </div>
-
-            {/* Sub statistics cards */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-3.5 rounded-xl bg-secondary/45 border border-border/50 text-center">
-                <Package className="h-4 w-4 text-primary mx-auto mb-1" />
-                <span className="text-[10px] font-bold text-muted-foreground block">
-                  Uploaded Gear
-                </span>
-                <span className="text-sm font-extrabold text-foreground mt-1 block">
-                  {selectedAgent.productsCount} items
-                </span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-secondary/45 border border-border/50 text-center">
-                <Calendar className="h-4 w-4 text-foreground mx-auto mb-1" />
-                <span className="text-[10px] font-bold text-muted-foreground block">
-                  Total Rentals
-                </span>
-                <span className="text-sm font-extrabold text-foreground mt-1 block">
-                  {selectedAgent.bookingsCount} orders
-                </span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-secondary/45 border border-border/50 text-center">
-                <IndianRupee className="h-4 w-4 text-green-500 mx-auto mb-1" />
-                <span className="text-[10px] font-bold text-muted-foreground block">
-                  Total Earnings
-                </span>
-                <span className="text-sm font-extrabold text-foreground mt-1 block">
-                  ₹{selectedAgent.revenue.toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            <div className="text-xs space-y-2.5 p-4 rounded-xl bg-secondary/20 border border-border/40">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">
-                  Verification Date
-                </span>
-                <span className="font-bold text-foreground">
-                  {new Date(selectedAgent.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">
-                  Account Status
-                </span>
-                <span
-                  className={cn(
-                    "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full",
-                    selectedAgent.status === "active"
-                      ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                      : "bg-red-500/10 text-red-600 dark:text-red-400",
-                  )}
-                >
-                  {selectedAgent.status}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
               <button
-                onClick={() => setProfileModalOpen(false)}
-                className="bg-secondary text-foreground text-xs font-semibold px-4 py-2 rounded-xl hover:bg-secondary/80 transition-colors"
+                onClick={() => setModalOpen(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
               >
-                Close Profile
+                <X className="h-4 w-4" />
               </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60">
+                <span className="text-muted-foreground block text-[10px] uppercase font-bold">Listings</span>
+                <span className="text-base font-black font-mono mt-1 block">{selectedAgent.productsCount || 0}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60">
+                <span className="text-muted-foreground block text-[10px] uppercase font-bold">Completed Leases</span>
+                <span className="text-base font-black font-mono mt-1 block">{selectedAgent.bookingsCount || 0}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60">
+                <span className="text-muted-foreground block text-[10px] uppercase font-bold">Gross Revenue</span>
+                <span className="text-base font-black font-mono mt-1 block">₹{(selectedAgent.revenue || 0).toLocaleString()}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-secondary/40 border border-border/60">
+                <span className="text-muted-foreground block text-[10px] uppercase font-bold">Average Rating</span>
+                <span className="text-base font-black font-mono mt-1 block text-amber-500">★ {(selectedAgent.rating || 5.0).toFixed(1)}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
               <button
                 onClick={() => {
-                  setProfileModalOpen(false);
-                  handleViewProducts(selectedAgent.fullName);
+                  setModalOpen(false);
+                  handleViewProducts(selectedAgent.fullName || selectedAgent.email);
                 }}
-                className="btn-gradient text-xs px-4 py-2 rounded-xl font-bold"
+                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-all cursor-pointer"
               >
-                View Inventory
+                View Agent Products
               </button>
             </div>
           </div>
-        )}
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }
