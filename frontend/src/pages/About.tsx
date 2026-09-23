@@ -228,7 +228,6 @@ export default function About() {
                   
                   {/* Floating Brand Badge */}
                   <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white shadow-lg">
-                    <PayentLogoMark className="w-4 h-4" />
                     <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-400">
                       CREATOR HUB
                     </span>

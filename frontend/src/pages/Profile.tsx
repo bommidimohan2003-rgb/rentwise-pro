@@ -514,18 +514,6 @@ export default function Profile() {
                         <span>Take Photo</span>
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsPhotoMenuOpen(false);
-                          fileInputRef.current?.click();
-                        }}
-                        className="w-full text-left px-3 py-2 text-xs font-bold rounded-xl text-foreground hover:bg-secondary flex items-center gap-2 transition-colors cursor-pointer"
-                      >
-                        <Upload className="h-3.5 w-3.5 text-primary" />
-                        <span>Upload Photo</span>
-                      </button>
-
                       {hasRealPhoto && (
                         <button
                           type="button"

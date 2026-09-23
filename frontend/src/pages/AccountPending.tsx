@@ -171,9 +171,9 @@ export default function AccountPending() {
             className="absolute inset-4 rounded-full bg-emerald-500/10 border border-emerald-500/30"
           />
 
-          {/* Center Logo Mark */}
+          {/* Center Status Indicator */}
           <div className="relative z-10 flex items-center justify-center drop-shadow-[0_0_35px_rgba(16,185,129,0.65)]">
-            <PayentLogoMark className="h-16 w-16 sm:h-20 sm:w-20" />
+            <Clock className="h-14 w-14 sm:h-16 sm:w-16 text-emerald-400" />
           </div>
         </div>
 

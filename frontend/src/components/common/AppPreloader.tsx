@@ -212,7 +212,6 @@ export function AppPreloader({
                 }}
                 className="flex items-center gap-2.5 z-20"
               >
-                <PayentLogoMark className="h-8 w-8 sm:h-9 sm:w-9 shadow-md" />
                 <span className="font-sans font-black tracking-tight text-xl text-white">
                   PAYENT
                 </span>

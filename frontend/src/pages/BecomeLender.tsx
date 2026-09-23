@@ -330,45 +330,6 @@ export default function BecomeLender() {
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[450px] bg-gradient-to-br from-primary/20 via-purple-500/10 to-emerald-500/10 blur-[130px] rounded-full -z-10" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* HERO BANNER SECTION (STATIC / NO HOVER EFFECTS) */}
-          <div className="relative rounded-3xl p-8 sm:p-12 border border-border/80 dark:border-white/10 bg-card/60 dark:bg-card/40 backdrop-blur-2xl shadow-2xl overflow-hidden">
-            <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative z-10 max-w-3xl space-y-6">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider shadow-sm backdrop-blur-md">
-                <Sparkle className="h-3.5 w-3.5 fill-primary" />
-                Payent Direct Listing Engine
-              </div>
-
-              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-foreground leading-[1.08] font-display">
-                Monetize your gear. <br />
-                <span className="bg-gradient-to-r from-primary via-amber-400 to-emerald-400 bg-clip-text text-transparent">
-                  Snap & list in 2 mins.
-                </span>
-              </h1>
-
-              <p className="text-muted-foreground text-base sm:text-xl leading-relaxed max-w-2xl font-medium">
-                Turn your cameras, laptops, drones & rides into passive income with direct live camera capture and ₹50,000 damage protection.
-              </p>
-
-              {/* Quick Stat Badges */}
-              <div className="pt-2 flex flex-wrap items-center gap-4 text-xs sm:text-sm font-semibold">
-                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-background/80 dark:bg-zinc-900/80 border border-border/80 shadow-sm">
-                  <BadgeCheck className="h-4 w-4 text-emerald-500" />
-                  <span className="text-foreground">Verified Borrower Network</span>
-                </div>
-                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-background/80 dark:bg-zinc-900/80 border border-border/80 shadow-sm">
-                  <Shield className="h-4 w-4 text-primary" />
-                  <span className="text-foreground">₹50K Damage Coverage</span>
-                </div>
-                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-background/80 dark:bg-zinc-900/80 border border-border/80 shadow-sm">
-                  <Camera className="h-4 w-4 text-amber-500" />
-                  <span className="text-foreground">Direct WebRTC Camera</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* PERKS GRID SECTION */}
           <div className="space-y-6">
             <div className="text-left">
