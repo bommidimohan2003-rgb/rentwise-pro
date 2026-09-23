@@ -11,8 +11,8 @@ type PreloaderPhase =
   | "top-left-p-up"     // 2.00s - 2.70s: Top-left "P" smoothly moves upwards and exits
   | "center-typing"     // 2.30s - 3.70s: Word "PAYENT" typed in center of black background
   | "center-hold"       // 3.70s - 4.20s: Complete "PAYENT" holds in the middle
-  | "move-left-landing" // 4.20s - 5.30s: "PAYENT" moves from middle to left side & home lands
-  | "complete";         // 5.40s+: Preloader disappears, normal website interactivity
+  | "move-left-landing" // 4.20s - 5.30s: "PAYENT" travels from middle to left side & home lands
+  | "complete";         // 5.50s+: Preloader disappears, normal website interactivity
 
 const LETTERS = ["P", "A", "Y", "E", "N", "T"];
 
@@ -34,6 +34,9 @@ export function AppPreloader({
     height: 32,
   });
 
+  // Translation delta from viewport center to navbar target
+  const [delta, setDelta] = useState({ x: -200, y: -300 });
+
   // Check if session has already seen the preloader
   useEffect(() => {
     setMounted(true);
@@ -53,33 +56,48 @@ export function AppPreloader({
     setIsVisible(true);
   }, [forceShow, onComplete]);
 
-  // Measure navbar logo coordinates from DOM
+  // Measure navbar logo coordinates and compute center-to-left translation delta
   useEffect(() => {
     if (!isVisible) return;
 
     const measureNavPos = () => {
       const navEl = document.getElementById("nav-logo");
+      let targetTop = 34;
+      let targetLeft = 80;
+      let targetW = 100;
+      let targetH = 32;
+
       if (navEl) {
         const rect = navEl.getBoundingClientRect();
-        setNavTarget({
-          top: rect.top + rect.height / 2,
-          left: rect.left + rect.width / 2,
-          width: rect.width,
-          height: rect.height,
-        });
+        targetTop = rect.top + rect.height / 2;
+        targetLeft = rect.left + rect.width / 2;
+        targetW = rect.width;
+        targetH = rect.height;
       } else {
         const isDesktop = window.innerWidth >= 1024;
         const isTablet = window.innerWidth >= 640;
         const maxW = 1280;
         const pad = isDesktop ? 32 : isTablet ? 24 : 16;
         const leftBase = Math.max(pad, (window.innerWidth - maxW) / 2 + pad);
-        setNavTarget({
-          top: isTablet ? 34 : 32,
-          left: leftBase + 48,
-          width: 90,
-          height: 32,
-        });
+        targetTop = isTablet ? 34 : 32;
+        targetLeft = leftBase + 48;
+        targetW = 90;
+        targetH = 32;
       }
+
+      setNavTarget({
+        top: targetTop,
+        left: targetLeft,
+        width: targetW,
+        height: targetH,
+      });
+
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      setDelta({
+        x: targetLeft - centerX,
+        y: targetTop - centerY,
+      });
     };
 
     measureNavPos();
@@ -108,8 +126,8 @@ export function AppPreloader({
     //    2.00s - 2.70s: Top-left "P" moves upwards
     // 2. 2.30s - 3.70s: "PAYENT" typed letter-by-letter in the middle/center
     //    3.70s - 4.20s: Complete "PAYENT" holds in the middle
-    // 3. 4.20s - 5.30s: "PAYENT" moves from middle to left side; Home page lands simultaneously
-    //    5.40s+: Preloader disappears, normal site interaction
+    // 3. 4.20s - 5.30s: "PAYENT" physically travels from middle to left side; Home page lands
+    //    5.50s+: Preloader disappears, normal site interaction
     // ----------------------------------------------------
 
     const timers: NodeJS.Timeout[] = [];
@@ -159,7 +177,7 @@ export function AppPreloader({
           sessionStorage.setItem("payent:preloaded", "true");
         } catch {}
         if (onComplete) onComplete();
-      }, 5400)
+      }, 5500)
     );
 
     return () => {
@@ -213,7 +231,7 @@ export function AppPreloader({
           }}
           exit={{ opacity: 0 }}
           transition={{
-            duration: 1.0,
+            duration: 1.1,
             ease: [0.22, 1, 0.36, 1],
           }}
           className="fixed inset-0 z-[99999] bg-[#000000] text-white select-none overflow-hidden pointer-events-none"
@@ -278,12 +296,13 @@ export function AppPreloader({
                 isMovingToLeft
                   ? {
                       position: "fixed",
-                      top: navTarget.top,
-                      left: navTarget.left,
-                      x: "-50%",
-                      y: "-50%",
-                      // Scales proportionally to match navbar logo size
-                      scale: typeof window !== "undefined" && window.innerWidth < 640 ? 0.42 : 0.48,
+                      top: "50%",
+                      left: "50%",
+                      // Translate horizontally and vertically from center to the exact left navbar position
+                      x: `calc(-50% + ${delta.x}px)`,
+                      y: `calc(-50% + ${delta.y}px)`,
+                      // Scales down smoothly to match navbar logo size
+                      scale: typeof window !== "undefined" && window.innerWidth < 640 ? 0.40 : 0.45,
                       opacity: 1,
                     }
                   : {
@@ -299,7 +318,7 @@ export function AppPreloader({
               transition={
                 isMovingToLeft
                   ? {
-                      duration: 1.0,
+                      duration: 1.1,
                       ease: [0.22, 1, 0.36, 1],
                     }
                   : {
@@ -308,7 +327,7 @@ export function AppPreloader({
                     }
               }
               className="z-50 pointer-events-none flex items-center justify-center select-none origin-center"
-              style={{ willChange: "transform, top, left" }}
+              style={{ willChange: "transform" }}
             >
               {/* Reserved fixed word width prevents horizontal shift as letters are typed */}
               <div className="inline-flex items-center justify-center font-sans font-black tracking-tight text-4xl sm:text-6xl md:text-7xl text-white leading-none drop-shadow-2xl">
