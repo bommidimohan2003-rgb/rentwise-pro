@@ -7,12 +7,12 @@ interface AppPreloaderProps {
 }
 
 type PreloaderPhase =
-  | "p-center-hold"     // 0.00s - 2.00s: Single white "P" holds in exact viewport center
-  | "p-move-up"         // 2.00s - 2.80s: "P" smoothly moves upward
-  | "payent-typing"     // 2.80s - 3.90s: "PAYENT" typed letter-by-letter in the center
-  | "payent-hold"       // 3.90s - 4.40s: Complete "PAYENT" holds in center
-  | "payent-move-left"  // 4.40s - 5.40s: "PAYENT" moves horizontally center -> left; home reveals
-  | "complete";         // 5.90s+: Preloader unmounts, normal website interactivity
+  | "top-left-p-hold"   // 0.00s - 2.00s: Single white "P" shown in the top-left corner
+  | "top-left-p-up"     // 2.00s - 2.70s: Top-left "P" smoothly moves upwards and exits
+  | "center-typing"     // 2.30s - 3.70s: Word "PAYENT" typed in center of black background
+  | "center-hold"       // 3.70s - 4.20s: Complete "PAYENT" holds in the middle
+  | "move-left-landing" // 4.20s - 5.30s: "PAYENT" moves from middle to left side & home lands
+  | "complete";         // 5.40s+: Preloader disappears, normal website interactivity
 
 const LETTERS = ["P", "A", "Y", "E", "N", "T"];
 
@@ -22,11 +22,11 @@ export function AppPreloader({
 }: AppPreloaderProps) {
   const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [phase, setPhase] = useState<PreloaderPhase>("p-center-hold");
+  const [phase, setPhase] = useState<PreloaderPhase>("top-left-p-hold");
   const [typedCount, setTypedCount] = useState(0);
   const shouldReduceMotion = useReducedMotion();
 
-  // Target coordinates for navbar brand logo
+  // Target coordinates for permanent navbar brand logo
   const [navTarget, setNavTarget] = useState({
     top: 34,
     left: 80,
@@ -34,7 +34,7 @@ export function AppPreloader({
     height: 32,
   });
 
-  // Track whether user has already seen preloader in this session
+  // Check if session has already seen the preloader
   useEffect(() => {
     setMounted(true);
     let hasSeen = false;
@@ -53,7 +53,7 @@ export function AppPreloader({
     setIsVisible(true);
   }, [forceShow, onComplete]);
 
-  // Dynamically measure navbar logo position from the DOM
+  // Measure navbar logo coordinates from DOM
   useEffect(() => {
     if (!isVisible) return;
 
@@ -87,11 +87,10 @@ export function AppPreloader({
     return () => window.removeEventListener("resize", measureNavPos);
   }, [isVisible]);
 
-  // Master Timeline Orchestration
+  // Sequence Timeline
   useEffect(() => {
     if (!isVisible) return;
 
-    // Accessibility fallback for reduced motion preference
     if (shouldReduceMotion) {
       const tReduce = setTimeout(() => {
         setIsVisible(false);
@@ -105,54 +104,53 @@ export function AppPreloader({
 
     // ----------------------------------------------------
     // TIMELINE:
-    // 0.00s - 2.00s: Pure black screen, single white "P" in center (Hold)
-    // 2.00s - 2.80s: "P" smoothly moves upward
-    // 2.80s - 3.90s: "PAYENT" typed letter-by-letter
-    // 3.90s - 4.40s: "PAYENT" holds in center
-    // 4.40s - 5.40s: "PAYENT" moves center -> left (home reveals)
-    // 5.40s - 5.90s: Home content settles
-    // 5.90s+: Preloader unmounts
+    // 1. 0.00s - 2.00s: Black background, single white "P" in top-left corner (Holds 2s)
+    //    2.00s - 2.70s: Top-left "P" moves upwards
+    // 2. 2.30s - 3.70s: "PAYENT" typed letter-by-letter in the middle/center
+    //    3.70s - 4.20s: Complete "PAYENT" holds in the middle
+    // 3. 4.20s - 5.30s: "PAYENT" moves from middle to left side; Home page lands simultaneously
+    //    5.40s+: Preloader disappears, normal site interaction
     // ----------------------------------------------------
 
     const timers: NodeJS.Timeout[] = [];
 
-    // Phase 3: P moves up at 2.00s
+    // Step 1: After 2 seconds, top-left "P" moves upwards
     timers.push(
       setTimeout(() => {
-        setPhase("p-move-up");
+        setPhase("top-left-p-up");
       }, 2000)
     );
 
-    // Phase 4: Begin typing PAYENT at 2.80s
+    // Step 2: Begin typing "PAYENT" in the center at 2.30s
     timers.push(
       setTimeout(() => {
-        setPhase("payent-typing");
+        setPhase("center-typing");
         setTypedCount(1); // 'P'
-      }, 2800)
+      }, 2300)
     );
 
-    // Stagger letters 'A', 'Y', 'E', 'N', 'T' (every ~180ms)
-    timers.push(setTimeout(() => setTypedCount(2), 3000)); // 'PA'
-    timers.push(setTimeout(() => setTypedCount(3), 3200)); // 'PAY'
-    timers.push(setTimeout(() => setTypedCount(4), 3400)); // 'PAYE'
-    timers.push(setTimeout(() => setTypedCount(5), 3600)); // 'PAYEN'
-    timers.push(setTimeout(() => setTypedCount(6), 3800)); // 'PAYENT'
+    // Typing sequence for remaining letters
+    timers.push(setTimeout(() => setTypedCount(2), 2500)); // 'PA'
+    timers.push(setTimeout(() => setTypedCount(3), 2700)); // 'PAY'
+    timers.push(setTimeout(() => setTypedCount(4), 2900)); // 'PAYE'
+    timers.push(setTimeout(() => setTypedCount(5), 3100)); // 'PAYEN'
+    timers.push(setTimeout(() => setTypedCount(6), 3300)); // 'PAYENT'
 
-    // Phase 5: PAYENT center hold at 3.90s
+    // Center hold
     timers.push(
       setTimeout(() => {
-        setPhase("payent-hold");
-      }, 3900)
+        setPhase("center-hold");
+      }, 3700)
     );
 
-    // Phase 6 & 8: Move from Center -> Left & Reveal Home page simultaneously at 4.40s
+    // Step 3: Move from middle to left side + Home page lands simultaneously
     timers.push(
       setTimeout(() => {
-        setPhase("payent-move-left");
-      }, 4400)
+        setPhase("move-left-landing");
+      }, 4200)
     );
 
-    // Phase 12: Complete preloader at 5.90s
+    // Preloader complete
     timers.push(
       setTimeout(() => {
         setPhase("complete");
@@ -161,7 +159,7 @@ export function AppPreloader({
           sessionStorage.setItem("payent:preloaded", "true");
         } catch {}
         if (onComplete) onComplete();
-      }, 5900)
+      }, 5400)
     );
 
     return () => {
@@ -171,7 +169,7 @@ export function AppPreloader({
 
   if (!mounted || !isVisible) return null;
 
-  // Reduced motion render
+  // Reduced motion fallback
   if (shouldReduceMotion) {
     return (
       <AnimatePresence>
@@ -192,19 +190,16 @@ export function AppPreloader({
     );
   }
 
-  // Animation phase flags
-  const isPMovedUp =
-    phase === "p-move-up" ||
-    phase === "payent-typing" ||
-    phase === "payent-hold" ||
-    phase === "payent-move-left";
+  const showTopLeftP =
+    phase === "top-left-p-hold" || phase === "top-left-p-up";
+  const isTopLeftPMovingUp = phase === "top-left-p-up";
 
-  const showTypingWord =
-    phase === "payent-typing" ||
-    phase === "payent-hold" ||
-    phase === "payent-move-left";
+  const showCenterWord =
+    phase === "center-typing" ||
+    phase === "center-hold" ||
+    phase === "move-left-landing";
 
-  const isMovingLeft = phase === "payent-move-left";
+  const isMovingToLeft = phase === "move-left-landing";
 
   return (
     <AnimatePresence>
@@ -213,76 +208,81 @@ export function AppPreloader({
           key="payent-cinematic-preloader"
           initial={{ opacity: 1 }}
           animate={{
-            // Black background seamlessly fades out starting at 4.40s when PAYENT travels to the left
-            opacity: isMovingLeft ? 0 : 1,
+            // Black background dissolves as PAYENT moves to the left and home page lands
+            opacity: isMovingToLeft ? 0 : 1,
           }}
           exit={{ opacity: 0 }}
           transition={{
-            duration: 1.1,
+            duration: 1.0,
             ease: [0.22, 1, 0.36, 1],
           }}
           className="fixed inset-0 z-[99999] bg-[#000000] text-white select-none overflow-hidden pointer-events-none"
           style={{ willChange: "opacity" }}
         >
           {/* ==================================================== */}
-          {/* 1. CENTER "P" (HOLDS, MOVES UP, FADES ON LEFT MOVE)   */}
+          {/* 1. TOP-LEFT CORNER "P" (HOLDS 2s, THEN MOVES UP)     */}
           {/* ==================================================== */}
-          <motion.div
-            initial={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              x: "-50%",
-              y: "-50%",
-              opacity: 1,
-              scale: 1,
-            }}
-            animate={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              x: "-50%",
-              // Moves up smoothly by ~48px-56px at 2.00s
-              y: isPMovedUp ? "calc(-50% - 48px)" : "-50%",
-              // Gently dissolves when the full wordmark travels to header
-              opacity: isMovingLeft ? 0 : 1,
-              scale: isPMovedUp ? 0.95 : 1,
-            }}
-            transition={{
-              duration: 0.8,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="z-40 pointer-events-none flex items-center justify-center select-none"
-          >
-            <span className="font-sans font-black tracking-tight text-6xl sm:text-7xl md:text-8xl text-white leading-none drop-shadow-2xl">
-              P
-            </span>
-          </motion.div>
+          <AnimatePresence>
+            {showTopLeftP && (
+              <motion.div
+                key="top-left-p-mark"
+                initial={{
+                  position: "absolute",
+                  top: navTarget.top - 18,
+                  left: navTarget.left - navTarget.width / 2,
+                  y: 0,
+                  opacity: 1,
+                }}
+                animate={{
+                  position: "absolute",
+                  top: navTarget.top - 18,
+                  left: navTarget.left - navTarget.width / 2,
+                  // After 2 seconds, moves smoothly upwards
+                  y: isTopLeftPMovingUp ? -60 : 0,
+                  opacity: isTopLeftPMovingUp ? 0 : 1,
+                }}
+                exit={{
+                  y: -60,
+                  opacity: 0,
+                  transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                }}
+                transition={{
+                  duration: 0.7,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                className="z-40 pointer-events-none flex items-center select-none"
+              >
+                <span className="font-sans font-black tracking-tight text-3xl sm:text-4xl text-white leading-none drop-shadow-lg">
+                  P
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ==================================================== */}
-          {/* 2. "PAYENT" WORDMARK (TYPED LETTER-BY-LETTER)         */}
-          {/*    THEN MOVES FROM VIEWPORT CENTER -> NAVBAR LEFT    */}
+          {/* 2. "PAYENT" TYPED IN THE MIDDLE (CENTER)             */}
+          {/*    THEN MOVES FROM MIDDLE -> LEFT SIDE AS HOME LANDS */}
           {/* ==================================================== */}
-          {showTypingWord && (
+          {showCenterWord && (
             <motion.div
               initial={{
                 position: "fixed",
                 top: "50%",
                 left: "50%",
                 x: "-50%",
-                y: "calc(-50% + 24px)",
+                y: "-50%",
                 scale: 1,
                 opacity: 1,
               }}
               animate={
-                isMovingLeft
+                isMovingToLeft
                   ? {
                       position: "fixed",
                       top: navTarget.top,
                       left: navTarget.left,
                       x: "-50%",
                       y: "-50%",
-                      // Scales proportionally to match the exact navbar logo size (~20px text)
+                      // Scales proportionally to match navbar logo size
                       scale: typeof window !== "undefined" && window.innerWidth < 640 ? 0.42 : 0.48,
                       opacity: 1,
                     }
@@ -291,40 +291,40 @@ export function AppPreloader({
                       top: "50%",
                       left: "50%",
                       x: "-50%",
-                      y: "calc(-50% + 24px)",
+                      y: "-50%",
                       scale: 1,
                       opacity: 1,
                     }
               }
               transition={
-                isMovingLeft
+                isMovingToLeft
                   ? {
                       duration: 1.0,
                       ease: [0.22, 1, 0.36, 1],
                     }
                   : {
-                      duration: 0.4,
+                      duration: 0.35,
                       ease: [0.22, 1, 0.36, 1],
                     }
               }
               className="z-50 pointer-events-none flex items-center justify-center select-none origin-center"
               style={{ willChange: "transform, top, left" }}
             >
-              {/* Reserved fixed wordmark container ensures zero layout shift while letters appear */}
-              <div className="inline-flex items-center justify-center font-sans font-black tracking-tight text-4xl sm:text-5xl md:text-6xl text-white leading-none">
+              {/* Reserved fixed word width prevents horizontal shift as letters are typed */}
+              <div className="inline-flex items-center justify-center font-sans font-black tracking-tight text-4xl sm:text-6xl md:text-7xl text-white leading-none drop-shadow-2xl">
                 {LETTERS.map((char, index) => {
                   const isCharVisible = index < typedCount;
                   return (
                     <motion.span
                       key={index}
-                      initial={{ opacity: 0, scale: 0.94, filter: "blur(4px)" }}
+                      initial={{ opacity: 0, scale: 0.92, filter: "blur(4px)" }}
                       animate={{
                         opacity: isCharVisible ? 1 : 0,
-                        scale: isCharVisible ? 1 : 0.94,
+                        scale: isCharVisible ? 1 : 0.92,
                         filter: isCharVisible ? "blur(0px)" : "blur(4px)",
                       }}
                       transition={{
-                        duration: 0.24,
+                        duration: 0.22,
                         ease: [0.22, 1, 0.36, 1],
                       }}
                       className="inline-block"
