@@ -27,7 +27,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { authService } from "../../services/auth";
 import { notificationsService } from "../../services/notifications";
-import { LogoIcon } from "@/components/common/LogoIcon";
 
 const menuItems = [
   {
@@ -218,14 +217,13 @@ export function Sidebar() {
       >
         {/* Brand Logo */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-border/40">
-          <Link to="/admin/dashboard" className="flex items-center gap-2.5">
-            <LogoIcon className="h-7 w-7 shrink-0" iconOnly />
+          <Link to="/admin/dashboard" className="flex items-center gap-2">
+            <span className="font-sans font-black tracking-tight text-lg text-foreground">
+              {collapsed ? "P" : "PAYENT"}
+            </span>
             {!collapsed && (
-              <span className="font-display font-extrabold text-sm tracking-tight text-foreground">
-                Payent{" "}
-                <span className="text-[10px] font-semibold text-foreground px-1.5 py-0.5 bg-secondary border border-border rounded">
-                  Admin
-                </span>
+              <span className="text-[10px] font-semibold text-foreground px-1.5 py-0.5 bg-secondary border border-border rounded">
+                Admin
               </span>
             )}
           </Link>

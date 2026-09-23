@@ -15,7 +15,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { LogoIcon } from "@/components/common/LogoIcon";
 import { authService } from "../services/auth";
 import { toast } from "sonner";
 
@@ -132,7 +131,12 @@ export default function Login() {
         <div className="glass bg-card/65 rounded-3xl p-8 shadow-2xl border border-border/80 relative space-y-6">
           {/* Logo & Header */}
           <div className="flex flex-col items-center text-center">
-            <LogoIcon className="h-14 w-14 mb-3 drop-shadow-[0_4px_20px_rgba(16,185,129,0.3)]" iconOnly />
+            <span className="font-sans font-black tracking-tight text-3xl text-foreground mb-2">
+              PAYENT
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-primary px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 mb-3">
+              Admin Portal
+            </span>
             <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
               {mode === "login" ? "Welcome Back" : "Register Admin Account"}
             </h1>
