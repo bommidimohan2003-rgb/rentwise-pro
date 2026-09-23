@@ -17,7 +17,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
-import { useIconVShape } from "./UniversalIconVShapeTransition";
+import { useOriginReveal } from "./OriginRevealTransition";
 
 export interface Navigation4Item {
   id: string;
@@ -49,14 +49,14 @@ function Nav4DockItem({
 }: Navigation4ItemProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const { triggerIconVTransition, registerIconRef } = useIconVShape();
+  const { triggerOriginTransition, registerOriginRef } = useOriginReveal();
 
   useEffect(() => {
     if (ref.current) {
-      registerIconRef(item.id, ref.current);
+      registerOriginRef(item.id, ref.current);
     }
-    return () => registerIconRef(item.id, null);
-  }, [item.id, registerIconRef]);
+    return () => registerOriginRef(item.id, null);
+  }, [item.id, registerOriginRef]);
 
   const mouseDistance = useTransform(mouseX, (val: number) => {
     const rect = ref.current?.getBoundingClientRect() ?? {
@@ -75,7 +75,7 @@ function Nav4DockItem({
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (ref.current) {
-      triggerIconVTransition(item.id, ref.current);
+      triggerOriginTransition(item.id, ref.current);
     }
     item.onClick?.();
   };
@@ -88,8 +88,8 @@ function Nav4DockItem({
           width: size,
           height: size,
         }}
-        whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 25 } }}
-        whileTap={{ scale: 0.82, y: -6, transition: { type: "spring", stiffness: 500, damping: 20 } }}
+        whileHover={{ y: -2, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+        whileTap={{ scale: 0.96, transition: { duration: 0.12, ease: "easeOut" } }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onFocus={() => setIsHovered(true)}

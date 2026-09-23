@@ -174,10 +174,9 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 import {
-  UniversalIconVShapeProvider,
-  IconVShapeOverlay,
-  IconVShapePageReveal,
-} from "@/components/navigation/UniversalIconVShapeTransition";
+  OriginRevealProvider,
+  OriginRevealPageTransition,
+} from "@/components/navigation/OriginRevealTransition";
 
 function RootContent() {
   const [showChatbot, setShowChatbot] = useState(false);
@@ -190,12 +189,10 @@ function RootContent() {
     <>
       <AppPreloader />
       <Navigation4 />
-      {/* Universal Icon-to-V Full-Screen Expansion Overlay */}
-      <IconVShapeOverlay />
-      {/* V-Shape Viewport-Fitted Page Reveal */}
-      <IconVShapePageReveal>
+      {/* Origin-Based Expanding Reveal Page Transition */}
+      <OriginRevealPageTransition>
         <Outlet />
-      </IconVShapePageReveal>
+      </OriginRevealPageTransition>
 
       <CartDrawer />
       {showChatbot && <HelpChatbot />}
@@ -320,9 +317,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
-        <UniversalIconVShapeProvider>
+        <OriginRevealProvider>
           <RootContent />
-        </UniversalIconVShapeProvider>
+        </OriginRevealProvider>
       </CartProvider>
     </QueryClientProvider>
   );

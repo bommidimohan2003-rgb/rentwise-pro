@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { LogoIcon } from "@/components/common/LogoIcon";
+import { useOriginReveal } from "@/components/navigation/OriginRevealTransition";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -12,6 +13,7 @@ export function Navbar() {
   const { user } = useAuth();
   const { theme, toggle } = useTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { triggerOriginTransition, registerOriginRef } = useOriginReveal();
 
   useEffect(() => {
     setMounted(true);
@@ -22,6 +24,11 @@ export function Navbar() {
   }, []);
 
   const isHome = pathname === "/";
+
+  const handleThemeClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    triggerOriginTransition("theme", e.currentTarget);
+    toggle();
+  };
 
   return (
     <header
@@ -39,7 +46,9 @@ export function Navbar() {
         {/* Left: Brand Identity Logo */}
         <Link
           to="/"
-          className="flex items-center gap-3 shrink-0 focus:outline-none group select-none py-1"
+          ref={(el) => registerOriginRef("home-logo", el as HTMLElement | null)}
+          onClick={(e) => triggerOriginTransition("home", e.currentTarget)}
+          className="flex items-center gap-3 shrink-0 focus:outline-none group select-none py-1 transition-transform active:scale-96"
           id="nav-logo"
           aria-label="Payent Home"
         >
@@ -51,11 +60,12 @@ export function Navbar() {
           {/* Theme Toggle Button matching Dock Container Icon Style */}
           {mounted && (
             <button
+              ref={(el) => registerOriginRef("theme", el)}
               type="button"
-              onClick={toggle}
+              onClick={handleThemeClick}
               aria-label="Toggle Color Theme"
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-700 hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-white border border-black/5 dark:border-white/10 flex items-center justify-center transition-all cursor-pointer shrink-0"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-700 hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-white border border-black/5 dark:border-white/10 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-96"
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4 sm:h-[17px] sm:w-[17px] stroke-[1.6]" />
@@ -68,8 +78,10 @@ export function Navbar() {
           {mounted && user ? (
             <Link
               to="/profile"
+              ref={(el) => registerOriginRef("profile", el as HTMLElement | null)}
+              onClick={(e) => triggerOriginTransition("profile", e.currentTarget)}
               id="nav-profile-avatar"
-              className="flex items-center gap-2 p-1.5 pl-2 pr-3 sm:pr-4 rounded-xl border border-black/10 dark:border-white/15 bg-white/80 dark:bg-[#0D151D]/80 hover:border-black/20 dark:hover:border-white/30 shadow-xs hover:shadow-sm transition-all"
+              className="flex items-center gap-2 p-1.5 pl-2 pr-3 sm:pr-4 rounded-xl border border-black/10 dark:border-white/15 bg-white/80 dark:bg-[#0D151D]/80 hover:border-black/20 dark:hover:border-white/30 shadow-xs hover:shadow-sm transition-all active:scale-96"
             >
               <img
                 src={
@@ -89,7 +101,9 @@ export function Navbar() {
               <Link
                 to="/login"
                 id="nav-login-btn"
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer"
+                ref={(el) => registerOriginRef("login", el as HTMLElement | null)}
+                onClick={(e) => triggerOriginTransition("login", e.currentTarget)}
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer active:scale-96"
               >
                 Log in
               </Link>
@@ -97,7 +111,9 @@ export function Navbar() {
               <Link
                 to="/register"
                 id="nav-signup-btn"
-                className="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-2 text-xs sm:text-sm font-bold text-white bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-100 rounded-xl shadow-xs hover:shadow active:scale-95 transition-all cursor-pointer"
+                ref={(el) => registerOriginRef("register", el as HTMLElement | null)}
+                onClick={(e) => triggerOriginTransition("register", e.currentTarget)}
+                className="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-2 text-xs sm:text-sm font-bold text-white bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-100 rounded-xl shadow-xs hover:shadow active:scale-96 transition-all cursor-pointer"
               >
                 <span>Sign up</span>
                 <ArrowRight className="h-3.5 w-3.5" />
