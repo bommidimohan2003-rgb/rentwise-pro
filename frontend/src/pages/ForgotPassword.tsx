@@ -4,7 +4,7 @@ import { ForgotPassword as Form } from "@/components/auth/ForgotPassword";
 
 export default function ForgotPassword() {
   const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
+  const queryParams = new URLSearchParams(location.search as any);
   const token = queryParams.get("token");
 
   const title = token ? "Create New Password" : "Reset Password";

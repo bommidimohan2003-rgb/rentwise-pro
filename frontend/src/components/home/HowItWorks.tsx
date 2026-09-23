@@ -66,7 +66,7 @@ const tabItemVariants = {
     y: 0,
     transition: {
       duration: 0.4,
-      ease: [0.22, 1, 0.36, 1],
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
     },
   },
 };
@@ -94,7 +94,7 @@ export function HowItWorks() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-neutral-50/70 dark:bg-[#05090D] py-8 sm:py-10 border-b border-black/10 dark:border-white/10 text-neutral-900 dark:text-white transition-colors duration-300">
+    <section className="relative overflow-hidden bg-neutral-50/70 dark:bg-[#05090D] py-8 sm:py-10 text-neutral-900 dark:text-white transition-colors duration-300">
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         {/* Section Header with grouped Learn More link */}

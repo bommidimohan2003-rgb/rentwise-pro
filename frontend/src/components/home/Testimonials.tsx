@@ -29,7 +29,7 @@ export function Testimonials() {
   };
 
   return (
-    <section className="bg-white dark:bg-[#05090D] py-14 sm:py-18 text-neutral-900 dark:text-white border-b border-black/10 dark:border-white/10 transition-colors duration-300">
+    <section className="bg-white dark:bg-[#05090D] py-14 sm:py-18 text-neutral-900 dark:text-white transition-colors duration-300">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">

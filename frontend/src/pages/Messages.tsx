@@ -809,7 +809,7 @@ export default function Messages() {
                             {c.counterparty?.name || "Lender"}
                           </span>
                           <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
-                            {formatTimeAgo(c.lastMessageAt || c.updated_at)}
+                            {formatTimeAgo(c.lastMessageAt || c.updatedAt || (c as any).updated_at)}
                           </span>
                         </div>
 
@@ -975,9 +975,9 @@ export default function Messages() {
                     <div className="flex items-center gap-2 text-foreground font-semibold">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                       <span>Delivery in Progress: {deliveryBadge.label}</span>
-                      {activeConversation.deliveryEta && (
+                      {(activeConversation as any).deliveryEta && (
                         <span className="text-muted-foreground font-normal">
-                          • ETA ~{activeConversation.deliveryEta}
+                          • ETA ~{(activeConversation as any).deliveryEta}
                         </span>
                       )}
                     </div>

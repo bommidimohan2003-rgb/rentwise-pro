@@ -256,7 +256,7 @@ export default function Checkout() {
     setTimeout(() => {
       setUpiVerifying(false);
       setUpiVerified(true);
-      toast.success(`UPI ID verified for ${user?.name || "Account Holder"}.`);
+      toast.success(`UPI ID verified for ${user?.fullName || "Account Holder"}.`);
     }, 1200);
   };
 
@@ -674,7 +674,7 @@ export default function Checkout() {
                       {upiVerified && (
                         <div className="flex items-center gap-2 p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-semibold">
                           <Check className="h-4 w-4 shrink-0" /> Associated
-                          Account: {user?.name || "Verified Account"}
+                          Account: {user?.fullName || "Verified Account"}
                         </div>
                       )}
 

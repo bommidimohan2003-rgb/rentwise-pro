@@ -125,7 +125,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-12 sm:pt-16 lg:pt-20 pb-12 lg:pb-16 border-b border-black/10 dark:border-white/10 transition-colors duration-300">
+    <section className="relative overflow-hidden bg-neutral-50/60 dark:bg-[#05090D] text-neutral-900 dark:text-white pt-12 sm:pt-16 lg:pt-20 pb-12 lg:pb-16 transition-colors duration-300">
       {/* Ambient background glow matching dark cinematic reference */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] bg-gradient-to-b from-neutral-200/40 via-neutral-100/10 to-transparent dark:from-[#0B1522] dark:via-[#071017] dark:to-transparent rounded-full blur-[160px] pointer-events-none opacity-60" />
       <div className="absolute top-28 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-primary/5 dark:bg-white/5 rounded-full blur-[120px] pointer-events-none" />
@@ -135,11 +135,11 @@ export function Hero() {
         <AnimatePresence mode="wait">
           <motion.div
             key={activeGear.id}
-            initial={{ opacity: 0, scale: 1.03 }}
+            initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
+            exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="absolute inset-0 w-full h-full flex items-center justify-center"
+            className="absolute inset-0 w-full h-full"
           >
             <img
               src={activeGear.image}
@@ -147,9 +147,7 @@ export function Hero() {
               fetchPriority="high"
               loading="eager"
               decoding="async"
-              width={800}
-              height={600}
-              className="w-full h-full object-cover sm:object-contain lg:object-cover opacity-85 sm:opacity-90 dark:opacity-60 filter contrast-125 saturate-135 brightness-[0.95] dark:brightness-95 drop-shadow-[0_15px_35px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_20px_40px_rgba(0,0,0,0.6)] transition-all pointer-events-none"
+              className="w-full h-full object-cover object-center opacity-90 dark:opacity-65 filter contrast-110 saturate-120 brightness-[0.95] dark:brightness-90 transition-all pointer-events-none"
             />
           </motion.div>
         </AnimatePresence>
@@ -157,10 +155,11 @@ export function Hero() {
         {/* Soft center ambient backlight glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-primary/5 dark:bg-white/10 rounded-full blur-[160px] pointer-events-none" />
 
-        {/* Subtle radial and vertical scrims ensuring text readability */}
-        <div className="absolute inset-0 bg-radial from-white/40 via-white/10 to-transparent dark:from-[#05090D]/75 dark:via-[#05090D]/40 dark:to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-neutral-50/90 dark:from-[#05090D] via-neutral-50/40 dark:via-[#05090D]/80 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/20 via-black/5 to-transparent dark:from-black/40 dark:via-black/10 dark:to-transparent pointer-events-none" />
+        {/* Seamless full-screen vignettes and edge fades */}
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-50/95 via-transparent to-neutral-50/95 dark:from-[#05090D] dark:via-transparent dark:to-[#05090D] pointer-events-none" />
+        <div className="absolute inset-0 bg-radial from-white/30 via-white/10 to-transparent dark:from-[#05090D]/60 dark:via-[#05090D]/30 dark:to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-neutral-50 dark:from-[#05090D] via-neutral-50/60 dark:via-[#05090D]/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-neutral-50/80 dark:from-[#05090D]/90 via-transparent to-transparent pointer-events-none" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-8 sm:pb-14">

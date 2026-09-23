@@ -146,7 +146,7 @@ export default function About() {
   return (
     <MainLayout>
       {/* 1. ABOUT HERO (Section 29) */}
-      <section className="relative overflow-hidden bg-neutral-50/70 dark:bg-[#05090D] border-b border-black/10 dark:border-white/10 pt-16 pb-20 sm:pt-24 sm:pb-28 transition-colors duration-300">
+      <section className="relative overflow-hidden bg-neutral-50/70 dark:bg-[#05090D] pt-16 pb-20 sm:pt-24 sm:pb-28 transition-colors duration-300">
         {/* Ambient background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[450px] bg-gradient-to-b from-neutral-200/40 via-neutral-100/10 to-transparent dark:from-[#0B1522] dark:via-[#071017] dark:to-transparent rounded-full blur-[160px] pointer-events-none" />
 
@@ -303,7 +303,7 @@ export default function About() {
       </section>
 
       {/* 2. OUR STORY (Section 30) */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28 border-b border-black/10 dark:border-white/10">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           <div className="lg:col-span-4">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">
@@ -370,7 +370,7 @@ export default function About() {
       </section>
 
       {/* 3. OUR MISSION (Section 31) */}
-      <section className="bg-neutral-100/60 dark:bg-[#071017] border-b border-black/10 dark:border-white/10 py-20 sm:py-28 transition-colors">
+      <section className="bg-neutral-100/60 dark:bg-[#071017] py-20 sm:py-28 transition-colors">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center mb-4">
             <span className="h-0.5 w-8 bg-primary rounded-full" />
@@ -390,7 +390,7 @@ export default function About() {
       </section>
 
       {/* 4. CREATOR AUDIENCE (Section 32) */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28 border-b border-black/10 dark:border-white/10">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <div className="max-w-2xl">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">
             Who It Is For
@@ -430,7 +430,7 @@ export default function About() {
       </section>
 
       {/* 5. HOW PAYENT WORKS (Section 33) */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28 border-b border-black/10 dark:border-white/10">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <div className="text-center max-w-2xl mx-auto">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">
             The Rental Journey
@@ -466,7 +466,7 @@ export default function About() {
       </section>
 
       {/* 6. TRUST & SAFETY (Section 34) */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28 border-b border-black/10 dark:border-white/10">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <div className="max-w-2xl">
           <span className="text-xs font-bold uppercase tracking-widest text-primary">
             Platform Security
@@ -504,7 +504,7 @@ export default function About() {
       </section>
 
       {/* 7. REAL COMMUNITY STATS (Section 35) */}
-      <section className="bg-neutral-100/60 dark:bg-[#071017] border-b border-black/10 dark:border-white/10 py-16 sm:py-20 transition-colors">
+      <section className="bg-neutral-100/60 dark:bg-[#071017] py-16 sm:py-20 transition-colors">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">
@@ -593,7 +593,7 @@ export default function About() {
       </section>
 
       {/* 8. LENDER CTA (Section 36) */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-24 border-b border-black/10 dark:border-white/10">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
         <div className="rounded-3xl bg-[#161616] text-white dark:bg-[#0D151D] border border-white/10 p-8 sm:p-12 lg:p-16 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="max-w-xl">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">

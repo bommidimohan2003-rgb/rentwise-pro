@@ -216,7 +216,7 @@ export default function Login() {
                     href="/forgot-password"
                     onClick={(e) => {
                       e.preventDefault();
-                      navigate({ to: "/forgot-password" });
+                      navigate({ to: "/forgot-password", search: { token: "" } as any });
                     }}
                     className="text-xs font-bold text-primary hover:underline cursor-pointer"
                   >

@@ -10,9 +10,13 @@ export interface AdminUser {
   email: string;
   phone: string;
   role: "admin" | "agent" | "user";
-  status: "active" | "suspended" | "pending" | "rejected";
+  status: "active" | "suspended" | "pending" | "rejected" | "approved";
   verified: boolean;
   avatar: string;
+  profilePhotoUrl?: string;
+  address?: string;
+  city?: string;
+  pincode?: string;
   createdAt: string;
 }
 

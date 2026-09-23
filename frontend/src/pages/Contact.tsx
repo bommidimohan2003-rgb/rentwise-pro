@@ -124,7 +124,7 @@ export default function Contact() {
   return (
     <MainLayout>
       {/* 1. CONTACT HERO (Section 39) */}
-      <section className="relative overflow-hidden bg-neutral-50/70 dark:bg-[#05090D] border-b border-black/10 dark:border-white/10 pt-16 pb-16 sm:pt-20 sm:pb-24 transition-colors duration-300">
+      <section className="relative overflow-hidden bg-neutral-50/70 dark:bg-[#05090D] pt-16 pb-16 sm:pt-20 sm:pb-24 transition-colors duration-300">
         {/* Ambient background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-b from-neutral-200/30 dark:from-[#0B1522] to-transparent rounded-full blur-[140px] pointer-events-none" />
 

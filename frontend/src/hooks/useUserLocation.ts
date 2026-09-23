@@ -19,21 +19,25 @@ function cleanCityName(raw: string): string {
 
 export function useUserLocation() {
   const { user } = useAuth();
-  const [city, setCityState] = useState<string>(() => {
-    if (typeof window === "undefined") return "Location unavailable";
-    // 1. Check logged-in user profile
-    if (user?.city) return cleanCityName(user.city);
-    // 2. Check cached previously detected city
-    const cached = localStorage.getItem(STORAGE_KEY);
-    if (cached && cached !== "All Cities" && cached !== "Hyderabad") return cached;
-    return "Location unavailable";
-  });
-
+  const [city, setCityState] = useState<string>("Location unavailable");
   const [isDetecting, setIsDetecting] = useState<boolean>(false);
-  const [isAutoDetected, setIsAutoDetected] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(AUTO_DETECTED_KEY) === "true";
-  });
+  const [isAutoDetected, setIsAutoDetected] = useState<boolean>(false);
+
+  useEffect(() => {
+    // 1. Check logged-in user profile
+    if (user?.city) {
+      setCityState(cleanCityName(user.city));
+      return;
+    }
+    // 2. Check cached previously detected city
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (cached && cached !== "All Cities" && cached !== "Hyderabad") {
+        setCityState(cached);
+      }
+      setIsAutoDetected(localStorage.getItem(AUTO_DETECTED_KEY) === "true");
+    }
+  }, [user?.city]);
 
   const hasAutoAttempted = useRef<boolean>(false);
 

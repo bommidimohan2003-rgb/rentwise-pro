@@ -29,7 +29,7 @@ export function ForgotPassword() {
   const location = useLocation();
 
   // Extract token from query search params (?token=XYZ) if opened via direct authorized link
-  const queryParams = new URLSearchParams(location.search);
+  const queryParams = new URLSearchParams(location.search as any);
   const rawUrlToken = queryParams.get("token")?.trim() || "";
 
   // State Machine
@@ -54,7 +54,7 @@ export function ForgotPassword() {
 
   // Synchronize and validate URL token on mount or param change
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
+    const params = new URLSearchParams(location.search as any);
     const urlToken = params.get("token")?.trim() || "";
     if (urlToken) {
       setRecoveryToken(urlToken);

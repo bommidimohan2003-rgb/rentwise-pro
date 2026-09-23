@@ -40,7 +40,7 @@ import { toast } from "sonner";
 import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
 import { CameraPhotoModal } from "@/components/profile/CameraPhotoModal";
-import type { UserProfileStats } from "@/types";
+import type { User, UserProfileStats } from "@/types";
 import { cn } from "@/lib/utils";
 
 export default function Profile() {

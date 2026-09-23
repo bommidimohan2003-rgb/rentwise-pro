@@ -32,7 +32,7 @@ export default function Cart() {
         search: { id: cartItems[0].product_id },
       });
     } else {
-      navigate({ to: "/checkout" });
+      navigate({ to: "/checkout", search: { id: "" } });
     }
   };
 

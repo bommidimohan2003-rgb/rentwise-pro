@@ -1,19 +1,5 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import {
-  Camera,
-  Film,
-  Laptop,
-  Monitor,
-  Plane,
-  Navigation,
-  Headphones,
-  Mic2,
-  Sun,
-  Projector,
-  Gamepad2,
-  Glasses,
-} from "lucide-react";
 import { PayentLogoMark } from "@/components/common/LogoIcon";
 
 interface AppPreloaderProps {
@@ -21,13 +7,14 @@ interface AppPreloaderProps {
   forceShow?: boolean;
 }
 
-type PreloaderStage =
+type PreloaderPhase =
   | "black"
-  | "entry"
-  | "converge"
-  | "transform"
-  | "wordmark"
-  | "exit";
+  | "p-intro"
+  | "p-hold"
+  | "wordmark-reveal"
+  | "brand-hold"
+  | "move-left-reveal"
+  | "complete";
 
 export function AppPreloader({
   onComplete,
@@ -35,8 +22,11 @@ export function AppPreloader({
 }: AppPreloaderProps) {
   const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [phase, setPhase] = useState<PreloaderPhase>("black");
   const shouldReduceMotion = useReducedMotion();
-  const [stage, setStage] = useState<PreloaderStage>("black");
+
+  // Target coordinates for navbar logo
+  const [navTarget, setNavTarget] = useState({ top: 16, left: 24, scale: 0.8 });
 
   useEffect(() => {
     setMounted(true);
@@ -56,67 +46,94 @@ export function AppPreloader({
     setIsVisible(true);
   }, [forceShow, onComplete]);
 
+  // Measure actual nav logo position if present in DOM
+  useEffect(() => {
+    if (!isVisible) return;
+    const calculateNavPos = () => {
+      const navEl = document.getElementById("nav-logo");
+      if (navEl) {
+        const rect = navEl.getBoundingClientRect();
+        setNavTarget({
+          top: rect.top + rect.height / 2,
+          left: rect.left + rect.width / 2,
+          scale: 0.82,
+        });
+      } else {
+        const isDesktop = window.innerWidth >= 1024;
+        const isTablet = window.innerWidth >= 640;
+        const maxW = 1280;
+        const pad = isDesktop ? 32 : isTablet ? 24 : 16;
+        const leftBase = Math.max(pad, (window.innerWidth - maxW) / 2 + pad);
+        setNavTarget({
+          top: isTablet ? 34 : 32,
+          left: leftBase + 45,
+          scale: 0.82,
+        });
+      }
+    };
+
+    calculateNavPos();
+    window.addEventListener("resize", calculateNavPos);
+    return () => window.removeEventListener("resize", calculateNavPos);
+  }, [isVisible]);
+
+  // Master timeline orchestration
   useEffect(() => {
     if (!isVisible) return;
 
     if (shouldReduceMotion) {
-      // Clean, minimal fade for reduced motion
-      const t1 = setTimeout(() => setStage("wordmark"), 150);
-      const t2 = setTimeout(() => {
+      // Accessible reduced motion path
+      const t1 = setTimeout(() => {
         setIsVisible(false);
         try {
           sessionStorage.setItem("payent:preloaded", "true");
         } catch {}
         if (onComplete) onComplete();
-      }, 750);
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-      };
+      }, 700);
+      return () => clearTimeout(t1);
     }
 
-    // STEP 1 — BLACK START (0.0s - 0.35s)
-    setStage("black");
+    // PHASE 1 — BLACK SCREEN START (0.0s) -> P INTRO (0.15s - 0.75s)
+    const tIntro = setTimeout(() => {
+      setPhase("p-intro");
+    }, 150);
 
-    // STEP 2 — SYMBOL ENTRY FROM 6 DIRECTIONS (0.35s - 1.25s)
-    const tEntry = setTimeout(() => {
-      setStage("entry");
-    }, 350);
+    // PHASE 2 — P HOLD IN TOP-LEFT (0.75s - 1.60s)
+    const tHold = setTimeout(() => {
+      setPhase("p-hold");
+    }, 750);
 
-    // STEP 3 — SMOOTH CONVERGENCE (1.25s - 1.75s)
-    const tConverge = setTimeout(() => {
-      setStage("converge");
-    }, 1250);
-
-    // STEP 4 — TRANSFORMATION INTO GREEN PAYENT LOGO (1.75s - 2.20s)
-    const tTransform = setTimeout(() => {
-      setStage("transform");
-    }, 1750);
-
-    // STEP 5 — FINAL PAYENT GREEN WORDMARK (2.20s - 2.65s)
+    // PHASE 3 — WORDMARK REVEAL IN CENTER (1.60s - 2.45s)
     const tWordmark = setTimeout(() => {
-      setStage("wordmark");
-    }, 2200);
+      setPhase("wordmark-reveal");
+    }, 1600);
 
-    // STEP 6 — SMOOTH APPLICATION REVEAL EXIT (2.65s - 2.95s)
-    const tExit = setTimeout(() => {
-      setStage("exit");
-    }, 2650);
+    // PHASE 4 — BRAND HOLD IN CENTER (2.45s - 3.05s)
+    const tBrandHold = setTimeout(() => {
+      setPhase("brand-hold");
+    }, 2450);
 
+    // PHASE 5 & 6 — PAYENT MOVES LEFT & HOME EMERGES (3.05s - 3.95s)
+    const tMoveLeft = setTimeout(() => {
+      setPhase("move-left-reveal");
+    }, 3050);
+
+    // PHASE 7 — SETTLE & COMPLETE (3.95s - 4.25s)
     const tComplete = setTimeout(() => {
+      setPhase("complete");
       setIsVisible(false);
       try {
         sessionStorage.setItem("payent:preloaded", "true");
       } catch {}
       if (onComplete) onComplete();
-    }, 2950);
+    }, 4000);
 
     return () => {
-      clearTimeout(tEntry);
-      clearTimeout(tConverge);
-      clearTimeout(tTransform);
+      clearTimeout(tIntro);
+      clearTimeout(tHold);
       clearTimeout(tWordmark);
-      clearTimeout(tExit);
+      clearTimeout(tBrandHold);
+      clearTimeout(tMoveLeft);
       clearTimeout(tComplete);
     };
   }, [isVisible, shouldReduceMotion, onComplete]);
@@ -129,15 +146,15 @@ export function AppPreloader({
       <AnimatePresence>
         {isVisible && (
           <motion.div
-            key="payent-preloader-reduced"
+            key="preloader-reduced"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: "easeInOut" }}
-            className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#000000] text-white select-none"
+            className="fixed inset-0 z-[99999] flex items-center justify-center bg-[#000000] text-white select-none pointer-events-none"
           >
-            <div className="flex flex-col items-center justify-center gap-3">
-              <PayentLogoMark className="h-16 w-16" />
-              <span className="text-3xl font-sans font-black tracking-tight text-emerald-400">
+            <div className="flex items-center gap-3">
+              <PayentLogoMark className="h-10 w-10" />
+              <span className="text-2xl font-black tracking-tight text-white">
                 PAYENT
               </span>
             </div>
@@ -147,208 +164,144 @@ export function AppPreloader({
     );
   }
 
-  const isEntry = stage !== "black";
-  const isConverged =
-    stage === "converge" ||
-    stage === "transform" ||
-    stage === "wordmark" ||
-    stage === "exit";
-  const isLogoVisible =
-    stage === "transform" || stage === "wordmark" || stage === "exit";
-  const isWordmarkVisible = stage === "wordmark" || stage === "exit";
+  const isPIntroOrHold = phase === "p-intro" || phase === "p-hold";
+  const isCentered = phase === "wordmark-reveal" || phase === "brand-hold";
+  const isMovingLeft = phase === "move-left-reveal";
 
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          key="payent-preloader"
+          key="payent-master-preloader"
           initial={{ opacity: 1 }}
+          animate={{
+            opacity: isMovingLeft ? 0 : 1,
+          }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
-          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#000000] text-white select-none overflow-hidden"
-          style={{ willChange: "opacity" }}
+          transition={{
+            duration: 0.85,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          className="fixed inset-0 z-[99999] bg-[#000000] text-white select-none overflow-hidden pointer-events-none"
         >
-          {/* Subtle Ambient Emerald Illumination on Brand Reveal */}
+          {/* Subtle Ambient Radial Glow */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: isLogoVisible ? 0.35 : 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] sm:w-[500px] sm:h-[500px] bg-emerald-500/15 rounded-full blur-[110px] pointer-events-none"
-          />
+            animate={{
+              opacity: isCentered ? 0.25 : isPIntroOrHold ? 0.15 : 0,
+            }}
+            transition={{ duration: 0.8 }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          >
+            <div className="w-[600px] h-[600px] bg-emerald-500/15 rounded-full blur-[140px]" />
+          </motion.div>
 
-          {/* Central 6-Direction Stage */}
-          <div className="relative w-72 h-72 sm:w-96 sm:h-96 md:w-[420px] md:h-[420px] flex items-center justify-center">
-            {/* --- 1. TOP-LEFT: Cameras & Cinema --- */}
+          {/* ==================================================== */}
+          {/* 1. TOP-LEFT "P" LOGO (PHASE 1 & 2)                  */}
+          {/* ==================================================== */}
+          <AnimatePresence>
+            {isPIntroOrHold && (
+              <motion.div
+                key="top-left-p"
+                initial={{ opacity: 0, scale: 0.92, filter: "blur(6px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.95,
+                  filter: "blur(4px)",
+                  transition: { duration: 0.35, ease: "easeIn" },
+                }}
+                transition={{
+                  duration: 0.65,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                style={{
+                  position: "absolute",
+                  top: navTarget.top - 18,
+                  left: navTarget.left - 45,
+                }}
+                className="flex items-center gap-2.5 z-20"
+              >
+                <PayentLogoMark className="h-9 w-9 sm:h-10 sm:w-10 shadow-2xl" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ==================================================== */}
+          {/* 2. CENTERED "PAYENT" WORDMARK & MOVE LEFT (PHASE 3-6) */}
+          {/* ==================================================== */}
+          {(isCentered || isMovingLeft) && (
             <motion.div
-              initial={{ x: -160, y: -140, opacity: 0, scale: 0.7 }}
-              animate={{
-                x: isConverged ? 0 : isEntry ? -95 : -160,
-                y: isConverged ? 0 : isEntry ? -85 : -140,
-                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
-                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
+              layoutId="payent-wordmark-transform"
+              initial={{
+                position: "fixed",
+                top: "50%",
+                left: "50%",
+                x: "-50%",
+                y: "-50%",
+                scale: 1,
               }}
+              animate={
+                isMovingLeft
+                  ? {
+                      top: navTarget.top,
+                      left: navTarget.left,
+                      x: "-50%",
+                      y: "-50%",
+                      scale: navTarget.scale,
+                    }
+                  : {
+                      top: "50%",
+                      left: "50%",
+                      x: "-50%",
+                      y: "-50%",
+                      scale: 1,
+                    }
+              }
               transition={{
-                duration: isConverged ? 0.5 : 0.75,
-                ease: [0.16, 1, 0.3, 1],
-                delay: isConverged ? 0 : 0.04,
+                duration: 0.85,
+                ease: [0.22, 1, 0.36, 1],
               }}
-              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
+              className="z-30 flex items-center gap-3.5 sm:gap-4 shrink-0 select-none origin-center"
             >
-              <Camera className="w-4 h-4 text-white" />
-              <Film className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
-                CAMERAS
-              </span>
-            </motion.div>
+              {/* P Logo Mark */}
+              <motion.div
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <PayentLogoMark className="h-11 w-11 sm:h-14 sm:w-14 shadow-2xl" />
+              </motion.div>
 
-            {/* --- 2. TOP-CENTER: Workstations & Laptops --- */}
-            <motion.div
-              initial={{ x: 0, y: -160, opacity: 0, scale: 0.7 }}
-              animate={{
-                x: 0,
-                y: isConverged ? 0 : isEntry ? -115 : -160,
-                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
-                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
-              }}
-              transition={{
-                duration: isConverged ? 0.5 : 0.75,
-                ease: [0.16, 1, 0.3, 1],
-                delay: isConverged ? 0 : 0.08,
-              }}
-              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
-            >
-              <Laptop className="w-4 h-4 text-white" />
-              <Monitor className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
-                STUDIO
-              </span>
+              {/* Progressively revealed "AYENT" letters from the P direction */}
+              <div className="flex items-center overflow-hidden">
+                <motion.span
+                  initial={{
+                    opacity: 0,
+                    x: -18,
+                    filter: "blur(6px)",
+                  }}
+                  animate={{
+                    opacity: 1,
+                    x: 0,
+                    filter: "blur(0px)",
+                  }}
+                  transition={{
+                    duration: 0.7,
+                    delay: 0.1,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className="font-sans font-black tracking-tight text-3xl sm:text-4xl md:text-5xl text-white tracking-wider drop-shadow-md"
+                >
+                  AYENT
+                </motion.span>
+              </div>
             </motion.div>
-
-            {/* --- 3. TOP-RIGHT: Drones & Aerial Capture --- */}
-            <motion.div
-              initial={{ x: 160, y: -140, opacity: 0, scale: 0.7 }}
-              animate={{
-                x: isConverged ? 0 : isEntry ? 95 : 160,
-                y: isConverged ? 0 : isEntry ? -85 : -140,
-                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
-                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
-              }}
-              transition={{
-                duration: isConverged ? 0.5 : 0.75,
-                ease: [0.16, 1, 0.3, 1],
-                delay: isConverged ? 0 : 0.12,
-              }}
-              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
-            >
-              <Plane className="w-4 h-4 text-white" />
-              <Navigation className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
-                DRONES
-              </span>
-            </motion.div>
-
-            {/* --- 4. BOTTOM-LEFT: Audio & Microphones --- */}
-            <motion.div
-              initial={{ x: -160, y: 140, opacity: 0, scale: 0.7 }}
-              animate={{
-                x: isConverged ? 0 : isEntry ? -95 : -160,
-                y: isConverged ? 0 : isEntry ? 85 : 140,
-                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
-                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
-              }}
-              transition={{
-                duration: isConverged ? 0.5 : 0.75,
-                ease: [0.16, 1, 0.3, 1],
-                delay: isConverged ? 0 : 0.16,
-              }}
-              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
-            >
-              <Headphones className="w-4 h-4 text-white" />
-              <Mic2 className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
-                AUDIO
-              </span>
-            </motion.div>
-
-            {/* --- 5. BOTTOM-CENTER: Lighting & Projection --- */}
-            <motion.div
-              initial={{ x: 0, y: 160, opacity: 0, scale: 0.7 }}
-              animate={{
-                x: 0,
-                y: isConverged ? 0 : isEntry ? 115 : 160,
-                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
-                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
-              }}
-              transition={{
-                duration: isConverged ? 0.5 : 0.75,
-                ease: [0.16, 1, 0.3, 1],
-                delay: isConverged ? 0 : 0.2,
-              }}
-              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
-            >
-              <Sun className="w-4 h-4 text-white" />
-              <Projector className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
-                LIGHTING
-              </span>
-            </motion.div>
-
-            {/* --- 6. BOTTOM-RIGHT: VR & Entertainment --- */}
-            <motion.div
-              initial={{ x: 160, y: 140, opacity: 0, scale: 0.7 }}
-              animate={{
-                x: isConverged ? 0 : isEntry ? 95 : 160,
-                y: isConverged ? 0 : isEntry ? 85 : 140,
-                opacity: isLogoVisible ? 0 : isEntry ? 0.95 : 0,
-                scale: isLogoVisible ? 0.2 : isConverged ? 0.6 : 1,
-              }}
-              transition={{
-                duration: isConverged ? 0.5 : 0.75,
-                ease: [0.16, 1, 0.3, 1],
-                delay: isConverged ? 0 : 0.24,
-              }}
-              className="absolute flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/20 backdrop-blur-md text-white shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
-            >
-              <Gamepad2 className="w-4 h-4 text-white" />
-              <Glasses className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-[10px] font-mono font-medium tracking-wider text-white">
-                VR GEAR
-              </span>
-            </motion.div>
-
-            {/* --- CENTER TRANSFORMATION: Canonical Green PAYENT Logo --- */}
-            <motion.div
-              initial={{ scale: 0, opacity: 0, rotate: -20 }}
-              animate={{
-                scale: isLogoVisible ? 1 : 0,
-                opacity: isLogoVisible ? 1 : 0,
-                rotate: isLogoVisible ? 0 : -20,
-              }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-20 flex items-center justify-center drop-shadow-[0_0_30px_rgba(16,185,129,0.7)]"
-            >
-              <PayentLogoMark className="h-16 w-16 sm:h-20 sm:w-20" />
-            </motion.div>
-          </div>
-
-          {/* --- FINAL BRAND WORDMARK: Centered Green PAYENT Wordmark --- */}
-          <div className="h-12 flex items-center justify-center -mt-2">
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{
-                opacity: isWordmarkVisible ? 1 : 0,
-                y: isWordmarkVisible ? 0 : 8,
-              }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="flex items-center justify-center"
-            >
-              <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-emerald-400 drop-shadow-[0_2px_16px_rgba(16,185,129,0.5)]">
-                PAYENT
-              </span>
-            </motion.div>
-          </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
   );
 }
+
+export default AppPreloader;

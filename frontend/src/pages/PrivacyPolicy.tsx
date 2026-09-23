@@ -53,7 +53,7 @@ export function PrivacyPolicy() {
           </section>
 
           {/* Section 2 */}
-          <section className="space-y-3 border-t border-border/80 pt-6">
+          <section className="space-y-3 pt-4">
             <div className="flex items-center gap-3 text-lg font-bold">
               <div className="p-2 rounded-xl bg-primary/10 text-primary">
                 <Database className="h-5 w-5" />
@@ -88,7 +88,7 @@ export function PrivacyPolicy() {
           </section>
 
           {/* Section 3 */}
-          <section className="space-y-3 border-t border-border/80 pt-6">
+          <section className="space-y-3 pt-4">
             <div className="flex items-center gap-3 text-lg font-bold">
               <div className="p-2 rounded-xl bg-primary/10 text-primary">
                 <Lock className="h-5 w-5" />
@@ -105,7 +105,7 @@ export function PrivacyPolicy() {
           </section>
 
           {/* Section 4 */}
-          <section className="space-y-3 border-t border-border/80 pt-6">
+          <section className="space-y-3 pt-4">
             <div className="flex items-center gap-3 text-lg font-bold">
               <div className="p-2 rounded-xl bg-primary/10 text-primary">
                 <UserCheck className="h-5 w-5" />

@@ -162,7 +162,7 @@ export function LoginForm() {
         </label>
         <button
           type="button"
-          onClick={() => navigate({ to: "/forgot-password" })}
+          onClick={() => navigate({ to: "/forgot-password", search: { token: "" } as any })}
           className="text-foreground hover:underline font-bold text-xs cursor-pointer"
         >
           Forgot password?

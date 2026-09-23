@@ -24,6 +24,8 @@ import {
   Tag,
   Filter,
   LayoutGrid,
+  Heart,
+  MessageSquare,
 } from "lucide-react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { ProductCard } from "@/components/common/ProductCard";
@@ -38,6 +40,8 @@ import { storage } from "@/utils/storage";
 import { api } from "@/utils/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserLocation } from "@/hooks/useUserLocation";
+import { useWishlist } from "@/hooks/useWishlist";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { PayentLogoMark } from "@/components/common/LogoIcon";
 
 type SortOption = "featured" | "newest" | "price_asc" | "price_desc" | "rating";
@@ -196,6 +200,9 @@ export default function Categories() {
 
   const sortRef = useRef<HTMLDivElement>(null);
 
+  const { wishlistCount } = useWishlist();
+  const { unreadCount } = useUnreadMessages();
+
   // User location detection (Informational badge & sort prioritization only)
   const {
     city: detectedCity,
@@ -219,6 +226,57 @@ export default function Categories() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Typewriter effect for search placeholder with gear product names
+  const SEARCH_SUGGESTIONS = useMemo(
+    () => [
+      "Sony FX3 Cinema Camera...",
+      "DJI Mavic 3 Pro Drone...",
+      "MacBook Pro M3 Max...",
+      "Canon EOS R5 C...",
+      "Sony FE 24-70mm f/2.8...",
+      "Aputure 300d II Light...",
+      "RODE Wireless PRO...",
+      "GoPro HERO12 Black...",
+    ],
+    [],
+  );
+
+  const [typedPlaceholder, setTypedPlaceholder] = useState("Search gear...");
+
+  useEffect(() => {
+    let itemIdx = 0;
+    let charIdx = 0;
+    let isDeleting = false;
+    let timer: NodeJS.Timeout;
+
+    const tick = () => {
+      const currentWord = SEARCH_SUGGESTIONS[itemIdx] || "Search gear...";
+      if (isDeleting) {
+        setTypedPlaceholder(`Search "${currentWord.slice(0, charIdx)}"`);
+        charIdx--;
+        if (charIdx < 0) {
+          isDeleting = false;
+          itemIdx = (itemIdx + 1) % SEARCH_SUGGESTIONS.length;
+          timer = setTimeout(tick, 400);
+          return;
+        }
+        timer = setTimeout(tick, 35);
+      } else {
+        setTypedPlaceholder(`Search "${currentWord.slice(0, charIdx)}"`);
+        charIdx++;
+        if (charIdx > currentWord.length) {
+          isDeleting = true;
+          timer = setTimeout(tick, 2000);
+          return;
+        }
+        timer = setTimeout(tick, 65);
+      }
+    };
+
+    timer = setTimeout(tick, 500);
+    return () => clearTimeout(timer);
+  }, [SEARCH_SUGGESTIONS]);
 
   // Sync search URL query with local state
   useEffect(() => {
@@ -324,9 +382,9 @@ export default function Categories() {
       return;
     }
     const timer = setTimeout(() => {
-      searchWithML(q.trim(), allProductsList).then((res) => {
-        if (res.products && res.products.length > 0) {
-          setMlResults(res.products);
+      searchWithML(allProductsList, q.trim()).then((res) => {
+        if (res.results && res.results.length > 0) {
+          setMlResults(res.results);
           setDidYouMean(res.didYouMean || null);
         } else {
           setMlResults(null);
@@ -342,7 +400,7 @@ export default function Categories() {
     e.preventDefault();
     navigate({
       to: "/browse",
-      search: (prev: Record<string, unknown>) => ({
+      search: (prev: any) => ({
         ...prev,
         q: q.trim() || undefined,
       }),
@@ -353,7 +411,7 @@ export default function Categories() {
   const handleCategorySelect = (catId: string) => {
     navigate({
       to: "/browse",
-      search: (prev: Record<string, unknown>) => ({
+      search: (prev: any) => ({
         ...prev,
         cat: catId === "all" ? undefined : catId,
       }),
@@ -368,7 +426,7 @@ export default function Categories() {
     setSelectedBrands(nextBrands);
     navigate({
       to: "/browse",
-      search: (prev: Record<string, unknown>) => ({
+      search: (prev: any) => ({
         ...prev,
         brand: nextBrands.length > 0 ? nextBrands.join(",") : undefined,
       }),
@@ -549,7 +607,7 @@ export default function Categories() {
 
     if (liveCategories.length > 0) {
       liveCategories.forEach((cat) => {
-        const catSlug = (cat.slug || cat.name || cat.id || "").toLowerCase();
+        const catSlug = ((cat as any).slug || cat.name || cat.id || "").toLowerCase();
         const matchingCount = allProductsList.filter((p) =>
           matchCategory(p.category, catSlug) ||
           matchCategory(p.category, cat.id) ||
@@ -610,218 +668,98 @@ export default function Categories() {
 
   return (
     <MainLayout>
-      {/* 1. BROWSE HERO (2-COLUMN BALANCED EDITORIAL COMPOSITION) */}
-      <section className="relative overflow-hidden bg-neutral-50/70 dark:bg-[#05090D] border-b border-black/10 dark:border-white/10 pt-10 pb-8 sm:pt-14 sm:pb-12 transition-colors duration-300">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-gradient-to-b from-neutral-200/30 dark:from-[#0B1522] to-transparent rounded-full blur-[140px] pointer-events-none" />
-
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left Column: Headline & Search */}
-            <div className="lg:col-span-7">
-              {/* Eyebrow */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-xs font-semibold text-neutral-600 dark:text-[#AAB3BC]">
-                  Explore verified creator gear
-                </span>
-              </div>
-
-              {/* Main Headline */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-neutral-950 dark:text-white leading-[1.1]">
-                Find the gear <br />
-                <span className="underline decoration-neutral-400 dark:decoration-neutral-600 underline-offset-8">
-                  behind your next story.
-                </span>
-              </h1>
-
-              {/* Supporting Text */}
-              <p className="mt-4 text-sm sm:text-base text-neutral-600 dark:text-[#AAB3BC] leading-relaxed max-w-xl">
-                Discover professional cinema cameras, aerial drones, studio workstations, sound systems, and production lighting with verified real-time gear availability.
-              </p>
-
-              {/* Rebalanced Search Bar */}
-              <div className="mt-7">
-                <form
-                  onSubmit={handleSearchSubmit}
-                  className="p-1.5 sm:p-2 rounded-2xl sm:rounded-full bg-white dark:bg-[#0D151D] border border-black/10 dark:border-white/15 shadow-xl flex flex-col md:flex-row items-center gap-2 backdrop-blur-md"
+      {/* 1. TOP BROWSE SEARCH & UTILITY BAR */}
+      <section className="bg-white/95 dark:bg-[#070C12]/95 py-3 backdrop-blur-xl transition-colors">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-row items-center justify-between gap-3">
+          {/* Left Side: Small Search Bar + Location Tab */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-2xl min-w-0">
+            {/* Search Input Form */}
+            <form
+              onSubmit={handleSearchSubmit}
+              className="relative flex-1 min-w-[140px] sm:min-w-[260px] max-w-md"
+            >
+              <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 dark:text-[#8D98A3]" />
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => setLocalQ(e.target.value)}
+                placeholder={typedPlaceholder}
+                className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none focus:ring-1.5 focus:ring-emerald-500 shadow-xs transition-all"
+              />
+              {q && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocalQ("");
+                    navigate({
+                      to: "/browse",
+                      search: (prev: Record<string, unknown>) => ({ ...prev, q: undefined }),
+                    });
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-white cursor-pointer"
                 >
-                  {/* Keyword Input */}
-                  <div className="flex-1 w-full flex items-center gap-2.5 px-3 py-1.5">
-                    <SearchIcon className="h-4 w-4 text-neutral-400 dark:text-[#AAB3BC] shrink-0" />
-                    <input
-                      type="text"
-                      value={q}
-                      onChange={(e) => setLocalQ(e.target.value)}
-                      placeholder="Search gear (Sony FX3, DJI Mavic, MacBook...)"
-                      className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-[#697680] focus:outline-none"
-                    />
-                    {q && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLocalQ("");
-                          navigate({
-                            to: "/browse",
-                            search: (prev: Record<string, unknown>) => ({
-                              ...prev,
-                              q: undefined,
-                            }),
-                          });
-                        }}
-                        className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white cursor-pointer"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </form>
 
-                  {/* Location Info Pill (Informational only) */}
-                  <div className="w-full md:w-auto flex items-center justify-between md:justify-start gap-1.5 px-3 py-1.5 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl md:rounded-full border border-black/5 dark:border-white/5 shrink-0">
-                    <div className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-[#AAB3BC]">
-                      <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                      <span suppressHydrationWarning className="font-medium text-xs truncate max-w-[120px]">
-                        {isDetecting ? "Locating..." : isLocationActive ? detectedCity : "Pan India"}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => detectLocation()}
-                      disabled={isDetecting}
-                      title="Update location"
-                      className="p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className={cn("h-3 w-3", isDetecting && "animate-spin")} />
-                    </button>
-                  </div>
-
-                  {/* Submit Search Button */}
-                  <button
-                    type="submit"
-                    className="w-full md:w-auto h-10 px-6 rounded-xl md:rounded-full bg-[#161616] text-[#FFFFFF] hover:bg-[#292929] active:bg-[#0B0B0B] dark:bg-[#F2F0EA] dark:text-[#0A0A0A] dark:hover:bg-[#FFFFFF] dark:active:bg-[#DCD9D1] text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-                  >
-                    <span>Search</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </form>
-
-                {/* Popular Searches */}
-                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="text-xs font-semibold text-neutral-500 dark:text-[#697680] mr-1">
-                    Popular:
-                  </span>
-                  {popularQueries.slice(0, 5).map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => {
-                        setLocalQ(tag);
-                        navigate({
-                          to: "/browse",
-                          search: (prev: Record<string, unknown>) => ({
-                            ...prev,
-                            q: tag,
-                          }),
-                        });
-                        setCurrentPage(1);
-                      }}
-                      className="px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-neutral-700 dark:text-[#AAB3BC] text-xs transition-colors cursor-pointer"
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* Location Tab / Pill */}
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-neutral-100 dark:bg-white/5 rounded-full border border-neutral-200 dark:border-white/10 shrink-0 text-xs text-neutral-700 dark:text-[#AAB3BC]">
+              <MapPin className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+              <span suppressHydrationWarning className="font-semibold text-xs truncate max-w-[85px] sm:max-w-[130px]">
+                {isDetecting ? "Locating..." : isLocationActive ? detectedCity : "Pan India"}
+              </span>
+              <button
+                type="button"
+                onClick={() => detectLocation()}
+                disabled={isDetecting}
+                title="Update location"
+                className="p-0.5 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <RotateCcw className={cn("h-3 w-3", isDetecting && "animate-spin")} />
+              </button>
             </div>
+          </div>
 
-            {/* Right Column: Marketplace Highlights Panel */}
-            <div className="hidden lg:block lg:col-span-5">
-              <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0D151D]/90 p-6 shadow-2xl backdrop-blur-xl space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
-                  <div className="flex items-center gap-2">
-                    <PayentLogoMark className="h-5 w-5" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-950 dark:text-white">
-                      Creator Gear Hub
-                    </span>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    Verified Roster
-                  </span>
-                </div>
+          {/* Right Side: Wishlist & Messages Circular Dark Buttons (matching screenshot) */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {/* Wishlist Button */}
+            <Link
+              to="/wishlist"
+              id="browse-top-wishlist"
+              className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-neutral-900 dark:bg-[#151D24] text-white hover:bg-neutral-800 dark:hover:bg-[#1F2B36] border border-neutral-800 dark:border-white/15 transition-all flex items-center justify-center cursor-pointer shadow-sm group"
+              aria-label="Wishlist"
+              title="Wishlist"
+            >
+              <Heart className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-white/90 group-hover:text-white stroke-[1.8] group-hover:scale-110 transition-transform" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 px-1.5 min-w-[17px] h-[17px] rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => handleCategorySelect("cameras")}
-                    className="p-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Camera className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-emerald-500 transition-colors" />
-                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Cameras</span>
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate">
-                      Sony FX3, Cinema, RED
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleCategorySelect("drones")}
-                    className="p-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Plane className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-emerald-500 transition-colors" />
-                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Drones</span>
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate">
-                      DJI Mavic 3, Inspire
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleCategorySelect("laptops")}
-                    className="p-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Laptop className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-emerald-500 transition-colors" />
-                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Workstations</span>
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate">
-                      MacBook Pro M3 Max
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleCategorySelect("audio")}
-                    className="p-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Mic className="h-4 w-4 text-neutral-700 dark:text-neutral-300 group-hover:text-emerald-500 transition-colors" />
-                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Studio Audio</span>
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 truncate">
-                      Wireless Mics, Shure
-                    </p>
-                  </button>
-                </div>
-
-                <div className="pt-2.5 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-400">
-                  <span>Insured gear delivery</span>
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                    Payent Escrow Shield
-                  </span>
-                </div>
-              </div>
-            </div>
+            {/* Messages Button */}
+            <Link
+              to="/messages"
+              id="browse-top-messages"
+              className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-neutral-900 dark:bg-[#151D24] text-white hover:bg-neutral-800 dark:hover:bg-[#1F2B36] border border-neutral-800 dark:border-white/15 transition-all flex items-center justify-center cursor-pointer shadow-sm group"
+              aria-label="Messages"
+              title="Messages"
+            >
+              <MessageSquare className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-white/90 group-hover:text-white stroke-[1.8] group-hover:scale-110 transition-transform" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 px-1.5 min-w-[17px] h-[17px] rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
       </section>
 
       {/* 2. CATEGORY PILLS BAR */}
-      <section className="bg-white dark:bg-[#080E14] border-b border-black/10 dark:border-white/10 sticky top-[68px] z-30 shadow-xs backdrop-blur-md">
+      <section className="bg-white dark:bg-[#080E14] sticky top-[68px] z-30 shadow-xs backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth">
             {categoryChips.map((c) => {
@@ -870,7 +808,7 @@ export default function Categories() {
       {/* 3. MAIN BROWSE LAYOUT */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Top Control Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-black/10 dark:border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black tracking-tight text-neutral-950 dark:text-white">
@@ -890,6 +828,7 @@ export default function Categories() {
                 </span>
               )}
             </div>
+
             {didYouMean && (
               <p className="mt-1 text-xs text-neutral-500 dark:text-[#8D98A3]">
                 Did you mean:{" "}

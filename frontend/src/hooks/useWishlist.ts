@@ -84,5 +84,6 @@ export function useWishlist() {
 
   const has = useCallback((id: string) => ids.includes(id), [ids]);
 
-  return { ids, toggle, has };
+  return { ids, wishlistCount: ids.length, toggle, has };
 }
+

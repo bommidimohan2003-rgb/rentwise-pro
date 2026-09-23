@@ -4,10 +4,12 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { HelpChatbot } from "../components/common/HelpChatbot";
 import { api } from "../utils/api";
 import { storage, STORAGE_KEYS } from "../utils/storage";
@@ -171,6 +173,37 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+import {
+  UniversalIconVShapeProvider,
+  IconVShapeOverlay,
+  IconVShapePageReveal,
+} from "@/components/navigation/UniversalIconVShapeTransition";
+
+function RootContent() {
+  const [showChatbot, setShowChatbot] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShowChatbot(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <>
+      <AppPreloader />
+      <Navigation4 />
+      {/* Universal Icon-to-V Full-Screen Expansion Overlay */}
+      <IconVShapeOverlay />
+      {/* V-Shape Viewport-Fitted Page Reveal */}
+      <IconVShapePageReveal>
+        <Outlet />
+      </IconVShapePageReveal>
+
+      <CartDrawer />
+      {showChatbot && <HelpChatbot />}
+      <Toaster position="bottom-right" richColors />
+    </>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -284,23 +317,12 @@ function RootComponent() {
     };
   }, []);
 
-  const [showChatbot, setShowChatbot] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setShowChatbot(true), 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
-        <AppPreloader />
-        <Navigation4 />
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-
-        <CartDrawer />
-        {showChatbot && <HelpChatbot />}
-        <Toaster position="bottom-right" richColors />
+        <UniversalIconVShapeProvider>
+          <RootContent />
+        </UniversalIconVShapeProvider>
       </CartProvider>
     </QueryClientProvider>
   );

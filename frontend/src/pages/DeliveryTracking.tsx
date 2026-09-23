@@ -423,7 +423,7 @@ export default function DeliveryTracking() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate({ to: "/messages", search: { bookingId: delivery.order_id || delivery.orderId || orderId } as any })}
+              onClick={() => navigate({ to: "/messages", search: { bookingId: (delivery as any)?.order_id || (delivery as any)?.orderId || (delivery as any)?.id } as any })}
               className="flex items-center gap-1.5"
             >
               <MessageSquare className="h-4 w-4" /> Message {isCustomer ? "Lender" : "Customer"}

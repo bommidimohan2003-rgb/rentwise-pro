@@ -1475,27 +1475,6 @@ export const api = {
     }
   },
 
-  async getProductById(id: string): Promise<Product | null> {
-    const cached = _productCache.get(id);
-    return getCachedOrFetch<Product | null>(
-      `product:${id}`,
-      async () => {
-        try {
-          const res = await fetch(`${API_BASE}/api/products/${id}`);
-          if (!res.ok) return cached || null;
-          const data: Product = await res.json();
-          if (data && data.id) {
-            _productCache.set(data.id, data);
-          }
-          return data;
-        } catch {
-          return cached || null;
-        }
-      },
-      { ttlMs: 30000, staleWhileRevalidate: true }
-    );
-  },
-
   async getSupportTickets(token: string) {
     try {
       const res = await this.fetchWithAuth(`${API_BASE}/api/support`);

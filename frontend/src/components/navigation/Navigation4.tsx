@@ -1,4 +1,4 @@
-import React, { useState, useRef, type ReactNode } from "react";
+import React, { useState, useEffect, useRef, type ReactNode } from "react";
 import {
   motion,
   useMotionValue,
@@ -14,16 +14,10 @@ import {
   Compass,
   PlusCircle,
   ShoppingBag,
-  Heart,
-  MessageSquare,
   LayoutDashboard,
-  Sun,
-  Moon,
 } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
-import { useUnreadMessages } from "@/hooks/useUnreadMessages";
-import { useWishlist } from "@/hooks/useWishlist";
-import { useTheme } from "@/hooks/useTheme";
+import { useIconVShape } from "./UniversalIconVShapeTransition";
 
 export interface Navigation4Item {
   id: string;
@@ -33,11 +27,12 @@ export interface Navigation4Item {
   onClick?: () => void;
   badge?: string | number;
   isActive?: boolean;
+  className?: string;
 }
 
 interface Navigation4ItemProps {
   item: Navigation4Item;
-  mouseY: MotionValue<number>;
+  mouseX: MotionValue<number>;
   spring: SpringOptions;
   distance: number;
   magnification: number;
@@ -46,7 +41,7 @@ interface Navigation4ItemProps {
 
 function Nav4DockItem({
   item,
-  mouseY,
+  mouseX,
   spring,
   distance,
   magnification,
@@ -54,13 +49,21 @@ function Nav4DockItem({
 }: Navigation4ItemProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const { triggerIconVTransition, registerIconRef } = useIconVShape();
 
-  const mouseDistance = useTransform(mouseY, (val: number) => {
+  useEffect(() => {
+    if (ref.current) {
+      registerIconRef(item.id, ref.current);
+    }
+    return () => registerIconRef(item.id, null);
+  }, [item.id, registerIconRef]);
+
+  const mouseDistance = useTransform(mouseX, (val: number) => {
     const rect = ref.current?.getBoundingClientRect() ?? {
-      y: 0,
-      height: baseItemSize,
+      x: 0,
+      width: baseItemSize,
     };
-    return val - rect.y - baseItemSize / 2;
+    return val - rect.x - baseItemSize / 2;
   });
 
   const targetSize = useTransform(
@@ -70,61 +73,70 @@ function Nav4DockItem({
   );
   const size = useSpring(targetSize, spring);
 
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (ref.current) {
+      triggerIconVTransition(item.id, ref.current);
+    }
+    item.onClick?.();
+  };
+
   return (
-    <div className="relative flex items-center justify-center">
+    <div className={`relative flex items-center justify-center shrink-0 ${item.className || ""}`}>
       <motion.button
         ref={ref}
         style={{
           width: size,
           height: size,
         }}
+        whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+        whileTap={{ scale: 0.82, y: -6, transition: { type: "spring", stiffness: 500, damping: 20 } }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onFocus={() => setIsHovered(true)}
         onBlur={() => setIsHovered(false)}
-        onClick={item.onClick}
-        className={`relative flex items-center justify-center rounded-2xl transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        onClick={handleClick}
+        className={`relative flex items-center justify-center rounded-xl transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary shrink-0 ${
           item.isActive
-            ? "bg-primary/20 text-primary dark:bg-emerald-500/25 dark:text-emerald-300 ring-1 ring-primary/40 dark:ring-emerald-400/40 shadow-sm backdrop-blur-md"
-            : "bg-white/25 hover:bg-white/50 dark:bg-white/[0.07] dark:hover:bg-white/[0.16] text-neutral-700 hover:text-neutral-950 dark:text-neutral-200 dark:hover:text-white border border-black/5 dark:border-white/10 backdrop-blur-md shadow-xs"
+            ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-md"
+            : "hover:bg-black/5 dark:hover:bg-white/10 text-neutral-700 hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-white"
         }`}
         aria-label={item.label}
         aria-current={item.isActive ? "page" : undefined}
       >
-        {/* Active Pill Indicator on Left Edge */}
+        {/* Active Pill Indicator on Bottom Edge */}
         {item.isActive && (
           <motion.span
             layoutId="nav4-active-pill"
-            className="absolute -left-1.5 w-1 h-5 rounded-r-full bg-primary dark:bg-emerald-400"
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 sm:w-5 h-1 sm:h-1 rounded-full bg-neutral-900 dark:bg-white"
             transition={{ type: "spring", stiffness: 350, damping: 30 }}
           />
         )}
 
-        <div className="relative flex items-center justify-center">
+        <div className="relative flex items-center justify-center pointer-events-none">
           {item.icon}
 
           {item.badge !== undefined && item.badge !== 0 && (
-            <span className="absolute -top-1.5 -right-1.5 px-1.5 min-w-[16px] h-[16px] rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center shadow-md animate-pulse pointer-events-none z-20">
+            <span className="absolute -top-1.5 -right-1.5 px-1.5 min-w-[16px] h-[16px] rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 text-[9px] font-bold flex items-center justify-center shadow-md pointer-events-none z-20">
               {item.badge}
             </span>
           )}
         </div>
       </motion.button>
 
-      {/* Tooltip on right side */}
+      {/* Tooltip positioned above dock item */}
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            initial={{ opacity: 0, x: 6, scale: 0.95 }}
-            animate={{ opacity: 1, x: 12, scale: 1 }}
-            exit={{ opacity: 0, x: 6, scale: 0.95 }}
+            initial={{ opacity: 0, y: 4, scale: 0.95 }}
+            animate={{ opacity: 1, y: -10, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute left-full top-1/2 -translate-y-1/2 pointer-events-none z-50 whitespace-nowrap px-3 py-1.5 rounded-xl bg-neutral-950/90 dark:bg-white/95 text-white dark:text-neutral-950 text-xs font-bold shadow-xl border border-white/15 dark:border-black/10 backdrop-blur-md flex items-center gap-1.5"
+            className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 pointer-events-none z-50 whitespace-nowrap px-3 sm:px-3.5 py-1.5 rounded-lg bg-neutral-950/90 dark:bg-white/95 text-white dark:text-neutral-950 text-xs sm:text-sm font-bold shadow-xl border border-white/15 dark:border-black/10 backdrop-blur-md flex items-center gap-1.5"
             role="tooltip"
           >
             <span>{item.label}</span>
             {item.badge !== undefined && item.badge !== 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-white text-[9px] font-extrabold">
+              <span className="px-1.5 py-0.2 rounded-full bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-950 text-[10px] font-extrabold">
                 {item.badge}
               </span>
             )}
@@ -144,32 +156,42 @@ export interface Navigation4Props {
 }
 
 /**
- * Navigation 4 from React Bits Pro
- * Sleek, elongated vertical side navigation with dock-style hover scaling, spring physics, and tooltips.
+ * Universal Navigation Dock
+ * Sleek horizontal bottom navigation with macOS-style dock scaling, spring physics, and tooltips across both big screens and mobile.
  */
 export function Navigation4({
   className = "",
-  baseItemSize = 42,
-  magnification = 56,
-  distance = 130,
-  spring = { mass: 0.1, stiffness: 180, damping: 14 },
+  baseItemSize,
+  magnification,
+  distance,
+  spring = { mass: 0.1, stiffness: 200, damping: 15 },
 }: Navigation4Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { cartCount } = useCart();
-  const { unreadCount } = useUnreadMessages();
-  const { wishlistCount } = useWishlist();
-  const { theme, toggle } = useTheme();
 
-  const mouseY = useMotionValue(Infinity);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
+
+  const effectiveBaseItemSize = baseItemSize ?? (isDesktop ? 48 : 42);
+  const effectiveMagnification = magnification ?? (isDesktop ? 62 : 52);
+  const effectiveDistance = distance ?? (isDesktop ? 130 : 110);
+
+  const mouseX = useMotionValue(Infinity);
   const isHovered = useMotionValue(0);
 
   const isRouteActive = (to: string, exact = false) => {
     if (exact) return pathname === to;
-    if (to === "/categories") {
+    if (to === "/browse" || to === "/categories") {
       return (
-        pathname.startsWith("/categories") ||
         pathname.startsWith("/browse") ||
+        pathname.startsWith("/categories") ||
         pathname.startsWith("/product")
       );
     }
@@ -197,44 +219,28 @@ export function Navigation4({
     {
       id: "home",
       label: "Home",
-      icon: <Home className="h-[19px] w-[19px] stroke-[2]" />,
+      icon: <Home className="h-4 w-4 sm:h-[18px] sm:w-[18px] md:h-[19px] md:w-[19px] stroke-[1.6]" />,
       isActive: isRouteActive("/", true),
       onClick: () => navigate({ to: "/" }),
     },
     {
       id: "browse",
       label: "Browse Gear",
-      icon: <Compass className="h-[19px] w-[19px] stroke-[2]" />,
-      isActive: isRouteActive("/categories"),
-      onClick: () => navigate({ to: "/categories" }),
+      icon: <Compass className="h-4 w-4 sm:h-[18px] sm:w-[18px] md:h-[19px] md:w-[19px] stroke-[1.6]" />,
+      isActive: isRouteActive("/browse"),
+      onClick: () => navigate({ to: "/browse" }),
     },
     {
       id: "lend",
       label: "List Equipment",
-      icon: <PlusCircle className="h-[19px] w-[19px] stroke-[2]" />,
+      icon: <PlusCircle className="h-4 w-4 sm:h-[18px] sm:w-[18px] md:h-[19px] md:w-[19px] stroke-[1.6]" />,
       isActive: isRouteActive("/become-lender"),
       onClick: () => navigate({ to: "/become-lender" }),
     },
     {
-      id: "messages",
-      label: "Messages",
-      icon: <MessageSquare className="h-[19px] w-[19px] stroke-[2]" />,
-      badge: unreadCount > 0 ? unreadCount : undefined,
-      isActive: pathname.startsWith("/messages"),
-      onClick: () => navigate({ to: "/messages" }),
-    },
-    {
-      id: "wishlist",
-      label: "Wishlist",
-      icon: <Heart className="h-[19px] w-[19px] stroke-[2]" />,
-      badge: wishlistCount > 0 ? wishlistCount : undefined,
-      isActive: pathname.startsWith("/wishlist"),
-      onClick: () => navigate({ to: "/wishlist" }),
-    },
-    {
       id: "cart",
       label: "Rental Cart",
-      icon: <ShoppingBag className="h-[19px] w-[19px] stroke-[2]" />,
+      icon: <ShoppingBag className="h-4 w-4 sm:h-[18px] sm:w-[18px] md:h-[19px] md:w-[19px] stroke-[1.6]" />,
       badge: cartCount > 0 ? cartCount : undefined,
       isActive: isRouteActive("/cart"),
       onClick: () => navigate({ to: "/cart" }),
@@ -242,7 +248,7 @@ export function Navigation4({
     {
       id: "dashboard",
       label: "Dashboard",
-      icon: <LayoutDashboard className="h-[19px] w-[19px] stroke-[2]" />,
+      icon: <LayoutDashboard className="h-4 w-4 sm:h-[18px] sm:w-[18px] md:h-[19px] md:w-[19px] stroke-[1.6]" />,
       isActive: isRouteActive("/dashboard"),
       onClick: () => navigate({ to: "/dashboard" }),
     },
@@ -254,56 +260,45 @@ export function Navigation4({
 
   return (
     <aside
-      aria-label="Desktop Side Navigation"
-      className={`hidden lg:flex fixed left-4 top-1/2 -translate-y-1/2 z-40 flex-col items-center select-none ${className}`}
+      aria-label="Application Bottom Navigation Dock"
+      className={`fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6 inset-x-0 mx-auto z-50 flex justify-center items-center pointer-events-none select-none px-3 w-full max-w-full ${className}`}
     >
       <motion.div
-        onMouseMove={({ pageY }) => {
+        onMouseMove={({ pageX }) => {
           isHovered.set(1);
-          mouseY.set(pageY);
+          mouseX.set(pageX);
         }}
         onMouseLeave={() => {
           isHovered.set(0);
-          mouseY.set(Infinity);
+          mouseX.set(Infinity);
         }}
-        className="py-3 px-2 rounded-3xl bg-white/35 dark:bg-black/35 backdrop-blur-xl border border-white/50 dark:border-white/[0.12] shadow-xl shadow-black/5 dark:shadow-black/40 flex flex-col items-center gap-2"
+        onTouchStart={() => isHovered.set(1)}
+        onTouchMove={(e) => {
+          if (e.touches[0]) {
+            isHovered.set(1);
+            mouseX.set(e.touches[0].pageX);
+          }
+        }}
+        onTouchEnd={() => {
+          isHovered.set(0);
+          mouseX.set(Infinity);
+        }}
+        className="pointer-events-auto py-2 sm:py-2.5 px-6 sm:px-8 md:px-10 rounded-2xl bg-white/92 dark:bg-[#0D151D]/95 backdrop-blur-2xl border-2 border-neutral-300 dark:border-neutral-700 shadow-xl shadow-black/20 dark:shadow-black/80 flex items-center justify-center gap-3 sm:gap-4 md:gap-5 w-auto min-w-[320px] sm:min-w-[420px] md:min-w-[480px] max-w-[calc(100vw-1.5rem)] overflow-visible"
       >
         {/* Core Navigation Items */}
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex items-center justify-around w-full gap-2.5 sm:gap-4 md:gap-6 shrink-0">
           {mainItems.map((item) => (
             <Nav4DockItem
               key={item.id}
               item={item}
-              mouseY={mouseY}
+              mouseX={mouseX}
               spring={spring}
-              distance={distance}
-              magnification={magnification}
-              baseItemSize={baseItemSize}
+              distance={effectiveDistance}
+              magnification={effectiveMagnification}
+              baseItemSize={effectiveBaseItemSize}
             />
           ))}
         </div>
-
-        <div className="w-6 h-[1px] bg-black/10 dark:bg-white/10 my-1" />
-
-        {/* Bottom Utility: Theme Toggle */}
-        <Nav4DockItem
-          item={{
-            id: "theme",
-            label: theme === "dark" ? "Light Mode" : "Dark Mode",
-            icon:
-              theme === "dark" ? (
-                <Sun className="h-[19px] w-[19px] text-amber-400 stroke-[2]" />
-              ) : (
-                <Moon className="h-[19px] w-[19px] text-neutral-700 stroke-[2]" />
-              ),
-            onClick: toggle,
-          }}
-          mouseY={mouseY}
-          spring={spring}
-          distance={distance}
-          magnification={magnification}
-          baseItemSize={baseItemSize}
-        />
       </motion.div>
     </aside>
   );

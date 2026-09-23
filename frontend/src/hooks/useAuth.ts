@@ -176,25 +176,25 @@ export function useAuth() {
           try {
             const profile = await api.getMe(res.token);
             loggedUser = {
-              id: profile.email || email,
+              id: profile?.email || email,
               fullName:
-                profile.fullName ||
-                profile.name ||
+                profile?.fullName ||
+                (profile as any)?.name ||
                 email.split("@")[0],
-              email: profile.email || email,
-              phone: profile.phone || "",
-              address: profile.address || "",
-              city: profile.city || "",
-              state: profile.state || "",
-              country: profile.country || "India",
-              pincode: profile.pincode || "",
-              avatar: profile.avatar || profile.profilePhotoUrl || profile.profile_photo_url,
-              profilePhotoUrl: profile.profilePhotoUrl || profile.profile_photo_url || "",
-              role: profile.role || res.role || "customer",
-              status: profile.status || "active",
-              aadhaarMasked: profile.aadhaarMasked || profile.aadhaar_masked || "",
-              website: profile.website || "",
-              upiId: profile.upiId || "",
+              email: profile?.email || email,
+              phone: profile?.phone || "",
+              address: profile?.address || "",
+              city: profile?.city || "",
+              state: profile?.state || "",
+              country: profile?.country || "India",
+              pincode: profile?.pincode || "",
+              avatar: profile?.avatar || profile?.profilePhotoUrl || profile?.profile_photo_url,
+              profilePhotoUrl: profile?.profilePhotoUrl || profile?.profile_photo_url || "",
+              role: profile?.role || res.role || "customer",
+              status: profile?.status || "active",
+              aadhaarMasked: profile?.aadhaarMasked || profile?.aadhaar_masked || "",
+              website: profile?.website || "",
+              upiId: profile?.upiId || "",
             };
           } catch {
             loggedUser = {

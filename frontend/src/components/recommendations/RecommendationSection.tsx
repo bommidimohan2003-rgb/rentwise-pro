@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Star,
   Compass,
@@ -35,7 +35,9 @@ export function RecommendationSection({
   layout = "grid",
   className,
 }: RecommendationSectionProps) {
+  const navigate = useNavigate();
   const { has, toggle } = useWishlist();
+
 
   useEffect(() => {
     if (products && products.length > 0) {

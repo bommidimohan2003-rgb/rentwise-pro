@@ -99,7 +99,7 @@ export function DeliveryMap({
 
   const isDarkMode =
     theme === "dark" ||
-    (theme === "system" &&
+    ((theme as string) === "system" &&
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-color-scheme: dark)").matches);
 

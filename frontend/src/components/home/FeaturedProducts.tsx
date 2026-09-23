@@ -7,6 +7,7 @@ import {
   Package,
   Sparkles,
   Star,
+  Tag,
 } from "lucide-react";
 import { api } from "@/utils/api";
 import { storage, STORAGE_KEYS } from "@/utils/storage";
@@ -147,7 +148,7 @@ export function FeaturedProducts() {
   const displayedProducts = filteredProducts.slice(0, 8);
 
   return (
-    <section className="relative overflow-hidden bg-white dark:bg-[#05090D] py-12 sm:py-16 text-neutral-900 dark:text-white border-b border-black/5 dark:border-white/10 transition-colors duration-300">
+    <section className="relative overflow-hidden bg-white dark:bg-[#05090D] py-12 sm:py-16 text-neutral-900 dark:text-white transition-colors duration-300">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">

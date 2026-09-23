@@ -113,7 +113,7 @@ export default function Dashboard() {
   );
 
   const completedRentalsCount = useMemo(
-    () => orders.filter((o) => o.status === "completed" || o.status === "delivered").length,
+    () => orders.filter((o) => (o.status as string) === "completed" || (o.status as string) === "delivered").length,
     [orders],
   );
 
@@ -168,7 +168,7 @@ export default function Dashboard() {
                   <h1 className="text-2xl sm:text-3xl font-black text-neutral-950 dark:text-white tracking-tight">
                     Welcome back, {user?.fullName?.split(" ")[0] || "Creator"}
                   </h1>
-                  {user?.verified || user?.status === "approved" || user?.status === "active" ? (
+                  {user?.isVerified || (user as any)?.verified || user?.status === "approved" || user?.status === "active" ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                       <ShieldCheck className="w-3 h-3" />
                       Verified Renter
