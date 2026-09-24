@@ -7,12 +7,12 @@ interface AppPreloaderProps {
 }
 
 type PreloaderPhase =
-  | "top-left-p-hold"   // 0.00s - 2.00s: Single white "P" shown in the top-left corner
-  | "top-left-p-up"     // 2.00s - 2.70s: Top-left "P" smoothly moves upwards and exits
-  | "center-typing"     // 2.30s - 3.70s: Word "PAYENT" typed in center of black background
-  | "center-hold"       // 3.70s - 4.20s: Complete "PAYENT" holds in the middle
-  | "move-left-landing" // 4.20s - 5.30s: "PAYENT" travels from middle to left side & home lands
-  | "complete";         // 5.50s+: Preloader disappears, normal website interactivity
+  | "top-left-p-hold"   // (1) 0.00s - 1.80s: "P" sitting in top-left corner on black background
+  | "top-left-p-up"     // (2) 1.80s - 2.50s: Top-left "P" moves smoothly upward and exits
+  | "center-typing"     // (3) 2.50s - 4.10s: "PAYENT" types letter-by-letter in center with glowing cursor
+  | "center-hold"       // (4) 4.10s - 4.70s: Complete "PAYENT" glows in center and holds
+  | "move-left-landing" // (5) 4.70s - 5.80s: "PAYENT" moves horizontally LEFT to navbar & home page lands
+  | "complete";         // (6) 6.00s+: Preloader unmounts, permanent logo remains on the left
 
 const LETTERS = ["P", "A", "Y", "E", "N", "T"];
 
@@ -42,8 +42,13 @@ export function AppPreloader({
     setMounted(true);
     let hasSeen = false;
     try {
+      // Check query param ?preload=true for instant replay testing
+      const urlParams = new URLSearchParams(window.location.search);
+      const replay = urlParams.get("preload") === "true";
       hasSeen =
-        !forceShow && Boolean(sessionStorage.getItem("payent:preloaded"));
+        !replay &&
+        !forceShow &&
+        Boolean(sessionStorage.getItem("payent:preloaded"));
     } catch {
       hasSeen = false;
     }
@@ -105,7 +110,7 @@ export function AppPreloader({
     return () => window.removeEventListener("resize", measureNavPos);
   }, [isVisible]);
 
-  // Sequence Timeline
+  // Sequence Timeline matching storyboard specs
   useEffect(() => {
     if (!isVisible) return;
 
@@ -120,55 +125,54 @@ export function AppPreloader({
       return () => clearTimeout(tReduce);
     }
 
-    // ----------------------------------------------------
-    // TIMELINE:
-    // 1. 0.00s - 2.00s: Black background, single white "P" in top-left corner (Holds 2s)
-    //    2.00s - 2.70s: Top-left "P" moves upwards
-    // 2. 2.30s - 3.70s: "PAYENT" typed letter-by-letter in the middle/center
-    //    3.70s - 4.20s: Complete "PAYENT" holds in the middle
-    // 3. 4.20s - 5.30s: "PAYENT" physically travels from middle to left side; Home page lands
-    //    5.50s+: Preloader disappears, normal site interaction
-    // ----------------------------------------------------
+    // -------------------------------------------------------------------------
+    // STORYBOARD TIMELINE:
+    // (1) 0.00s - 1.80s: Black screen with "P" in top-left corner
+    // (2) 1.80s - 2.50s: "P" moves upward smoothly and exits
+    // (3) 2.50s - 4.10s: "PAYENT" types letter-by-letter in center with glowing cursor
+    // (4) 4.10s - 4.70s: "PAYENT" fully typed in center and holds
+    // (5) 4.70s - 5.80s: "PAYENT" moves horizontally LEFT; Home page lands underneath
+    // (6) 5.80s+: Preloader completes; final "PAYENT" remains docked on left
+    // -------------------------------------------------------------------------
 
     const timers: NodeJS.Timeout[] = [];
 
-    // Step 1: After 2 seconds, top-left "P" moves upwards
+    // Frame 2: Top-left "P" moves upward after 1.8s
     timers.push(
       setTimeout(() => {
         setPhase("top-left-p-up");
-      }, 2000)
+      }, 1800)
     );
 
-    // Step 2: Begin typing "PAYENT" in the center at 2.30s
+    // Frame 3: Typing animation starts in center at 2.5s
     timers.push(
       setTimeout(() => {
         setPhase("center-typing");
         setTypedCount(1); // 'P'
-      }, 2300)
+      }, 2500)
     );
 
-    // Typing sequence for remaining letters
-    timers.push(setTimeout(() => setTypedCount(2), 2500)); // 'PA'
-    timers.push(setTimeout(() => setTypedCount(3), 2700)); // 'PAY'
-    timers.push(setTimeout(() => setTypedCount(4), 2900)); // 'PAYE'
-    timers.push(setTimeout(() => setTypedCount(5), 3100)); // 'PAYEN'
-    timers.push(setTimeout(() => setTypedCount(6), 3300)); // 'PAYENT'
+    timers.push(setTimeout(() => setTypedCount(2), 2750)); // 'PA'
+    timers.push(setTimeout(() => setTypedCount(3), 3000)); // 'PAY'
+    timers.push(setTimeout(() => setTypedCount(4), 3250)); // 'PAYE'
+    timers.push(setTimeout(() => setTypedCount(5), 3500)); // 'PAYEN'
+    timers.push(setTimeout(() => setTypedCount(6), 3750)); // 'PAYENT'
 
-    // Center hold
+    // Frame 4: Typing complete & center hold
     timers.push(
       setTimeout(() => {
         setPhase("center-hold");
-      }, 3700)
+      }, 4100)
     );
 
-    // Step 3: Move from middle to left side + Home page lands simultaneously
+    // Frame 5 & 6: "PAYENT" moves horizontally left & Home page starts landing underneath
     timers.push(
       setTimeout(() => {
         setPhase("move-left-landing");
-      }, 4200)
+      }, 4700)
     );
 
-    // Preloader complete
+    // Final Completion
     timers.push(
       setTimeout(() => {
         setPhase("complete");
@@ -177,7 +181,7 @@ export function AppPreloader({
           sessionStorage.setItem("payent:preloaded", "true");
         } catch {}
         if (onComplete) onComplete();
-      }, 5500)
+      }, 5900)
     );
 
     return () => {
@@ -218,6 +222,7 @@ export function AppPreloader({
     phase === "move-left-landing";
 
   const isMovingToLeft = phase === "move-left-landing";
+  const isTyping = phase === "center-typing";
 
   return (
     <AnimatePresence>
@@ -226,19 +231,23 @@ export function AppPreloader({
           key="payent-cinematic-preloader"
           initial={{ opacity: 1 }}
           animate={{
-            // Black background dissolves as PAYENT moves to the left and home page lands
+            // Black background dissolves as PAYENT moves to the left and home page lands underneath
             opacity: isMovingToLeft ? 0 : 1,
           }}
           exit={{ opacity: 0 }}
           transition={{
-            duration: 1.1,
-            ease: [0.22, 1, 0.36, 1],
+            duration: 1.15,
+            ease: [0.16, 1, 0.3, 1],
           }}
           className="fixed inset-0 z-[99999] bg-[#000000] text-white select-none overflow-hidden pointer-events-none"
           style={{ willChange: "opacity" }}
         >
+          {/* Subtle Ambient Radial Glow in background */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_0%,transparent_70%)] pointer-events-none" />
+
           {/* ==================================================== */}
-          {/* 1. TOP-LEFT CORNER "P" (HOLDS 2s, THEN MOVES UP)     */}
+          {/* (1 & 2) TOP-LEFT CORNER "P"                          */}
+          {/* Holds 1.8s, then moves upward with motion trail      */}
           {/* ==================================================== */}
           <AnimatePresence>
             {showTopLeftP && (
@@ -250,27 +259,29 @@ export function AppPreloader({
                   left: navTarget.left - navTarget.width / 2,
                   y: 0,
                   opacity: 1,
+                  filter: "blur(0px)",
                 }}
                 animate={{
                   position: "absolute",
                   top: navTarget.top - 18,
                   left: navTarget.left - navTarget.width / 2,
-                  // After 2 seconds, moves smoothly upwards
-                  y: isTopLeftPMovingUp ? -60 : 0,
+                  // After 1.8s, glides upwards smoothly with motion trail
+                  y: isTopLeftPMovingUp ? -75 : 0,
                   opacity: isTopLeftPMovingUp ? 0 : 1,
+                  filter: isTopLeftPMovingUp ? "blur(2px)" : "blur(0px)",
                 }}
                 exit={{
-                  y: -60,
+                  y: -75,
                   opacity: 0,
-                  transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                  transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
                 }}
                 transition={{
-                  duration: 0.7,
+                  duration: 0.65,
                   ease: [0.22, 1, 0.36, 1],
                 }}
                 className="z-40 pointer-events-none flex items-center select-none"
               >
-                <span className="font-sans font-black tracking-tight text-3xl sm:text-4xl text-white leading-none drop-shadow-lg">
+                <span className="font-sans font-black tracking-tight text-3xl sm:text-4xl text-white leading-none drop-shadow-[0_0_16px_rgba(255,255,255,0.4)]">
                   P
                 </span>
               </motion.div>
@@ -278,8 +289,9 @@ export function AppPreloader({
           </AnimatePresence>
 
           {/* ==================================================== */}
-          {/* 2. "PAYENT" TYPED IN THE MIDDLE (CENTER)             */}
-          {/*    THEN MOVES FROM MIDDLE -> LEFT SIDE AS HOME LANDS */}
+          {/* (3 & 4 & 5) "PAYENT" TYPED IN CENTER                 */}
+          {/* Followed by cursor, then glides horizontally LEFT    */}
+          {/* and docks into the navbar logo spot as home lands    */}
           {/* ==================================================== */}
           {showCenterWord && (
             <motion.div
@@ -291,6 +303,7 @@ export function AppPreloader({
                 y: "-50%",
                 scale: 1,
                 opacity: 1,
+                filter: "blur(0px)",
               }}
               animate={
                 isMovingToLeft
@@ -302,8 +315,12 @@ export function AppPreloader({
                       x: `calc(-50% + ${delta.x}px)`,
                       y: `calc(-50% + ${delta.y}px)`,
                       // Scales down smoothly to match navbar logo size
-                      scale: typeof window !== "undefined" && window.innerWidth < 640 ? 0.40 : 0.45,
+                      scale:
+                        typeof window !== "undefined" && window.innerWidth < 640
+                          ? 0.38
+                          : 0.42,
                       opacity: 1,
+                      filter: "blur(0px)",
                     }
                   : {
                       position: "fixed",
@@ -313,13 +330,14 @@ export function AppPreloader({
                       y: "-50%",
                       scale: 1,
                       opacity: 1,
+                      filter: "blur(0px)",
                     }
               }
               transition={
                 isMovingToLeft
                   ? {
-                      duration: 1.1,
-                      ease: [0.22, 1, 0.36, 1],
+                      duration: 1.15,
+                      ease: [0.16, 1, 0.3, 1], // Cinematic smooth curve
                     }
                   : {
                       duration: 0.35,
@@ -327,19 +345,28 @@ export function AppPreloader({
                     }
               }
               className="z-50 pointer-events-none flex items-center justify-center select-none origin-center"
-              style={{ willChange: "transform" }}
+              style={{ willChange: "transform, opacity" }}
             >
-              {/* Reserved fixed word width prevents horizontal shift as letters are typed */}
-              <div className="inline-flex items-center justify-center font-sans font-black tracking-tight text-4xl sm:text-6xl md:text-7xl text-white leading-none drop-shadow-2xl">
+              <div className="relative inline-flex items-center justify-center font-sans font-black tracking-tight text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]">
+                {/* Horizontal speed trail glow during left motion */}
+                {isMovingToLeft && (
+                  <motion.div
+                    initial={{ opacity: 0.6, scaleX: 1.4 }}
+                    animate={{ opacity: 0, scaleX: 1 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="absolute inset-0 bg-white/20 blur-lg rounded-full pointer-events-none -z-10"
+                  />
+                )}
+
                 {LETTERS.map((char, index) => {
                   const isCharVisible = index < typedCount;
                   return (
                     <motion.span
                       key={index}
-                      initial={{ opacity: 0, scale: 0.92, filter: "blur(4px)" }}
+                      initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
                       animate={{
                         opacity: isCharVisible ? 1 : 0,
-                        scale: isCharVisible ? 1 : 0.92,
+                        scale: isCharVisible ? 1 : 0.9,
                         filter: isCharVisible ? "blur(0px)" : "blur(4px)",
                       }}
                       transition={{
@@ -352,6 +379,19 @@ export function AppPreloader({
                     </motion.span>
                   );
                 })}
+
+                {/* Blinking Typing Cursor Indicator */}
+                {isTyping && (
+                  <motion.span
+                    animate={{ opacity: [1, 0, 1] }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 0.65,
+                      ease: "easeInOut",
+                    }}
+                    className="inline-block ml-1.5 w-1 md:w-1.5 h-[0.85em] bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] align-middle"
+                  />
+                )}
               </div>
             </motion.div>
           )}
@@ -362,3 +402,4 @@ export function AppPreloader({
 }
 
 export default AppPreloader;
+
