@@ -5,12 +5,18 @@ import { CommandSearchModal } from "./CommandSearchModal";
 export function SearchBar() {
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Global Ctrl + K listener
+  // Global Ctrl + K or "/" listener (when not already typing in an input)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      const isInput = activeTag === "input" || activeTag === "textarea" || (document.activeElement as HTMLElement)?.isContentEditable;
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setModalOpen((prev) => !prev);
+      } else if (e.key === "/" && !isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setModalOpen(true);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -22,12 +28,12 @@ export function SearchBar() {
       <button
         type="button"
         onClick={() => setModalOpen(true)}
-        className="relative flex items-center w-full max-w-xs md:max-w-sm px-3.5 py-2 rounded-xl bg-secondary/60 hover:bg-secondary/90 border border-border/80 text-muted-foreground hover:text-foreground text-xs font-medium transition-all group cursor-pointer shadow-2xs"
-        aria-label="Search or type a command"
+        className="relative flex items-center w-48 sm:w-64 md:w-72 px-3 py-1.5 rounded-lg bg-secondary/40 hover:bg-secondary/80 border border-border/70 text-muted-foreground hover:text-foreground text-xs font-medium transition-all group cursor-pointer"
+        aria-label="Search PAYENT..."
       >
-        <Search className="h-4 w-4 mr-2.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-        <span className="truncate">Search users, products, orders...</span>
-        <div className="ml-auto flex items-center gap-1 border border-border/60 rounded px-1.5 py-0.5 bg-background text-[10px] font-mono font-bold text-muted-foreground/80 shrink-0">
+        <Search className="h-3.5 w-3.5 mr-2 text-muted-foreground/80 group-hover:text-emerald-500 transition-colors shrink-0" />
+        <span className="truncate text-xs">Search PAYENT...</span>
+        <div className="ml-auto flex items-center gap-0.5 border border-border/60 rounded px-1 py-0.5 bg-background text-[10px] font-mono font-medium text-muted-foreground shrink-0">
           <Command className="h-2.5 w-2.5" />
           <span>K</span>
         </div>

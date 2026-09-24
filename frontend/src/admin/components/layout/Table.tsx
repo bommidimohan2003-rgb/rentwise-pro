@@ -9,6 +9,7 @@ export interface Column<T> {
   sortable?: boolean;
   render?: (row: T, index: number) => React.ReactNode;
   align?: "left" | "center" | "right";
+  className?: string;
 }
 
 interface TableProps<T> {
@@ -20,6 +21,7 @@ interface TableProps<T> {
   sortOrder?: "asc" | "desc";
   emptyTitle?: string;
   emptyDescription?: string;
+  className?: string;
 }
 
 export function Table<T>({
@@ -31,13 +33,14 @@ export function Table<T>({
   sortOrder,
   emptyTitle,
   emptyDescription,
+  className,
 }: TableProps<T>) {
   return (
-    <div className="card-premium bg-card/40 border border-border/80 overflow-hidden">
-      <div className="overflow-x-auto no-scrollbar">
+    <div className={cn("w-full border border-border/70 rounded-xl bg-card overflow-hidden", className)}>
+      <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-secondary/40 border-b border-border/50">
+            <tr className="border-b border-border/70 bg-secondary/30">
               {columns.map((col) => {
                 const isSorted = sortKey === col.key;
                 const alignClass = {
@@ -51,30 +54,30 @@ export function Table<T>({
                     key={col.key}
                     onClick={() => col.sortable && onSort && onSort(col.key)}
                     className={cn(
-                      "px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider select-none",
-                      col.sortable &&
-                        "cursor-pointer hover:text-foreground hover:bg-secondary/30 transition-colors",
+                      "px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider select-none whitespace-nowrap",
+                      col.sortable && "cursor-pointer hover:text-foreground transition-colors",
                       alignClass,
+                      col.className
                     )}
                   >
                     <div
                       className={cn(
-                        "flex items-center gap-1.5",
+                        "inline-flex items-center gap-1.5",
                         col.align === "center" && "justify-center",
-                        col.align === "right" && "justify-end",
+                        col.align === "right" && "justify-end"
                       )}
                     >
-                      {col.label}
+                      <span>{col.label}</span>
                       {col.sortable && (
-                        <span>
+                        <span className="shrink-0">
                           {isSorted ? (
                             sortOrder === "asc" ? (
-                              <ArrowUp className="h-3 w-3 text-primary" />
+                              <ArrowUp className="h-3 w-3 text-emerald-500" />
                             ) : (
-                              <ArrowDown className="h-3 w-3 text-primary" />
+                              <ArrowDown className="h-3 w-3 text-emerald-500" />
                             )
                           ) : (
-                            <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            <ArrowUpDown className="h-2.5 w-2.5 opacity-40 group-hover:opacity-100" />
                           )}
                         </span>
                       )}
@@ -87,16 +90,16 @@ export function Table<T>({
           <tbody className="divide-y divide-border/40">
             {loading ? (
               <tr>
-                <td colSpan={columns.length} className="py-20">
-                  <Loader message="Fetching records..." size="md" />
+                <td colSpan={columns.length} className="py-16 text-center">
+                  <Loader message="Loading data stream..." size="sm" />
                 </td>
               </tr>
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="p-8">
+                <td colSpan={columns.length} className="py-12 px-4">
                   <EmptyState
-                    title={emptyTitle}
-                    description={emptyDescription}
+                    title={emptyTitle || "No records found"}
+                    description={emptyDescription || "No entries available in this operational view."}
                   />
                 </td>
               </tr>
@@ -104,7 +107,7 @@ export function Table<T>({
               data.map((row, rIdx) => (
                 <tr
                   key={rIdx}
-                  className="hover:bg-secondary/20 transition-colors group/row"
+                  className="hover:bg-secondary/30 transition-colors group"
                 >
                   {columns.map((col) => {
                     const alignClass = {
@@ -117,15 +120,14 @@ export function Table<T>({
                       <td
                         key={col.key}
                         className={cn(
-                          "px-6 py-4 text-sm text-foreground/90 font-medium truncate max-w-xs",
+                          "px-4 py-3 text-xs text-foreground/90 font-medium",
                           alignClass,
+                          col.className
                         )}
                       >
                         {col.render
                           ? col.render(row, rIdx)
-                          : ((row as Record<string, unknown>)[
-                              col.key
-                            ] as React.ReactNode)}
+                          : ((row as Record<string, unknown>)[col.key] as React.ReactNode)}
                       </td>
                     );
                   })}

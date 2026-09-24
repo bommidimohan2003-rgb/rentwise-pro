@@ -163,24 +163,24 @@ export default function ActivityLogs() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border/50">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
-            Security & Activity Audit Logs
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+            Activity Logs
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Immutable audit record of administrative actions, user moderations, and security state transitions.
+          <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+            Security audit trail, administrative action history, and access log stream
           </p>
         </div>
 
         <button
           onClick={() => fetchLogs()}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-secondary/50 hover:bg-secondary text-foreground text-xs font-medium transition-colors cursor-pointer self-start sm:self-auto"
         >
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", loading && "animate-spin")} />
           <span>Refresh</span>
         </button>
       </div>
@@ -188,7 +188,7 @@ export default function ActivityLogs() {
       {/* FILTERS & SEARCH */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search logs by actor, action, IP..."
@@ -197,7 +197,7 @@ export default function ActivityLogs() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
+            className="w-full bg-card text-foreground text-xs rounded-lg pl-9 pr-3 py-2 border border-border/70 focus:outline-none focus:border-foreground/40 font-medium placeholder:text-muted-foreground"
           />
         </div>
 
@@ -208,7 +208,7 @@ export default function ActivityLogs() {
               setModuleFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="bg-card text-foreground text-xs rounded-xl px-3 py-2 border border-border/80 focus:outline-none font-semibold cursor-pointer"
+            className="bg-card text-foreground text-xs rounded-lg px-2.5 py-2 border border-border/70 focus:outline-none font-medium cursor-pointer"
           >
             <option value="all">All Modules</option>
             {modules.map((m) => (
@@ -222,22 +222,24 @@ export default function ActivityLogs() {
 
       {/* ERROR STATE */}
       {error && !loading ? (
-        <div className="bg-card rounded-2xl border border-destructive/30 p-12 text-center shadow-xs flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-3">
-            <ShieldAlert className="h-6 w-6" />
+        <div className="bg-card rounded-xl border border-red-500/20 p-8 text-center flex flex-col items-center justify-center space-y-3">
+          <div className="w-10 h-10 rounded-full bg-red-500/10 text-[#FF1744] flex items-center justify-center">
+            <ShieldAlert className="h-5 w-5" />
           </div>
-          <h3 className="text-base font-bold text-foreground font-display">Database Sync Failed</h3>
-          <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Database Sync Failed</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+          </div>
           <button
             onClick={() => fetchLogs()}
-            className="mt-4 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium transition-colors border border-border/80 cursor-pointer"
           >
             Retry Database Fetch
           </button>
         </div>
       ) : (
         /* TABLE */
-        <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+        <div className="space-y-4">
           <Table
             columns={columns}
             data={paginatedLogs}
@@ -245,19 +247,21 @@ export default function ActivityLogs() {
             sortKey={sortKey}
             sortOrder={sortOrder}
             onSort={handleSort}
-            emptyMessage="No security activity logs found in database."
+            emptyTitle="No activity logs found"
+            emptyDescription="No administrative activity records match your current filter settings."
           />
 
           {filteredLogs.length > itemsPerPage && (
-            <div className="p-4 border-t border-border/40">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={Math.ceil(filteredLogs.length / itemsPerPage)}
-                onPageChange={setCurrentPage}
-                itemsPerPage={itemsPerPage}
-                totalItems={filteredLogs.length}
-              />
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredLogs.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(newSize) => {
+                setItemsPerPage(newSize);
+                setCurrentPage(1);
+              }}
+            />
           )}
         </div>
       )}

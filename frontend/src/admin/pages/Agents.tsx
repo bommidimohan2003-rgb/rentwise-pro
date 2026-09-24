@@ -233,24 +233,24 @@ export default function Agents() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border/50">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
-            Agent & Lender Directory
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+            Agents
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Verified equipment suppliers, rental volume, ratings, and active catalog items.
+          <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+            Verified gear fleet managers, lender profiles, and listing inventory
           </p>
         </div>
 
         <button
           onClick={fetchAgents}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-secondary/50 hover:bg-secondary text-foreground text-xs font-medium transition-colors cursor-pointer self-start sm:self-auto"
         >
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", loading && "animate-spin")} />
           <span>Refresh</span>
         </button>
       </div>
@@ -258,7 +258,7 @@ export default function Agents() {
       {/* SEARCH & FILTERS */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search agents by name or email..."
@@ -267,11 +267,11 @@ export default function Agents() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
+            className="w-full bg-card text-foreground text-xs rounded-lg pl-9 pr-3 py-2 border border-border/70 focus:outline-none focus:border-foreground/40 font-medium placeholder:text-muted-foreground"
           />
         </div>
 
-        <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold">
+        <div className="flex items-center p-0.5 bg-secondary/60 rounded-lg border border-border/60 text-xs font-medium">
           {["all", "active", "suspended"].map((st) => (
             <button
               key={st}
@@ -280,9 +280,9 @@ export default function Agents() {
                 setCurrentPage(1);
               }}
               className={cn(
-                "px-3 py-1 rounded-lg capitalize transition-all cursor-pointer text-[11px]",
+                "px-2.5 py-1 rounded-md capitalize transition-colors cursor-pointer text-xs",
                 statusFilter === st
-                  ? "bg-card text-foreground shadow-xs font-bold"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -294,26 +294,26 @@ export default function Agents() {
 
       {/* 3-STATE CONTAINER: ERROR vs TABLE (LOADING / REAL DATA / EMPTY DB) */}
       {error ? (
-        <div className="card-premium bg-card/40 border border-destructive/30 p-12 rounded-2xl text-center space-y-4">
-          <div className="inline-flex p-3 rounded-full bg-destructive/10 text-destructive">
-            <ShieldAlert className="h-6 w-6" />
+        <div className="bg-card border border-red-500/20 p-8 rounded-xl text-center space-y-3">
+          <div className="inline-flex p-2.5 rounded-full bg-red-500/10 text-[#FF1744]">
+            <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-foreground">Unable to Load Agents</h3>
+            <h3 className="text-sm font-semibold text-foreground">Unable to Load Agents</h3>
             <p className="text-xs text-muted-foreground mt-1">{error}</p>
           </div>
           <div>
             <button
               onClick={() => fetchAgents()}
-              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium transition-colors border border-border/80 cursor-pointer inline-flex items-center gap-1.5"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Retry Database Fetch</span>
             </button>
           </div>
         </div>
       ) : (
-        <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+        <div className="space-y-4">
           <Table
             columns={columns}
             data={paginatedAgents}
@@ -326,15 +326,16 @@ export default function Agents() {
           />
 
           {filteredAgents.length > itemsPerPage && !loading && (
-            <div className="p-4 border-t border-border/40">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={Math.ceil(filteredAgents.length / itemsPerPage)}
-                onPageChange={setCurrentPage}
-                itemsPerPage={itemsPerPage}
-                totalItems={filteredAgents.length}
-              />
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredAgents.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(newSize) => {
+                setItemsPerPage(newSize);
+                setCurrentPage(1);
+              }}
+            />
           )}
         </div>
       )}

@@ -107,39 +107,41 @@ export default function Support() {
   }, [tickets, search, statusFilter]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border/50">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
-            Support Desk & Triage
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+            Support
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Authoritative ticket thread resolution, user inquiries, and operational support tickets.
+          <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+            Customer inquiries, ticket resolution inbox, and communication threads
           </p>
         </div>
 
         <button
           onClick={() => fetchTickets()}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-secondary/50 hover:bg-secondary text-foreground text-xs font-medium transition-colors cursor-pointer self-start sm:self-auto"
         >
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", loading && "animate-spin")} />
           <span>Refresh</span>
         </button>
       </div>
 
       {/* ERROR / UNCONFIGURED BANNER */}
       {error && !loading && (
-        <div className="bg-card rounded-2xl border border-destructive/30 p-8 text-center shadow-xs flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-3">
-            <ShieldAlert className="h-6 w-6" />
+        <div className="bg-card rounded-xl border border-red-500/20 p-8 text-center flex flex-col items-center justify-center space-y-3">
+          <div className="w-10 h-10 rounded-full bg-red-500/10 text-[#FF1744] flex items-center justify-center">
+            <ShieldAlert className="h-5 w-5" />
           </div>
-          <h3 className="text-base font-bold text-foreground font-display">Database Sync Failed</h3>
-          <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Database Sync Failed</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+          </div>
           <button
             onClick={() => fetchTickets()}
-            className="mt-4 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium transition-colors border border-border/80 cursor-pointer"
           >
             Retry Database Fetch
           </button>
@@ -149,7 +151,7 @@ export default function Support() {
       {/* TICKET SPLIT WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* TICKET LIST PANEL */}
-        <div className="bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden flex flex-col h-[650px]">
+        <div className="bg-card rounded-xl border border-border/70 overflow-hidden flex flex-col h-[650px]">
           {/* Filters */}
           <div className="p-3 border-b border-border/40 space-y-2 bg-secondary/20">
             <div className="relative">
@@ -159,18 +161,20 @@ export default function Support() {
                 placeholder="Search tickets..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-card text-foreground text-xs rounded-xl pl-8 pr-3 py-1.5 border border-border/80 focus:outline-none font-medium"
+                className="w-full bg-card text-foreground text-xs rounded-lg pl-8 pr-3 py-1.5 border border-border/70 focus:outline-none focus:border-foreground/40 font-medium placeholder:text-muted-foreground"
               />
             </div>
 
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-[10px] font-bold">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-xs font-medium">
               {["all", "open", "pending", "resolved", "closed"].map((st) => (
                 <button
                   key={st}
                   onClick={() => setStatusFilter(st)}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg uppercase tracking-wider transition-all cursor-pointer",
-                    statusFilter === st ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"
+                    "px-2.5 py-1 rounded-md uppercase tracking-wider transition-colors cursor-pointer text-[10px]",
+                    statusFilter === st
+                      ? "bg-secondary text-foreground font-semibold border border-border/70"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {st}
@@ -193,15 +197,15 @@ export default function Support() {
                     key={t.id}
                     onClick={() => setSelectedTicket(t)}
                     className={cn(
-                      "p-3.5 cursor-pointer transition-colors text-xs space-y-1.5",
-                      isSelected ? "bg-secondary/70 border-l-3 border-primary" : "hover:bg-secondary/30"
+                      "p-3.5 cursor-pointer transition-colors text-xs space-y-1 relative",
+                      isSelected ? "bg-secondary/40 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-emerald-500" : "hover:bg-secondary/20"
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-foreground truncate max-w-[180px]">{t.subject}</span>
+                      <span className="font-semibold text-foreground truncate max-w-[180px]">{t.subject}</span>
                       <span
                         className={cn(
-                          "text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border",
+                          "text-[9px] font-mono font-medium uppercase px-1.5 py-0.2 rounded border",
                           t.status === "open"
                             ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
                             : t.status === "resolved"
@@ -227,15 +231,15 @@ export default function Support() {
         </div>
 
         {/* TICKET CONVERSATION THREAD */}
-        <div className="lg:col-span-2 bg-card rounded-2xl border border-border/80 shadow-xs flex flex-col h-[650px] overflow-hidden">
+        <div className="lg:col-span-2 bg-card rounded-xl border border-border/70 flex flex-col h-[650px] overflow-hidden">
           {selectedTicket ? (
             <>
               {/* Thread Header */}
-              <div className="p-4 border-b border-border/40 bg-secondary/30 flex items-center justify-between">
+              <div className="p-4 border-b border-border/40 bg-secondary/20 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">{selectedTicket.subject}</h3>
+                  <h3 className="text-sm font-semibold text-foreground">{selectedTicket.subject}</h3>
                   <p className="text-xs text-muted-foreground">
-                    From: <span className="font-semibold text-foreground">{selectedTicket.userName}</span> ({selectedTicket.userEmail})
+                    From: <span className="font-medium text-foreground">{selectedTicket.userName}</span> ({selectedTicket.userEmail})
                   </p>
                 </div>
 
@@ -243,7 +247,7 @@ export default function Support() {
                   <select
                     value={selectedTicket.status}
                     onChange={(e) => handleUpdateStatus(e.target.value as AdminSupportTicket["status"])}
-                    className="bg-card text-foreground text-xs rounded-xl px-2.5 py-1.5 border border-border font-bold uppercase cursor-pointer"
+                    className="bg-card text-foreground text-xs rounded-lg px-2.5 py-1.5 border border-border/70 font-medium uppercase cursor-pointer"
                   >
                     <option value="open">Open</option>
                     <option value="pending">Pending</option>
@@ -260,13 +264,13 @@ export default function Support() {
                     <div
                       key={m.id}
                       className={cn(
-                        "p-3.5 rounded-xl max-w-lg space-y-1 leading-relaxed",
+                        "p-3 rounded-lg max-w-lg space-y-1 leading-relaxed",
                         m.sender === "admin"
-                          ? "ml-auto bg-primary text-primary-foreground font-medium"
-                          : "bg-secondary border border-border/60 text-foreground"
+                          ? "ml-auto bg-secondary text-foreground font-medium border border-border/70"
+                          : "bg-secondary/40 border border-border/50 text-foreground"
                       )}
                     >
-                      <div className="flex items-center justify-between text-[10px] font-bold opacity-75">
+                      <div className="flex items-center justify-between text-[10px] font-medium opacity-75">
                         <span>{m.sender === "admin" ? "Support Admin" : selectedTicket.userName}</span>
                         <span>{m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
                       </div>
@@ -281,18 +285,18 @@ export default function Support() {
               </div>
 
               {/* Reply Form */}
-              <form onSubmit={handleSendReply} className="p-3 border-t border-border/40 bg-secondary/20 flex gap-2">
+              <form onSubmit={handleSendReply} className="p-3 border-t border-border/40 bg-secondary/15 flex gap-2">
                 <input
                   type="text"
                   placeholder="Type an official admin response..."
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl bg-card border border-border/80 text-foreground text-xs font-medium focus:outline-none focus:border-primary"
+                  className="flex-1 px-3 py-2 rounded-lg bg-card border border-border/70 text-foreground text-xs font-medium focus:outline-none focus:border-foreground/40 placeholder:text-muted-foreground"
                 />
                 <button
                   type="submit"
                   disabled={submittingReply || !reply.trim()}
-                  className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <Send className="h-3.5 w-3.5" />
                   <span>Send</span>

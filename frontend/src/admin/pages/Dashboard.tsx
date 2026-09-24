@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Users,
@@ -6,17 +6,16 @@ import {
   Calendar,
   IndianRupee,
   AlertTriangle,
-  Bell,
   ArrowRight,
-  UserCheck,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
-  CreditCard,
-  Flag,
-  Shield,
-  LifeBuoy,
   RefreshCw,
-  Radio,
+  Clock,
+  ShieldAlert,
+  LifeBuoy,
+  Eye,
+  Check,
+  X,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -29,17 +28,16 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { StatsCard } from "../components/layout/StatsCard";
-import { ChartCard } from "../components/layout/ChartCard";
 import { Loader } from "../components/layout/Loader";
 import {
   notificationsService,
   DashboardStats,
   DashboardCharts,
-  DashboardActivity,
 } from "../services/notifications";
 import { productsService } from "../services/products";
-import { AdminProduct } from "../services/api";
+import { bookingsService } from "../services/bookings";
+import { usersService } from "../services/users";
+import { AdminProduct, AdminBooking, AdminUser, AdminSupportTicket } from "../services/api";
 import { authService } from "../services/auth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -49,26 +47,44 @@ import { AdminProductImage } from "../components/common/AdminProductImage";
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [charts, setCharts] = useState<DashboardCharts | null>(null);
-  const [activities, setActivities] = useState<DashboardActivity[]>([]);
   const [pendingProductsList, setPendingProductsList] = useState<AdminProduct[]>([]);
+  const [recentBookings, setRecentBookings] = useState<AdminBooking[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<AdminUser[]>([]);
+  const [openTickets, setOpenTickets] = useState<AdminSupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wsStatus, setWsStatus] = useState<ConnectionStatus>("DISCONNECTED");
+  const [activeChartTab, setActiveChartTab] = useState<"revenue" | "bookings">("revenue");
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   const currentUser = authService.getCurrentUser();
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  }, []);
 
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [statsData, chartsData, activitiesData, productsData] = await Promise.allSettled([
+      const [
+        statsData,
+        chartsData,
+        productsData,
+        bookingsData,
+        usersData,
+        ticketsData,
+      ] = await Promise.allSettled([
         notificationsService.getDashboardStats(),
         notificationsService.getDashboardCharts("30"),
-        notificationsService.getDashboardActivities(),
         productsService.getProducts("pending"),
+        bookingsService.getBookings(),
+        usersService.getUsers(),
+        notificationsService.getSupportTickets(),
       ]);
 
       if (statsData.status === "fulfilled") {
@@ -81,15 +97,28 @@ export default function Dashboard() {
         setCharts(chartsData.value);
       }
 
-      if (activitiesData.status === "fulfilled") {
-        setActivities(activitiesData.value);
-      }
-
       if (productsData.status === "fulfilled") {
-        setPendingProductsList(productsData.value.slice(0, 5));
+        setPendingProductsList(productsData.value.slice(0, 6));
       }
 
-      // If stats failed completely, report error
+      if (bookingsData.status === "fulfilled") {
+        setRecentBookings(bookingsData.value.slice(0, 5));
+      }
+
+      if (usersData.status === "fulfilled") {
+        const unverified = usersData.value.filter(
+          (u) => u.verificationStatus === "pending" || u.status === "pending"
+        );
+        setPendingUsers(unverified.slice(0, 4));
+      }
+
+      if (ticketsData.status === "fulfilled") {
+        const open = ticketsData.value.filter(
+          (t) => t.status === "open" || t.status === "pending"
+        );
+        setOpenTickets(open.slice(0, 4));
+      }
+
       if (statsData.status === "rejected") {
         setError("Failed to fetch live dashboard operational metrics.");
       }
@@ -104,23 +133,12 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardData();
 
-    // WebSocket listeners
-    const unsubStatus = adminWS.onStatusChange(setWsStatus);
-
-    const unsubProductCreated = adminWS.subscribe("product.created", () => {
-      fetchDashboardData();
-    });
-
-    const unsubBookingCreated = adminWS.subscribe("booking.created", () => {
-      fetchDashboardData();
-    });
-
-    const unsubPayment = adminWS.subscribe("payment.created", () => {
-      fetchDashboardData();
-    });
+    // WebSocket listeners for live marketplace activity
+    const unsubProductCreated = adminWS.subscribe("product.created", () => fetchDashboardData());
+    const unsubBookingCreated = adminWS.subscribe("booking.created", () => fetchDashboardData());
+    const unsubPayment = adminWS.subscribe("payment.created", () => fetchDashboardData());
 
     return () => {
-      unsubStatus();
       unsubProductCreated();
       unsubBookingCreated();
       unsubPayment();
@@ -139,7 +157,7 @@ export default function Dashboard() {
           approvedProducts: stats.approvedProducts + 1,
         });
       }
-      toast.success(`Listing "${title}" approved and published.`);
+      toast.success(`Listing "${title}" approved & live.`);
     } catch {
       toast.error("Failed to approve product.");
     } finally {
@@ -167,198 +185,378 @@ export default function Dashboard() {
     }
   };
 
+  const adminName = currentUser?.fullName?.split(" ")[0] || currentUser?.email?.split("@")[0] || "Admin";
+
   if (loading && !stats) {
     return (
       <div className="py-24 flex items-center justify-center">
-        <Loader message="Connecting to PAYENT Control Plane..." size="lg" />
+        <Loader message="Loading PAYENT Control Center..." size="md" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* HEADER: Identity & System Operational Status */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+    <div className="space-y-8 max-w-7xl mx-auto">
+      {/* ============================================================ */}
+      {/* TOP: Greeting & Overview Header */}
+      {/* ============================================================ */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border/50">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
-              PAYENT ADMIN CONTROL CENTER
-            </h1>
-            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-primary text-primary-foreground rounded uppercase">
-              v2.0
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Live operational status • Authenticated as{" "}
-            <span className="font-semibold text-foreground">{currentUser?.fullName || currentUser?.email || "Administrator"}</span>{" "}
-            ({currentUser?.role || "superadmin"})
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+            {greeting}, {adminName}
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+            PAYENT marketplace overview & operational telemetry
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Realtime Stream Pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card text-xs font-medium">
-            <Radio
-              className={cn(
-                "h-3.5 w-3.5",
-                wsStatus === "LIVE" ? "text-emerald-500 animate-pulse" : "text-muted-foreground"
-              )}
-            />
-            <span className="text-[11px]">
-              {wsStatus === "LIVE" ? "Realtime Active" : "Polling Mode"}
-            </span>
-          </div>
-
-          {/* Refresh Button */}
+        <div className="flex items-center gap-2">
           <button
             onClick={fetchDashboardData}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/80 bg-secondary/80 hover:bg-secondary text-foreground text-xs font-semibold transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-secondary/50 hover:bg-secondary text-foreground text-xs font-medium transition-colors cursor-pointer"
+            title="Sync live telemetry"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+            <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", loading && "animate-spin")} />
             <span>Sync</span>
           </button>
         </div>
       </div>
 
-      {/* ERROR BANNER IF ANY API FAILED */}
+      {/* ERROR BANNER */}
       {error && (
-        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive flex items-center justify-between">
-          <div className="flex items-center gap-3 text-xs font-semibold">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
+        <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-between text-xs font-medium">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-[#FF1744]" />
             <span>{error}</span>
           </div>
           <button
             onClick={fetchDashboardData}
-            className="text-xs font-bold underline hover:no-underline cursor-pointer"
+            className="font-semibold underline hover:no-underline cursor-pointer"
           >
-            Retry Connection
+            Retry
           </button>
         </div>
       )}
 
-      {/* REAL KPI SECTION */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Platform Key Performance Indicators
-          </h2>
-          <span className="text-[11px] text-muted-foreground font-mono">
-            Source: MySQL Primary Cluster
-          </span>
+      {/* ============================================================ */}
+      {/* COMPACT KPI STRIP: Users, Active Products, Bookings, Revenue */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Total Users */}
+        <div className="p-4 sm:p-5 rounded-xl border border-border/70 bg-card">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Users
+            </span>
+            <Users className="h-4 w-4 text-muted-foreground/70" />
+          </div>
+          <div className="mt-2 text-2xl font-bold tracking-tight text-foreground font-mono">
+            {stats ? stats.totalUsers.toLocaleString() : "—"}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {stats ? `${stats.totalAgents || 0} verified agents` : "Live accounts"}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            title="Total Users"
-            value={stats ? stats.totalUsers.toLocaleString() : "—"}
-            subtext={`${stats?.totalAgents || 0} verified agents`}
-            icon={Users}
-            loading={loading && !stats}
-            error={!stats && !!error}
-            onRetry={fetchDashboardData}
-          />
-
-          <StatsCard
-            title="Active Listings"
-            value={stats ? stats.approvedProducts.toLocaleString() : "—"}
-            subtext={`${stats?.pendingProducts || 0} pending review`}
-            icon={Package}
-            loading={loading && !stats}
-            error={!stats && !!error}
-            onRetry={fetchDashboardData}
-          />
-
-          <StatsCard
-            title="Monthly Bookings"
-            value={stats ? stats.monthlyBookings.toLocaleString() : "—"}
-            subtext={`${stats?.bookingsToday || 0} booked today`}
-            icon={Calendar}
-            loading={loading && !stats}
-            error={!stats && !!error}
-            onRetry={fetchDashboardData}
-          />
-
-          <StatsCard
-            title="Total Revenue"
-            value={stats ? `₹${stats.monthlyRevenue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}` : "—"}
-            subtext={`₹${(stats?.revenueToday || 0).toLocaleString("en-IN")} today`}
-            icon={IndianRupee}
-            loading={loading && !stats}
-            error={!stats && !!error}
-            onRetry={fetchDashboardData}
-          />
+        {/* Active Products */}
+        <div className="p-4 sm:p-5 rounded-xl border border-border/70 bg-card">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Active Products
+            </span>
+            <Package className="h-4 w-4 text-muted-foreground/70" />
+          </div>
+          <div className="mt-2 text-2xl font-bold tracking-tight text-foreground font-mono">
+            {stats ? stats.approvedProducts.toLocaleString() : "—"}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground flex items-center gap-1.5">
+            {stats && stats.pendingProducts > 0 ? (
+              <span className="text-amber-600 dark:text-amber-400 font-medium">
+                {stats.pendingProducts} pending review
+              </span>
+            ) : (
+              <span>All catalog approved</span>
+            )}
+          </div>
         </div>
-      </section>
 
-      {/* OPERATIONS & ACTION MATRIX */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* PENDING APPROVALS QUEUE */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="p-6 bg-card rounded-2xl border border-border/80 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-border/40 pb-4">
-              <div className="flex items-center gap-2.5">
-                <Package className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-bold text-foreground">Pending Product Approvals</h3>
-                {pendingProductsList.length > 0 && (
-                  <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-full">
-                    {pendingProductsList.length} Action Needed
-                  </span>
-                )}
+        {/* Bookings */}
+        <div className="p-4 sm:p-5 rounded-xl border border-border/70 bg-card">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Bookings
+            </span>
+            <Calendar className="h-4 w-4 text-muted-foreground/70" />
+          </div>
+          <div className="mt-2 text-2xl font-bold tracking-tight text-foreground font-mono">
+            {stats ? stats.monthlyBookings.toLocaleString() : "—"}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {stats?.bookingsToday ? `${stats.bookingsToday} new today` : "Monthly rental orders"}
+          </div>
+        </div>
+
+        {/* Revenue */}
+        <div className="p-4 sm:p-5 rounded-xl border border-border/70 bg-card">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Revenue
+            </span>
+            <IndianRupee className="h-4 w-4 text-muted-foreground/70" />
+          </div>
+          <div className="mt-2 text-2xl font-bold tracking-tight text-foreground font-mono">
+            {stats ? `₹${stats.monthlyRevenue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}` : "—"}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {stats?.revenueToday ? `₹${stats.revenueToday.toLocaleString("en-IN")} today` : "Total gross volume"}
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================ */}
+      {/* MARKETPLACE ACTIVITY: Large Primary Visualization */}
+      {/* ============================================================ */}
+      <div className="p-5 sm:p-6 rounded-xl border border-border/70 bg-card space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/40">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground tracking-tight">
+              Marketplace Activity
+            </h2>
+            <p className="text-[11px] text-muted-foreground">
+              30-day transactional volume and rental lease performance
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg border border-border/50 self-start sm:self-auto">
+            <button
+              onClick={() => setActiveChartTab("revenue")}
+              className={cn(
+                "px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer",
+                activeChartTab === "revenue"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Revenue Trajectory
+            </button>
+            <button
+              onClick={() => setActiveChartTab("bookings")}
+              className={cn(
+                "px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer",
+                activeChartTab === "bookings"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Booking Volume
+            </button>
+          </div>
+        </div>
+
+        <div className="h-72 w-full pt-2">
+          {activeChartTab === "revenue" ? (
+            charts && charts.revenueChart && charts.revenueChart.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={charts.revenueChart}>
+                  <defs>
+                    <linearGradient id="editorialRev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--foreground)" stopOpacity={0.12} />
+                      <stop offset="100%" stopColor="var(--foreground)" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                  <XAxis dataKey="name" stroke="#888" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis
+                    stroke="#888"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      borderColor: "var(--border)",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      color: "var(--foreground)",
+                    }}
+                    formatter={(val: number) => [`₹${val.toLocaleString()}`, "Gross Revenue"]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="var(--foreground)"
+                    strokeWidth={1.75}
+                    fillOpacity={1}
+                    fill="url(#editorialRev)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+                No revenue records available for the last 30 days.
               </div>
-              <Link
-                to="/admin/products"
-                search={{ status: "pending" }}
-                className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-              >
-                View all <ArrowRight className="h-3 w-3" />
-              </Link>
+            )
+          ) : charts && charts.bookingChart && charts.bookingChart.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={charts.bookingChart}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                <XAxis dataKey="name" stroke="#888" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#888" fontSize={11} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--card)",
+                    borderColor: "var(--border)",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    color: "var(--foreground)",
+                  }}
+                  formatter={(val: number) => [val, "Rental Orders"]}
+                />
+                <Bar dataKey="bookings" fill="var(--foreground)" radius={[3, 3, 0, 0]} maxBarSize={32} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+              No booking records available for the last 30 days.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ============================================================ */}
+      {/* OPERATIONS: 2-Column (LEFT: Recent Bookings | RIGHT: Pending Actions) */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN (7 cols): Recent Bookings / Orders */}
+        <div className="lg:col-span-7 rounded-xl border border-border/70 bg-card p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-border/40">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                Recent Bookings
+              </h2>
+              <p className="text-[11px] text-muted-foreground">
+                Latest gear rental requests and dispatched orders
+              </p>
+            </div>
+            <Link
+              to="/admin/bookings"
+              className="text-xs font-semibold text-foreground hover:text-emerald-500 inline-flex items-center gap-1 transition-colors"
+            >
+              <span>View all</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          {recentBookings.length === 0 ? (
+            <div className="py-12 text-center text-xs text-muted-foreground">
+              No recent bookings found.
+            </div>
+          ) : (
+            <div className="divide-y divide-border/40">
+              {recentBookings.map((b) => (
+                <div key={b.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-semibold text-foreground truncate">
+                        #{b.id.slice(0, 8)}
+                      </span>
+                      <span
+                        className={cn(
+                          "px-1.5 py-0.2 text-[10px] font-medium rounded",
+                          b.status === "confirmed" || b.status === "completed"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                            : b.status === "cancelled"
+                            ? "bg-red-500/10 text-[#FF1744] border border-red-500/20"
+                            : "bg-secondary text-muted-foreground border border-border/60"
+                        )}
+                      >
+                        {b.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-foreground/90 font-medium truncate mt-0.5">
+                      {b.productTitle || "Tech Gear"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {b.customerName || "Customer"} • {b.startDate || "Date"} → {b.endDate || "Date"}
+                    </p>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <div className="text-xs font-mono font-semibold text-foreground">
+                      ₹{(b.amount || 0).toLocaleString("en-IN")}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground capitalize">
+                      {b.paymentStatus || "unpaid"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN (5 cols): Pending Actions (Products, Users, Tickets) */}
+        <div className="lg:col-span-5 space-y-5">
+          {/* Pending Product Approvals */}
+          <div className="rounded-xl border border-border/70 bg-card p-5 space-y-3">
+            <div className="flex items-center justify-between pb-3 border-b border-border/40">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-foreground/80" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Pending Listings
+                </h3>
+              </div>
+              {pendingProductsList.length > 0 && (
+                <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  {pendingProductsList.length} review
+                </span>
+              )}
             </div>
 
             {pendingProductsList.length === 0 ? (
-              <div className="py-8 text-center text-xs text-muted-foreground">
-                <CheckCircle className="h-6 w-6 text-emerald-500 mx-auto mb-2 opacity-80" />
-                All submitted gear listings have been reviewed. Queue is clear.
+              <div className="py-6 text-center text-xs text-muted-foreground flex flex-col items-center gap-1.5">
+                <CheckCircle2 className="h-5 w-5 text-emerald-500 opacity-80" />
+                <span>All gear listings reviewed. Queue clear.</span>
               </div>
             ) : (
               <div className="divide-y divide-border/30">
-                {pendingProductsList.map((prod) => (
-                  <div
-                    key={prod.id}
-                    className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
+                {pendingProductsList.map((p) => (
+                  <div key={p.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <AdminProductImage
-                        src={prod.image}
-                        alt={prod.title}
-                        className="w-11 h-11 rounded-lg"
+                        src={p.image}
+                        alt={p.title}
+                        className="w-9 h-9 rounded-md shrink-0"
                       />
                       <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-foreground truncate">
-                          {prod.title}
+                        <h4 className="text-xs font-medium text-foreground truncate">
+                          {p.title}
                         </h4>
                         <p className="text-[11px] text-muted-foreground truncate">
-                          {prod.category} • ₹{prod.price}/day • Owner: {prod.owner?.name || "Lender"}
+                          ₹{p.price}/day • {p.owner?.name || "Lender"}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
-                        onClick={() => handleApproveProduct(prod.id, prod.title)}
-                        disabled={approvingId === prod.id || rejectingId === prod.id}
-                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        onClick={() => handleApproveProduct(p.id, p.title)}
+                        disabled={approvingId === p.id || rejectingId === p.id}
+                        className="p-1.5 rounded-md hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-transparent hover:border-emerald-500/30 transition-colors cursor-pointer"
+                        title="Approve listing"
                       >
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Approve</span>
+                        <Check className="h-3.5 w-3.5" />
                       </button>
                       <button
-                        onClick={() => handleRejectProduct(prod.id, prod.title)}
-                        disabled={approvingId === prod.id || rejectingId === prod.id}
-                        className="px-2.5 py-1 rounded-lg bg-destructive hover:bg-destructive/90 text-white text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        onClick={() => handleRejectProduct(p.id, p.title)}
+                        disabled={approvingId === p.id || rejectingId === p.id}
+                        className="p-1.5 rounded-md hover:bg-red-500/10 text-[#FF1744] border border-transparent hover:border-red-500/30 transition-colors cursor-pointer"
+                        title="Reject listing"
                       >
-                        <XCircle className="h-3 w-3" />
-                        <span>Reject</span>
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -367,157 +565,99 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* REVENUE & BOOKINGS CHART */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ChartCard
-              title="Revenue Trajectory (30 Days)"
-              description="Gross volume generated across verified leases"
-            >
-              {charts && charts.revenueChart && charts.revenueChart.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={charts.revenueChart}>
-                    <defs>
-                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#161616" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#161616" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.15} />
-                    <XAxis dataKey="name" stroke="#888" fontSize={10} tickLine={false} />
-                    <YAxis stroke="#888" fontSize={10} tickLine={false} tickFormatter={(v) => `₹${v}`} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#111",
-                        borderColor: "rgba(255,255,255,0.1)",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        color: "#fff",
-                      }}
-                      formatter={(value: number) => [`₹${value.toLocaleString()}`, "Revenue"]}
-                    />
-                    <Area type="monotone" dataKey="revenue" stroke="#161616" strokeWidth={2} fillOpacity={1} fill="url(#colorRev)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-                  No revenue data recorded for current 30-day window.
+          {/* Pending Verifications / Open Support Tickets */}
+          {(pendingUsers.length > 0 || openTickets.length > 0) && (
+            <div className="rounded-xl border border-border/70 bg-card p-5 space-y-3">
+              <div className="flex items-center justify-between pb-3 border-b border-border/40">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-foreground/80" />
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Action Items
+                  </h3>
                 </div>
-              )}
-            </ChartCard>
-
-            <ChartCard
-              title="Booking Volume (30 Days)"
-              description="Daily completed and active gear rental orders"
-            >
-              {charts && charts.bookingChart && charts.bookingChart.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={charts.bookingChart}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.15} />
-                    <XAxis dataKey="name" stroke="#888" fontSize={10} tickLine={false} />
-                    <YAxis stroke="#888" fontSize={10} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#111",
-                        borderColor: "rgba(255,255,255,0.1)",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        color: "#fff",
-                      }}
-                      formatter={(value: number) => [value, "Bookings"]}
-                    />
-                    <Bar dataKey="bookings" fill="#161616" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-                  No rental bookings recorded for current 30-day window.
-                </div>
-              )}
-            </ChartCard>
-          </div>
-        </div>
-
-        {/* RECENT OPERATIONAL ACTIVITY & DIRECT ACTIONS */}
-        <div className="space-y-6">
-          {/* DIRECT ACTION SHORTCUTS */}
-          <div className="p-5 bg-card rounded-2xl border border-border/80 shadow-xs space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Operations Shortcuts
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Link
-                to="/admin/users"
-                className="p-3 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/60 text-xs font-bold transition-all flex flex-col items-start gap-1"
-              >
-                <UserCheck className="h-4 w-4 text-foreground" />
-                <span>Manage Users</span>
-              </Link>
-
-              <Link
-                to="/admin/bookings"
-                className="p-3 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/60 text-xs font-bold transition-all flex flex-col items-start gap-1"
-              >
-                <Calendar className="h-4 w-4 text-foreground" />
-                <span>Rental Orders</span>
-              </Link>
-
-              <Link
-                to="/admin/payments"
-                className="p-3 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/60 text-xs font-bold transition-all flex flex-col items-start gap-1"
-              >
-                <CreditCard className="h-4 w-4 text-foreground" />
-                <span>Reconcile Tx</span>
-              </Link>
-
-              <Link
-                to="/admin/reports"
-                className="p-3 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/60 text-xs font-bold transition-all flex flex-col items-start gap-1"
-              >
-                <Flag className="h-4 w-4 text-foreground" />
-                <span>Dispute Center</span>
-              </Link>
-            </div>
-          </div>
-
-          {/* AUDIT LOG TIMELINE */}
-          <div className="p-5 bg-card rounded-2xl border border-border/80 shadow-xs space-y-3">
-            <div className="flex items-center justify-between border-b border-border/40 pb-3">
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                  Recent Audit Activity
-                </h3>
               </div>
-              <Link
-                to="/admin/activity-logs"
-                className="text-[11px] font-bold text-primary hover:underline"
-              >
-                View full audit
-              </Link>
-            </div>
 
-            {activities.length === 0 ? (
-              <div className="py-6 text-center text-xs text-muted-foreground">
-                No recent security actions logged.
-              </div>
-            ) : (
-              <div className="space-y-3 divide-y divide-border/20">
-                {activities.slice(0, 5).map((act) => (
-                  <div key={act.id} className="pt-2.5 first:pt-0">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-foreground truncate">{act.title}</span>
-                      <span className="text-[10px] font-mono text-muted-foreground shrink-0">{act.time}</span>
+              <div className="space-y-2.5 divide-y divide-border/30">
+                {pendingUsers.map((u) => (
+                  <div key={u.id} className="pt-2 first:pt-0 flex items-center justify-between gap-2 text-xs">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{u.fullName || u.email}</p>
+                      <p className="text-[11px] text-muted-foreground">KYC / Identity Verification Pending</p>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                      {act.detail}
-                    </p>
+                    <Link
+                      to="/admin/users"
+                      className="px-2 py-1 text-[11px] font-medium rounded bg-secondary hover:bg-secondary/80 border border-border/60 shrink-0"
+                    >
+                      Review
+                    </Link>
+                  </div>
+                ))}
+
+                {openTickets.map((t) => (
+                  <div key={t.id} className="pt-2 first:pt-0 flex items-center justify-between gap-2 text-xs">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{t.subject || "Support Ticket"}</p>
+                      <p className="text-[11px] text-muted-foreground">{t.userName || "User"} • {t.priority || "normal"} priority</p>
+                    </div>
+                    <Link
+                      to="/admin/support"
+                      className="px-2 py-1 text-[11px] font-medium rounded bg-secondary hover:bg-secondary/80 border border-border/60 shrink-0"
+                    >
+                      Respond
+                    </Link>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ============================================================ */}
+      {/* MARKETPLACE HEALTH: Compact Operational Indicators */}
+      {/* ============================================================ */}
+      <div className="pt-2 border-t border-border/50">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Marketplace Health & Cluster Status
+        </h3>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="p-3.5 rounded-lg border border-border/60 bg-secondary/20">
+            <span className="text-[11px] text-muted-foreground block">Active Users</span>
+            <span className="text-sm font-semibold font-mono text-foreground mt-0.5 block">
+              {stats?.totalUsers || 0} Accounts
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-lg border border-border/60 bg-secondary/20">
+            <span className="text-[11px] text-muted-foreground block">Live Listings</span>
+            <span className="text-sm font-semibold font-mono text-foreground mt-0.5 block">
+              {stats?.approvedProducts || 0} Verified
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-lg border border-border/60 bg-secondary/20">
+            <span className="text-[11px] text-muted-foreground block">Pending Listings</span>
+            <span className="text-sm font-semibold font-mono text-foreground mt-0.5 block">
+              {stats?.pendingProducts || 0} In Queue
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-lg border border-border/60 bg-secondary/20">
+            <span className="text-[11px] text-muted-foreground block">Completed Bookings</span>
+            <span className="text-sm font-semibold font-mono text-foreground mt-0.5 block">
+              {stats?.monthlyBookings || 0} Fulfilled
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-lg border border-border/60 bg-secondary/20">
+            <span className="text-[11px] text-muted-foreground block">Pending Reports</span>
+            <span className="text-sm font-semibold font-mono text-foreground mt-0.5 block">
+              {stats?.pendingReports || 0} Open
+            </span>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

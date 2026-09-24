@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Menu,
   X,
+  Radio,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -95,6 +96,7 @@ export function Sidebar() {
     support: 0,
   });
   const navigate = useNavigate();
+  const currentUser = authService.getCurrentUser();
 
   const fetchBadges = async () => {
     try {
@@ -102,18 +104,16 @@ export function Sidebar() {
       setBadges({
         reports: stats.pendingReports || 0,
         notifications: stats.unreadNotifications || 0,
-        support: 1, // Default pending ticket count
+        support: 0,
       });
     } catch {
-      // Ignore
+      // Ignore badge errors silently
     }
   };
 
   useEffect(() => {
     fetchBadges();
-
-    // Refresh badges periodically
-    const interval = setInterval(fetchBadges, 10000);
+    const interval = setInterval(fetchBadges, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -127,72 +127,20 @@ export function Sidebar() {
     return badges[key as keyof typeof badges] || 0;
   };
 
-  // Nav Items Render Helper
-  const renderNavItems = () => {
-    return menuItems.map((group) => (
-      <div key={group.group} className="space-y-1">
-        {!collapsed && (
-          <h4 className="px-3 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest py-2">
-            {group.group}
-          </h4>
-        )}
-        {group.items.map((it) => {
-          const active = pathname === it.to;
-          const badgeVal = "badgeKey" in it ? getBadgeValue(it.badgeKey) : 0;
-
-          return (
-            <Link
-              key={it.to}
-              to={it.to}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative",
-                active
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
-              )}
-            >
-              <it.icon
-                className={cn(
-                  "h-4 w-4 shrink-0",
-                  active
-                    ? "scale-105"
-                    : "group-hover:scale-105 transition-transform",
-                )}
-              />
-              {!collapsed && <span className="truncate">{it.label}</span>}
-              {!collapsed && badgeVal > 0 && (
-                <span className="ml-auto shrink-0 flex items-center justify-center px-1.5 py-0.5 rounded-full bg-destructive text-[8px] font-extrabold text-white">
-                  {badgeVal}
-                </span>
-              )}
-              {collapsed && badgeVal > 0 && (
-                <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
-              )}
-            </Link>
-          );
-        })}
-      </div>
-    ));
-  };
-
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <div className="lg:hidden fixed top-3 left-4 z-50">
+      {/* Mobile Menu Trigger Button */}
+      <div className="lg:hidden fixed top-3.5 left-4 z-50">
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2 rounded-xl bg-card border border-border/80 text-foreground shadow-md"
+          className="p-2 rounded-lg bg-card border border-border/80 text-foreground shadow-xs hover:bg-secondary transition-colors"
+          aria-label="Toggle Navigation"
         >
-          {mobileOpen ? (
-            <X className="h-4.5 w-4.5" />
-          ) : (
-            <Menu className="h-4.5 w-4.5" />
-          )}
+          {mobileOpen ? <X className="h-4.5 w-4.5" /> : <Menu className="h-4.5 w-4.5" />}
         </button>
       </div>
 
-      {/* Mobile Drawer Backdrop */}
+      {/* Mobile Backdrop Overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -200,64 +148,136 @@ export function Sidebar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setMobileOpen(false)}
-            className="fixed inset-0 z-40 bg-background/50 backdrop-blur-xs lg:hidden"
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar Panel */}
-      <div
+      {/* Main Workspace Navigation Rail */}
+      <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex flex-col bg-card/65 glass border-r border-border/80 transition-all duration-300 lg:sticky lg:top-0 lg:h-screen shrink-0",
-          collapsed ? "w-20" : "w-64",
-          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex flex-col bg-card border-r border-border/70 transition-[width] duration-200 ease-out lg:sticky lg:top-0 lg:h-screen shrink-0 select-none",
+          collapsed ? "w-[72px]" : "w-[264px]",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {/* Brand Logo */}
-        <div className="flex items-center justify-between px-5 h-16 border-b border-border/40">
-          <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <span className="font-sans font-black tracking-tight text-lg text-foreground">
-              {collapsed ? "P" : "PAYENT"}
-            </span>
+        {/* Workspace Brand Header */}
+        <div className="flex items-center justify-between px-4 h-16 border-b border-border/50 shrink-0">
+          <Link
+            to="/admin/dashboard"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-2.5 overflow-hidden group"
+          >
+            <div className="h-7 w-7 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <span className="font-mono font-black text-xs text-emerald-500">P</span>
+            </div>
             {!collapsed && (
-              <span className="text-[10px] font-semibold text-foreground px-1.5 py-0.5 bg-secondary border border-border rounded">
-                Admin
-              </span>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-sans font-extrabold text-sm tracking-tight text-foreground">
+                    PAYENT
+                  </span>
+                  <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-1 py-0.2 rounded">
+                    OPS
+                  </span>
+                </div>
+                <span className="text-[10px] text-muted-foreground font-medium truncate">
+                  Control Center
+                </span>
+              </div>
             )}
           </Link>
 
-          {/* Collapse Button for Desktop */}
+          {/* Desktop Rail Collapse Toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex p-1.5 rounded-lg border border-border/60 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+            className="hidden lg:flex p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            title={collapsed ? "Expand rail (⌘+B)" : "Collapse rail"}
           >
-            {collapsed ? (
-              <ChevronRight className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronLeft className="h-3.5 w-3.5" />
-            )}
+            {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
           </button>
         </div>
 
-        {/* Scrollable Navigation */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
-          {renderNavItems()}
-        </div>
+        {/* Navigation Groups List */}
+        <nav className="flex-1 overflow-y-auto px-2.5 py-4 space-y-5 no-scrollbar">
+          {menuItems.map((group) => (
+            <div key={group.group} className="space-y-0.5">
+              {!collapsed && (
+                <div className="px-2.5 pb-1 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest font-mono">
+                  {group.group}
+                </div>
+              )}
+              {group.items.map((it) => {
+                const active = pathname === it.to || (it.to !== "/admin/dashboard" && pathname.startsWith(it.to));
+                const badgeVal = "badgeKey" in it ? getBadgeValue(it.badgeKey) : 0;
 
-        {/* Logout Area */}
-        <div className="p-4 border-t border-border/40 bg-secondary/10">
+                return (
+                  <Link
+                    key={it.to}
+                    to={it.to}
+                    onClick={() => setMobileOpen(false)}
+                    title={collapsed ? it.label : undefined}
+                    className={cn(
+                      "group relative flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium transition-colors",
+                      active
+                        ? "bg-secondary text-foreground font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-0.5 before:bg-emerald-500 before:rounded-r"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                      collapsed && "justify-center px-0"
+                    )}
+                  >
+                    <it.icon
+                      className={cn(
+                        "h-4 w-4 shrink-0 transition-colors",
+                        active ? "text-emerald-500" : "text-muted-foreground group-hover:text-foreground"
+                      )}
+                    />
+                    {!collapsed && <span className="truncate">{it.label}</span>}
+                    {!collapsed && badgeVal > 0 && (
+                      <span className="ml-auto shrink-0 flex items-center justify-center px-1.5 py-0.2 rounded-full bg-destructive/10 text-destructive border border-destructive/20 text-[9px] font-mono font-bold">
+                        {badgeVal}
+                      </span>
+                    )}
+                    {collapsed && badgeVal > 0 && (
+                      <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* User Identity & Logout Rail Footer */}
+        <div className="p-3 border-t border-border/50 shrink-0 space-y-2">
+          {!collapsed && (
+            <div className="px-2 py-1.5 rounded-md bg-secondary/40 border border-border/40 flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-md bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center shrink-0">
+                {currentUser?.fullName?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || "A"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold text-foreground truncate">
+                  {currentUser?.fullName || currentUser?.email?.split("@")[0] || "Administrator"}
+                </div>
+                <div className="text-[10px] text-muted-foreground font-mono truncate">
+                  {currentUser?.email || "admin@payent"}
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={handleLogout}
+            title="Sign out of Admin Session"
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold text-destructive hover:bg-destructive/10 transition-colors",
-              collapsed && "justify-center",
+              "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer",
+              collapsed && "justify-center px-0"
             )}
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Logout</span>}
+            {!collapsed && <span>Sign Out</span>}
           </button>
         </div>
-      </div>
+      </aside>
     </>
   );
 }

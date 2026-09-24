@@ -225,6 +225,24 @@ export default function Bookings() {
       ),
     },
     {
+      key: "paymentStatus",
+      label: "Payment",
+      render: (row) => (
+        <span
+          className={cn(
+            "text-[11px] font-medium capitalize",
+            row.paymentStatus === "paid"
+              ? "text-emerald-600 dark:text-emerald-400"
+              : row.paymentStatus === "failed"
+              ? "text-[#FF1744]"
+              : "text-muted-foreground"
+          )}
+        >
+          {row.paymentStatus || "unpaid"}
+        </span>
+      ),
+    },
+    {
       key: "status",
       label: "Status",
       sortable: true,
@@ -237,15 +255,15 @@ export default function Bookings() {
         return (
           <span
             className={cn(
-              "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center gap-1",
+              "px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider border inline-flex items-center gap-1",
               isCompleted
                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                 : isActive
-                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                ? "bg-secondary text-foreground border-border/70"
                 : isPending
                 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                 : isCancelled
-                ? "bg-destructive/10 text-destructive border-destructive/20"
+                ? "bg-red-500/10 text-[#FF1744] border-red-500/20"
                 : "bg-secondary text-muted-foreground border-border/60"
             )}
           >
@@ -266,7 +284,7 @@ export default function Bookings() {
               setSelectedBooking(row);
               setModalOpen(true);
             }}
-            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-all cursor-pointer"
+            className="p-1.5 rounded-md hover:bg-secondary text-foreground transition-colors cursor-pointer"
             title="Inspect booking"
           >
             <Eye className="h-3.5 w-3.5" />
@@ -276,7 +294,7 @@ export default function Bookings() {
               <button
                 onClick={() => handleComplete(row.id)}
                 disabled={actionLoading}
-                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
+                className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors cursor-pointer"
                 title="Mark as completed"
               >
                 <CheckCircle className="h-3.5 w-3.5" />
@@ -284,7 +302,7 @@ export default function Bookings() {
               <button
                 onClick={() => handleCancel(row.id)}
                 disabled={actionLoading}
-                className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+                className="p-1.5 rounded-md bg-red-500/10 text-[#FF1744] hover:bg-red-500/20 border border-red-500/20 transition-colors cursor-pointer"
                 title="Cancel booking"
               >
                 <XCircle className="h-3.5 w-3.5" />
@@ -297,24 +315,24 @@ export default function Bookings() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border/50">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
-            Rental Bookings Operations
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+            Bookings
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Real-time equipment dispatch, confirmed rental orders, cancellations, and completed leases.
+          <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+            Rental operations, gear dispatch timelines, schedules, and fulfillment
           </p>
         </div>
 
         <button
           onClick={() => fetchBookings()}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs self-start md:self-auto"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-secondary/50 hover:bg-secondary text-foreground text-xs font-medium transition-colors cursor-pointer self-start sm:self-auto"
         >
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", loading && "animate-spin")} />
           <span>Refresh</span>
         </button>
       </div>
@@ -322,7 +340,7 @@ export default function Bookings() {
       {/* FILTERS & SEARCH */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search bookings by ID, customer, product..."
@@ -331,11 +349,11 @@ export default function Bookings() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
+            className="w-full bg-card text-foreground text-xs rounded-lg pl-9 pr-3 py-2 border border-border/70 focus:outline-none focus:border-foreground/40 font-medium placeholder:text-muted-foreground"
           />
         </div>
 
-        <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold overflow-x-auto no-scrollbar">
+        <div className="flex items-center p-0.5 bg-secondary/60 rounded-lg border border-border/60 text-xs font-medium overflow-x-auto no-scrollbar">
           {["all", "pending", "confirmed", "active", "completed", "cancelled"].map((st) => (
             <button
               key={st}
@@ -344,9 +362,9 @@ export default function Bookings() {
                 setCurrentPage(1);
               }}
               className={cn(
-                "px-2.5 py-1 rounded-lg capitalize transition-all cursor-pointer text-[11px] whitespace-nowrap",
+                "px-2.5 py-1 rounded-md capitalize transition-colors cursor-pointer text-xs whitespace-nowrap",
                 statusFilter === st
-                  ? "bg-card text-foreground shadow-xs font-bold"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >

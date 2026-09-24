@@ -348,35 +348,35 @@ export default function Reports() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border/50">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
-            Operational Reporting & Dispute Center
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+            Reports
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Generate authoritative platform business reports and arbitrate marketplace dispute claims.
+          <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+            Operational telemetry reports, CSV exports, and marketplace dispute arbitration
           </p>
         </div>
 
         {/* TABS SWITCH */}
-        <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold">
+        <div className="flex items-center p-0.5 bg-secondary/60 rounded-lg border border-border/60 text-xs font-medium">
           <button
             onClick={() => setActiveTab("generator")}
             className={cn(
-              "px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
-              activeTab === "generator" ? "bg-card text-foreground shadow-xs font-bold" : "text-muted-foreground hover:text-foreground"
+              "px-3 py-1.5 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 text-xs",
+              activeTab === "generator" ? "bg-background text-foreground shadow-2xs font-semibold" : "text-muted-foreground hover:text-foreground"
             )}
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
-            <span>Generate Reports</span>
+            <span>Operational Reports</span>
           </button>
           <button
             onClick={() => setActiveTab("disputes")}
             className={cn(
-              "px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
-              activeTab === "disputes" ? "bg-card text-foreground shadow-xs font-bold" : "text-muted-foreground hover:text-foreground"
+              "px-3 py-1.5 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 text-xs",
+              activeTab === "disputes" ? "bg-background text-foreground shadow-2xs font-semibold" : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Flag className="h-3.5 w-3.5" />
@@ -388,18 +388,18 @@ export default function Reports() {
       {activeTab === "generator" ? (
         <div className="space-y-6">
           {/* REPORT GENERATOR CONTROLS */}
-          <div className="p-6 bg-card rounded-2xl border border-border/80 shadow-xs space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="p-5 bg-card rounded-xl border border-border/70 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">Report Type</label>
+                <label className="text-xs font-medium text-foreground">Report Type</label>
                 <select
                   value={reportType}
                   onChange={(e) => setReportType(e.target.value as ReportType)}
-                  className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-3 py-2.5 border border-border/80 focus:outline-none font-semibold cursor-pointer"
+                  className="w-full bg-secondary/40 text-foreground text-xs rounded-lg px-3 py-2 border border-border/70 focus:outline-none font-medium cursor-pointer"
                 >
                   <option value="revenue">Revenue Report</option>
                   <option value="bookings">Booking & Lease Report</option>
-                  <option value="users">User Registration Report</option>
+                  <option value="users">User Accounts Report</option>
                   <option value="products">Equipment Fleet Report</option>
                   <option value="payments">Payment Reconciliation Report</option>
                   <option value="agents">Agent & Lender Report</option>
@@ -408,11 +408,11 @@ export default function Reports() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">Date Range Window</label>
+                <label className="text-xs font-medium text-foreground">Date Range Window</label>
                 <select
                   value={dateRange}
                   onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
-                  className="w-full bg-secondary/50 text-foreground text-xs rounded-xl px-3 py-2.5 border border-border/80 focus:outline-none font-semibold cursor-pointer"
+                  className="w-full bg-secondary/40 text-foreground text-xs rounded-lg px-3 py-2 border border-border/70 focus:outline-none font-medium cursor-pointer"
                 >
                   <option value="7">Last 7 Days</option>
                   <option value="30">Last 30 Days</option>
@@ -425,20 +425,20 @@ export default function Reports() {
                 <button
                   onClick={handleGenerateReport}
                   disabled={generating}
-                  className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  className="flex-1 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   <RefreshCw className={cn("h-3.5 w-3.5", generating && "animate-spin")} />
-                  <span>{generating ? "Querying..." : "Generate Dataset"}</span>
+                  <span>{generating ? "Compiling..." : "Generate Dataset"}</span>
                 </button>
 
                 {generatedData && generatedData.length > 0 && (
                   <button
                     onClick={handleExportCSV}
-                    className="px-3.5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 border border-border/80 text-foreground font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                    className="px-3 py-2 rounded-lg bg-secondary hover:bg-secondary/80 border border-border/70 text-foreground font-medium text-xs transition-colors cursor-pointer flex items-center gap-1.5"
                     title="Export CSV"
                   >
                     <Download className="h-3.5 w-3.5" />
-                    <span>Export CSV</span>
+                    <span>CSV</span>
                   </button>
                 )}
               </div>

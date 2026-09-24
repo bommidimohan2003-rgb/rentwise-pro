@@ -2,20 +2,22 @@ import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   ArrowLeft,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
   FileText,
   Star,
-  User,
-  Shield,
   Eye,
   EyeOff,
+  Package,
   Calendar,
-  Lock,
+  IndianRupee,
+  ShieldCheck,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 import { productsService } from "../services/products";
 import { bookingsService } from "../services/bookings";
-import { AdminProduct, AdminBooking, AdminReview } from "../services/api";
+import { AdminProduct, AdminBooking } from "../services/api";
 import { Loader } from "../components/layout/Loader";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -97,7 +99,7 @@ export default function ProductDetails() {
       toast.success(
         updated.featured
           ? "Listing featured."
-          : "Listing removed from featured.",
+          : "Listing removed from featured."
       );
     } catch {
       toast.error("Failed to toggle featured.");
@@ -105,7 +107,11 @@ export default function ProductDetails() {
   };
 
   if (loading) {
-    return <Loader message="Parsing catalog database..." size="lg" />;
+    return (
+      <div className="py-24 flex items-center justify-center">
+        <Loader message="Parsing catalog database..." size="lg" />
+      </div>
+    );
   }
 
   if (!product) return null;
@@ -113,55 +119,60 @@ export default function ProductDetails() {
   return (
     <div className="space-y-6">
       {/* Top action bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/70 pb-4">
         <div className="flex items-center gap-3">
           <Link
             to="/admin/products"
-            className="p-2 rounded-xl bg-card border hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            className="p-2 rounded-lg bg-card border border-border/70 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base font-bold text-foreground truncate max-w-sm sm:max-w-md">
+              <h1 className="text-lg font-bold text-foreground font-display truncate max-w-sm sm:max-w-md">
                 {product.title}
               </h1>
               <span
                 className={cn(
-                  "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full select-none",
+                  "text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded select-none border",
                   product.status === "approved" &&
-                    "bg-green-500/10 text-green-600 dark:text-green-400",
+                    "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
                   product.status === "pending" &&
-                    "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+                    "bg-amber-500/10 text-amber-500 border-amber-500/20",
                   product.status === "rejected" &&
-                    "bg-red-500/10 text-red-600 dark:text-red-400",
+                    "bg-[#FF1744]/10 text-[#FF1744] border-[#FF1744]/20"
                 )}
               >
                 {product.status}
               </span>
+              {product.featured && (
+                <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1">
+                  <Sparkles className="h-2.5 w-2.5" /> Featured
+                </span>
+              )}
             </div>
-            <p className="text-[10px] font-semibold text-muted-foreground mt-0.5">
-              Product ID: {product.id}
+            <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
+              Product ID: {product.id} • Category: {product.category}
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {product.status === "pending" && (
             <>
               <button
                 onClick={handleApprove}
-                className="bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 hover:bg-green-500 transition-colors shadow-xs"
+                className="bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <CheckCircle className="h-4 w-4" />
-                <span>Approve</span>
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>Approve Listing</span>
               </button>
               <button
                 onClick={handleReject}
-                className="bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 hover:bg-red-500 transition-colors shadow-xs"
+                className="bg-[#FF1744]/10 hover:bg-[#FF1744]/20 text-[#FF1744] border border-[#FF1744]/30 text-xs font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <XCircle className="h-4 w-4" />
+                <XCircle className="h-3.5 w-3.5" />
                 <span>Reject</span>
               </button>
             </>
@@ -170,45 +181,50 @@ export default function ProductDetails() {
           <button
             onClick={handleToggleFeature}
             className={cn(
-              "text-xs font-bold px-4 py-2 rounded-xl border transition-colors",
+              "text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer",
               product.featured
-                ? "bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25"
-                : "bg-card hover:bg-secondary text-foreground/80 border-border/80",
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20"
+                : "bg-card hover:bg-secondary text-foreground border-border/70"
             )}
           >
-            {product.featured ? "Featured" : "Feature"}
+            {product.featured ? "Featured" : "Mark Featured"}
           </button>
 
           <button
             onClick={handleToggleHide}
             className={cn(
-              "text-xs font-bold px-4 py-2 rounded-xl border flex items-center gap-1.5 transition-colors",
+              "text-xs font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors cursor-pointer",
               product.hidden
-                ? "bg-red-500/10 border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/25"
-                : "bg-card hover:bg-secondary text-foreground/80 border-border/80",
+                ? "bg-secondary border-border/70 text-muted-foreground hover:text-foreground"
+                : "bg-card hover:bg-secondary text-foreground border-border/70"
             )}
           >
             {product.hidden ? (
-              <EyeOff className="h-3.5 w-3.5" />
+              <>
+                <Eye className="h-3.5 w-3.5 text-emerald-500" />
+                <span>Unhide</span>
+              </>
             ) : (
-              <Eye className="h-3.5 w-3.5" />
+              <>
+                <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>Hide</span>
+              </>
             )}
-            <span>{product.hidden ? "Hidden" : "Hide"}</span>
           </button>
         </div>
       </div>
 
       {/* Main Details Body split */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Left 2 Cols: Media & Logs */}
+        {/* Left 2 Cols: Media, Specs, & Rental History */}
         <div className="lg:col-span-2 space-y-6">
           {/* Media Frame */}
-          <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-xs space-y-3">
-            <div className="h-96 w-full rounded-xl overflow-hidden bg-secondary flex items-center justify-center">
+          <div className="p-4 rounded-xl bg-card border border-border/70 shadow-2xs space-y-3">
+            <div className="h-80 sm:h-96 w-full rounded-lg overflow-hidden bg-secondary flex items-center justify-center border border-border/50">
               <AdminProductImage
                 src={activeImage}
                 alt={product.title}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain bg-black/5 dark:bg-black/40"
                 iconClassName="h-12 w-12"
               />
             </div>
@@ -221,10 +237,10 @@ export default function ProductDetails() {
                     key={idx}
                     onClick={() => setActiveImage(img)}
                     className={cn(
-                      "h-16 w-20 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer",
+                      "h-16 w-20 rounded-md overflow-hidden border transition-all shrink-0 cursor-pointer",
                       activeImage === img
-                        ? "border-primary"
-                        : "border-transparent opacity-75 hover:opacity-100",
+                        ? "border-emerald-500 ring-1 ring-emerald-500/50"
+                        : "border-border/70 opacity-70 hover:opacity-100"
                     )}
                   >
                     <AdminProductImage
@@ -238,87 +254,61 @@ export default function ProductDetails() {
             )}
           </div>
 
-          {/* Verification documents */}
-          <div className="card-premium bg-card/60 p-5 space-y-4">
-            <h3 className="text-sm font-bold text-foreground">
-              Verification & Insurance Documents
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {product.documents.map((doc, idx) => (
-                <a
-                  key={idx}
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    toast.info(`Downloading placeholder: ${doc}`);
-                  }}
-                  className="flex items-center gap-3 p-3.5 rounded-xl bg-secondary/35 border border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-all group"
-                >
-                  <div className="p-2.5 rounded-lg bg-red-500/10 text-red-500 group-hover:bg-red-500/20 transition-colors">
-                    <FileText className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-foreground truncate">
-                      {doc}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground mt-0.5">
-                      Click to preview document
-                    </span>
-                  </div>
-                </a>
-              ))}
-            </div>
+          {/* Item Description */}
+          <div className="p-5 rounded-xl bg-card border border-border/70 shadow-2xs space-y-2.5">
+            <h3 className="text-sm font-semibold text-foreground">Equipment Description</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {product.description || "No specific operational description provided by the lender for this equipment."}
+            </p>
           </div>
 
           {/* Rental history */}
-          <div className="card-premium bg-card/60 p-5 space-y-3">
-            <h3 className="text-sm font-bold text-foreground">
-              Rental History
-            </h3>
+          <div className="p-5 rounded-xl bg-card border border-border/70 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+              <h3 className="text-sm font-semibold text-foreground">Rental Lease History</h3>
+              <span className="text-[11px] font-mono text-muted-foreground">{bookings.length} total orders</span>
+            </div>
+
             <div className="overflow-x-auto no-scrollbar">
-              <table className="w-full border-collapse text-left text-xs font-medium">
+              <table className="w-full border-collapse text-left text-xs">
                 <thead>
-                  <tr className="border-b border-border/50 text-muted-foreground font-bold">
-                    <th className="py-2.5">Booking ID</th>
-                    <th className="py-2.5">Customer</th>
-                    <th className="py-2.5">Rental Period</th>
-                    <th className="py-2.5">Amount</th>
-                    <th className="py-2.5 text-right">Status</th>
+                  <tr className="border-b border-border/60 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
+                    <th className="py-2 px-3">Order ID</th>
+                    <th className="py-2 px-3">Renter</th>
+                    <th className="py-2 px-3">Dates</th>
+                    <th className="py-2 px-3">Total</th>
+                    <th className="py-2 px-3 text-right">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/30 text-foreground/90">
+                <tbody className="divide-y divide-border/40 text-foreground">
                   {bookings.length === 0 ? (
                     <tr>
                       <td
                         colSpan={5}
-                        className="py-8 text-center text-muted-foreground font-semibold"
+                        className="py-6 text-center text-muted-foreground text-xs"
                       >
-                        This item hasn't been rented yet.
+                        This gear has not been rented out yet.
                       </td>
                     </tr>
                   ) : (
                     bookings.map((b) => (
-                      <tr key={b.id}>
-                        <td className="py-3 font-bold">{b.id}</td>
-                        <td className="py-3 font-bold">{b.customerName}</td>
-                        <td className="py-3 text-muted-foreground">
-                          {b.startDate} to {b.endDate}
+                      <tr key={b.id} className="hover:bg-secondary/30 transition-colors">
+                        <td className="py-2.5 px-3 font-mono font-medium text-foreground">{b.id}</td>
+                        <td className="py-2.5 px-3 font-medium text-foreground">{b.customerName}</td>
+                        <td className="py-2.5 px-3 text-muted-foreground font-mono text-[11px]">
+                          {b.startDate} → {b.endDate}
                         </td>
-                        <td className="py-3 font-extrabold text-primary">
-                          ₹{b.amount}
+                        <td className="py-2.5 px-3 font-mono font-semibold text-foreground">
+                          ₹{b.amount.toLocaleString()}
                         </td>
-                        <td className="py-3 text-right">
+                        <td className="py-2.5 px-3 text-right">
                           <span
                             className={cn(
-                              "inline-flex items-center text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full",
-                              b.status === "completed" &&
-                                "bg-green-500/10 text-green-600 dark:text-green-400",
-                              b.status === "active" &&
-                                "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-                              b.status === "pending" &&
-                                "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-                              b.status === "cancelled" &&
-                                "bg-red-500/10 text-red-600 dark:text-red-400",
+                              "inline-flex items-center text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded border",
+                              b.status === "completed" && "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+                              b.status === "active" && "bg-blue-500/10 text-blue-500 border-blue-500/20",
+                              b.status === "pending" && "bg-amber-500/10 text-amber-500 border-amber-500/20",
+                              b.status === "cancelled" && "bg-[#FF1744]/10 text-[#FF1744] border-[#FF1744]/20"
                             )}
                           >
                             {b.status}
@@ -333,102 +323,112 @@ export default function ProductDetails() {
           </div>
         </div>
 
-        {/* Right 1 Col: Info Specs & Lender */}
+        {/* Right 1 Col: Specs & Lender info */}
         <div className="space-y-6">
           {/* Details specs */}
-          <div className="card-premium bg-card/60 p-5 space-y-4">
-            <h3 className="text-sm font-bold text-foreground">
-              Specifications
+          <div className="p-5 rounded-xl bg-card border border-border/70 shadow-2xs space-y-4">
+            <h3 className="text-sm font-semibold text-foreground border-b border-border/50 pb-2.5">
+              Specifications & Terms
             </h3>
-            <div className="space-y-3.5 text-xs">
+            <div className="space-y-3 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">
-                  Price per Day
-                </span>
-                <span className="font-extrabold text-primary text-sm">
-                  ₹{product.price}
+                <span className="text-muted-foreground">Daily Rental Rate</span>
+                <span className="font-mono font-bold text-foreground text-sm">
+                  ₹{product.price.toLocaleString()}/day
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">
-                  Category
-                </span>
-                <span className="font-bold text-foreground">
+                <span className="text-muted-foreground">Category</span>
+                <span className="font-semibold text-foreground">
                   {product.category}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">
-                  Availability
-                </span>
-                <span className="flex items-center gap-1">
+                <span className="text-muted-foreground">Availability</span>
+                <span className="flex items-center gap-1.5">
                   <span
                     className={cn(
                       "h-2 w-2 rounded-full",
-                      product.available ? "bg-green-500" : "bg-red-500",
+                      product.available ? "bg-emerald-500" : "bg-[#FF1744]"
                     )}
                   />
-                  <span className="font-bold text-foreground">
-                    {product.available ? "Instant Rent" : "Unavailable"}
+                  <span className="font-semibold text-foreground">
+                    {product.available ? "Live / Instant Rent" : "Reserved / Paused"}
                   </span>
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-semibold">
-                  Listed Date
-                </span>
-                <span className="font-bold text-foreground">
+                <span className="text-muted-foreground">Date Listed</span>
+                <span className="font-mono text-muted-foreground">
                   {new Date(product.createdAt).toLocaleDateString()}
                 </span>
-              </div>
-              <div className="flex flex-col border-t border-border/40 pt-3">
-                <span className="text-muted-foreground font-semibold mb-1">
-                  Item Description
-                </span>
-                <p className="text-[11px] font-semibold text-foreground/90 leading-relaxed">
-                  {product.description}
-                </p>
               </div>
             </div>
           </div>
 
           {/* Owner details */}
-          <div className="card-premium bg-card/60 p-5 space-y-4">
-            <h3 className="text-sm font-bold text-foreground">
+          <div className="p-5 rounded-xl bg-card border border-border/70 shadow-2xs space-y-4">
+            <h3 className="text-sm font-semibold text-foreground border-b border-border/50 pb-2.5">
               Lender Information
             </h3>
             <div className="flex items-center gap-3">
-              <img
-                src={product.owner.avatar}
-                alt={product.owner.name}
-                className="h-12 w-12 rounded-full object-cover border border-primary/20"
-              />
+              <div className="h-11 w-11 rounded-lg bg-secondary border border-border/70 flex items-center justify-center font-bold text-foreground overflow-hidden shrink-0">
+                {product.owner.avatar ? (
+                  <img
+                    src={product.owner.avatar}
+                    alt={product.owner.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{product.owner.name.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-xs font-bold text-foreground truncate">
                   {product.owner.name}
                 </span>
-                <span className="text-[10px] text-muted-foreground truncate mt-0.5">
+                <span className="text-[11px] font-mono text-muted-foreground truncate">
                   {product.owner.email}
                 </span>
-                <div className="flex items-center gap-1.5 mt-1 bg-secondary py-0.5 px-2 rounded-full w-fit">
+                <div className="flex items-center gap-1 mt-1">
                   <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
-                  <span className="text-[10px] font-bold text-foreground">
-                    {product.owner.rating.toFixed(1)}
+                  <span className="text-[11px] font-mono font-semibold text-foreground">
+                    {product.owner.rating.toFixed(1)} Lender Score
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-border/40 flex justify-end">
+            <div className="pt-2 border-t border-border/50 flex justify-end">
               <Link
                 to="/admin/agents"
-                className="text-[11px] font-bold text-primary flex items-center gap-1 hover:underline"
+                className="text-[11px] font-semibold text-emerald-500 hover:text-emerald-400 flex items-center gap-1 transition-colors"
               >
-                <span>View Lender Stats</span>
+                <span>View Lender Fleet</span>
                 <ArrowLeft className="h-3 w-3 rotate-180" />
               </Link>
             </div>
           </div>
+
+          {/* Verification documents */}
+          {product.documents && product.documents.length > 0 && (
+            <div className="p-5 rounded-xl bg-card border border-border/70 shadow-2xs space-y-3">
+              <h3 className="text-sm font-semibold text-foreground border-b border-border/50 pb-2.5">
+                Compliance & Invoices
+              </h3>
+              <div className="space-y-2">
+                {product.documents.map((doc, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2.5 p-2.5 rounded-lg bg-secondary/40 border border-border/50 text-xs"
+                  >
+                    <FileText className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span className="font-medium text-foreground truncate">{doc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -261,13 +261,13 @@ export default function Users() {
         return (
           <span
             className={cn(
-              "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border inline-flex items-center gap-1",
+              "px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider border inline-flex items-center gap-1",
               isApproved
                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                 : isPending
                 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                 : isSuspended || isRejected
-                ? "bg-destructive/10 text-destructive border-destructive/20"
+                ? "bg-red-500/10 text-[#FF1744] border-red-500/20"
                 : "bg-secondary text-muted-foreground border-border/60"
             )}
           >
@@ -282,7 +282,7 @@ export default function Users() {
       label: "Verification",
       render: (row) =>
         row.verified ? (
-          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+          <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
             <ShieldCheck className="h-3.5 w-3.5" /> Verified
           </span>
         ) : (
@@ -309,8 +309,8 @@ export default function Users() {
         <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => handleOpenUser(row)}
-            className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-all cursor-pointer"
-            title="View user details drawer"
+            className="p-1.5 rounded-md hover:bg-secondary text-foreground transition-colors cursor-pointer"
+            title="View user details"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
@@ -320,7 +320,7 @@ export default function Users() {
               <button
                 onClick={() => handleApprove(row.id || row.email)}
                 disabled={actionLoading}
-                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
+                className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors cursor-pointer"
                 title="Approve user"
               >
                 <CheckCircle className="h-3.5 w-3.5" />
@@ -328,7 +328,7 @@ export default function Users() {
               <button
                 onClick={() => handleReject(row.id || row.email)}
                 disabled={actionLoading}
-                className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+                className="p-1.5 rounded-md bg-red-500/10 text-[#FF1744] hover:bg-red-500/20 border border-red-500/20 transition-colors cursor-pointer"
                 title="Reject user"
               >
                 <XCircle className="h-3.5 w-3.5" />
@@ -340,7 +340,7 @@ export default function Users() {
             <button
               onClick={() => handleActivate(row.id || row.email)}
               disabled={actionLoading}
-              className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
+              className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors cursor-pointer"
               title="Reactivate user"
             >
               <UserCheck className="h-3.5 w-3.5" />
@@ -350,7 +350,7 @@ export default function Users() {
               <button
                 onClick={() => handleSuspend(row.id || row.email)}
                 disabled={actionLoading}
-                className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 transition-all cursor-pointer"
+                className="p-1.5 rounded-md hover:bg-red-500/10 text-muted-foreground hover:text-[#FF1744] transition-colors cursor-pointer"
                 title="Suspend user"
               >
                 <ShieldAlert className="h-3.5 w-3.5" />
@@ -363,15 +363,15 @@ export default function Users() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border/50">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground font-display">
-            Users Management Workspace
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+            Users
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Authoritative database user records, identity verification, account status, and role gating.
+          <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+            Manage PAYENT accounts, identity verification, and access controls
           </p>
         </div>
 
@@ -379,9 +379,9 @@ export default function Users() {
           <button
             onClick={() => fetchUsers()}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card hover:bg-secondary border border-border/80 text-foreground text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-secondary/50 hover:bg-secondary text-foreground text-xs font-medium transition-colors cursor-pointer"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+            <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", loading && "animate-spin")} />
             <span>Refresh</span>
           </button>
         </div>
@@ -391,7 +391,7 @@ export default function Users() {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search by name, email, or user ID..."
@@ -400,14 +400,14 @@ export default function Users() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full bg-card text-foreground text-xs rounded-xl pl-9 pr-4 py-2 border border-border/80 focus:outline-none focus:border-primary font-medium"
+            className="w-full bg-card text-foreground text-xs rounded-lg pl-9 pr-3 py-2 border border-border/70 focus:outline-none focus:border-foreground/40 font-medium placeholder:text-muted-foreground"
           />
         </div>
 
         {/* Filter Controls */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Status Tabs */}
-          <div className="flex items-center p-1 bg-secondary rounded-xl border border-border/60 text-xs font-semibold">
+          <div className="flex items-center p-0.5 bg-secondary/60 rounded-lg border border-border/60 text-xs font-medium">
             {["all", "pending", "approved", "suspended"].map((st) => (
               <button
                 key={st}
@@ -416,9 +416,9 @@ export default function Users() {
                   setCurrentPage(1);
                 }}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg capitalize transition-all cursor-pointer text-[11px]",
+                  "px-2.5 py-1 rounded-md capitalize transition-colors cursor-pointer text-xs",
                   statusFilter === st
-                    ? "bg-card text-foreground shadow-xs font-bold"
+                    ? "bg-background text-foreground shadow-2xs font-semibold"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -434,7 +434,7 @@ export default function Users() {
               setRoleFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="bg-card text-foreground text-xs rounded-xl px-3 py-2 border border-border/80 focus:outline-none font-semibold cursor-pointer"
+            className="bg-card text-foreground text-xs rounded-lg px-2.5 py-2 border border-border/70 focus:outline-none font-medium cursor-pointer"
           >
             <option value="all">All Roles</option>
             <option value="user">User</option>
@@ -446,8 +446,8 @@ export default function Users() {
 
       {/* 3-STATE CONTAINER: ERROR vs TABLE (LOADING / REAL DATA / EMPTY DB) */}
       {error ? (
-        <div className="card-premium bg-card/40 border border-destructive/30 p-12 rounded-2xl text-center space-y-4">
-          <div className="inline-flex p-3 rounded-full bg-destructive/10 text-destructive">
+        <div className="bg-card border border-red-500/20 p-8 rounded-xl text-center space-y-3">
+          <div className="inline-flex p-2.5 rounded-full bg-red-500/10 text-[#FF1744]">
             <ShieldAlert className="h-6 w-6" />
           </div>
           <div>
