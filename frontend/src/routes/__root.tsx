@@ -180,6 +180,18 @@ import {
 
 function RootContent() {
   const [showChatbot, setShowChatbot] = useState(false);
+  const [isPreloaderActive, setIsPreloaderActive] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return !sessionStorage.getItem("payent:preloaded");
+      } catch {
+        return true;
+      }
+    }
+    return true;
+  });
+  const [isLanding, setIsLanding] = useState(!isPreloaderActive);
+
   useEffect(() => {
     const timer = setTimeout(() => setShowChatbot(true), 1000);
     return () => clearTimeout(timer);
@@ -187,16 +199,42 @@ function RootContent() {
 
   return (
     <>
-      <AppPreloader />
-      <Navigation4 />
-      {/* Origin-Based Expanding Reveal Page Transition */}
-      <OriginRevealPageTransition>
-        <Outlet />
-      </OriginRevealPageTransition>
+      <AppPreloader
+        onLanding={() => setIsLanding(true)}
+        onComplete={() => {
+          setIsLanding(true);
+          setIsPreloaderActive(false);
+        }}
+      />
+      <motion.div
+        initial={
+          isPreloaderActive
+            ? { opacity: 0, y: 10, scale: 0.985, filter: "blur(3px)" }
+            : false
+        }
+        animate={
+          isPreloaderActive
+            ? isLanding
+              ? { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }
+              : { opacity: 0, y: 10, scale: 0.985, filter: "blur(3px)" }
+            : { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }
+        }
+        transition={{
+          duration: 1.0,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        className="w-full"
+      >
+        <Navigation4 />
+        {/* Origin-Based Expanding Reveal Page Transition */}
+        <OriginRevealPageTransition>
+          <Outlet />
+        </OriginRevealPageTransition>
 
-      <CartDrawer />
-      {showChatbot && <HelpChatbot />}
-      <Toaster position="bottom-right" richColors />
+        <CartDrawer />
+        {showChatbot && <HelpChatbot />}
+        <Toaster position="bottom-right" richColors />
+      </motion.div>
     </>
   );
 }
