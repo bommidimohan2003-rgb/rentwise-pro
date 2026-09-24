@@ -407,13 +407,21 @@ def init_db(force: bool = False):
             reviews INT,
             available BOOLEAN,
             owner_name VARCHAR(255),
-            owner_avatar VARCHAR(1000),
+            owner_avatar LONGTEXT,
             owner_rating DECIMAL(3, 2),
             created_at VARCHAR(100)
         )
     """)
 
-    # Safely alter custom_products table for new fields
+    # Safely alter custom_products table for new fields and long data types
+    try:
+        execute_query("ALTER TABLE custom_products MODIFY COLUMN owner_avatar LONGTEXT NULL")
+    except Exception:
+        pass
+    try:
+        execute_query("ALTER TABLE custom_products MODIFY COLUMN image LONGTEXT NULL")
+    except Exception:
+        pass
     add_column_safely("custom_products", "status VARCHAR(50) DEFAULT 'approved'")
     add_column_safely("custom_products", "featured BOOLEAN DEFAULT FALSE")
     add_column_safely("custom_products", "hidden BOOLEAN DEFAULT FALSE")
@@ -1580,22 +1588,28 @@ def get_all_approved_custom_products(limit: Optional[int] = None, offset: int = 
 
 def create_custom_product(email: str, product: dict):
     clean_email = (email or "").strip().lower()
+    if not clean_email:
+        raise ValueError("Lender email is required to create a listing")
+
     created_at = dt.now(timezone.utc).isoformat()
     
     owner_info = product.get("owner") if isinstance(product.get("owner"), dict) else {}
     owner_name = owner_info.get("name") or product.get("owner_name") or clean_email.split("@")[0]
-    owner_email = owner_info.get("email") or clean_email
+    owner_email = clean_email
     owner_avatar = owner_info.get("avatar") or product.get("owner_avatar") or "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
     owner_rating = float(owner_info.get("rating") or product.get("owner_rating") or 5.0)
 
-    prod_status = str(product.get("status", "pending"))
+    prod_id = str(product.get("id") or f"p-custom-{int(time.time() * 1000)}")
+    prod_status = str(product.get("status", "pending")).strip().lower()
+    if prod_status not in ("pending", "under_review", "approved", "rejected"):
+        prod_status = "pending"
     is_available = bool(product.get("available", False if prod_status == "pending" else True))
 
     product_entry = {
-        "id": str(product.get("id", "")),
+        "id": prod_id,
         "user_email": clean_email,
-        "title": str(product.get("title", "")),
-        "description": str(product.get("description", "")),
+        "title": str(product.get("title", "")).strip(),
+        "description": str(product.get("description", "")).strip(),
         "price": float(product.get("price", 0)),
         "image": str(product.get("image", "")),
         "category": str(product.get("category", "General")),
@@ -1614,40 +1628,64 @@ def create_custom_product(email: str, product: dict):
         },
         "created_at": created_at
     }
-    MOCK_CUSTOM_PRODUCTS[product_entry["id"]] = product_entry
+
     ensure_agent_profile(clean_email)
 
+    conn = get_db_connection()
+    if not conn:
+        logger.error("[create_custom_product] Failed to acquire database connection.")
+        raise RuntimeError("Database connection unavailable. Product could not be persisted.")
+
     try:
-        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO custom_products (
+                    id, user_email, title, description, price, image, category,
+                    rating, reviews, available, status, owner_name, owner_avatar,
+                    owner_rating, created_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                product_entry["id"],
+                clean_email,
+                product_entry["title"],
+                product_entry["description"],
+                product_entry["price"],
+                product_entry["image"],
+                product_entry["category"],
+                product_entry["rating"],
+                product_entry["reviews"],
+                1 if is_available else 0,
+                prod_status,
+                owner_name,
+                owner_avatar,
+                owner_rating,
+                created_at
+            ))
+
+            # Verify that the record was actually persisted and exists
+            cursor.execute("SELECT id, user_email, title, status FROM custom_products WHERE id = %s", (product_entry["id"],))
+            verified = cursor.fetchone()
+            if not verified:
+                raise RuntimeError("Database insertion verification failed: row not found after INSERT.")
+
+        conn.commit()
+    except Exception as e:
         if conn:
             try:
-                with conn.cursor() as cursor:
-                    cursor.execute("""
-                        INSERT INTO custom_products (id, user_email, title, description, price, image, category, rating, reviews, available, status, owner_name, owner_avatar, owner_rating, created_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (
-                        product_entry["id"],
-                        clean_email,
-                        product_entry["title"],
-                        product_entry["description"],
-                        product_entry["price"],
-                        product_entry["image"],
-                        product_entry["category"],
-                        product_entry["rating"],
-                        product_entry["reviews"],
-                        1 if is_available else 0,
-                        prod_status,
-                        owner_name,
-                        owner_avatar,
-                        owner_rating,
-                        created_at
-                    ))
-                conn.commit()
-            finally:
+                conn.rollback()
+            except Exception:
+                pass
+        logger.error(f"[create_custom_product] Database write transaction failed: {e}", exc_info=True)
+        raise RuntimeError(f"Database write error: {e}")
+    finally:
+        if conn:
+            try:
                 conn.close()
-    except Exception as e:
-        print(f"Notice: Database write error in create_custom_product: {e}")
+            except Exception:
+                pass
 
+    MOCK_CUSTOM_PRODUCTS[product_entry["id"]] = product_entry
     return product_entry
 
 def update_custom_product(product_id: str, email: str, patch: dict):

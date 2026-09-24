@@ -38,6 +38,7 @@ import type { Product } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { CameraCaptureModal } from "@/components/lender/CameraCaptureModal";
+import { compressImage } from "@/utils/imageUtils";
 
 import cameraImg from "@/assets/images/camera.webp";
 import laptopImg from "@/assets/images/laptop.webp";
@@ -169,40 +170,53 @@ export default function BecomeLender() {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Handlers for Camera Capture
-  const handleCameraCapture = (imageDataUrl: string, angleTag?: string) => {
-    const newPhoto: GearPhoto = {
-      id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      url: imageDataUrl,
-      tag: angleTag || "Front View",
-      isPrimary: photos.length === 0,
-    };
-    setPhotos((prev) => [...prev, newPhoto]);
-    toast.success(`Photo added (${newPhoto.tag})`);
+  const handleCameraCapture = async (imageDataUrl: string, angleTag?: string) => {
+    try {
+      const compressedUrl = await compressImage(imageDataUrl, 1200, 0.82);
+      const newPhoto: GearPhoto = {
+        id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        url: compressedUrl,
+        tag: angleTag || "Front View",
+        isPrimary: photos.length === 0,
+      };
+      setPhotos((prev) => [...prev, newPhoto]);
+      toast.success(`Photo added (${newPhoto.tag})`);
+    } catch {
+      const newPhoto: GearPhoto = {
+        id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        url: imageDataUrl,
+        tag: angleTag || "Front View",
+        isPrimary: photos.length === 0,
+      };
+      setPhotos((prev) => [...prev, newPhoto]);
+      toast.success(`Photo added (${newPhoto.tag})`);
+    }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} is too large (> 5MB).`);
-        return;
+    for (const file of Array.from(files)) {
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (> 20MB).`);
+        continue;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      try {
+        const compressedUrl = await compressImage(file, 1200, 0.82);
         setPhotos((prev) => [
           ...prev,
           {
             id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            url: reader.result as string,
+            url: compressedUrl,
             tag: prev.length === 0 ? "Front View" : "Gear Angle",
             isPrimary: prev.length === 0,
           },
         ]);
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch {
+        toast.error(`Failed to process image: ${file.name}`);
+      }
+    }
     e.target.value = "";
   };
 
@@ -287,7 +301,10 @@ export default function BecomeLender() {
     }
 
     try {
-      await api.createCustomProduct(token || "", newProduct);
+      const res = await api.createCustomProduct(token || "", newProduct);
+      if (!res || res.success === false) {
+        throw new Error(res?.message || "Server could not persist listing.");
+      }
       toast.success(
         "Listing submitted for Admin Approval! Your tech gear listing is under review and will appear publicly once approved by an Admin.",
       );

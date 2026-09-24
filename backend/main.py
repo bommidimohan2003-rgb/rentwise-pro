@@ -3032,18 +3032,33 @@ def add_custom_listing(data: CustomProductSchema, current_user: dict = Depends(r
     owner_info = product_dict.get("owner") if isinstance(product_dict.get("owner"), dict) else {}
     product_dict["owner"] = {
         "name": owner_info.get("name") or user_rec.get("full_name") or email.split("@")[0],
-        "email": owner_info.get("email") or email,
+        "email": email,
         "avatar": owner_info.get("avatar") or user_rec.get("avatar") or "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120",
         "rating": float(owner_info.get("rating") or 5.0)
     }
     product_dict["status"] = "pending"
     product_dict["available"] = False
-    created = create_custom_product(email, product_dict)
+    
+    try:
+        created = create_custom_product(email, product_dict)
+    except Exception as e:
+        logger.error(f"[add_custom_listing] Product creation failed in database for user '{email}': {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to persist product listing in database: {str(e)}"
+        )
+    
     broadcast_admin_event("product.created", format_product_dict(created))
     invalidate_cache("public_custom_products")
     invalidate_cache("public_categories")
     invalidate_cache("public_stats")
-    return {"success": True, "product": format_product_dict(created), "message": "Product submitted successfully. Pending Admin approval."}
+    return {
+        "success": True,
+        "product_id": created["id"],
+        "status": created["status"],
+        "product": format_product_dict(created),
+        "message": "Product submitted successfully. Pending Admin approval."
+    }
 
 def fetch_one_product(product_id: str):
     if product_id in MOCK_CUSTOM_PRODUCTS:

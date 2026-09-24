@@ -1028,13 +1028,17 @@ export const api = {
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.detail || "Failed to create custom product");
+      throw new Error(errData.detail || errData.message || "Failed to create custom product");
+    }
+    const data = await res.json();
+    if (!data || data.success === false) {
+      throw new Error(data?.message || "Product submission could not be verified by the server.");
     }
     this.invalidateCache("public_custom_products");
     this.invalidateCache("public_categories");
     this.invalidateCache("public_stats");
     this.invalidateCache("user_custom_products");
-    return res.json();
+    return data;
   },
 
   async deleteCustomProduct(token: string, id: string) {
