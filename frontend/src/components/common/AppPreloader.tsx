@@ -311,14 +311,13 @@ export function AppPreloader({
                       position: "fixed",
                       top: "50%",
                       left: "50%",
-                      // Translate horizontally and vertically from center to the exact left navbar position
+                      // Translate strictly horizontally LEFT from viewport center to the left side
                       x: `calc(-50% + ${delta.x}px)`,
-                      y: `calc(-50% + ${delta.y}px)`,
-                      // Scales down smoothly to match navbar logo size
+                      y: "-50%", // Strictly horizontal: NO vertical/upward movement
                       scale:
                         typeof window !== "undefined" && window.innerWidth < 640
-                          ? 0.38
-                          : 0.42,
+                          ? 0.70
+                          : 0.82,
                       opacity: 1,
                       filter: "blur(0px)",
                     }
@@ -337,7 +336,7 @@ export function AppPreloader({
                 isMovingToLeft
                   ? {
                       duration: 1.15,
-                      ease: [0.16, 1, 0.3, 1], // Cinematic smooth curve
+                      ease: [0.16, 1, 0.3, 1], // Cinematic horizontal glide curve
                     }
                   : {
                       duration: 0.35,
